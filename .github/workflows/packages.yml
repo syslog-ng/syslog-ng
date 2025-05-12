@@ -33,6 +33,7 @@ jobs:
     with:
       source-tarball-artifact-name: source-tarball
       dbld-image-mode: cache
+      # "fedora-rawhide", - rawhide is always a problem turning it off now
       distros: '[
         "almalinux-8",
         "almalinux-9",
@@ -40,6 +41,5 @@ jobs:
         "debian-bookworm",
         "debian-testing",
         "fedora-latest",
-        "fedora-rawhide",
         "ubuntu-noble"
         ]'

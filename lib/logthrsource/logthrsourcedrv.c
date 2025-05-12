@@ -235,7 +235,6 @@ log_threaded_source_worker_init_instance(LogThreadedSourceWorker *self, LogThrea
   self->super.super.init = _worker_init;
   self->super.super.free_fn = log_threaded_source_worker_free;
   self->super.wakeup = _worker_wakeup;
-
   self->worker_index = worker_index;
 }
 

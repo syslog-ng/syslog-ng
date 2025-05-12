@@ -134,7 +134,7 @@ override_dh_auto_configure:
 		--enable-cloud-auth=auto \
 		\
 		--with-mongoc=system \
-		--with-ivykis=system \
+		--with-ivykis=internal \
 		--with-jsonc=system \
 		--with-librabbitmq-client=system \
 		\

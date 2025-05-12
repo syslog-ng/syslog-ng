@@ -98,6 +98,8 @@ enum
   LM_V_TRANSPORT,
   LM_V_MSGFORMAT,
   LM_V_FILE_NAME,
+  LM_V_PEER_IP,
+  LM_V_PEER_PORT,
 
   LM_V_PREDEFINED_MAX,
 };
@@ -134,6 +136,9 @@ enum
   LM_T_SYSLOG_RFC5424_MISSING_MESSAGE,
   /* message field missing */
   LM_T_SYSLOG_MISSING_MESSAGE,
+  /* invalid program name */
+  LM_T_SYSLOG_RFC_3164_INVALID_PROGRAM,
+
   LM_T_PREDEFINED_MAX,
 };
 
@@ -237,6 +242,11 @@ struct _LogMessage
   /* if you change any of the fields here, be sure to adjust
    * log_msg_clone_cow() as well to initialize fields properly */
 
+  /* some of the fields in this struct are shared in copy-on-write
+   * scenarios, tracking of those fields are done using the "flags" member,
+   * see the LF_STATE_OWN_* flags
+   */
+
   /* ack_and_ref_and_abort_and_suspended is a 32 bit integer that is accessed in an atomic way.
    * The upper half contains the ACK count (and the abort flag), the lower half
    * the REF count.  It is not a GAtomicCounter as due to ref/ack caching it has
@@ -244,41 +254,18 @@ struct _LogMessage
    * log_msg_ref/unref.
    */
 
-  /* FIXME: the structure has holes, but right now it's 1 byte short to make
-   * it smaller (it is possible to create a 7 byte contiguos block but 8
-   * byte alignment is needed. Let's check this with the inline-tags stuff */
-
   gint ack_and_ref_and_abort_and_suspended;
+  guint32 flags;
 
-  /* NOTE: in theory this should be a size_t (or gsize), however that takes
-   * 8 bytes, and it's highly unlikely that we'd be using more than 4GB for
-   * a LogMessage */
-
-  guint allocated_bytes;
-
-  guint32 recvd_rawmsg_size;
-
-  AckRecord *ack_record;
-  LMAckFunc ack_func;
+  NVTable *payload;
   LogMessage *original;
-
-  /* message parts */
-
-  /* the contents of the members below is directly copied into another
-   * LogMessage with pointer values.  To change any of the fields please use
-   * log_msg_set_*() functions, which will handle borrowed data members
-   * correctly.
-   */
-  /* ==== start of directly copied part ==== */
-  UnixTime timestamps[LM_TS_MAX];
   gulong *tags;
   NVHandle *sdata;
 
-  GSockAddr *saddr;
-  GSockAddr *daddr;
-  NVTable *payload;
-
-  guint32 flags;
+  /* this member is incremented for any write operation and it can also
+   * overflow, so only track it for changes and assume that 2^16 operations
+   * would suffice between two checks */
+  guint16 generation;
   guint16 pri;
   guint8 initial_parse:1,
          recursed:1,
@@ -291,18 +278,45 @@ struct _LogMessage
           * LogMessage.  */
 
          proto:6;
+  /* number of capture groups retrieved from a regexp match (e.g. $1, $2, ...) */
   guint8 num_matches;
-  guint32 host_id;
-  guint64 rcptid;
+
+  /* number of bits in the "tags" array, if less than 64, all such bits are
+   * stored in the "tags" pointer, otherwise it points to an allocated bit
+   * array */
   guint8 num_tags;
+  /* number of items allocated in the "sdata" array */
   guint8 alloc_sdata;
+  /* number of items stored in the "sdata" array */
   guint8 num_sdata;
-  /* ==== end of directly copied part ==== */
 
+  /* number of nodes pre-allocated as a part of LogMessage at the tail end of the structure */
   guint8 num_nodes;
-  guint8 cur_node;
-  guint8 write_protected;
 
+  /* the next available node */
+  guint8 cur_node;
+  /* is this message currently read only, used to track when we need to copy-on-write */
+  guint8 write_protected;
+  /* identifier of the source host */
+  guint32 host_id;
+  /* unique message identifier (upon receipt) */
+  guint64 rcptid;
+
+  /* number of bytes in the received message */
+  guint32 recvd_rawmsg_size;
+
+  /* allocated bytes in LogMessage, is limited to 32 bits as it's highly
+   * unlikely that we would ever need more than 4GB for a single message
+   * including overhead */
+  guint32 allocated_bytes;
+
+  AckRecord *ack_record;
+  LMAckFunc ack_func;
+
+  GSockAddr *saddr;
+  GSockAddr *daddr;
+
+  UnixTime timestamps[LM_TS_MAX];
 
   /* preallocated LogQueueNodes used to insert this message into a LogQueue */
   LogMessageQueueNode nodes[0];
@@ -336,9 +350,32 @@ NVHandle log_msg_get_value_handle(const gchar *value_name);
 gboolean log_msg_is_value_name_valid(const gchar *value);
 const gchar *log_msg_get_handle_name(NVHandle handle, gssize *length);
 
-gboolean log_msg_is_handle_macro(NVHandle handle);
-gboolean log_msg_is_handle_sdata(NVHandle handle);
-gboolean log_msg_is_handle_match(NVHandle handle);
+static inline gboolean
+log_msg_is_handle_macro(NVHandle handle)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_MACRO);
+}
+
+static inline gboolean
+log_msg_is_handle_sdata(NVHandle handle)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_SDATA);
+}
+
+static inline gboolean
+log_msg_is_handle_match(NVHandle handle)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_MATCH);
+}
 
 static inline gboolean
 log_msg_is_handle_referencable_from_an_indirect_value(NVHandle handle)

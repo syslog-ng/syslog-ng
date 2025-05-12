@@ -53,8 +53,7 @@ void signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot,
 void signal_slot_emit(SignalSlotConnector *self, Signal signal, gpointer user_data);
 
 SignalSlotConnector *signal_slot_connector_new(void);
-SignalSlotConnector *signal_slot_connector_ref(SignalSlotConnector *self);
-void signal_slot_connector_unref(SignalSlotConnector *self);
+void signal_slot_connector_free(SignalSlotConnector *self);
 
 #endif
 

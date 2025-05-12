@@ -333,6 +333,7 @@ CfgFlagHandler msg_format_flag_handlers[] =
   { "no-rfc3164-fallback",        CFH_SET, offsetof(MsgFormatOptions, flags), LP_NO_RFC3164_FALLBACK },
   { "piggyback-errors",           CFH_SET, offsetof(MsgFormatOptions, flags), LP_PIGGYBACK_ERRORS },
   { "no-piggyback-errors",      CFH_CLEAR, offsetof(MsgFormatOptions, flags), LP_PIGGYBACK_ERRORS },
+  { "check-program",              CFH_SET, offsetof(MsgFormatOptions, flags), LP_CHECK_PROGRAM },
   { NULL },
 };
 

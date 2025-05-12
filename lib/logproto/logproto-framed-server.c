@@ -66,11 +66,12 @@ typedef struct _LogProtoFramedServer
 } LogProtoFramedServer;
 
 static LogProtoPrepareAction
-log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
+log_proto_framed_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
 
-  *cond = self->super.transport->cond;
+  if (log_transport_stack_poll_prepare(&self->super.transport_stack, cond))
+    return LPPA_FORCE_SCHEDULE_FETCH;
 
   /* there is a half message in our buffer so try to wait */
   if (!self->half_message_in_buffer)
@@ -109,15 +110,16 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
     return FALSE;
 
   log_transport_aux_data_reinit(&self->buffer_aux);
-  rc = log_transport_read(self->super.transport, &self->buffer[self->buffer_end], self->buffer_size - self->buffer_end,
-                          &self->buffer_aux);
+  rc = log_transport_stack_read(&self->super.transport_stack,
+                                &self->buffer[self->buffer_end], self->buffer_size - self->buffer_end,
+                                &self->buffer_aux);
 
   if (rc < 0)
     {
       if (errno != EAGAIN)
         {
           msg_error("Error reading RFC6587 style framed data",
-                    evt_tag_int("fd", self->super.transport->fd),
+                    evt_tag_int("fd", self->super.transport_stack.fd),
                     evt_tag_error("error"));
           *status = LPS_ERROR;
         }
@@ -132,7 +134,7 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
   if (rc == 0)
     {
       msg_trace("EOF occurred while reading",
-                evt_tag_int(EVT_TAG_FD, self->super.transport->fd));
+                evt_tag_int(EVT_TAG_FD, self->super.transport_stack.fd));
       *status = LPS_EOF;
       return FALSE;
     }
@@ -428,7 +430,7 @@ log_proto_framed_server_new(LogTransport *transport, const LogProtoServerOptions
   LogProtoFramedServer *self = g_new0(LogProtoFramedServer, 1);
 
   log_proto_server_init(&self->super, transport, options);
-  self->super.prepare = log_proto_framed_server_prepare;
+  self->super.poll_prepare = log_proto_framed_server_poll_prepare;
   self->super.fetch = log_proto_framed_server_fetch;
   self->super.free_fn = log_proto_framed_server_free;
   self->half_message_in_buffer = FALSE;

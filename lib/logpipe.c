@@ -28,6 +28,87 @@
 
 gboolean (*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
 
+void
+log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  if (self->pipe_next)
+    {
+      log_pipe_queue(self->pipe_next, msg, path_options);
+    }
+  else
+    {
+      log_msg_drop(msg, path_options, AT_PROCESSED);
+    }
+}
+
+/*
+ * LogPipeQueue slow path that can potentially change "msg" and
+ * "path_options", causing tail call optimization to be disabled.
+ */
+static void
+log_pipe_queue_slow_path(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  LogPathOptions local_path_options;
+  if ((self->flags & PIF_SYNC_FILTERX))
+    filterx_eval_sync_message(path_options->filterx_context, &msg, path_options);
+
+  if (G_UNLIKELY(self->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
+    {
+      path_options = log_path_options_chain(&local_path_options, path_options);
+      if (self->flags & PIF_HARD_FLOW_CONTROL)
+        {
+          local_path_options.flow_control_requested = 1;
+          msg_trace("Requesting flow control", log_pipe_location_tag(self));
+        }
+      if (self->flags & PIF_JUNCTION_END)
+        {
+          log_path_options_pop_junction(&local_path_options);
+        }
+      if (self->flags & PIF_CONDITIONAL_MIDPOINT)
+        {
+          log_path_options_pop_conditional(&local_path_options);
+        }
+    }
+  self->queue(self, msg, path_options);
+}
+
+static inline gboolean
+_is_fastpath(LogPipe *self)
+{
+  if (self->flags & PIF_SYNC_FILTERX)
+    return FALSE;
+
+  if (self->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT))
+    return FALSE;
+
+  return TRUE;
+}
+
+void
+log_pipe_queue(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  g_assert((self->flags & PIF_INITIALIZED) != 0);
+
+  if (G_UNLIKELY((self->flags & PIF_CONFIG_RELATED) != 0 && pipe_single_step_hook))
+    {
+      if (!pipe_single_step_hook(self, msg, path_options))
+        {
+          log_msg_drop(msg, path_options, AT_PROCESSED);
+          return;
+        }
+    }
+
+  /* on the fastpath we can use tail call optimization, so we won't have a
+   * series of log_pipe_queue() calls on the stack, it improves perf traces
+   * if nothing else, but I believe it also helps locality by using a lot
+   * less stack space */
+  if (_is_fastpath(self))
+    self->queue(self, msg, path_options);
+  else
+    log_pipe_queue_slow_path(self, msg, path_options);
+}
+
+
 EVTTAG *
 log_pipe_location_tag(LogPipe *pipe)
 {
@@ -40,7 +121,8 @@ log_pipe_attach_expr_node(LogPipe *self, LogExprNode *expr_node)
   self->expr_node = log_expr_node_ref(expr_node);
 }
 
-void log_pipe_detach_expr_node(LogPipe *self)
+void
+log_pipe_detach_expr_node(LogPipe *self)
 {
   if (!self->expr_node)
     return;
@@ -72,14 +154,8 @@ log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
   self->pipe_next = NULL;
   self->persist_name = NULL;
   self->plugin_name = NULL;
-  self->signal_slot_connector = signal_slot_connector_new();
 
-  /* NOTE: queue == NULL means that this pipe simply forwards the
-   * message along the pipeline, e.g. like it has called
-   * log_msg_forward_msg. Since this is a common case, it is better
-   * inlined (than to use an indirect call) for performance. */
-
-  self->queue = NULL;
+  self->queue = log_pipe_forward_msg;
   self->free_fn = log_pipe_free_method;
   self->arcs = _arcs;
 }
@@ -119,7 +195,6 @@ _free(LogPipe *self)
   g_free((gpointer)self->persist_name);
   g_free(self->plugin_name);
   g_list_free_full(self->info, g_free);
-  signal_slot_connector_unref(self->signal_slot_connector);
   g_free(self);
 }
 

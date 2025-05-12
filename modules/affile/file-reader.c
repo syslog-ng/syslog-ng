@@ -188,9 +188,6 @@ _can_check_eof(FileReader *self, gint fd)
 static gboolean
 _reader_check_eof(FileReader *self, gint fd)
 {
-  if (fd < 0)
-    return FALSE;
-
   off_t pos = lseek(fd, 0, SEEK_CUR);
   if (pos == (off_t) -1)
     {
@@ -260,13 +257,17 @@ _construct_poll_events(FileReader *self, gint fd)
       else
         poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
                                                       self->options->multi_line_timeout, self);
-      msg_trace("File follow-mode is syslog-ng poll");
+      msg_debug("File follow-mode is syslog-ng poll");
+    }
+  else if (fd >= 0 && FALSE == self->should_poll_for_events)
+    {
+      poll_events = notified_fd_events_new(fd);
+      msg_debug("File follow-mode is inotify from directory-monitor");
     }
   else if (fd >= 0 && _is_fd_pollable(fd))
     {
       poll_events = poll_fd_events_new(fd);
-      msg_trace("File follow-mode is ivykis poll");
-      msg_trace("Selected ivykis poll method", evt_tag_str("file_poll_method", iv_poll_method_name()));
+      msg_debug("File follow-mode is ivykis poll", evt_tag_str("poll_method", iv_poll_method_name()));
     }
   else
     {
@@ -318,7 +319,7 @@ _deinit_sd_logreader(FileReader *self)
 }
 
 static void
-_setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gboolean check_immediately)
+_setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto)
 {
   FileReader *self = (FileReader *) s;
 
@@ -335,23 +336,10 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
                          self->owner->super.id,
                          kb);
 
-  if (check_immediately)
-    log_reader_set_immediate_check(self->reader);
-
   /* NOTE: if the file could not be opened, we ignore the last
    * remembered file position, if the file is created in the future
    * we're going to read from the start. */
   log_pipe_append((LogPipe *) self->reader, s);
-}
-
-static gboolean
-_is_immediate_check_needed(gboolean file_opened, gboolean open_deferred)
-{
-  if (file_opened)
-    return TRUE;
-  else if (open_deferred)
-    return FALSE;
-  return FALSE;
 }
 
 static gboolean
@@ -377,7 +365,6 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
     {
       LogProtoServer *proto;
       PollEvents *poll_events;
-      gboolean check_immediately;
 
       poll_events = _construct_poll_events(self, fd);
       if (!poll_events)
@@ -387,8 +374,9 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
         }
       proto = _construct_proto(self, fd);
 
-      check_immediately = _is_immediate_check_needed(file_opened, open_deferred);
-      _setup_logreader(s, poll_events, proto, check_immediately);
+      _setup_logreader(s, poll_events, proto);
+      if (recover_state)
+        _recover_state(s, cfg, proto);
       if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
@@ -398,8 +386,6 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
           close(fd);
           return FALSE;
         }
-      if (recover_state)
-        _recover_state(s, cfg, proto);
     }
   else
     {
@@ -419,13 +405,6 @@ _reopen_on_notify(LogPipe *s, gboolean recover_state)
 
   _deinit_sd_logreader(self);
   _reader_open_file(s, recover_state);
-}
-
-static void
-_on_file_close(FileReader *self)
-{
-  if (self->options->exit_on_eof)
-    cfg_shutdown(log_pipe_get_config(&self->super));
 }
 
 static void
@@ -473,7 +452,6 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
   switch (notify_code)
     {
     case NC_CLOSE:
-      _on_file_close(self);
       break;
 
     case NC_FILE_MOVED:
@@ -486,6 +464,11 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
 
     case NC_FILE_DELETED:
       _on_file_deleted(self);
+      break;
+
+    case NC_FILE_MODIFIED:
+      /* This is a notification from the directory monitor, we can read the file for changes */
+      log_reader_trigger_one_check(self->reader);
       break;
 
     default:
@@ -574,6 +557,7 @@ file_reader_init_instance (FileReader *self, const gchar *filename,
   self->filename = g_string_new (filename);
   self->options = options;
   self->opener = opener;
+  self->should_poll_for_events = TRUE;
   self->owner = owner;
   self->super.expr_node = owner->super.super.expr_node;
 }

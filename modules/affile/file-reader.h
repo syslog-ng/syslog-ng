@@ -32,7 +32,6 @@ typedef struct _FileReaderOptions
   gint multi_line_timeout;
   gboolean restore_state;
   LogReaderOptions reader_options;
-  gboolean exit_on_eof;
 } FileReaderOptions;
 
 typedef struct _FileReader FileReader;
@@ -46,6 +45,7 @@ struct _FileReader
   LogReader *reader;
   const gchar *persist_name;
   const gchar *persist_name_prefix;
+  gboolean should_poll_for_events;
 
   void (*on_file_moved)(FileReader *);
 };

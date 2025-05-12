@@ -23,12 +23,13 @@ function patch_source()
     if [[ "${IMAGE_PLATFORM}" == "fedora-rawhide" ]]; then
         echo "Pathing ${IMAGE_PLATFORM} sources..."
         pushd /build/syslog-ng-${VERSION}
-        # Consider adding a reusable, proper patching mechanism in the future, e.g.
-        #patch -p1 < /build/syslog-ng-${VERSION}/packaging/rhel/syslog-ng-3.35.1-bison-3.8.patch
-        sudo sed -i '/#define BSON_NORETURN/{N;/#endif/a\
-#undef BSON_NORETURN\
-#define BSON_NORETURN
-}' /usr/include/libbson-1.0/bson/bson-macros.h
+# rawhide is always a problem turning it off now
+#         # Consider adding a reusable, proper patching mechanism in the future, e.g.
+#         #patch -p1 < /build/syslog-ng-${VERSION}/packaging/rhel/syslog-ng-3.35.1-bison-3.8.patch
+#         sudo sed -i '/#define BSON_NORETURN/{N;/#endif/a\
+# #undef BSON_NORETURN\
+# #define BSON_NORETURN
+# }' /usr/include/libbson-1.0/bson/bson-macros.h
         popd
     fi
 }

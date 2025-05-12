@@ -13,6 +13,8 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v4
         with:
+          # Use the develop for the Nighly published images/packages
+          ref: 'refs/heads/develop'
           fetch-depth: 0
 
       - name: Prepare docker image

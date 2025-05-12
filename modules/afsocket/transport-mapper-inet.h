@@ -32,25 +32,35 @@ typedef struct _TransportMapperInet
 
   gint server_port;
   const gchar *server_port_change_warning;
-  guint32 flags;
-  gboolean require_tls;
-  gboolean allow_tls;
-  gboolean require_tls_when_has_tls_context;
+  /* tls() options are required */
+  gboolean require_tls_configuration;
+  /* tls() options are optional, but are permitted */
+  gboolean allow_tls_configuration;
+
+  /* tls() options may be specified, but it is up to the transport/logproto
+   * plugin to start TLS.
+   *
+   * If this is TRUE, TLS encapsulation is started by either the
+   * LogTransport or the LogProtoServer instances with an explicit call to
+   * log_transport_stack_switch(LOG_TRANSPORT_TLS).  For example, this
+   * mechanism is used by LogProtoAutoServer (when TLS is detected), by
+   * LogTransportHAProxy or any potential LogProto implementations that have
+   * an explicit STARTTLS command (e.g. ALTP, RLTP).
+   *
+   * If this is FALSE, TLS will be started before LogProtoServer has any
+   * chance to read data,
+   */
+
+  gboolean delegate_tls_start_to_logproto;
+
+  /* HAProxy v1 or v2 protocol is to be used */
   gboolean proxied;
+  /* switch to TLS after plaintext haproxy negotiation */
+  gboolean proxied_passthrough;
   TLSContext *tls_context;
   TLSVerifier *tls_verifier;
   gpointer secret_store_cb_data;
 } TransportMapperInet;
-
-static inline void
-transport_mapper_inet_set_allow_compress(TransportMapper *s, gboolean value)
-{
-  TransportMapperInet *self = (TransportMapperInet *) s;
-  if (value)
-    self->flags |= TMI_ALLOW_COMPRESS;
-  else
-    self->flags &= ~TMI_ALLOW_COMPRESS;
-}
 
 static inline gint
 transport_mapper_inet_get_server_port(const TransportMapper *self)

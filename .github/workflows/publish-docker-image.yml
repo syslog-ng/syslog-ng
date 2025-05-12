@@ -130,6 +130,10 @@ jobs:
           format: 'table'
           dependency-tree: true
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+        env:
+          # Use the most reliable and quicker AWS ECR location for trivy DBs
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:1
 
       - name: Upload Trivy scan sarif file results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3

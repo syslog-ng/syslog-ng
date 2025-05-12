@@ -159,7 +159,7 @@ wildcard_file_reader_is_deleted(WildcardFileReader *self)
 
 WildcardFileReader *
 wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,
-                         GlobalConfig *cfg)
+                         GlobalConfig *cfg, gboolean should_poll_for_events)
 {
   WildcardFileReader *self = g_new0(WildcardFileReader, 1);
   file_reader_init_instance(&self->super, filename, options, opener, owner, cfg, "wildcard_file_sd");
@@ -170,5 +170,6 @@ wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options, File
   IV_TASK_INIT(&self->file_state_event_handler);
   self->file_state_event_handler.cookie = self;
   self->file_state_event_handler.handler = _handle_file_state_event;
+  self->super.should_poll_for_events = should_poll_for_events;
   return self;
 }
