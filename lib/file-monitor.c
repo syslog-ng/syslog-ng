@@ -103,7 +103,8 @@ _run_callbacks(FileMonitor *self, const FileMonitorEvent *event)
   for (FileMonitorCallbackList *i = self->callbacks; i; i = i->next)
     {
       FileMonitorCallbackListItem *item = i->data;
-      item->cb(event, item->cb_data);
+      if (!item->cb(event, item->cb_data))
+        return;
     }
 }
 
@@ -130,8 +131,10 @@ _run_callbacks_if_file_was_modified(FileMonitor *self)
     return;
 
 callbacks:
-  _run_callbacks(self, &event);
   self->last_mtime = st.st_mtime;
+
+  /* this should be the last line of this method, callbacks may trigger a reload and free FileMonitor */
+  _run_callbacks(self, &event);
 }
 
 static void
@@ -158,9 +161,10 @@ _poll_timer_tick(gpointer c)
 {
   FileMonitor *self = (FileMonitor *) c;
 
-  _run_callbacks_if_file_was_modified(self);
-
   _poll_start(self);
+
+  /* this should be the last line of this method, callbacks may trigger a reload and free FileMonitor */
+  _run_callbacks_if_file_was_modified(self);
 }
 
 #if SYSLOG_NG_HAVE_INOTIFY
@@ -170,7 +174,10 @@ static void _inotify_event_handler(void *c, struct inotify_event *event)
   FileMonitor *self = (FileMonitor *) c;
 
   if (g_strcmp0(self->file_basename, event->name) == 0)
-    _run_callbacks_if_file_was_modified(self);
+    {
+      /* this should be the last line of this method, callbacks may trigger a reload and free FileMonitor */
+      _run_callbacks_if_file_was_modified(self);
+    }
 }
 
 static gboolean
