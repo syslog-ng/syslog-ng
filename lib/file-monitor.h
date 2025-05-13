@@ -42,7 +42,7 @@ typedef struct _FileMonitorEvent
   } event;
 } FileMonitorEvent;
 
-typedef void (*FileMonitorEventCB)(const FileMonitorEvent *event, gpointer c);
+typedef gboolean (*FileMonitorEventCB)(const FileMonitorEvent *event, gpointer c);
 
 FileMonitor *file_monitor_new(const gchar *file_name);
 void file_monitor_free(FileMonitor *self);

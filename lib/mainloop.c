@@ -639,12 +639,14 @@ _unregister_metrics(MainLoop *self)
   stats_unlock();
 }
 
-static void
+static gboolean
 _cfg_file_modified(const FileMonitorEvent *event, gpointer c)
 {
   MainLoop *self = (MainLoop *) c;
   if (event->event == MODIFIED)
     stats_counter_set(self->metrics.last_cfgfile_mtime, (gsize) event->st.st_mtime);
+
+  return TRUE;
 }
 
 void
