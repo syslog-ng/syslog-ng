@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Zoltan Pallagi <zoltan.pallagi@balabit.com>
+ * Copyright (c) 2025 One Identity LLC.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -441,7 +442,7 @@ public class HdfsDestination extends StructuredLogDestination {
     }
 
     private void printStackTrace(Throwable e) {
-        String trace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e);
+        String trace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e);
         logger.error(trace);
     }
 
