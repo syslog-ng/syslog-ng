@@ -710,29 +710,6 @@ Description: Enhanced system logging daemon (Java module common library)
  This package provides common libraries for simplifying the creation
  of Java destinations.
 
-Package: syslog-ng-mod-elastic
-Architecture: any
-Multi-Arch: foreign
-Depends: syslog-ng-core (= ${binary:Version}), syslog-ng-mod-java-common-lib, syslog-ng-mod-java
-Description: Enhanced system logging daemon (Elasticsearch destination)
- syslog-ng is an enhanced log daemon, supporting a wide range of input
- and output methods: syslog, unstructured text, message queues,
- databases (SQL and NoSQL alike) and more.
- .
- Key features:
- .
-  * receive and send RFC3164 and RFC5424 style syslog messages
-  * work with any kind of unstructured data
-  * receive and send JSON formatted messages
-  * classify and structure logs with builtin parsers (csv-parser(),
-    db-parser(), etc.)
-  * normalize, crunch and process logs as they flow through the system
-  * hand on messages for further processing using message queues (like
-    AMQP), files or databases (like PostgreSQL or MongoDB).
- .
- This package provides the Elasticsearch destination, allowing one to
- send syslog messages to Elasticsearch.
-
 Package: syslog-ng-mod-hdfs
 Architecture: any
 Multi-Arch: foreign
@@ -755,52 +732,6 @@ Description: Enhanced system logging daemon (HDFS destination)
  .
  This package provides the HDFS destination, allowing one to send
  messages to HDFS.
-
-Package: syslog-ng-mod-kafka
-Architecture: any
-Multi-Arch: foreign
-Depends: syslog-ng-core (= ${binary:Version}), syslog-ng-mod-java-common-lib, syslog-ng-mod-java
-Description: Enhanced system logging daemon (Kafka destination)
- syslog-ng is an enhanced log daemon, supporting a wide range of input
- and output methods: syslog, unstructured text, message queues,
- databases (SQL and NoSQL alike) and more.
- .
- Key features:
- .
-  * receive and send RFC3164 and RFC5424 style syslog messages
-  * work with any kind of unstructured data
-  * receive and send JSON formatted messages
-  * classify and structure logs with builtin parsers (csv-parser(),
-    db-parser(), etc.)
-  * normalize, crunch and process logs as they flow through the system
-  * hand on messages for further processing using message queues (like
-    AMQP), files or databases (like PostgreSQL or MongoDB).
- .
- This package provides the Apache Kafka destination, allowing one to send
- messages to Kafka.
-
-Package: syslog-ng-mod-java-http
-Architecture: any
-Multi-Arch: foreign
-Depends: syslog-ng-core (= ${binary:Version}), syslog-ng-mod-java-common-lib, syslog-ng-mod-java
-Description: Enhanced system logging daemon (HTTP destination implemented in Java)
- syslog-ng is an enhanced log daemon, supporting a wide range of input
- and output methods: syslog, unstructured text, message queues,
- databases (SQL and NoSQL alike) and more.
- .
- Key features:
- .
-  * receive and send RFC3164 and RFC5424 style syslog messages
-  * work with any kind of unstructured data
-  * receive and send JSON formatted messages
-  * classify and structure logs with builtin parsers (csv-parser(),
-    db-parser(), etc.)
-  * normalize, crunch and process logs as they flow through the system
-  * hand on messages for further processing using message queues (like
-    AMQP), files or databases (like PostgreSQL or MongoDB).
- .
- This package provides an HTTP destination, allowing one to send syslog messages as HTTP
- PUT messages to an http server.
 
 Package: syslog-ng-mod-mqtt
 Architecture: any
