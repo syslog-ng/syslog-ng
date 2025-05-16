@@ -1192,7 +1192,7 @@ __strftime_fmt_1(WallClockTime *wct, char (*s)[100], size_t *l, int f, int pad)
         }
       *l = snprintf(*s, sizeof *s, "%c%02ld:%02ld",
                     wct->wct_gmtoff < 0 ? '-' : '+',
-                    wct->wct_gmtoff/3600, wct->wct_gmtoff%3600/60);
+                    (wct->wct_gmtoff > 0 ? wct->wct_gmtoff : -wct->wct_gmtoff)/3600, wct->wct_gmtoff%3600/60);
       return *s;
     case '%':
       *l = 1;

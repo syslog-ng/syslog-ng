@@ -552,12 +552,12 @@ Test(wallclocktime, test_strftime_all_format_spec)
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
   gchar buf[256];
 
-  wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S.%f %z", "Aug  7 2021 09:29:12.123456+02:00");
+  wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S.%f %z", "Aug  7 2021 09:29:12.123456-07:00");
   wall_clock_time_strftime(&wct, buf, sizeof(buf),
                            "%a %A %b %B '%c' %C %d '%D' '%e' %f '%F' %g %G %h %H %I %j %m %M %n %p %r %R %s %S %t '%T' %u %U %W %V %w %x %X %y %Y %z %Z");
   cr_assert_str_eq(buf,
                    "Sat Saturday Aug August 'Sat Aug  7 09:29:12 2021' 20 07 '08/07/21' ' 7' 123456 '2021-08-07' 21 2021 Aug 09 09 219 08 29 \n"
-                   " AM 09:29:12 AM 09:29 1628324952 12 \t '09:29:12' 6 31 31 31 6 08/07/21 09:29:12 21 2021 +0200 +02:00");
+                   " AM 09:29:12 AM 09:29 1628324952 12 \t '09:29:12' 6 31 31 31 6 08/07/21 09:29:12 21 2021 -0700 -07:00");
 }
 
 static void
