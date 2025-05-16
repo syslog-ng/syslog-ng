@@ -95,6 +95,7 @@ BuildRequires:  python3-urllib3
 BuildRequires:  python3-websocket-client
 BuildRequires:  python3-boto3
 BuildRequires:  python3-botocore
+BuildRequires:  python3-tornado
 %endif
 
 %if %{with grpc}
@@ -399,6 +400,7 @@ Requires:  python3-urllib3
 Requires:  python3-websocket-client
 Requires:  python3-boto3
 Requires:  python3-botocore
+Requires:  python3-tornado
 %endif
 
 %description python-modules
