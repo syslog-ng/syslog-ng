@@ -852,8 +852,8 @@ out:
         {
           /* calculate day of week */
           i = 0;
-          week_offset = first_wday_of(wct->tm.tm_year);
-          while (i++ <= wct->tm.tm_yday)
+          week_offset = first_wday_of(wct->tm.tm_year + TM_YEAR_BASE);
+          while (i++ < wct->tm.tm_yday)
             {
               if (week_offset++ >= 6)
                 week_offset = 0;

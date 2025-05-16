@@ -496,6 +496,70 @@ Test(wallclocktime, test_strptime_percent_z_is_mandatory)
   cr_assert_null(wall_clock_time_strptime(&wct, "%Y-%m-%d %T%z", "2011-06-25 20:00:04"));
 }
 
+Test(wallclocktime, test_strftime_percent_f)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar buf[128];
+
+  wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S.%f %z", "May  7 2021 09:29:12.123456 CEST");
+
+  wall_clock_time_strftime(&wct, buf, sizeof(buf), ".%f");
+  cr_assert_str_eq(buf, ".123456");
+  wall_clock_time_strftime(&wct, buf, sizeof(buf), ".%3f");
+  cr_assert_str_eq(buf, ".123");
+  wall_clock_time_strftime(&wct, buf, sizeof(buf), ".%6f");
+  cr_assert_str_eq(buf, ".123456");
+  wall_clock_time_strftime(&wct, buf, sizeof(buf), ".%9f");
+  cr_assert_str_eq(buf, ".123456");
+
+  wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S.%f %z", "May  7 2021 09:29:12.012345 CEST");
+
+  wall_clock_time_strftime(&wct, buf, sizeof(buf), ".%f");
+  cr_assert_str_eq(buf, ".012345");
+  wall_clock_time_strftime(&wct, buf, sizeof(buf), ".%3f");
+  cr_assert_str_eq(buf, ".012");
+  wall_clock_time_strftime(&wct, buf, sizeof(buf), ".%6f");
+  cr_assert_str_eq(buf, ".012345");
+  wall_clock_time_strftime(&wct, buf, sizeof(buf), ".%9f");
+  cr_assert_str_eq(buf, ".012345");
+}
+
+Test(wallclocktime, test_strftime_can_be_parsed_by_strptime)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  WallClockTime wct2 = WALL_CLOCK_TIME_INIT;
+  gchar buf[128];
+
+  wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S.%f %z", "May  7 2021 09:29:12.123456+02:00");
+  wall_clock_time_strftime(&wct, buf, sizeof(buf), "%b %d %Y %H:%M:%S.%f %z");
+  wall_clock_time_strptime(&wct2, "%b %d %Y %H:%M:%S.%f %z", buf);
+
+  cr_expect(wct.wct_year == wct2.wct_year);
+  cr_expect(wct.wct_mon == wct2.wct_mon);
+  cr_expect(wct.wct_mday == wct2.wct_mday);
+
+  cr_expect(wct.wct_hour == wct2.wct_hour);
+  cr_expect(wct.wct_min == wct2.wct_min);
+  cr_expect(wct.wct_sec == wct2.wct_sec);
+  cr_expect(wct.wct_usec == wct2.wct_usec);
+
+  cr_expect(wct.wct_isdst == wct2.wct_isdst, "%d != %d", wct.wct_isdst, wct2.wct_isdst);
+  cr_expect(wct.wct_gmtoff == wct2.wct_gmtoff);
+}
+
+Test(wallclocktime, test_strftime_all_format_spec)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar buf[256];
+
+  wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S.%f %z", "Aug  7 2021 09:29:12.123456+02:00");
+  wall_clock_time_strftime(&wct, buf, sizeof(buf),
+                           "%a %A %b %B '%c' %C %d '%D' '%e' %f '%F' %g %G %h %H %I %j %m %M %n %p %r %R %s %S %t '%T' %u %U %W %V %w %x %X %y %Y %z %Z");
+  cr_assert_str_eq(buf,
+                   "Sat Saturday Aug August 'Sat Aug  7 09:29:12 2021' 20 07 '08/07/21' ' 7' 123456 '2021-08-07' 21 2021 Aug 09 09 219 08 29 \n"
+                   " AM 09:29:12 AM 09:29 1628324952 12 \t '10:29:12' 6 31 31 31 6 08/07/21 10:29:12 21 2021 +0200 +02:00");
+}
+
 static void
 setup(void)
 {
