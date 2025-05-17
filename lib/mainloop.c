@@ -47,7 +47,7 @@
 #include "stats/stats-control.h"
 #include "healthcheck/healthcheck-control.h"
 #include "signal-handler.h"
-#include "cfg-monitor.h"
+#include "file-monitor.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -167,7 +167,7 @@ struct _MainLoop
 
   MainLoopOptions *options;
   ControlServer *control_server;
-  CfgMonitor *cfg_monitor;
+  FileMonitor *cfg_monitor;
 
   struct
   {
@@ -639,12 +639,14 @@ _unregister_metrics(MainLoop *self)
   stats_unlock();
 }
 
-static void
-_cfg_file_modified(const CfgMonitorEvent *event, gpointer c)
+static gboolean
+_cfg_file_modified(const FileMonitorEvent *event, gpointer c)
 {
   MainLoop *self = (MainLoop *) c;
+  if (event->event == MODIFIED)
+    stats_counter_set(self->metrics.last_cfgfile_mtime, (gsize) event->st.st_mtime);
 
-  stats_counter_set(self->metrics.last_cfgfile_mtime, (gsize) event->st.st_mtime);
+  return TRUE;
 }
 
 void
@@ -715,9 +717,9 @@ main_loop_read_and_init_config(MainLoop *self)
 
   self->control_server = control_init(resolved_configurable_paths.ctlfilename);
 
-  self->cfg_monitor = cfg_monitor_new();
-  cfg_monitor_add_watch(self->cfg_monitor, _cfg_file_modified, self);
-  cfg_monitor_start(self->cfg_monitor);
+  self->cfg_monitor = file_monitor_new(resolved_configurable_paths.cfgfilename);
+  file_monitor_add_watch(self->cfg_monitor, _cfg_file_modified, self);
+  file_monitor_start_and_check(self->cfg_monitor);
 
   main_loop_register_control_commands(self);
   stats_register_control_commands();
@@ -739,8 +741,8 @@ main_loop_deinit(MainLoop *self)
 
   if (self->cfg_monitor)
     {
-      cfg_monitor_stop(self->cfg_monitor);
-      cfg_monitor_free(self->cfg_monitor);
+      file_monitor_stop(self->cfg_monitor);
+      file_monitor_free(self->cfg_monitor);
     }
 
   control_deinit(self->control_server);
