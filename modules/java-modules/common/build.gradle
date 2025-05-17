@@ -9,20 +9,20 @@ else {
 
 dependencies {
   implementation name: 'syslog-ng-core'
-  implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.2'
-  implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.2'
-  testImplementation 'junit:junit:4.12'
-  testImplementation 'org.hamcrest:hamcrest-core:1.3'
+  implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.24.3'
+  implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.24.3'
+  testImplementation 'junit:junit:4.13.2'
+  testImplementation 'org.hamcrest:hamcrest-core:3.0'
 }
 
 configurations.default.setCanBeResolved(true)
 
 ext.jarDestDir = project.hasProperty('jarDestDir') ? project.getProperty('jarDestDir') : '/'
 task copyLog4j(type: Copy) {
-     from findJar('log4j-core')
-     into jarDestDir
-     from findJar('log4j-api')
-     into jarDestDir
+    from findJar('log4j-core')
+    into jarDestDir
+    from findJar('log4j-api')
+    into jarDestDir
 }
 
 def findJar(prefix) {
