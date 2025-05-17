@@ -442,6 +442,22 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->allow_tls_configuration = TRUE;
       self->super.transport_name = g_strdup_printf("bsdsyslog+%s", self->super.transport);
     }
+  else if (strcasecmp(transport, "http") == 0)
+    {
+      self->super.logproto = "http";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->super.transport_name = g_strdup("http");
+      self->allow_tls_configuration = TRUE;
+    }
+  else if (strcasecmp(transport, "http-scraper") == 0)
+    {
+      self->super.logproto = "http-scraper";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->super.transport_name = g_strdup("http-scraper");
+      self->allow_tls_configuration = TRUE;
+    }
   else
     {
       self->super.logproto = self->super.transport;

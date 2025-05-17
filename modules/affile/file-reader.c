@@ -252,7 +252,7 @@ _construct_poll_events(FileReader *self, gint fd)
     {
       LogProtoFileReaderOptions *proto_opts = file_reader_options_get_log_proto_options(self->options);
 
-      if (proto_opts->multi_line_options.mode == MLM_NONE)
+      if (proto_opts->super.multi_line_options.mode == MLM_NONE)
         poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
       else
         poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
@@ -302,9 +302,10 @@ _construct_proto(FileReader *self, gint fd)
 
   if ((format_handler && format_handler->construct_proto))
     {
-      log_proto_server_options_set_ack_tracker_factory(&proto_options->super,
+      log_proto_server_options_set_ack_tracker_factory(&proto_options->storage,
                                                        consecutive_ack_tracker_factory_new());
-      return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super);
+      return format_handler->construct_proto(&reader_options->parse_options, transport,
+                                             &proto_options->storage);
     }
 
   return file_opener_construct_src_proto(self->opener, transport, proto_options);
