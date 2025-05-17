@@ -30,13 +30,12 @@ LogProtoPrepareAction
 log_proto_text_server_poll_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
-  gboolean avail;
 
   LogProtoPrepareAction action = log_proto_buffered_server_poll_prepare(s, cond, timeout);
   if (action != LPPA_POLL_IO)
     return action;
 
-  avail = (self->cached_eol_pos != 0);
+  gboolean avail = (self->cached_eol_pos != 0);
   return avail ? LPPA_FORCE_SCHEDULE_FETCH : LPPA_POLL_IO;
 }
 
