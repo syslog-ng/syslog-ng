@@ -30,7 +30,7 @@
 #include "str-format.h"
 
 static void log_reader_io_handle_in(gpointer s);
-static gboolean log_reader_fetch_log(LogReader *self);
+static gint log_reader_fetch_log(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
 
 /*****************************************************************************
@@ -398,7 +398,7 @@ log_reader_work_finished(void *s, gpointer arg)
       g_mutex_unlock(&self->pending_close_lock);
     }
 
-  if (self->notify_code)
+  if (self->notify_code && self->notify_code != NC_AGAIN)
     {
       gint notify_code = self->notify_code;
 
@@ -424,6 +424,11 @@ log_reader_work_finished(void *s, gpointer arg)
         }
       log_proto_server_reset_error(self->proto);
       log_reader_update_watches(self);
+
+      if (self->notify_code == NC_AGAIN && poll_events_system_notified(self->poll_events))
+        {
+          log_reader_force_check_in_next_poll(self);
+        }
     }
 }
 
@@ -547,41 +552,50 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
 static gint
 log_reader_fetch_log(LogReader *self)
 {
-  gint msg_count = 0;
-  gboolean may_read = TRUE;
   LogTransportAuxData aux_storage, *aux = &aux_storage;
-
   if ((self->options->flags & LR_IGNORE_AUX_DATA))
     aux = NULL;
-
   log_transport_aux_data_init(aux);
+
   if (self->handshake_in_progress)
     {
-      return log_reader_process_handshake(self);
+      gint result = log_reader_process_handshake(self);
+      /* TODO: usage of can_fetch_after_handshake might not needed at all here, just wanted to keep the original flow
+       *       to be surely backward compatible, my bet is that every successfull handshake can be followed by an
+       *       immediate fetch normally */
+      if (FALSE == self->can_fetch_after_handshake || result != 0 || self->handshake_in_progress)
+        {
+          log_transport_aux_data_destroy(aux);
+          return result;
+        }
     }
 
   /* NOTE: this loop is here to decrease the load on the main loop, we try
    * to fetch a couple of messages in a single run (but only up to
    * fetch_limit).
    */
-  while (msg_count < self->options->fetch_limit && !main_loop_worker_job_quit())
+  gint msg_count = 0;
+  gboolean may_read = TRUE;
+  gint result = 0;
+  while (!main_loop_worker_job_quit())
     {
-      Bookmark *bookmark;
-      const guchar *msg;
-      gsize msg_len;
-      LogProtoStatus status;
+      if (msg_count >= self->options->fetch_limit)
+        {
+          result = NC_AGAIN;
+          break;
+        }
 
-      msg = NULL;
+      log_transport_aux_data_reinit(aux);
+      Bookmark *bookmark = ack_tracker_request_bookmark(self->super.ack_tracker);
+      const guchar *msg = NULL;
+      gsize msg_len;
 
       /* NOTE: may_read is used to implement multi-read checking. It
        * is initialized to TRUE to indicate that the protocol is
        * allowed to issue a read(). If multi-read is disallowed in the
        * protocol, it resets may_read to FALSE after the first read was issued.
        */
-
-      log_transport_aux_data_reinit(aux);
-      bookmark = ack_tracker_request_bookmark(self->super.ack_tracker);
-      status = log_proto_server_fetch(self->proto, &msg, &msg_len, &may_read, aux, bookmark);
+      LogProtoStatus status = log_proto_server_fetch(self->proto, &msg, &msg_len, &may_read, aux, bookmark);
       switch (status)
         {
         case LPS_EOF:
@@ -617,7 +631,7 @@ log_reader_fetch_log(LogReader *self)
     }
   log_transport_aux_data_destroy(aux);
 
-  return 0;
+  return result;
 }
 
 static void

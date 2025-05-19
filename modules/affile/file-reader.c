@@ -30,9 +30,7 @@
 #include "transport/transport-pipe.h"
 #include "transport-prockmsg.h"
 #include "logproto/logproto-buffered-server.h"
-#include "poll-fd-events.h"
-#include "poll-file-changes.h"
-#include "poll-multiline-file-changes.h"
+#include "file-monitor-factory.h"
 #include "ack-tracker/ack_tracker_factory.h"
 #include "stats/stats-cluster-key-builder.h"
 
@@ -225,62 +223,142 @@ _reader_check_watches(PollEvents *poll_events, gpointer user_data)
                 evt_tag_int("fn", fd));
       check_again = _reader_on_eof(self);
     }
+  else
+    {
+      if (poll_events_system_notified(poll_events))
+        log_reader_trigger_one_check(self->reader);
+    }
+
   return check_again;
 }
 
-static gboolean
-_is_fd_pollable(gint fd)
+gboolean
+iv_can_poll_fd(gint fd)
 {
   struct iv_fd check_fd;
-  gboolean pollable;
-
   IV_FD_INIT(&check_fd);
   check_fd.fd = fd;
   check_fd.cookie = NULL;
 
-  pollable = (iv_fd_register_try(&check_fd) == 0);
+  gboolean pollable = (iv_fd_register_try(&check_fd) == 0);
   if (pollable)
     iv_fd_unregister(&check_fd);
   return pollable;
 }
 
-static PollEvents *
-_construct_poll_events(FileReader *self, gint fd)
+static gboolean is_poll_options(FileReaderOptions *options)
 {
-  PollEvents *poll_events = NULL;
-  if (self->options->follow_freq > 0)
-    {
-      LogProtoFileReaderOptions *proto_opts = file_reader_options_get_log_proto_options(self->options);
+  return (options->follow_method == FM_LEGACY && options->follow_freq > 0) ||
+         options->follow_method == FM_POLL;
+}
 
-      if (proto_opts->multi_line_options.mode == MLM_NONE)
-        poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
-      else
-        poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
-                                                      self->options->multi_line_timeout, self);
-      msg_debug("File follow-mode is syslog-ng poll");
-    }
-  else if (fd >= 0 && FALSE == self->should_poll_for_events)
-    {
-      poll_events = notified_fd_events_new(fd);
-      msg_debug("File follow-mode is inotify from directory-monitor");
-    }
-  else if (fd >= 0 && _is_fd_pollable(fd))
-    {
-      poll_events = poll_fd_events_new(fd);
-      msg_debug("File follow-mode is ivykis poll", evt_tag_str("poll_method", iv_poll_method_name()));
-    }
-  else
-    {
-      msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it "
-                "with the current ivykis polling method. Set follow-freq() for regular files or change "
-                "IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
-                evt_tag_str("file_poll_method", iv_poll_method_name()),
-                evt_tag_str("filename", self->filename->str),
-                evt_tag_int("fd", fd));
-      return NULL;
-    }
+static gboolean is_inotify_options(FileReaderOptions *options, gboolean monitor_can_notify_file_changes)
+{
+#if SYSLOG_NG_HAVE_INOTIFY
+  return (options->follow_method == FM_LEGACY && monitor_can_notify_file_changes &&
+          (getenv("IV_SELECT_POLL_METHOD") == NULL || getenv("IV_SELECT_POLL_METHOD")[0] == 0) &&
+          (getenv("IV_EXCLUDE_POLL_METHOD") == NULL || getenv("IV_EXCLUDE_POLL_METHOD")[0] == 0)
+         ) ||
+         options->follow_method == FM_INOTIFY;
+#else
+  return FALSE;
+#endif
+}
 
-  if (_can_check_eof(self, fd))
+static gboolean is_system_poll_options(FileReaderOptions *options, gboolean can_poll_fd)
+{
+  return (options->follow_method == FM_LEGACY && can_poll_fd) ||
+         (options->follow_method == FM_SYSTEM_POLL && can_poll_fd);
+}
+
+static FollowMethod
+_get_effective_file_follow_mode(FileReader *self, gint fd)
+{
+  FollowMethod file_follow_mode = FM_UNKNOWN;
+
+  if (is_poll_options(self->options))
+    {
+      file_follow_mode = FM_POLL;
+      msg_debug("File follow-mode is syslog-ng poll", evt_tag_int("follow_freq", self->options->follow_freq));
+    }
+  else if (fd >= 0)
+    {
+      if (is_inotify_options(self->options, self->monitor_can_notify_file_changes))
+        {
+          file_follow_mode = FM_INOTIFY;
+          msg_debug("File follow-mode is inotify from directory-monitor");
+        }
+      else if (is_system_poll_options(self->options, iv_can_poll_fd(fd)))
+        {
+          file_follow_mode = FM_SYSTEM_POLL;
+          msg_debug("File follow-mode is system (ivykis) poll", evt_tag_str("poll_method", iv_poll_method_name()));
+        }
+    }
+  return file_follow_mode;
+}
+
+static gboolean
+_validate_file_follow_mode(FileReader *self, FollowMethod file_follow_mode, gint fd)
+{
+  gboolean valid = TRUE;
+
+  switch (file_follow_mode)
+    {
+    case FM_POLL:
+      if (self->options->follow_freq <= 0)
+        {
+          msg_error("Follow-mode file follow-freq() must be greater than 0 for follow-method(poll)",
+                    evt_tag_str("filename", self->filename->str),
+                    evt_tag_int("follow_freq", self->options->follow_freq));
+          valid = FALSE;
+        }
+      break;
+
+#if SYSLOG_NG_HAVE_INOTIFY
+    case FM_INOTIFY:
+      if (self->options->follow_method == FM_INOTIFY && FALSE == self->monitor_can_notify_file_changes)
+        {
+          msg_error("The value of monitor-method() must be set to `inotify` to use follow-method(inotify)",
+                    evt_tag_str("filename", self->filename->str));
+          valid = FALSE;
+        }
+      /* Falling down!!! */
+#endif
+
+    case FM_SYSTEM_POLL:
+      if (self->options->follow_freq > 0)
+        msg_warning("File follow-method() is not `poll`, but the value of follow-freq() is not 0, ignoring follow-freq()",
+                    evt_tag_str("filename", self->filename->str),
+                    evt_tag_int("follow_freq", self->options->follow_freq));
+      break;
+
+    case FM_UNKNOWN:
+      if (fd >= 0)
+        {
+          msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it "
+                    "with the current ivykis polling method. Set follow-freq() for regular files or change the "
+                    "IV_SELECT_POLL_METHOD or IV_EXCLUDE_POLL_METHOD environment variable to override the automatically "
+                    "selected system (ivykis) polling method",
+                    evt_tag_str("filename", self->filename->str),
+                    evt_tag_str("poll_method", iv_poll_method_name()));
+          valid = FALSE;
+        }
+      break;
+
+    default:
+      valid = FALSE;
+      g_assert_not_reached();
+      break;
+    }
+  return valid;
+}
+
+static PollEvents *
+_construct_file_monitor(FileReader *self, FollowMethod file_follow_mode, gint fd)
+{
+  PollEvents *poll_events = create_file_monitor_events(self, file_follow_mode, fd);
+
+  if (poll_events && _can_check_eof(self, fd))
     poll_events_set_checker(poll_events, _reader_check_watches, self);
 
   return poll_events;
@@ -324,6 +402,7 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto)
   FileReader *self = (FileReader *) s;
 
   self->reader = log_reader_new(log_pipe_get_config(s));
+  self->reader->can_fetch_after_handshake = TRUE;
   log_pipe_set_options(&self->reader->super.super, &self->super.options);
   log_reader_open(self->reader, proto, poll_events);
 
@@ -347,36 +426,34 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
 {
   FileReader *self = (FileReader *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  gint fd;
-  gboolean open_deferred = FALSE;
 
+  gint fd = -1;
   FileOpenerResult res = file_opener_open_fd(self->opener, self->filename->str, AFFILE_DIR_READ, &fd);
-  gboolean file_opened =  res == FILE_OPENER_RESULT_SUCCESS;
+  gboolean file_opened = (res == FILE_OPENER_RESULT_SUCCESS);
+  g_assert(file_opened || fd == -1);
 
-  if (!file_opened && self->options->follow_freq > 0)
+  FollowMethod file_follow_mode = _get_effective_file_follow_mode(self, fd);
+  if (!_validate_file_follow_mode(self, file_follow_mode, fd))
     {
-      msg_info("Follow-mode file source not found, deferring open",
-               evt_tag_str("filename", self->filename->str));
-      open_deferred = TRUE;
-      fd = -1;
+      close(fd);
+      return FALSE;
     }
+
+  gboolean open_deferred = (!file_opened && file_follow_mode == FM_POLL);
+  if (open_deferred)
+    msg_info("Follow-mode file source not found, deferring open", evt_tag_str("filename", self->filename->str));
 
   if (file_opened || open_deferred)
     {
-      LogProtoServer *proto;
-      PollEvents *poll_events;
+      PollEvents *poll_events = _construct_file_monitor(self, file_follow_mode, fd);
+      g_assert(poll_events);
 
-      poll_events = _construct_poll_events(self, fd);
-      if (!poll_events)
-        {
-          close(fd);
-          return FALSE;
-        }
-      proto = _construct_proto(self, fd);
-
+      LogProtoServer *proto = _construct_proto(self, fd);
       _setup_logreader(s, poll_events, proto);
+
       if (recover_state)
         _recover_state(s, cfg, proto);
+
       if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
@@ -395,7 +472,6 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
       return self->owner->super.optional;
     }
   return TRUE;
-
 }
 
 static void
@@ -431,8 +507,14 @@ _on_file_deleted(FileReader *self)
    * NOTE: Do not try to close the reader directly from here, as there might already be
    *       an io-operation in progress!
    */
-  if (poll_events_system_polled(self->reader->poll_events))
+  if (poll_events_system_polled(self->reader->poll_events) || poll_events_system_notified(self->reader->poll_events))
     log_reader_trigger_one_check(self->reader);
+}
+
+static inline void
+_on_file_modified(FileReader *self)
+{
+  log_reader_trigger_one_check(self->reader);
 }
 
 static void
@@ -468,7 +550,7 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
 
     case NC_FILE_MODIFIED:
       /* This is a notification from the directory monitor, we can read the file for changes */
-      log_reader_trigger_one_check(self->reader);
+      _on_file_modified(self);
       break;
 
     default:
@@ -541,10 +623,10 @@ file_reader_cue_buffer_flush(FileReader *self)
 }
 
 void
-file_reader_init_instance (FileReader *self, const gchar *filename,
-                           FileReaderOptions *options, FileOpener *opener,
-                           LogSrcDriver *owner, GlobalConfig *cfg,
-                           const gchar *persist_name_prefix)
+file_reader_init_instance(FileReader *self, const gchar *filename,
+                          FileReaderOptions *options, FileOpener *opener,
+                          LogSrcDriver *owner, GlobalConfig *cfg,
+                          const gchar *persist_name_prefix)
 {
   log_pipe_init_instance (&self->super, cfg);
   self->super.init = file_reader_init_method;
@@ -557,7 +639,7 @@ file_reader_init_instance (FileReader *self, const gchar *filename,
   self->filename = g_string_new (filename);
   self->options = options;
   self->opener = opener;
-  self->should_poll_for_events = TRUE;
+  self->monitor_can_notify_file_changes = FALSE;
   self->owner = owner;
   self->super.expr_node = owner->super.super.expr_node;
 }
@@ -568,7 +650,7 @@ file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *o
 {
   FileReader *self = g_new0(FileReader, 1);
 
-  file_reader_init_instance (self, filename, options, opener, owner, cfg, "affile_sd");
+  file_reader_init_instance(self, filename, options, opener, owner, cfg, "affile_sd");
   return self;
 }
 
@@ -576,6 +658,21 @@ void
 file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq)
 {
   options->follow_freq = follow_freq;
+}
+
+gboolean
+file_reader_options_set_follow_method(FileReaderOptions *options, const gchar *follow_method)
+{
+  FollowMethod new_method = file_monitor_factory_follow_method_from_string(follow_method);
+
+  if (new_method == FM_UNKNOWN)
+    {
+      msg_error("file-reader(): Invalid value for follow-method()",
+                evt_tag_str("follow-method", follow_method));
+      return FALSE;
+    }
+  options->follow_method = new_method;
+  return TRUE;
 }
 
 void
@@ -591,6 +688,7 @@ file_reader_options_defaults(FileReaderOptions *options)
   log_proto_file_reader_options_defaults(file_reader_options_get_log_proto_options(options));
   options->reader_options.parse_options.flags |= LP_LOCAL;
   options->restore_state = FALSE;
+  options->follow_method = FM_LEGACY;
 }
 
 static gboolean
