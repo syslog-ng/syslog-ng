@@ -272,7 +272,7 @@ static gboolean is_system_poll_options(FileReaderOptions *options, gboolean can_
 }
 
 static FollowMethod
-_get_file_follow_mode(FileReader *self, gint fd)
+_get_effective_file_follow_mode(FileReader *self, gint fd)
 {
   FollowMethod file_follow_mode = FM_UNKNOWN;
 
@@ -432,7 +432,7 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   gboolean file_opened = (res == FILE_OPENER_RESULT_SUCCESS);
   g_assert(file_opened || fd == -1);
 
-  FollowMethod file_follow_mode = _get_file_follow_mode(self, fd);
+  FollowMethod file_follow_mode = _get_effective_file_follow_mode(self, fd);
   if (!_validate_file_follow_mode(self, file_follow_mode, fd))
     {
       close(fd);
