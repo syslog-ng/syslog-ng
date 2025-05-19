@@ -427,7 +427,7 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   FileReader *self = (FileReader *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  gint fd;
+  gint fd = -1;
   FileOpenerResult res = file_opener_open_fd(self->opener, self->filename->str, AFFILE_DIR_READ, &fd);
   gboolean file_opened = (res == FILE_OPENER_RESULT_SUCCESS);
   g_assert(file_opened || fd == -1);
