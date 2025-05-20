@@ -252,7 +252,8 @@ modules/ebpf/.*
 modules/python-modules/syslogng/modules/hypr/.*
 modules/python-modules/syslogng/modules/example/.*
 modules/python-modules/syslogng/modules/s3/.*
-modules/python-modules/syslogng/modules/webhook/.*
+modules/python-modules/syslogng/modules/webhook/scl/*
+modules/python-modules/syslogng/modules/webhook/__init__.py
 modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
 modules/syslogformat/sdata-parser\.[ch]
@@ -323,6 +324,7 @@ modules/http/http\.[ch]
 modules/http/http-parser.c
 modules/http/http-grammar.ym
 modules/correlation/group-lines.c
+modules/python-modules/syslogng/modules/webhook/source.py
 docker/Dockerfile
 docker/entrypoint.sh
 Doxyfile
