@@ -87,7 +87,7 @@ afsocket_grammar_set_dest_driver(AFSocketDestDriver *dd)
   last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
   last_sock_options = ((AFSocketDestDriver *) last_driver)->socket_options;
   last_transport_mapper = ((AFSocketDestDriver *) last_driver)->transport_mapper;
-  last_proto_client_options = &last_writer_options->proto_options.super;
+  last_proto_client_options = &last_writer_options->proto_options;
 }
 
 void

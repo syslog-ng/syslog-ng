@@ -193,12 +193,13 @@ log_proto_text_client_free(LogProtoClient *s)
 };
 
 void
-log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport, const LogProtoClientOptions *options)
+log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport,
+                           const LogProtoClientOptionsStorage *options)
 {
   log_proto_client_init(&self->super, transport, options);
   self->super.poll_prepare = log_proto_text_client_poll_prepare;
   self->super.flush = log_proto_text_client_flush;
-  if (options->drop_input)
+  if (options->super.drop_input)
     self->super.process_in = log_proto_text_client_drop_input;
   self->super.post = log_proto_text_client_post;
   self->super.free_fn = log_proto_text_client_free;
@@ -206,7 +207,7 @@ log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport, co
 }
 
 LogProtoClient *
-log_proto_text_client_new(LogTransport *transport, const LogProtoClientOptions *options)
+log_proto_text_client_new(LogTransport *transport, const LogProtoClientOptionsStorage *options)
 {
   LogProtoTextClient *self = g_new0(LogProtoTextClient, 1);
 

@@ -72,7 +72,7 @@
 extern LogSourceOptions *last_source_options;
 extern LogReaderOptions *last_reader_options;
 extern LogProtoServerOptionsStorage *last_proto_server_options;
-extern LogProtoClientOptions *last_proto_client_options;
+extern LogProtoClientOptionsStorage *last_proto_client_options;
 extern LogWriterOptions *last_writer_options;
 extern FilePermOptions *last_file_perm_options;
 extern MsgFormatOptions *last_msg_format_options;

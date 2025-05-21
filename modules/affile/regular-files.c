@@ -85,7 +85,7 @@ typedef struct _FileOpenerRegularDestFiles
 } FileOpenerRegularDestFiles;
 
 static LogProtoClient *
-_construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptions *proto_options)
+_construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptionsStorage *proto_options)
 {
   FileOpenerRegularDestFiles *self = (FileOpenerRegularDestFiles *) s;
 
