@@ -1,5 +1,6 @@
 #############################################################################
 # Copyright (c) 2024 László Várady
+# Copyright (c) 2025 One Identity LLC.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -133,7 +134,11 @@ class HTTPSource(LogSource):
 
         self.suspended = threading.Event()
         self.event_loop = asyncio.new_event_loop()
-        self.request_exit = asyncio.Event()
+        self.request_exit = None
+
+        async def init_request_exit():
+            self.request_exit = asyncio.Event()
+        self.event_loop.run_until_complete(init_request_exit())
 
         handlers = list(map(lambda p: (p, Handler, {"source": self}), self.paths))
         if len(handlers) == 0:
