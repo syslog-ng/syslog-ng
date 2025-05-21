@@ -35,8 +35,9 @@ import os
 import sys
 import codecs
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-COMMON_GRAMMAR_FILE = 'lib/cfg-grammar.y'
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(FILE_DIR)
+COMMON_GRAMMAR_FILE = 'cfg-grammar.y'
 BLOCKS = {}
 
 
@@ -91,7 +92,7 @@ def print_preprocessed_grammar():
 
 
 def main():
-    collect_block_definitions(COMMON_GRAMMAR_FILE)
+    collect_block_definitions(os.path.join(FILE_DIR, COMMON_GRAMMAR_FILE))
     print_preprocessed_grammar()
 
 
