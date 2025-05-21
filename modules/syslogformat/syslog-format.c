@@ -135,10 +135,16 @@ _syslog_format_parse_pri(LogMessage *msg, const guchar **data, gint *length, gui
         {
           if (isdigit(*src))
             {
-              if (__builtin_mul_overflow(pri, 10, &pri))
+              // __builtin_mul_overflow is a gcc 5.0+ feature, check for multiplication overflow
+              if (pri > (INT_MAX / 10))
                 return FALSE;
-              if (__builtin_add_overflow(pri, ((*src) - '0'), &pri))
+              pri *= 10;
+
+              int digit = *src - '0';
+              // __builtin_add_overflow is a gcc 5.0+ feature, check for addition overflow
+              if (pri > (INT_MAX - digit))
                 return FALSE;
+              pri += digit;
             }
           else
             {
