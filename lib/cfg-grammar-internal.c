@@ -31,7 +31,7 @@ LogParser *last_parser;
 FilterExprNode *last_filter_expr;
 LogSourceOptions *last_source_options;
 LogProtoServerOptionsStorage *last_proto_server_options;
-LogProtoClientOptions *last_proto_client_options;
+LogProtoClientOptionsStorage *last_proto_client_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;
 MsgFormatOptions *last_msg_format_options;

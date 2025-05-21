@@ -1719,7 +1719,7 @@ log_writer_set_proto(LogWriter *self, LogProtoClient *proto)
       flow_control_funcs.user_data = self;
 
       log_proto_client_set_client_flow_control(self->proto, &flow_control_funcs);
-      log_proto_client_set_options(self->proto, &self->options->proto_options.super);
+      log_proto_client_set_options(self->proto, &self->options->proto_options);
     }
 }
 
@@ -1996,7 +1996,7 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
 
   log_template_options_init(&options->template_options, cfg);
   host_resolve_options_init(&options->host_resolve_options, &cfg->host_resolve_options);
-  log_proto_client_options_init(&options->proto_options.super, cfg);
+  log_proto_client_options_init(&options->proto_options, cfg);
   options->options |= option_flags;
 
   if (options->flush_lines == -1)
@@ -2029,7 +2029,7 @@ log_writer_options_destroy(LogWriterOptions *options)
 {
   log_template_options_destroy(&options->template_options);
   host_resolve_options_destroy(&options->host_resolve_options);
-  log_proto_client_options_destroy(&options->proto_options.super);
+  log_proto_client_options_destroy(&options->proto_options);
   log_template_unref(options->template);
   log_template_unref(options->file_template);
   log_template_unref(options->proto_template);

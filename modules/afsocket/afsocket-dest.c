@@ -280,7 +280,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
              evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
              evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)));
 
-  proto = log_proto_client_factory_construct(self->proto_factory, NULL, &self->writer_options.proto_options.super);
+  proto = log_proto_client_factory_construct(self->proto_factory, NULL, &self->writer_options.proto_options);
 
   if (!transport_mapper_setup_stack(self->transport_mapper, &proto->transport_stack, self->fd))
     {

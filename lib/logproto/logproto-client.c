@@ -50,7 +50,7 @@ log_proto_client_free(LogProtoClient *s)
 }
 
 void
-log_proto_client_init(LogProtoClient *self, LogTransport *transport, const LogProtoClientOptions *options)
+log_proto_client_init(LogProtoClient *self, LogTransport *transport, const LogProtoClientOptionsStorage *options)
 {
   self->validate_options = log_proto_client_validate_options_method;
   self->free_fn = log_proto_client_free_method;
@@ -59,37 +59,37 @@ log_proto_client_init(LogProtoClient *self, LogTransport *transport, const LogPr
 }
 
 void
-log_proto_client_options_set_drop_input(LogProtoClientOptions *options, gboolean drop_input)
+log_proto_client_options_set_drop_input(LogProtoClientOptionsStorage *options, gboolean drop_input)
 {
-  options->drop_input = drop_input;
+  options->super.drop_input = drop_input;
 }
 
 void
-log_proto_client_options_set_timeout(LogProtoClientOptions *options, gint timeout)
+log_proto_client_options_set_timeout(LogProtoClientOptionsStorage *options, gint timeout)
 {
-  options->idle_timeout = timeout;
+  options->super.idle_timeout = timeout;
 }
 
 gint
-log_proto_client_options_get_timeout(LogProtoClientOptions *options)
+log_proto_client_options_get_timeout(LogProtoClientOptionsStorage *options)
 {
-  return options->idle_timeout;
+  return options->super.idle_timeout;
 }
 
 void
-log_proto_client_options_defaults(LogProtoClientOptions *options)
+log_proto_client_options_defaults(LogProtoClientOptionsStorage *options)
 {
-  options->drop_input = FALSE;
-  options->idle_timeout = 0;
+  options->super.drop_input = FALSE;
+  options->super.idle_timeout = 0;
 }
 
 void
-log_proto_client_options_init(LogProtoClientOptions *options, GlobalConfig *cfg)
+log_proto_client_options_init(LogProtoClientOptionsStorage *options, GlobalConfig *cfg)
 {
 }
 
 void
-log_proto_client_options_destroy(LogProtoClientOptions *options)
+log_proto_client_options_destroy(LogProtoClientOptionsStorage *options)
 {
 }
 
