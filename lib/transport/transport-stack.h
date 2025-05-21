@@ -37,6 +37,7 @@ typedef enum
   LOG_TRANSPORT_TLS,
   LOG_TRANSPORT_HAPROXY,
   LOG_TRANSPORT_GZIP,
+  LOG_TRANSPORT_ZLIB,
   LOG_TRANSPORT_NONE,
   LOG_TRANSPORT__MAX = LOG_TRANSPORT_NONE,
 } LogTransportIndex;
@@ -107,13 +108,29 @@ struct _LogTransportStack
   LogTransportAuxData aux_data;
 };
 
-static inline LogTransport *
-log_transport_stack_get_or_create_transport(LogTransportStack *self, gint index)
+static inline LogTransportFactory *
+log_transport_stack_get_transport_factory(LogTransportStack *self, gint index)
 {
   g_assert(index < LOG_TRANSPORT__MAX);
 
-  if (self->transports[index])
-    return self->transports[index];
+  return self->transport_factories[index];
+}
+
+static inline LogTransport *
+log_transport_stack_get_transport(LogTransportStack *self, gint index)
+{
+  g_assert(index < LOG_TRANSPORT__MAX);
+
+  return self->transports[index];
+}
+
+static inline LogTransport *
+log_transport_stack_get_or_create_transport(LogTransportStack *self, gint index)
+{
+  LogTransport *transport = log_transport_stack_get_transport(self, index);
+
+  if (transport)
+    return transport;
 
   if (self->transport_factories[index])
     {
@@ -129,14 +146,6 @@ log_transport_stack_get_active(LogTransportStack *self)
 {
   // TODO - Change it to log_transport_stack_get_transport after checking call sites
   return log_transport_stack_get_or_create_transport(self, self->active_transport);
-}
-
-static inline LogTransport *
-log_transport_stack_get_transport(LogTransportStack *self, gint index)
-{
-  g_assert(index < LOG_TRANSPORT__MAX);
-
-  return self->transports[index];
 }
 
 static inline gboolean
