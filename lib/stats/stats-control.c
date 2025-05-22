@@ -89,7 +89,12 @@ control_connection_send_stats(ControlConnection *cc, GString *command, gpointer 
       stats_generate_prometheus(_send_batched_response, args, with_legacy, cancelled);
     }
   else
-    stats_generate_csv(_send_batched_response, args, cancelled);
+    {
+      gboolean csv = (cmds[1] == NULL || g_strcmp0(cmds[1], "CSV") == 0);
+      g_assert(csv || g_strcmp0(cmds[1], "KV") == 0);
+      gboolean without_header = g_strcmp0(cmds[2], "WITHOUT_HEADER") == 0;
+      stats_generate_csv_or_kv(_send_batched_response, args, csv, FALSE == without_header, cancelled);
+    }
 
   if (response != NULL)
     control_connection_send_batched_reply(cc, response);
