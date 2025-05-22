@@ -146,12 +146,13 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_SYSTEMD_SYSLOG
 
 %token KW_HTTP_SCRAPER
-%token KW_SCRAPER
+%token KW_SCRAPE_TYPE
 %token KW_SCRAPE_FREQ_LIMIT
 %token KW_SINGLE_INSTANCE
 %token KW_PROMETHEUS
 %token KW_STAT_TYPE
 %token KW_STAT_QUERY
+%token KW_STAT_FORMAT
 
 %token KW_IP_TTL
 %token KW_SO_BROADCAST
@@ -486,38 +487,37 @@ source_afnetwork_option
 	| source_afsocket_stream_params		{}
 	;
 
-proto_http_scraper_prometheus_option
+stats_option
 	: KW_STAT_TYPE '(' string ')' { CHECK_ERROR(log_proto_http_scraper_responder_options_set_stat_type(last_proto_server_options, $3), @3, "Invalid prometheus scraper stat type: %s", $3); free($3); }
 	| KW_STAT_QUERY '(' string ')' { log_proto_http_scraper_responder_options_set_stat_query(last_proto_server_options, $3); free($3); }
+	| KW_STAT_FORMAT '(' string ')' { CHECK_ERROR(log_proto_http_scraper_responder_options_set_stat_format(last_proto_server_options, $3), @3, "Invalid prometheus scraper stat format: %s", $3); free($3); }
 	;
 
-proto_http_scraper_prometheus_options
-	: proto_http_scraper_prometheus_option proto_http_scraper_prometheus_options
+stats_options
+	: stats_option stats_options
 	|
 	;
 
 proto_http_scraper_option
-  : KW_SCRAPER '('
-			KW_PROMETHEUS { log_proto_http_scraper_responder_options_set_scraper_type(last_proto_server_options, "prometheus"); }
-			'(' proto_http_scraper_prometheus_options ')'
-		')'
-	|	KW_SCRAPE_FREQ_LIMIT '(' nonnegative_integer ')' { log_proto_http_scraper_responder_options_set_scrape_freq_limit(last_proto_server_options, $3); }
+  : KW_SCRAPE_TYPE '(' string ')' { CHECK_ERROR(log_proto_http_scraper_responder_options_set_scrape_type(last_proto_server_options, $3), @3, "Invalid prometheus scrape type: %s", $3); free($3); }
+	| KW_SCRAPE_FREQ_LIMIT '(' nonnegative_integer ')' { log_proto_http_scraper_responder_options_set_scrape_freq_limit(last_proto_server_options, $3); }
 	| KW_SINGLE_INSTANCE '(' yesno ')' { log_proto_http_scraper_responder_options_set_single_instance(last_proto_server_options, $3); }
   ;
 
 proto_http_scraper_options
 	: proto_http_scraper_option proto_http_scraper_options
-	|
+	| stats_options
 	;
 
 proto_http_scraper_transport
 	: KW_TRANSPORT '('
-      KW_HTTP_SCRAPER
-      {
-        transport_mapper_set_transport(last_transport_mapper, "http-scraper");
-        log_proto_http_scraper_responder_options_defaults(last_proto_server_options);
-      }
-      proto_http_scraper_options
+      KW_HTTP_SCRAPER '('
+				{
+					transport_mapper_set_transport(last_transport_mapper, "http-scraper");
+					log_proto_http_scraper_responder_options_defaults(last_proto_server_options);
+				}
+				proto_http_scraper_options
+			')'
     ')'
 	;
 
