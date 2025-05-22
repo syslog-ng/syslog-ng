@@ -42,7 +42,7 @@ typedef enum
   LPPA_SUSPEND
 } LogProtoPrepareAction;
 
-#define LOG_PROTO_SERVER_OPTIONS_SIZE 128
+#define LOG_PROTO_SERVER_OPTIONS_SIZE 160
 
 struct _LogProtoServerOptions
 {

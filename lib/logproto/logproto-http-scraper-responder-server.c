@@ -65,6 +65,7 @@ _compose_prometheus_response_body(LogProtoHTTPServer *s)
 
   GString *stats = NULL;
   gboolean cancelled = FALSE;
+  char *stat_format = self->options->stat_format && self->options->stat_format[0] ? self->options->stat_format : "prometheus";
 
   if (self->options->stat_type == STT_STATS)
     {
@@ -72,13 +73,13 @@ _compose_prometheus_response_body(LogProtoHTTPServer *s)
       gpointer args[] = {self, &stats};
       gboolean with_legacy = TRUE;
 
-      msg_trace("Generating stats", evt_tag_str("stat-format", self->options->stat_format),
+      msg_trace("Generating stats", evt_tag_str("stat-format", stat_format),
                 evt_tag_int("with-legacy", with_legacy));
-      if (strcmp(self->options->stat_format, "prometheus") == 0)
+      if (strcmp(stat_format, "prometheus") == 0)
         stats_generate_prometheus(_generate_batched_response, args, with_legacy, &cancelled);
       else
         {
-          gboolean csv = (strcmp(self->options->stat_format, "csv") == 0);
+          gboolean csv = (strcmp(stat_format, "csv") == 0);
           stats_generate_csv_or_kv(_generate_batched_response, args, csv, FALSE, &cancelled);
         }
     }
@@ -86,9 +87,9 @@ _compose_prometheus_response_body(LogProtoHTTPServer *s)
     {
       char *query_str = self->options->stat_query && self->options->stat_query[0] ? self->options->stat_query : "*";
       GString *full_query_str = g_string_new(NULL);
-      g_string_append_printf(full_query_str, "QUERY GET %s %s", self->options->stat_format, query_str);
+      g_string_append_printf(full_query_str, "QUERY GET %s %s", stat_format, query_str);
 
-      msg_trace("Running stats query", evt_tag_str("stat-format", self->options->stat_format),
+      msg_trace("Running stats query", evt_tag_str("stat-format", stat_format),
                 evt_tag_str("stat-query", query_str));
       stats = stats_execute_query_command(full_query_str->str, self, &cancelled);
       g_string_free(full_query_str, TRUE);
