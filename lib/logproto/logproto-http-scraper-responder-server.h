@@ -30,16 +30,17 @@
 #define STT_STATS  0x01
 #define STT_QUERY 0x02
 
-/* Stat type flags */
+/* Scraper type flags */
 #define SCT_PROMETHEUS  0x01
+#define SCT_PATTERN_DRIVEN  0x02
 
 /* options */
 typedef struct _LogProtoHTTPScraperResponderOptions
 {
   LogProtoHTTPServerOptions super; // This must be the first !!!
   guint8 scraper_type;
+  gchar *scraper_request_hdr_pattern;
   gint scrape_freq_limit;
-  // Once we have more scrapers to handle these should go into a separate class
   guint8 stat_type;
   gchar *stat_query;
   gchar *stat_format;
@@ -70,6 +71,9 @@ gboolean log_proto_http_scraper_responder_options_validate(LogProtoServerOptions
 
 gboolean log_proto_http_scraper_responder_options_set_scrape_type(
   LogProtoServerOptionsStorage *options,
+  const gchar *value);
+void log_proto_http_scraper_responder_options_set_scrape_pattern(
+  LogProtoServerOptionsStorage *options_storage,
   const gchar *value);
 void log_proto_http_scraper_responder_options_set_scrape_freq_limit(
   LogProtoServerOptionsStorage *options,

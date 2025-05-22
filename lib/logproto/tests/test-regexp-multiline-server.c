@@ -244,22 +244,19 @@ ParameterizedTestParameters(log_proto, test_first_line_without_prefix)
 
 ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto, test_first_line_without_prefix)
 {
-  LogProtoServer *proto;
-
-  proto = log_proto_prefix_garbage_multiline_server_new(
-            /* 32 bytes max line length, which means that the complete
-             * multi-line block plus one additional line must fit into 32
-             * bytes. */
-            (*log_transport_mock_new)(
-              "First Line\n"
-              "Foo Second Line\n"
-              "Foo Third Line\n"
-              "Foo Multiline\n"
-              "multi\n"
-              "Foo final\n", -1,
-              LTM_PADDING,
-              LTM_EOF),
-            "^Foo", NULL);
+  /* 32 bytes max line length, which means that the complete
+   * multi-line block plus one additional line must fit into 32
+   * bytes. */
+  LogTransport *transport_mock = (*log_transport_mock_new)(
+                                   "First Line\n"
+                                   "Foo Second Line\n"
+                                   "Foo Third Line\n"
+                                   "Foo Multiline\n"
+                                   "multi\n"
+                                   "Foo final\n", -1,
+                                   LTM_PADDING,
+                                   LTM_EOF);
+  LogProtoServer *proto = log_proto_prefix_garbage_multiline_server_new(transport_mock, "^Foo", NULL);
 
   assert_proto_server_fetch(proto, "First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);

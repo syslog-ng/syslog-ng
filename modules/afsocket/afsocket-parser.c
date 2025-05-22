@@ -42,6 +42,7 @@ static CfgLexerKeyword afsocket_keywords[] =
 
   { "http_scraper",       KW_HTTP_SCRAPER },
   { "scrape_type",        KW_SCRAPE_TYPE},
+  { "scrape_pattern",     KW_SCRAPE_PATTERN},
   { "scrape_freq_limit",  KW_SCRAPE_FREQ_LIMIT},
   { "single_instance",    KW_SINGLE_INSTANCE},
   { "prometheus",         KW_PROMETHEUS},

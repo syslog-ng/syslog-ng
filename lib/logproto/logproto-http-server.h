@@ -27,6 +27,10 @@
 #include "logproto/logproto-server.h"
 #include "logproto/logproto-text-server.h"
 
+static const gchar http_too_many_request_msg[] = "HTTP/1.1 429 Too Many Requests";
+static const gchar http_bad_request_msg[] = "HTTP/1.1 400 Bad Request";
+static const gchar http_ok_msg[] = "HTTP/1.1 200 OK";
+
 typedef struct _LogProtoHTTPServerOptions
 {
   LogProtoServerOptions super; // This must be the first !!!
@@ -49,7 +53,7 @@ struct _LogProtoHTTPServer
 
   GString *(*request_processor)(LogProtoHTTPServer *s, LogProtoBufferedServerState *state,
                                 const guchar *buffer_start, gsize buffer_bytes);
-  gboolean (*request_header_checker)(LogProtoHTTPServer *self, gchar *buffer_start, gsize buffer_bytes);
+  gint (*request_header_checker)(LogProtoHTTPServer *self, gchar *buffer_start, gsize buffer_bytes);
   GString *(*response_header_composer)(LogProtoHTTPServer *self, const gchar *data, gsize data_len,
                                        gboolean close_after_sent);
   GString *(*response_body_composer)(LogProtoHTTPServer *self);

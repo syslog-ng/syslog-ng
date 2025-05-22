@@ -35,6 +35,18 @@
 
 #include <iv.h>
 
+#define MOCKED_REQUEST_H1 "GET /metrics HTTP/1.1"
+#define MOCKED_REQUEST_H2 "Host: 192.168.1.111:8080"
+#define MOCKED_NOT_MATCHING_REQUEST_H1 "not matching header"
+
+// This should store the HTTP response header + the mocked stats_generate_prometheus/stats_execute_query_command results that cannot be more than 256 now
+static gchar write_buff[256];
+
+static const gchar *mocked_stats_prometheus_response = "syslogng_source_processed{id=\"s_prometheus_stat\"} 3";
+static const gchar *mocked_query_prometheus_response = "syslogng_source_processed{id=\"s_prometheus_stat\"} 4";
+static const gchar mocked_request[] = MOCKED_REQUEST_H1 "\n" MOCKED_REQUEST_H2 "\n" "\n";
+static const gchar mocked_not_matching_request[] = MOCKED_NOT_MATCHING_REQUEST_H1 "\n" MOCKED_REQUEST_H2 "\n" "\n";
+
 static LogProtoHTTPScraperResponderOptionsStorage *
 get_inited_proto_http_scraper_server_options(void)
 {
@@ -58,7 +70,9 @@ proto_http_scraper_server_free(LogProtoServer *proto, LogProtoHTTPScraperRespond
   log_proto_server_free(proto);
 }
 
-
+//
+// test_http_scraper_multiline
+//
 static void
 test_empty_crnl_multiline_at_eof_dont_keep_trailing_nl(LogTransportMockConstructor log_transport_mock_new)
 {
@@ -67,13 +81,13 @@ test_empty_crnl_multiline_at_eof_dont_keep_trailing_nl(LogTransportMockConstruct
   multi_line_options_set_keep_trailing_newline(&options->super.super.super.multi_line_options, FALSE);
   LogProtoServer *proto = log_proto_http_scraper_responder_server_new(
                             log_transport_mock_new(
-                              "GET /metrics HTTP/1.1\r\n", -1,
-                              "Host: 192.168.1.111:8080\r\n", -1,
+                              MOCKED_REQUEST_H1 "\r\n", -1,
+                              MOCKED_REQUEST_H2 "\r\n", -1,
                               "\r\n", -1,
                               LTM_EOF),
                             (const LogProtoServerOptionsStorage *)options);
 
-  assert_proto_server_fetch(proto, "GET /metrics HTTP/1.1\r\nHost: 192.168.1.111:8080", -1);
+  assert_proto_server_fetch(proto, MOCKED_REQUEST_H1 "\r\n" MOCKED_REQUEST_H2, -1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
 
   proto_http_scraper_server_free(proto, options);
@@ -87,13 +101,13 @@ test_empty_nl_multiline_at_eof_dont_keep_trailing_nl(LogTransportMockConstructor
   multi_line_options_set_keep_trailing_newline(&options->super.super.super.multi_line_options, FALSE);
   LogProtoServer *proto = log_proto_http_scraper_responder_server_new(
                             log_transport_mock_new(
-                              "GET /metrics HTTP/1.1\n", -1,
-                              "Host: 192.168.1.111:8080\n", -1,
+                              MOCKED_REQUEST_H1 "\n", -1,
+                              MOCKED_REQUEST_H2 "\n", -1,
                               "\n", -1,
                               LTM_EOF),
                             (const LogProtoServerOptionsStorage *)options);
 
-  assert_proto_server_fetch(proto, "GET /metrics HTTP/1.1\nHost: 192.168.1.111:8080", -1);
+  assert_proto_server_fetch(proto, MOCKED_REQUEST_H1 "\n" MOCKED_REQUEST_H2, -1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
 
   proto_http_scraper_server_free(proto, options);
@@ -105,23 +119,18 @@ test_empty_crnl_multiline_at_eof(LogTransportMockConstructor log_transport_mock_
   LogProtoHTTPScraperResponderOptionsStorage *options = get_inited_proto_http_scraper_server_options();
   LogProtoServer *proto = log_proto_http_scraper_responder_server_new(
                             log_transport_mock_new(
-                              "GET /metrics HTTP/1.1\r\n", -1,
-                              "Host: 192.168.1.111:8080\r\n", -1,
+                              MOCKED_REQUEST_H1 "\r\n", -1,
+                              MOCKED_REQUEST_H2 "\r\n", -1,
                               "\r\n", -1,
                               LTM_EOF),
                             (const LogProtoServerOptionsStorage *)options);
 
   // http-scraper uses EmpytLineSeparatedMultiLine that has keep_trailing_newline is set to TRUE by default
-  assert_proto_server_fetch(proto, "GET /metrics HTTP/1.1\r\nHost: 192.168.1.111:8080\r\n\r\n", -1);
+  assert_proto_server_fetch(proto, MOCKED_REQUEST_H1 "\r\n" MOCKED_REQUEST_H2 "\r\n" "\r\n", -1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
 
   proto_http_scraper_server_free(proto, options);
 }
-
-// This should store the HTTP response header + the mocked stats_generate_prometheus/stats_execute_query_command results that cannot be more than 256 now
-static gchar write_buff[256];
-static const gchar *mocked_stats_prometheus_response = "syslogng_source_processed{id=\"s_prometheus_stat\"} 3";
-static const gchar *mocked_query_prometheus_response = "syslogng_source_processed{id=\"s_prometheus_stat\"} 4";
 
 // Mock of LogProtoHTTPScraperResponder::stats_generate_prometheus
 void
@@ -147,14 +156,14 @@ test_empty_nl_multiline_at_eof(LogTransportMockConstructor log_transport_mock_ne
   LogProtoHTTPScraperResponderOptionsStorage *options = get_inited_proto_http_scraper_server_options();
   LogProtoServer *proto = log_proto_http_scraper_responder_server_new(
                             log_transport_mock_new(
-                              "GET /metrics HTTP/1.1\n", -1,
-                              "Host: 192.168.1.111:8080\n", -1,
+                              MOCKED_REQUEST_H1 "\n", -1,
+                              MOCKED_REQUEST_H2 "\n", -1,
                               "\n", -1,
                               LTM_EOF),
                             (const LogProtoServerOptionsStorage *)options);
 
   // http-scraper uses EmpytLineSeparatedMultiLine that has keep_trailing_newline is set to TRUE by default
-  assert_proto_server_fetch(proto, "GET /metrics HTTP/1.1\nHost: 192.168.1.111:8080\n\n", -1);
+  assert_proto_server_fetch(proto, mocked_request, -1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
 
   proto_http_scraper_server_free(proto, options);
@@ -169,39 +178,64 @@ Test(log_proto, test_http_scraper_multiline)
   test_empty_crnl_multiline_at_eof_dont_keep_trailing_nl(log_transport_mock_http_screaper_new);
 }
 
+//
+// test_http_scraper_freq_limit
+//
 static void
 test_scrape_limit(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoHTTPScraperResponderOptionsStorage *options = get_inited_proto_http_scraper_server_options();
   LogProtoServer *proto = log_proto_http_scraper_responder_server_new(
                             log_transport_mock_new(
-                              "GET /metrics HTTP/1.1\n", -1,
-                              "Host: 192.168.1.111:8080\n", -1,
+                              MOCKED_REQUEST_H1 "\n", -1,
+                              MOCKED_REQUEST_H2 "\n", -1,
                               "\n", -1,
-                              "GET /metrics HTTP/1.1\n", -1,
-                              "Host: 192.168.1.111:8080\n", -1,
+                              MOCKED_REQUEST_H1 "\n", -1,
+                              MOCKED_REQUEST_H2 "\n", -1,
                               "\n", -1,
-                              "GET /metrics HTTP/1.1\n", -1,
-                              "Host: 192.168.1.111:8080\n", -1,
+                              MOCKED_REQUEST_H1 "\n", -1,
+                              MOCKED_REQUEST_H2 "\n", -1,
                               "\n", -1,
-                              "GET /metrics HTTP/1.1\n", -1,
-                              "Host: 192.168.1.111:8080\n", -1,
+                              MOCKED_REQUEST_H1 "\n", -1,
+                              MOCKED_REQUEST_H2 "\n", -1,
                               "\n", -1,
                               LTM_EOF),
                             (const LogProtoServerOptionsStorage *)options);
+  LogProtoHTTPServer *proto_http_server = (LogProtoHTTPServer *)proto;
 
   // http-scraper uses EmpytLineSeparatedMultiLine that has keep_trailing_newline is set to TRUE by default
-  assert_proto_server_fetch(proto, "GET /metrics HTTP/1.1\nHost: 192.168.1.111:8080\n\n", -1);
+  assert_proto_server_fetch(proto, mocked_request, -1);
+
   // http-scraper scrape-freq-limit() is set to 0 (no limit) by default, so immediate next fetch should succeed
-  assert_proto_server_fetch(proto, "GET /metrics HTTP/1.1\nHost: 192.168.1.111:8080\n\n", -1);
-  // setting the limit higher should lead an empty fetch result (and dropped fecth result)
+  assert_proto_server_fetch(proto, mocked_request, -1);
+  GString *response = proto_http_server->request_processor(proto_http_server, NULL,
+                                                           (const guchar *)mocked_request,
+                                                           sizeof(mocked_request));
+  cr_assert_str_eq((const gchar *) response->str, mocked_stats_prometheus_response);
+  g_string_free(response, TRUE);
+
+  // setting the limit higher should lead a Too frequent response
   log_proto_http_scraper_responder_options_set_scrape_freq_limit((LogProtoServerOptionsStorage *)options, 1);
   iv_invalidate_now();
-  assert_proto_server_fetch(proto, "", -1);
-  // waiting till the limit passed and fetching again after ellapsed should succeed again
+  assert_proto_server_fetch(proto, mocked_request, -1);
+  response = proto_http_server->request_processor(proto_http_server, NULL,
+                                                  (const guchar *)mocked_request,
+                                                  sizeof(mocked_request));
+  cr_assert_str_eq((const gchar *) response->str, "HTTP/1.1 429 Too Many Requests\n\n");
+  g_string_free(response, TRUE);
+
+  // do not have to wait yet as the fetch result will be the same, no matter if the time is up or not
+  iv_invalidate_now();
+  assert_proto_server_fetch(proto, mocked_request, -1);
+  // fecth calls the request_processor that will reset the last scrape time too, now we have to wait
   sleep(2);
   iv_invalidate_now();
-  assert_proto_server_fetch(proto, "GET /metrics HTTP/1.1\nHost: 192.168.1.111:8080\n\n", -1);
+  response = proto_http_server->request_processor(proto_http_server, NULL,
+                                                  (const guchar *)mocked_request,
+                                                  sizeof(mocked_request));
+  cr_assert_str_eq((const gchar *) response->str, mocked_stats_prometheus_response);
+  g_string_free(response, TRUE);
+
   // last fetch should be EOF (as result of the previous is dropped)
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
 
@@ -213,6 +247,56 @@ Test(log_proto, test_http_scraper_freq_limit)
   test_scrape_limit(log_transport_mock_http_screaper_new);
 }
 
+//
+// test_http_scraper_pattern
+//
+static void
+test_scrape_pattern(LogTransportMockConstructor log_transport_mock_new)
+{
+  LogProtoHTTPScraperResponderOptionsStorage *options = get_inited_proto_http_scraper_server_options();
+  log_proto_http_scraper_responder_options_set_scrape_type((LogProtoServerOptionsStorage *)options,
+                                                           "pattern-driven");
+  log_proto_http_scraper_responder_options_set_scrape_pattern((LogProtoServerOptionsStorage *)options,
+                                                              "GET /metrics*");
+
+  LogProtoServer *proto = log_proto_http_scraper_responder_server_new(
+                            log_transport_mock_new(
+                              MOCKED_REQUEST_H1 "\n", -1,
+                              MOCKED_REQUEST_H2 "\n", -1,
+                              "\n", -1,
+                              MOCKED_NOT_MATCHING_REQUEST_H1 "\n", -1,
+                              MOCKED_REQUEST_H2 "\n", -1,
+                              "\n", -1,
+                              LTM_EOF),
+                            (const LogProtoServerOptionsStorage *)options);
+  LogProtoHTTPServer *proto_http_server = (LogProtoHTTPServer *)proto;
+
+  // http-scraper uses EmpytLineSeparatedMultiLine that has keep_trailing_newline is set to TRUE by default
+  assert_proto_server_fetch(proto, mocked_request, -1);
+
+  // not matching request shoud be read as well
+  assert_proto_server_fetch(proto, mocked_not_matching_request, -1);
+  // but should result in an empty response
+  GString *response = proto_http_server->request_processor(proto_http_server, NULL,
+                                                           (const guchar *)mocked_not_matching_request,
+                                                           sizeof(mocked_not_matching_request));
+  cr_assert_str_eq((const gchar *) response->str, "HTTP/1.1 400 Bad Request\n\n");
+  g_string_free(response, TRUE);
+
+  // last fetch should be EOF (as result of the previous is dropped)
+  assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+
+  proto_http_scraper_server_free(proto, options);
+}
+
+Test(log_proto, test_http_scraper_pattern)
+{
+  test_scrape_pattern(log_transport_mock_http_screaper_new);
+}
+
+//
+// test_http_scraper_stat and test_http_scraper_query
+//
 static inline gssize
 _log_transport_write(LogTransport *self, const gpointer buf, gsize count)
 {
@@ -228,8 +312,8 @@ test_scrape_stat_and_query(LogTransportMockConstructor log_transport_mock_new, c
   LogProtoHTTPScraperResponderOptionsStorage *options = get_inited_proto_http_scraper_server_options();
   log_proto_http_scraper_responder_options_set_stat_type((LogProtoServerOptionsStorage *)options, stat_type);
   LogTransport *transport = log_transport_mock_new(
-                              "GET /metrics HTTP/1.1\n", -1,
-                              "Host: 192.168.1.111:8080\n", -1,
+                              MOCKED_REQUEST_H1 "\n", -1,
+                              MOCKED_REQUEST_H2 "\n", -1,
                               "\n", -1,
                               LTM_EOF);
   LogProtoServer *proto = log_proto_http_scraper_responder_server_new(transport,
@@ -239,7 +323,7 @@ test_scrape_stat_and_query(LogTransportMockConstructor log_transport_mock_new, c
   transport->write = _log_transport_write;
 
   // http-scraper uses EmpytLineSeparatedMultiLine that has keep_trailing_newline is set to TRUE by default
-  assert_proto_server_fetch(proto, "GET /metrics HTTP/1.1\nHost: 192.168.1.111:8080\n\n", -1);
+  assert_proto_server_fetch(proto, mocked_request, -1);
   // last fetch should be EOF (as result of the previous is dropped)
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
 

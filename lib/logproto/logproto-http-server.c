@@ -32,10 +32,10 @@ _compose_response_body(LogProtoHTTPServer *self)
   return NULL;
 }
 
-static gboolean
+static gint
 _check_request_headers(LogProtoHTTPServer *self, gchar *buffer_start, gsize buffer_bytes)
 {
-  return FALSE;
+  return 400; // HTTP/1.1 400 Bad Request
 }
 
 static GString *
@@ -43,9 +43,32 @@ _http_request_processor(LogProtoHTTPServer *self, LogProtoBufferedServerState *s
                         const guchar *buffer_start, gsize buffer_bytes)
 {
   GString *response_data = NULL;
+  gint status = self->request_header_checker(self, (gchar *)buffer_start, buffer_bytes);
 
-  if (self->request_header_checker(self, (gchar *)buffer_start, buffer_bytes))
-    response_data = self->response_body_composer(self);
+  switch (status)
+    {
+    case 200:
+      response_data = self->response_body_composer(self);
+      break;
+
+    case 429: // HTTP/1.1 429 Too Many Requests
+      msg_trace("http-server(): Too many requests");
+      response_data = g_string_new(http_too_many_request_msg);
+      g_string_append(response_data, "\n\n");
+      break;
+
+    case 400: // HTTP/1.1 400 Bad Request
+    default:
+    {
+      GString *header = g_string_new_len((gchar *)buffer_start, buffer_bytes);
+      msg_trace("http-server(): Bad request",
+                evt_tag_str("header", header->str));
+      response_data = g_string_new(http_bad_request_msg);
+      g_string_append(response_data, "\n\n");
+      g_string_free(header, TRUE);
+      break;
+    }
+    }
   return response_data;
 }
 
@@ -54,15 +77,17 @@ _compose_response_header(LogProtoHTTPServer *self, const gchar *data, gsize data
 {
   const gint maxContentNumLength = 5;
   const gchar close_str[] = "Connection: close\n";
-  const gchar response_header_fmt[] = "HTTP/1.1 200 OK\n"
+  const gchar response_header_fmt[] = "%s\n"
                                       "Content-Type: text/plain; version=0.0.4\n"
                                       "Content-Length: %*lu\n"
                                       "%s\n"
                                       "\n";
   GString *response = g_string_sized_new(G_N_ELEMENTS(response_header_fmt) - 1 +
+                                         G_N_ELEMENTS(http_ok_msg) - 1 +
                                          G_N_ELEMENTS(close_str) - 1 - 2 +
                                          -4 + maxContentNumLength + data_len);
-  g_string_printf(response, response_header_fmt, maxContentNumLength, data_len, close_after_sent ? close_str : "");
+  g_string_printf(response, response_header_fmt, http_ok_msg, maxContentNumLength, data_len,
+                  close_after_sent ? close_str : "");
   return response;
 }
 
@@ -94,7 +119,7 @@ _http_request_handler(LogProtoTextServer *s, LogProtoBufferedServerState *state,
     {
       result = response->len > 0;
       if (self->response_sender(self, response->str, response->len, self->options->super.close_after_send) >= 0)
-        msg_trace("Sent response", evt_tag_str("http-server-response", response->str));
+        msg_trace("http-server(): Sent response", evt_tag_str("http-server-response", response->str));
     }
   if (response)
     g_string_free(response, TRUE);
