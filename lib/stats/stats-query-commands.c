@@ -70,24 +70,17 @@ _ctl_format_get(gpointer user_data)
   // This one is the legacy format, kept for backward compatibility
   if (g_str_equal(fmt, "kv"))
     g_string_append_printf(str, "%s=%"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
-  else if (g_str_equal(fmt, "prometheus"))
+  else
     {
       ScratchBuffersMarker marker;
       scratch_buffers_mark(&marker);
 
-      GString *record = stats_prometheus_format_counter(sc, type, ctr);
-      if (record == NULL)
-        return FALSE;
+      GString *record = NULL;
+      if (g_str_equal(fmt, "prometheus"))
+        record = stats_prometheus_format_counter(sc, type, ctr);
+      else if (g_str_equal(fmt, "csv"))
+        record = stats_csv_format_counter(sc, type, ctr);
 
-      g_string_append(str, record->str);
-      scratch_buffers_reclaim_marked(marker);
-    }
-  else if (g_str_equal(fmt, "csv"))
-    {
-      ScratchBuffersMarker marker;
-      scratch_buffers_mark(&marker);
-
-      GString *record = stats_csv_format_counter(sc, type, ctr);
       if (record == NULL)
         return FALSE;
 
