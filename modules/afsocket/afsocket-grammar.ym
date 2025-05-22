@@ -147,6 +147,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 
 %token KW_HTTP_SCRAPER
 %token KW_SCRAPE_TYPE
+%token KW_SCRAPE_PATTERN
 %token KW_SCRAPE_FREQ_LIMIT
 %token KW_SINGLE_INSTANCE
 %token KW_PROMETHEUS
@@ -500,6 +501,7 @@ stats_options
 
 proto_http_scraper_option
   : KW_SCRAPE_TYPE '(' string ')' { CHECK_ERROR(log_proto_http_scraper_responder_options_set_scrape_type(last_proto_server_options, $3), @3, "Invalid prometheus scrape type: %s", $3); free($3); }
+	| KW_SCRAPE_PATTERN '(' string ')' { log_proto_http_scraper_responder_options_set_scrape_pattern(last_proto_server_options, $3); free($3); }
 	| KW_SCRAPE_FREQ_LIMIT '(' nonnegative_integer ')' { log_proto_http_scraper_responder_options_set_scrape_freq_limit(last_proto_server_options, $3); }
 	| KW_SINGLE_INSTANCE '(' yesno ')' { log_proto_http_scraper_responder_options_set_single_instance(last_proto_server_options, $3); }
   ;

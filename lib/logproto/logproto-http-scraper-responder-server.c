@@ -59,13 +59,14 @@ _generate_batched_response(const gchar *record, gpointer user_data)
 }
 
 static GString *
-_compose_prometheus_response_body(LogProtoHTTPServer *s)
+_compose_response_body(LogProtoHTTPServer *s)
 {
   LogProtoHTTPScraperResponder *self = (LogProtoHTTPScraperResponder *)s;
 
   GString *stats = NULL;
   gboolean cancelled = FALSE;
-  char *stat_format = self->options->stat_format && self->options->stat_format[0] ? self->options->stat_format : "prometheus";
+  char *stat_format = self->options->stat_format &&
+                      self->options->stat_format[0] ? self->options->stat_format : "prometheus";
 
   if (self->options->stat_type == STT_STATS)
     {
@@ -97,80 +98,53 @@ _compose_prometheus_response_body(LogProtoHTTPServer *s)
   return stats;
 }
 
-static GString *
-_compose_response_body(LogProtoHTTPServer *s)
+static gint
+_check_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_bytes)
 {
   LogProtoHTTPScraperResponder *self = (LogProtoHTTPScraperResponder *)s;
-  GString *stats = NULL;
+  gint status = 200; // HTTP/1.1 200 OK
 
   g_mutex_lock(_mutex());
   iv_validate_now();
   time_t now = iv_now.tv_sec;
   time_t ellapsed = now - last_scrape_request_time;
   if (self->options->scrape_freq_limit && ellapsed < self->options->scrape_freq_limit)
+    status = 429; // HTTP/1.1 429 Too Many Requests
+  last_scrape_request_time = now;
+  g_mutex_unlock(_mutex());
+  if (status != 200)
     {
       msg_trace("Too frequent scraper requests, ignoring for now",
                 evt_tag_int("last-request", ellapsed),
                 evt_tag_int("allowed-freq", self->options->scrape_freq_limit));
-      g_mutex_unlock(_mutex());
-      /* NOTE: Using an empty response body with the close_after_send=TRUE option
-       *       prevents the scraper waiting for the response till its own timeout */
-      return g_string_new("");
+      return status;
     }
-  last_scrape_request_time = now;
-  g_mutex_unlock(_mutex());
 
-  // Once we have more scraspers to handle these should go into a separate class instead
+  gchar *expected_header = self->options->scraper_request_hdr_pattern;
   switch (self->options->scraper_type)
     {
     case SCT_PROMETHEUS:
-      stats = _compose_prometheus_response_body(s);
+      expected_header = "GET /metrics*";
+      break;
+    case SCT_PATTERN_DRIVEN:
       break;
     default:
-      g_assert(FALSE && "Unknown scraper type");
+      g_assert_not_reached();
       break;
     }
 
-  return stats;
-}
-
-static gboolean
-_check_prometheus_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_bytes)
-{
-  // TODO: add a generic header parser to LogProtoHTTPServer and use it here
-  // First line must be like 'GET /metrics HTTP/1.1\x0d\x0a'
-  // We do not care about lines for now, just trying to split the first three items
-  // from the beginning (first line) and search for an exact match
-  gchar **tokens = g_strsplit(buffer_start, " ", 3);
-  gboolean broken = (tokens == NULL || tokens[0] == NULL || strcmp(tokens[0], "GET")
-                     || tokens[1] == NULL || strcmp(tokens[1], "/metrics"));
-
-  // TODO: Check further headers as well to support options like compression, etc.
-  if (broken)
-    msg_error("Unknown request", evt_tag_str("http-scraper-responder", buffer_start));
-
-  if (tokens)
-    g_strfreev(tokens);
-  return FALSE == broken;
-}
-
-static gboolean
-_check_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_bytes)
-{
-  LogProtoHTTPScraperResponder *self = (LogProtoHTTPScraperResponder *)s;
-  gboolean result = FALSE;
-
-  // Once we have more scraspers to handle these should go into a separate class instead
-  switch (self->options->scraper_type)
+  GPatternSpec *pattern = g_pattern_spec_new(expected_header);
+  GString *header = g_string_new_len(buffer_start, buffer_bytes);
+  if (FALSE == g_pattern_spec_match_string(pattern, header->str))
     {
-    case SCT_PROMETHEUS:
-      result = _check_prometheus_request_headers(s, buffer_start, buffer_bytes);
-      break;
-    default:
-      g_assert(FALSE && "Unknown scraper type");
-      break;
+      msg_trace("Scraper request header did not match", evt_tag_str("header", header->str), evt_tag_str("expected-header",
+                expected_header));
+      status = 400; // HTTP/1.1 400 Bad Request
     }
-  return result;
+  g_string_free(header, TRUE);
+  g_pattern_spec_free(pattern);
+
+  return status;
 }
 
 static void
@@ -206,6 +180,11 @@ log_proto_http_scraper_responder_server_new(LogTransport *transport,
   if (options->single_instance && single_instance)
     {
       msg_trace("Only one Prometheus scraper responder instance is allowed");
+      GString *response_data = g_string_new(http_too_many_request_msg);
+      g_string_append(response_data, "\n\n");
+      single_instance->super.response_sender(&single_instance->super, response_data->str,
+                                             response_data->len, FALSE);
+      g_string_free(response_data, TRUE);
       g_mutex_unlock(_mutex());
       return NULL;
     }
@@ -278,15 +257,22 @@ log_proto_http_scraper_responder_options_validate(LogProtoServerOptionsStorage *
   if (FALSE == log_proto_http_server_options_validate(options_storage))
     return FALSE;
 
+  if (options->scraper_type == SCT_PATTERN_DRIVEN && (options->scraper_request_hdr_pattern == NULL ||
+                                                      options->scraper_request_hdr_pattern[0] == '\0'))
+    {
+      msg_error("stats-exporter() 'scrape-type' is 'pattern-driven' but scraper request header pattern is not set");
+      return FALSE;
+    }
+
   if (options->stat_type != STT_STATS && options->stat_type != STT_QUERY)
     {
       msg_error("stats-exporter() stat type must be 'stat' or 'query'");
       return FALSE;
     }
 
-  if (options->scraper_type != SCT_PROMETHEUS)
+  if (options->scraper_type != SCT_PROMETHEUS && options->scraper_type != SCT_PATTERN_DRIVEN)
     {
-      msg_error("stats-exporter() transport must be 'prometheus'");
+      msg_error("stats-exporter() 'scrape-type' must be 'prometheus' or 'pattern-driven'");
       return FALSE;
     }
 
@@ -304,7 +290,22 @@ log_proto_http_scraper_responder_options_set_scrape_type(LogProtoServerOptionsSt
       options->scraper_type = SCT_PROMETHEUS;
       return TRUE;
     }
+  else if (strcmp(value, "pattern-driven") == 0)
+    {
+      options->scraper_type = SCT_PATTERN_DRIVEN;
+      return TRUE;
+    }
   return FALSE;
+}
+
+void
+log_proto_http_scraper_responder_options_set_scrape_pattern(LogProtoServerOptionsStorage *options_storage,
+                                                            const gchar *value)
+{
+  LogProtoHTTPScraperResponderOptions *options = &((LogProtoHTTPScraperResponderOptionsStorage *)options_storage)->super;
+
+  g_free(options->scraper_request_hdr_pattern);
+  options->scraper_request_hdr_pattern = g_strdup(value);
 }
 
 void
