@@ -23,6 +23,7 @@
  */
 #include "logproto/logproto-http-scraper-responder-server.h"
 #include "stats/stats-prometheus.h"
+#include "stats/stats-csv.h"
 #include "stats/stats-query-commands.h"
 #include "timeutils/cache.h"
 #include "messages.h"
@@ -70,16 +71,25 @@ _compose_prometheus_response_body(LogProtoHTTPServer *s)
       stats = g_string_new(NULL);
       gpointer args[] = {self, &stats};
       gboolean with_legacy = TRUE;
-      msg_trace("Generating prometheus stat");
-      stats_generate_prometheus(_generate_batched_response, args, with_legacy, &cancelled);
+
+      msg_trace("Generating stats", evt_tag_str("stat-format", self->options->stat_format),
+                evt_tag_int("with-legacy", with_legacy));
+      if (strcmp(self->options->stat_format, "prometheus") == 0)
+        stats_generate_prometheus(_generate_batched_response, args, with_legacy, &cancelled);
+      else
+        {
+          gboolean csv = (strcmp(self->options->stat_format, "csv") == 0);
+          stats_generate_csv_or_kv(_generate_batched_response, args, csv, FALSE, &cancelled);
+        }
     }
   else
     {
       char *query_str = self->options->stat_query && self->options->stat_query[0] ? self->options->stat_query : "*";
       GString *full_query_str = g_string_new(NULL);
-      g_string_append_printf(full_query_str, "QUERY GET prometheus %s", query_str);
+      g_string_append_printf(full_query_str, "QUERY GET %s %s", self->options->stat_format, query_str);
 
-      msg_trace("Running prometheus query", evt_tag_str("stat-query", query_str));
+      msg_trace("Running stats query", evt_tag_str("stat-format", self->options->stat_format),
+                evt_tag_str("stat-query", query_str));
       stats = stats_execute_query_command(full_query_str->str, self, &cancelled);
       g_string_free(full_query_str, TRUE);
     }
@@ -255,6 +265,8 @@ log_proto_http_scraper_responder_options_destroy(LogProtoServerOptionsStorage *o
   log_proto_http_server_options_destroy(options_storage);
   g_free(options->stat_query);
   options->stat_query = NULL;
+  g_free(options->stat_format);
+  options->stat_format = NULL;
 }
 
 gboolean
@@ -267,13 +279,13 @@ log_proto_http_scraper_responder_options_validate(LogProtoServerOptionsStorage *
 
   if (options->stat_type != STT_STATS && options->stat_type != STT_QUERY)
     {
-      msg_error("prometheus-stats() stat type must be 'stat' or 'query'");
+      msg_error("stats-exporter() stat type must be 'stat' or 'query'");
       return FALSE;
     }
 
   if (options->scraper_type != SCT_PROMETHEUS)
     {
-      msg_error("prometheus-stats() transport must be 'prometheus'");
+      msg_error("stats-exporter() transport must be 'prometheus'");
       return FALSE;
     }
 
@@ -281,8 +293,8 @@ log_proto_http_scraper_responder_options_validate(LogProtoServerOptionsStorage *
 }
 
 gboolean
-log_proto_http_scraper_responder_options_set_scraper_type(LogProtoServerOptionsStorage *options_storage,
-                                                          const gchar *value)
+log_proto_http_scraper_responder_options_set_scrape_type(LogProtoServerOptionsStorage *options_storage,
+                                                         const gchar *value)
 {
   LogProtoHTTPScraperResponderOptions *options = &((LogProtoHTTPScraperResponderOptionsStorage *)options_storage)->super;
 
@@ -341,4 +353,19 @@ log_proto_http_scraper_responder_options_set_stat_query(LogProtoServerOptionsSto
 
   g_free(options->stat_query);
   options->stat_query = g_strdup(value);
+}
+
+gboolean
+log_proto_http_scraper_responder_options_set_stat_format(LogProtoServerOptionsStorage *options_storage,
+                                                         const gchar *value)
+{
+  LogProtoHTTPScraperResponderOptions *options = &((LogProtoHTTPScraperResponderOptionsStorage *)options_storage)->super;
+
+  if (strcmp(value, "prometheus") == 0 || strcmp(value, "csv") == 0 || strcmp(value, "kv") == 0)
+    {
+      g_free(options->stat_format);
+      options->stat_format = g_strdup(value);
+      return TRUE;
+    }
+  return FALSE;
 }

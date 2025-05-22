@@ -42,6 +42,7 @@ typedef struct _LogProtoHTTPScraperResponderOptions
   // Once we have more scrapers to handle these should go into a separate class
   guint8 stat_type;
   gchar *stat_query;
+  gchar *stat_format;
   gboolean single_instance;
 
 } LogProtoHTTPScraperResponderOptions;
@@ -67,7 +68,7 @@ void log_proto_http_scraper_responder_options_init(LogProtoServerOptionsStorage 
 void log_proto_http_scraper_responder_options_destroy(LogProtoServerOptionsStorage *options);
 gboolean log_proto_http_scraper_responder_options_validate(LogProtoServerOptionsStorage *options);
 
-gboolean log_proto_http_scraper_responder_options_set_scraper_type(
+gboolean log_proto_http_scraper_responder_options_set_scrape_type(
   LogProtoServerOptionsStorage *options,
   const gchar *value);
 void log_proto_http_scraper_responder_options_set_scrape_freq_limit(
@@ -80,6 +81,9 @@ gboolean log_proto_http_scraper_responder_options_set_stat_type(
   LogProtoServerOptionsStorage *options,
   const gchar *value);
 void log_proto_http_scraper_responder_options_set_stat_query(
+  LogProtoServerOptionsStorage *options,
+  const gchar *value);
+gboolean log_proto_http_scraper_responder_options_set_stat_format(
   LogProtoServerOptionsStorage *options,
   const gchar *value);
 
