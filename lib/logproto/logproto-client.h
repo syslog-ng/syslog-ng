@@ -70,7 +70,6 @@ struct _LogProtoClient
   LogProtoStatus status;
   const LogProtoClientOptionsStorage *options;
   LogTransportStack transport_stack;
-  gboolean transport_reversed_io_direction;
   gboolean (*poll_prepare)(LogProtoClient *s, GIOCondition *cond, GIOCondition *idle_cond, gint *timeout);
   LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*process_in)(LogProtoClient *s);
@@ -141,8 +140,6 @@ log_proto_client_poll_prepare(LogProtoClient *self, GIOCondition *cond, GIOCondi
     *timeout = self->options->super.idle_timeout;
 
 exit:
-  self->transport_reversed_io_direction = transport_cond != 0;
-
   /* transport I/O needs take precedence */
   if (transport_cond != 0)
     *cond = transport_cond;
@@ -155,7 +152,7 @@ static inline LogProtoStatus log_proto_client_process_in(LogProtoClient *s);
 static inline LogProtoStatus
 log_proto_client_flush(LogProtoClient *self)
 {
-  if (self->transport_reversed_io_direction)
+  if (log_transport_stack_get_io_requirement(&self->transport_stack) == LTIO_READ_WANTS_WRITE)
     return self->process_in(self);
 
   return self->flush(self);
@@ -164,7 +161,7 @@ log_proto_client_flush(LogProtoClient *self)
 static inline LogProtoStatus
 log_proto_client_process_in(LogProtoClient *self)
 {
-  if (self->transport_reversed_io_direction)
+  if (log_transport_stack_get_io_requirement(&self->transport_stack) == LTIO_WRITE_WANTS_READ)
     return self->flush(self);
 
   return self->process_in(self);

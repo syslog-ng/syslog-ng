@@ -155,6 +155,13 @@ log_transport_stack_poll_prepare(LogTransportStack *self, GIOCondition *cond)
   return log_transport_poll_prepare(transport, cond);
 }
 
+static inline LogTransportIOCond
+log_transport_stack_get_io_requirement(LogTransportStack *self)
+{
+  LogTransport *transport = log_transport_stack_get_active(self);
+  return log_transport_get_io_requirement(transport);
+}
+
 static inline gssize
 log_transport_stack_write(LogTransportStack *self, const gpointer buf, gsize count)
 {

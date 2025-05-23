@@ -28,6 +28,15 @@
 #include "syslog-ng.h"
 #include "transport/transport-aux-data.h"
 
+typedef enum _LogTransportIOCond
+{
+  LTIO_NOTHING = 0,
+  LTIO_READ_WANTS_READ,
+  LTIO_READ_WANTS_WRITE,
+  LTIO_WRITE_WANTS_WRITE,
+  LTIO_WRITE_WANTS_READ
+} LogTransportIOCond;
+
 /*
  * LogTransport:
  *
@@ -50,8 +59,7 @@ typedef struct _LogTransportStack LogTransportStack;
 struct _LogTransport
 {
   gint fd;
-  /* should only be used to reverse the original I/O direction */
-  GIOCondition cond;
+  LogTransportIOCond cond;
 
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
@@ -69,15 +77,41 @@ struct _LogTransport
   const gchar *name;
 };
 
+static inline GIOCondition
+_log_transport_io_cond(LogTransportIOCond c)
+{
+  switch (c)
+    {
+    case LTIO_NOTHING:
+      return (GIOCondition) 0;
+    case LTIO_READ_WANTS_READ:
+    case LTIO_WRITE_WANTS_READ:
+      return G_IO_IN;
+    case LTIO_READ_WANTS_WRITE:
+    case LTIO_WRITE_WANTS_WRITE:
+      return G_IO_OUT;
+    default:
+      g_assert_not_reached();
+    }
+
+  g_assert_not_reached();
+}
+
 static inline gboolean
 log_transport_poll_prepare(LogTransport *self, GIOCondition *cond)
 {
-  *cond = self->cond;
+  *cond = _log_transport_io_cond(self->cond);
 
   if (self->ra.buf_len != self->ra.pos)
     return TRUE;
 
   return FALSE;
+}
+
+static inline LogTransportIOCond
+log_transport_get_io_requirement(LogTransport *self)
+{
+  return self->cond;
 }
 
 static inline void
