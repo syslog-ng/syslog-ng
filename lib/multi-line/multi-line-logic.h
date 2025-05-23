@@ -49,9 +49,10 @@ struct _MultiLineLogic
                           const guchar *segment,
                           gsize segment_len);
   void (*free_fn)(MultiLineLogic *s);
+  gboolean keep_trailing_newline;
 };
 
-void multi_line_logic_init_instance(MultiLineLogic *self);
+void multi_line_logic_init_instance(MultiLineLogic *self, gboolean keep_trailing_newline);
 void multi_line_logic_free_method(MultiLineLogic *s);
 
 /*
@@ -104,6 +105,10 @@ multi_line_logic_free(MultiLineLogic *self)
   self->free_fn(self);
 }
 
-
+static inline gboolean
+multi_line_logic_keep_trailing_newline(MultiLineLogic *self)
+{
+  return self->keep_trailing_newline;
+}
 
 #endif

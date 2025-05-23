@@ -172,33 +172,6 @@ TLS_BLOCK_END;
  * LogMessage
  **********************************************************************/
 
-gboolean
-log_msg_is_handle_macro(NVHandle handle)
-{
-  guint16 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  return !!(flags & LM_VF_MACRO);
-}
-
-gboolean
-log_msg_is_handle_sdata(NVHandle handle)
-{
-  guint16 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  return !!(flags & LM_VF_SDATA);
-}
-
-gboolean
-log_msg_is_handle_match(NVHandle handle)
-{
-  guint16 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  return !!(flags & LM_VF_MATCH);
-}
-
 static inline gboolean
 log_msg_chk_flag(const LogMessage *self, gint32 flag)
 {
@@ -616,6 +589,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
   if (value_len < 0)
     value_len = strlen(value);
 
+  self->generation++;
   if (_log_name_value_updates(self))
     {
       msg_trace("Setting value",
@@ -674,6 +648,7 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
 {
   g_assert(!log_msg_is_write_protected(self));
 
+  self->generation++;
   if (_log_name_value_updates(self))
     {
       msg_trace("Unsetting value",
@@ -735,6 +710,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
   name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
 
+  self->generation++;
   if (_log_name_value_updates(self))
     {
       msg_trace("Setting indirect value",
@@ -974,6 +950,7 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
 
   g_assert(!log_msg_is_write_protected(self));
 
+  self->generation++;
   msg_trace("Setting tag",
             evt_tag_str("name", log_tags_get_by_id(id)),
             evt_tag_int("value", on),
@@ -1381,6 +1358,7 @@ log_msg_clear(LogMessage *self)
 {
   g_assert(!log_msg_is_write_protected(self));
 
+  self->generation++;
   if(log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     nv_table_unref(self->payload);
   self->payload = nv_table_new(LM_V_MAX, 16, 256);
@@ -1480,6 +1458,24 @@ log_msg_clone_ack(LogMessage *msg, AckType ack_type)
   log_msg_ack(msg->original, &path_options, ack_type);
 }
 
+static inline LogMessage *
+log_msg_alloc_clone(LogMessage *original)
+{
+  LogMessage *msg;
+
+  /* NOTE: logmsg_node_max is updated from parallel threads without locking. */
+  gint nodes = (volatile gint) logmsg_queue_node_max;
+
+  gsize alloc_size = sizeof(LogMessage) + sizeof(LogMessageQueueNode) * nodes;
+  msg = g_malloc(alloc_size);
+
+  memcpy(msg, original, sizeof(*msg));
+  msg->num_nodes = nodes;
+  msg->allocated_bytes = alloc_size;
+  stats_counter_add(count_allocated_bytes, msg->allocated_bytes);
+  return msg;
+}
+
 /*
  * log_msg_clone_cow:
  *
@@ -1488,14 +1484,10 @@ log_msg_clone_ack(LogMessage *msg, AckType ack_type)
 LogMessage *
 log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 {
-  LogMessage *self = log_msg_alloc(0);
-  gsize allocated_bytes = self->allocated_bytes;
+  LogMessage *self = log_msg_alloc_clone(msg);
 
   stats_counter_inc(count_msg_clones);
   log_msg_write_protect(msg);
-
-  memcpy(self, msg, sizeof(*msg));
-  msg->allocated_bytes = allocated_bytes;
 
   msg_trace("Message was cloned",
             evt_tag_printf("original_msg", "%p", msg),
@@ -1514,7 +1506,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   log_msg_add_ack(self, path_options);
   if (!path_options->ack_needed)
     {
-      self->ack_func  = NULL;
+      self->ack_func = NULL;
     }
   else
     {
@@ -2018,6 +2010,7 @@ log_msg_tags_init(void)
   log_tags_register_predefined_tag("syslog.invalid_hostname", LM_T_SYSLOG_INVALID_HOSTNAME);
   log_tags_register_predefined_tag("syslog.unexpected_framing", LM_T_SYSLOG_UNEXPECTED_FRAMING);
   log_tags_register_predefined_tag("syslog.rfc3164_missing_header", LM_T_SYSLOG_RFC3164_MISSING_HEADER);
+  log_tags_register_predefined_tag("syslog.rfc3164_invalid_program", LM_T_SYSLOG_RFC_3164_INVALID_PROGRAM);
 
   log_tags_register_predefined_tag("syslog.rfc5424_missing_hostname", LM_T_SYSLOG_RFC5424_MISSING_HOSTNAME);
   log_tags_register_predefined_tag("syslog.rfc5424_missing_app_name", LM_T_SYSLOG_RFC5424_MISSING_APP_NAME);
@@ -2043,6 +2036,8 @@ log_msg_registry_init(void)
   nv_registry_add_predefined(logmsg_registry, LM_V_TRANSPORT, "TRANSPORT");
   nv_registry_add_predefined(logmsg_registry, LM_V_MSGFORMAT, "MSGFORMAT");
   nv_registry_add_predefined(logmsg_registry, LM_V_FILE_NAME, "FILE_NAME");
+  nv_registry_add_predefined(logmsg_registry, LM_V_PEER_IP, "PEERIP");
+  nv_registry_add_predefined(logmsg_registry, LM_V_PEER_PORT, "PEERPORT");
 
   nv_registry_assert_next_handle(logmsg_registry, LM_V_PREDEFINED_MAX);
 

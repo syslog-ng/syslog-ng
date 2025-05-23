@@ -68,6 +68,7 @@ struct _LogWriter
   LogQueue *queue;
   guint32 flags:31;
   gint32 seq_num;
+  gboolean handshake_in_progress;
   gboolean partial_write;
 
   struct
@@ -477,7 +478,7 @@ log_writer_update_watches(LogWriter *self)
 
   /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
 
-  if (log_proto_client_prepare(self->proto, &fd, &cond, &idle_timeout) ||
+  if (log_proto_client_poll_prepare(self->proto, &fd, &cond, &idle_timeout) ||
       self->waiting_for_throttle ||
       log_queue_check_items(self->queue, &timeout_msec,
                             (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL))
@@ -539,7 +540,7 @@ log_writer_start_watches(LogWriter *self)
   if (self->watches_running)
     return;
 
-  log_proto_client_prepare(self->proto, &fd, &cond, &idle_timeout);
+  log_proto_client_poll_prepare(self->proto, &fd, &cond, &idle_timeout);
 
   self->fd_watch.fd = fd;
 
@@ -1304,11 +1305,14 @@ log_writer_queue_pop_message(LogWriter *self, LogPathOptions *path_options, gboo
 static inline gboolean
 log_writer_process_handshake(LogWriter *self)
 {
-  LogProtoStatus status = log_proto_client_handshake(self->proto);
+  gboolean handshake_finished = FALSE;
+  LogProtoStatus status = log_proto_client_handshake(self->proto, &handshake_finished);
 
   if (status != LPS_SUCCESS)
     return FALSE;
 
+  if (handshake_finished)
+    self->handshake_in_progress = FALSE;
   return TRUE;
 }
 
@@ -1329,10 +1333,8 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
   if (!self->proto)
     return FALSE;
 
-  if (log_proto_client_handshake_in_progress(self->proto))
-    {
-      return log_writer_process_handshake(self);
-    }
+  if (self->handshake_in_progress)
+    return log_writer_process_handshake(self);
 
   /* NOTE: in case we're reloading or exiting we flush all queued items as
    * long as the destination can consume it.  This is not going to be an
@@ -1717,7 +1719,7 @@ log_writer_set_proto(LogWriter *self, LogProtoClient *proto)
       flow_control_funcs.user_data = self;
 
       log_proto_client_set_client_flow_control(self->proto, &flow_control_funcs);
-      log_proto_client_set_options(self->proto, &self->options->proto_options.super);
+      log_proto_client_set_options(self->proto, &self->options->proto_options);
     }
 }
 
@@ -1737,6 +1739,12 @@ log_writer_steal_proto(LogWriter *self)
   LogProtoClient *proto = self->proto;
   log_writer_set_proto(self, NULL);
   return proto;
+}
+
+LogProtoClient *
+log_writer_get_proto(LogWriter *self)
+{
+  return self->proto;
 }
 
 
@@ -1921,6 +1929,7 @@ log_writer_new(guint32 flags, GlobalConfig *cfg)
   self->flags = flags;
   self->line_buffer = g_string_sized_new(128);
   self->pollable_state = -1;
+  self->handshake_in_progress = TRUE;
   init_sequence_number(&self->seq_num);
 
   log_writer_init_watches(self);
@@ -1987,7 +1996,7 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
 
   log_template_options_init(&options->template_options, cfg);
   host_resolve_options_init(&options->host_resolve_options, &cfg->host_resolve_options);
-  log_proto_client_options_init(&options->proto_options.super, cfg);
+  log_proto_client_options_init(&options->proto_options, cfg);
   options->options |= option_flags;
 
   if (options->flush_lines == -1)
@@ -2020,7 +2029,7 @@ log_writer_options_destroy(LogWriterOptions *options)
 {
   log_template_options_destroy(&options->template_options);
   host_resolve_options_destroy(&options->host_resolve_options);
-  log_proto_client_options_destroy(&options->proto_options.super);
+  log_proto_client_options_destroy(&options->proto_options);
   log_template_unref(options->template);
   log_template_unref(options->file_template);
   log_template_unref(options->proto_template);

@@ -32,7 +32,7 @@ _construct_transport(FileOpener *self, gint fd)
 }
 
 static LogProtoClient *
-_construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptions *proto_options)
+_construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptionsStorage *proto_options)
 {
   return log_proto_file_writer_new(transport, proto_options, 0, FALSE);
 }
@@ -59,7 +59,7 @@ stdout_dd_new(GlobalConfig *cfg)
 {
   LogTemplate *filename_template = log_template_new(cfg, NULL);
 
-  log_template_compile_literal_string(filename_template, "-");
+  log_template_compile_literal_string(filename_template, "/dev/stdout");
   AFFileDestDriver *self = affile_dd_new_instance(filename_template, cfg);
 
   self->writer_options.stats_source = stats_register_type("stdout");

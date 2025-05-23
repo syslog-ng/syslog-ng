@@ -16,6 +16,7 @@ set(SCL_DIRS
     graphite
     graylog2
     hdfs
+    stats-exporter
     iptables
     jellyfin
     junos
@@ -50,6 +51,7 @@ set(SCL_DIRS
     telegram
     websense
     windowseventlog
+    azure
 )
 
 install(DIRECTORY ${SCL_DIRS} DESTINATION share/syslog-ng/include/scl)

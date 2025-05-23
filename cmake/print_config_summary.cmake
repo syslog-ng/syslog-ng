@@ -1,4 +1,3 @@
-# ############################################################################
 # Copyright (c) 2022 One Identity
 #
 # This library is free software; you can redistribute it and/or
@@ -28,15 +27,8 @@ set(Yellow "${Esc}[33m")
 set(Blue "${Esc}[34m")
 set(ResetFG "${Esc}[39m")
 
-set(_maxHeaderLen 39)
-
-list(APPEND _envInfo "CMAKE_HOST_SYSTEM" "CMAKE_HOST_SYSTEM_NAME" "CMAKE_HOST_SYSTEM_PROCESSOR" "CMAKE_HOST_SYSTEM_VERSION")
-list(APPEND _subModules "IVYKIS_SOURCE")
-list(APPEND _compilersInfo "CMAKE_C_COMPILER" "CMAKE_CXX_COMPILER" "CMAKE_OBJC_COMPILER")
-list(APPEND _compilationsOptions "CMAKE_BUILD_TYPE" "BUILD_TESTING" "ENABLE_EXTRA_WARNINGS" "ENABLE_FORCE_GNU99")
-if(APPLE)
-  list(APPEND _compilationsOptions "FORCE_CLASSIC_LINKING")
-endif()
+set(_maxHeaderLen 43)
+set(_maxSummaryLineLen 36)
 
 option(SUMMARY_LEVEL "Detail level of the cmake options summary information (0,1 or 2)" 0)
 
@@ -56,6 +48,46 @@ function(_space_tabbed_string _variableName _maxVarNameLen _outputVariable)
 
   set(${_outputVariable} "${_variableName}${_spaces}" PARENT_SCOPE)
   # return(PROPAGATE ${_outputVariable})
+endfunction()
+
+function(_get_matching_options _result_list _variableNames _options)
+  if(ARGN)
+    set(_exceptNames ${ARGN})
+  endif()
+
+  foreach(_variableName ${_variableNames})
+    foreach(_option ${_options})
+      string(REGEX MATCH "${_option}" _match "${_variableName}")
+
+      if(DEFINED _exceptNames)
+        set(_except_index -1)
+        foreach(_exceptName ${_exceptNames})
+          string(REGEX MATCH "${_exceptName}" _except_match "${_variableName}")
+          if(_except_match)
+            set(_except_index 1)
+            break()
+          endif()
+        endforeach()
+      else()
+        set(_except_index -1)
+      endif()
+
+      if(_match AND _except_index LESS 0)
+        list(APPEND new_list "${_variableName}")
+      endif()
+    endforeach()
+  endforeach()
+  set(${_result_list} "${new_list}" PARENT_SCOPE)
+endfunction()
+
+function(_get_feature_list _result_list _variableNames _exceptNames)
+  _get_matching_options(_filteredNames "${_variableNames}" "SYSLOG_NG_ENABLE_" "${_exceptName}")
+
+  foreach(_variableName ${_filteredNames})
+    string(REPLACE "SYSLOG_NG_" "" _featureName "${_variableName}")
+    list(APPEND _final_list "${_featureName}")
+  endforeach()
+  set(${_result_list} "${_final_list}" PARENT_SCOPE)
 endfunction()
 
 function(_print_summary_line _variableName _variableValue _maxVarNameLen)
@@ -91,19 +123,6 @@ function(_print_separator _header)
   message(NOTICE "${_header}")
 endfunction()
 
-function(_print_libraries _variableNames)
-  foreach(_variableName ${_variableNames})
-    string(REGEX MATCH ".*(_FOUND)$" _match_found "${_variableName}")
-    string(REGEX MATCH ".*(_LIBRARY|_LIBRARIES|_LIBRARY_OPTS)$" _match_lib "${_variableName}")
-    string(REGEX MATCH ".*(INCLUDE_DIR|INCLUDEDIR|INCLUDE_DIRS|INCLUDE_OPTS)$" _match_incl "${_variableName}")
-    string(REGEX MATCH "^(CMAKE_|_).*" _cmakeInternal "${_variableName}")
-
-    if((_match_lib OR _match_incl OR _match_found) AND NOT _cmakeInternal)
-      _print_summary_line("${_variableName}=" "${${_variableName}}" 0)
-    endif()
-  endforeach()
-endfunction()
-
 function(_print_compilers_info _variableNames _importantVariableNames)
   foreach(_importantVariableName ${_importantVariableNames})
     foreach(_variableName ${_variableNames})
@@ -124,43 +143,33 @@ function(_print_compilers_info _variableNames _importantVariableNames)
             COMMAND "${_compilerPath}" --version
             # version info does not always contain the exact executable name (clang++ -> clang)
             # using now the hardcoded first line content instead :S
-            #COMMAND grep -i ${_executable_name}
+            # COMMAND grep -i ${_executable_name}
             COMMAND head -n 1
             OUTPUT_VARIABLE _compilerVersion
             OUTPUT_STRIP_TRAILING_WHITESPACE
           )
-          _space_tabbed_string("${_variableName}" 32 _spaceTabbedVariableName)
-          _space_tabbed_string ("${_executable_name}" 10 _spaceTabbedExecutable_name)
-          _print_summary_line("${_spaceTabbedVariableName}" "${_spaceTabbedExecutable_name}${Green}[${Yellow}${_compilerVersion}${Green}]${ResetFG} - ${_compilerPath}" 32)
+          _space_tabbed_string("${_variableName}" ${_maxSummaryLineLen} _spaceTabbedVariableName)
+          _space_tabbed_string("${_executable_name}" 10 _spaceTabbedExecutable_name)
+          _print_summary_line("${_spaceTabbedVariableName}" "${_spaceTabbedExecutable_name}${Green}[${Yellow}${_compilerVersion}${Green}]${ResetFG} - ${_compilerPath}" ${_maxSummaryLineLen})
           unset(_compilerVersion)
         else()
-          _print_summary_line("${_importantVariableName}" "${${_importantVariableName}}" 32)
+          _print_summary_line("${_importantVariableName}" "${${_importantVariableName}}" ${_maxSummaryLineLen})
         endif()
       endif()
     endforeach()
   endforeach()
 endfunction()
 
-function(_print_module_options _variableNames)
-  foreach(_variableName ${_variableNames})
-    string(REGEX MATCH "^ENABLE_" _match "${_variableName}")
-    list(FIND _compilationsOptions "${_variableName}" _index)
-
-    if(_match AND _index LESS 0)
-      _print_summary_line("${_variableName}" "${${_variableName}}" 32)
-    endif()
+function(_print_options _variableNames _options)
+  if(_options)
+    _get_matching_options(_result_list "${_variableNames}" "${_options}" ${ARGN})
+  else()
+    set(_result_list "${_variableNames}")
+  endif()
+  foreach(_variableName ${_result_list})
+    _print_summary_line("${_variableName}" "${${_variableName}}" ${_maxSummaryLineLen})
   endforeach()
 endfunction()
-
-function(_print_options _variableNames _options)
-  foreach (_option ${_options})
-    list(FIND _variableNames "${_option}" _index)
-
-    if(_index GREATER_EQUAL 0)
-      _print_summary_line("${_option}" "${${_option}}" 32)
-    endif()
-  endforeach ()
-endfunction ()
 
 function(_print_full _variableNames)
   foreach(_variableName ${_variableNames})
@@ -182,27 +191,62 @@ function(print_config_summary)
   else()
     if(SUMMARY_VERBOSE OR SUMMARY_LEVEL EQUAL 1)
       _print_separator("")
-      _print_libraries("${_variableNames}")
+
+      list(APPEND _libraryOptions ".*(_FOUND)$" ".*(_LIBRARY|_LIBRARIES|_LIBRARY_OPTS)$" ".*(INCLUDE_DIR|INCLUDEDIR|INCLUDE_DIRS|INCLUDE_OPTS)$")
+      list(APPEND _libraryExcludeOptions "^(CMAKE_|_).*")
+      _print_options("${_variableNames}" "${_libraryOptions}" "${_libraryExcludeOptions}")
     endif()
   endif()
 
   _print_separator("")
-  message (NOTICE "syslog-ng Open Source Edition ${SYSLOG_NG_VERSION} configured")
+  message(NOTICE "syslog-ng Open Source Edition ${SYSLOG_NG_VERSION} configured")
 
   _print_separator("Environment")
-  _print_options ("${_variableNames}" "${_envInfo}")
+  list(APPEND _envInfo "CMAKE_HOST_SYSTEM" "CMAKE_HOST_SYSTEM_NAME" "CMAKE_HOST_SYSTEM_PROCESSOR" "CMAKE_HOST_SYSTEM_VERSION")
+  _print_options("${_variableNames}" "${_envInfo}")
 
   _print_separator("Compilers")
+  list(APPEND _compilersInfo "CMAKE_C_COMPILER" "CMAKE_CXX_COMPILER" "CMAKE_OBJC_COMPILER")
   _print_compilers_info("${_variableNames}" "${_compilersInfo}")
 
   _print_separator("Compilation")
-  _print_options("${_variableNames}" "${_compilationsOptions}")
+  list(APPEND _compilationOptions "CMAKE_BUILD_TYPE" "^ENABLE_CPP" "ENABLE_EXTRA_WARNINGS" "ENABLE_FORCE_GNU99" "ENV_LD_LIBRARY_PATH")
+
+  if(APPLE)
+    list(APPEND _compilationOptions "FORCE_CLASSIC_LINKING")
+  endif()
+  _print_options("${_variableNames}" "${_compilationOptions}")
+
+  _print_separator("Testing")
+  list(APPEND _testingOptions "BUILD_TESTING")
+  _print_options("${_variableNames}" "${_testingOptions}")
+
+  # No man pages support et in the cmake builds
+  # _print_separator ("Man pages")
+  # list (APPEND _manPages "ENABLE_MANPAGES" "ENABLE_MANPAGES_INSTALL")
+  # _print_options ("${_variableNames}" "${_manPages}")
+  _get_matching_options(_evaluatedFeaturesOptions "${_variableNames}" "^SYSLOG_NG_ENABLE_")
+
+  _print_separator("Features")
+  list(APPEND _featuresExcludeOptions "ENABLE_DEBUG" "ENABLE_CPP" "ENABLE_AFSOCKET_MEMINFO_METRICS")
+  _get_feature_list(_featuresOptions "${_evaluatedFeaturesOptions}" "${_featuresExcludeOptions}")
+  list(APPEND _featuresOptions "SANITIZER")
+  _print_options("${_featuresOptions}" "")
+
+  if(SUMMARY_FULL OR SUMMARY_VERBOSE OR SUMMARY_LEVEL GREATER_EQUAL 1)
+    _print_separator("Evaluated features")
+    list(APPEND _evaluatedFeaturesOptions "SYSLOG_NG_SYSTEMD_JOURNAL_MODE")
+    _print_options("${_evaluatedFeaturesOptions}" "")
+  endif()
 
   _print_separator("Sub-modules")
+  list(APPEND _subModules "IVYKIS_SOURCE")
   _print_options("${_variableNames}" "${_subModules}")
 
   _print_separator("Modules")
-  _print_module_options("${_variableNames}")
+  list(APPEND _modulesOptions "^ENABLE_")
+  list(APPEND _modulesExcludeOptions "${_compilationOptions}" "${_featuresOptions}")
+  _print_options("${_variableNames}" "${_modulesOptions}" "${_modulesExcludeOptions}")
 
   _print_separator("")
 endfunction()

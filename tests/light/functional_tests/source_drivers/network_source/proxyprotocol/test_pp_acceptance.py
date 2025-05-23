@@ -21,10 +21,10 @@
 #
 #############################################################################
 
-TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
+TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${IP_PROTO} ${MESSAGE}\n"'
 INPUT_MESSAGES = "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n" \
                  "message 0"
-EXPECTED_MESSAGE0 = "1.1.1.1 2.2.2.2 3333 4444 4 message 0\n"
+EXPECTED_MESSAGE0 = "1.1.1.1 3333 2.2.2.2 4444 4 message 0\n"
 
 
 def test_pp_acceptance(config, syslog_ng, loggen, port_allocator):

@@ -1,20 +1,12 @@
 ---
 name: Documentation issue
 about: Use this template for reporting an issue in the documentation.
-title: ''
+title: 'Please use https://github.com/syslog-ng/syslog-ng.github.io/issues/new/choose'
 labels: 'doc-bug'
 assignees: ''
 
 ---
 
-## Documentation version
-<!-- In which version of syslog-ng's documentation did you see the issue? -->
+Documentation issues are now handled in the new Documentation Center issue tracker.
 
-## Incorrect section
-<!-- Which section of the documentation is wrong? Please include a link to it, if that is possible. -->
-
-## Description of the problem
-<!-- Which statements of the documentation are inaccurate? -->
-
-## Proposed solution
-<!-- What do you think the correction should be? -->
+Please use https://github.com/syslog-ng/syslog-ng.github.io/issues/new/choose instead.

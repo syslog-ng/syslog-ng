@@ -30,7 +30,6 @@ add_dependencies(BuildJavaModules mod-java)
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/built-jars/ DESTINATION lib/syslog-ng/java-modules)
 install(CODE "execute_process(COMMAND ${GRADLE_EXECUTABLE} --project-cache-dir ${GRADLE_WORKDIR} -g ${GRADLE_WORKDIR} -p ${CMAKE_CURRENT_SOURCE_DIR} -PsyslogBuildDir=${CMAKE_CURRENT_BINARY_DIR} -PsyslogDepsDir=${SYSLOG_DEPS_DIR} -PjarDestDir=${JAVA_MOD_DST_DIR} copyLog4j)")
-install(CODE "execute_process(COMMAND ${GRADLE_EXECUTABLE} --project-cache-dir ${GRADLE_WORKDIR} -g ${GRADLE_WORKDIR} -p ${CMAKE_CURRENT_SOURCE_DIR} -PsyslogBuildDir=${CMAKE_CURRENT_BINARY_DIR} -PsyslogDepsDir=${SYSLOG_DEPS_DIR} -PjarDestDir=${JAVA_MOD_DST_DIR} copyJestRuntimeDeps)")
 
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ".gradle")
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "built-jars")

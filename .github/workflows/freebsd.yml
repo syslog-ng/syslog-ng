@@ -1,0 +1,129 @@
+name: FreeBSD
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: '00 21 * * *'
+
+jobs:
+  general:
+    strategy:
+      matrix:
+        # https://github.com/marketplace/actions/freebsd-vm
+        release: [ "15.0", "14.2" ]
+        arch: [ aarch64, amd64 ]
+        build-tool: [ cmake ] # , autotools
+        compiler: [ {cpp: clang++, c: clang} ] # , {cpp: g++, c: gcc}
+        runner: [ ubuntu-24.04, ubuntu-24.04-arm ]
+        exclude:
+          - runner: ubuntu-24.04
+            arch: aarch64
+          - runner: ubuntu-24.04-arm
+            arch: amd64
+          # TODO: Though the arch of the runner and the vm is matching, it is extremly slow on aarch64
+          #       Turn it off for now. Check if it is a runner or a vm issue.
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+      fail-fast: false
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v4
+
+      - name: Set ENV variables
+        env:
+          CC: ${{ matrix.compiler.c }}
+          CXX: ${{ matrix.compiler.cpp }}
+          THREADS: 4
+
+        run: |
+          . .github/workflows/gh-tools.sh
+
+          #THREADS=$(sysctl -n hw.ncpu) # TODO: Check how to get it on the FreeBSD VM
+          BSDPORTS_PREFIX=/usr/local
+          SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
+          WARNING_FLAGS="-Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
+          CFLAGS="-I${BSDPORTS_PREFIX}/include/ ${WARNING_FLAGS}"
+          CXXFLAGS="${CFLAGS}"
+          LDFLAGS="-L${BSDPORTS_PREFIX}/lib"
+          # -DIVYKIS_SOURCE=internal is switched to system temporally as of https://github.com/buytenh/ivykis/pulls
+          CMAKE_CONFIGURE_FLAGS="
+            `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
+            -DENABLE_EXTRA_WARNINGS=ON
+            -DSUMMARY_LEVEL=1
+            -DCMAKE_BUILD_TYPE=Debug
+            -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
+            -DBUILD_TESTING=ON
+            -DPYTHON_VERSION=3
+            -DIVYKIS_SOURCE=internal
+            -DENABLE_JOURNALD=OFF
+            -DENABLE_JAVA=OFF
+            -DENABLE_JAVA_MODULES=OFF
+          "
+          PKGCONF_PATH=$(pkgconf --variable pc_path pkgconf)
+          export PKG_CONFIG_PATH="${PKGCONF_PATH}:$PKG_CONFIG_PATH"
+          PATH="${BSDPORTS_PREFIX}/bin:${BSDPORTS_PREFIX}/sbin:${PATH}"
+
+          gh_export BSDPORTS_PREFIX SYSLOG_NG_INSTALL_DIR CC CXX PKGCONF_PATH PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS CXXFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
+          gh_path "${PATH}"
+
+          env | sort
+          #cat "${GITHUB_ENV}" | sort
+
+      - name: Setup the environment
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+
+          release: ${{ matrix.release }}
+          arch: ${{ matrix.arch }}
+          cpu: ${{ env.THREADS }}
+
+          sync: rsync # or sshfs or nfs
+          copyback: false
+
+          envs: |
+            BSDPORTS_PREFIX SYSLOG_NG_INSTALL_DIR CC CXX PKGCONF_PATH PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS CXXFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
+
+          prepare: |
+            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf criterion gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk18 rabbitmq-c riemann-c-client ivykis
+
+          run: |
+            env | sort
+            # For checking the FreeBSD port source branch
+            #cat /etc/pkg/FreeBSD.conf || true
+            # As using the default actions/checkout@v4 to get the source code, the submodules are not checked out by default
+            # Calling the git submodule update --init --recursive during the configure step would fail bacuse of the different git owners
+            # So, the safe exceptions are added to the git config (other option could be a full manual source checkout that requires a bit
+            # bigger effort, as the correct branch must be maintained as well)
+            git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: cmake configure
+        shell: freebsd {0}
+        run: |
+          cd $GITHUB_WORKSPACE; pwd
+
+          env | sort
+          echo "ARCH: " $(uname -m)
+          echo "clang:" $(which clang; clang --version)
+
+          cmake --install-prefix "${SYSLOG_NG_INSTALL_DIR}" -B build . ${CMAKE_CONFIGURE_FLAGS}
+
+      - name: cmake install
+        shell: freebsd {0}
+        run: |
+          cd $GITHUB_WORKSPACE; pwd
+
+          cmake --build ./build -j ${THREADS} --target install
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -V
+
+      - name: cmake check
+        shell: freebsd {0}
+        run: |
+          cd $GITHUB_WORKSPACE; pwd
+
+          # TODO: Skip for now, should fix the FreeBSD tests
+          #cmake --build ./build -j ${THREADS} --target check

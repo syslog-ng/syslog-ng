@@ -114,15 +114,17 @@ log_proto_buffered_server_cue_flush(LogProtoBufferedServer *self)
   self->flush_partial_message = TRUE;
 }
 
-LogProtoPrepareAction log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond,
-                                                        gint *timeout G_GNUC_UNUSED);
+LogProtoPrepareAction log_proto_buffered_server_poll_prepare(LogProtoServer *s, GIOCondition *cond,
+    gint *timeout G_GNUC_UNUSED);
 LogProtoBufferedServerState *log_proto_buffered_server_get_state(LogProtoBufferedServer *self);
 void log_proto_buffered_server_put_state(LogProtoBufferedServer *self);
+gboolean log_proto_buffered_server_restart_with_state(LogProtoServer *s,
+                                                      PersistState *persist_state, const gchar *persist_name);
 
 /* LogProtoBufferedServer */
 gboolean log_proto_buffered_server_validate_options_method(LogProtoServer *s);
 void log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport,
-                                    const LogProtoServerOptions *options);
+                                    const LogProtoServerOptionsStorage *options);
 void log_proto_buffered_server_free_method(LogProtoServer *s);
 
 LogProtoStatus log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len,

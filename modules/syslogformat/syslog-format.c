@@ -135,7 +135,16 @@ _syslog_format_parse_pri(LogMessage *msg, const guchar **data, gint *length, gui
         {
           if (isdigit(*src))
             {
-              pri = pri * 10 + ((*src) - '0');
+              // __builtin_mul_overflow is a gcc 5.0+ feature, check for multiplication overflow
+              if (pri > (INT_MAX / 10))
+                return FALSE;
+              pri *= 10;
+
+              int digit = *src - '0';
+              // __builtin_add_overflow is a gcc 5.0+ feature, check for addition overflow
+              if (pri > (INT_MAX - digit))
+                return FALSE;
+              pri += digit;
             }
           else
             {
@@ -326,6 +335,24 @@ _syslog_format_parse_version(LogMessage *msg, const guchar **data, gint *length)
   return TRUE;
 }
 
+static const gchar program_name_allowed_specials[] = ".-_()/";
+static gsize program_name_allowed_spacial_chars_len = G_N_ELEMENTS(program_name_allowed_specials) - 1;
+
+static inline gboolean
+_validate_program_char(const guchar ch, gboolean *has_alpha)
+{
+  if (isalpha(ch))
+    {
+      *has_alpha = TRUE;
+      return TRUE;
+    }
+  if (isdigit(ch))
+    return TRUE;
+  if (memchr(program_name_allowed_specials, ch, program_name_allowed_spacial_chars_len))
+    return TRUE;
+  return FALSE;
+}
+
 static void
 _syslog_format_parse_legacy_program_name(LogMessage *msg, const guchar **data, gint *length, guint flags)
 {
@@ -336,10 +363,24 @@ _syslog_format_parse_legacy_program_name(LogMessage *msg, const guchar **data, g
   src = *data;
   left = *length;
   prog_start = src;
+  gboolean has_alpha_char = FALSE;
+
   while (left && *src != ' ' && *src != '[' && *src != ':')
     {
+      if (G_UNLIKELY(flags & LP_CHECK_PROGRAM) && !_validate_program_char(*src, &has_alpha_char))
+        {
+          log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC_3164_INVALID_PROGRAM);
+          return;
+        }
       _skip_char(&src, &left);
     }
+
+  if (G_UNLIKELY(flags & LP_CHECK_PROGRAM) && !has_alpha_char)
+    {
+      log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC_3164_INVALID_PROGRAM);
+      return;
+    }
+
   log_msg_set_value(msg, LM_V_PROGRAM, (gchar *) prog_start, src - prog_start);
   if (left > 0 && *src == '[')
     {
@@ -953,7 +994,7 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
   /* we did indeed find a series of digits that look like framing, that's
    * probably not what was intended. */
   msg_debug("RFC5425 style octet count was found at the start of the message, this is probably not what was intended",
-            evt_tag_mem("data", data, src - (*data)),
+            evt_tag_mem("data", *data, src - (*data)),
             evt_tag_msg_reference(msg));
   log_msg_set_tag_by_id(msg, LM_T_SYSLOG_UNEXPECTED_FRAMING);
   *data = src;

@@ -205,22 +205,27 @@ _format_value_name_with_prefix(gchar *buf, gsize buf_len,
                                JournalReaderOptions *options,
                                const gchar *key, gssize key_len)
 {
-  gsize cont = 0;
+  /* NOTE: key is usually not NUL terminated (except if we are mapping it
+   * from the journald native key to syslog-ng field name) */
 
+  gsize cont = 0;
   if (key_len < 0)
     key_len = strlen(key);
 
   if (options->prefix)
     cont = g_strlcpy(buf, options->prefix, buf_len);
-  gsize left = buf_len - cont;
+  gssize left = buf_len - cont;
   if (left >= key_len + 1)
     {
-      strncpy(buf + cont, key, key_len);
+      /* we have more than enough space in buf */
+      memcpy(buf + cont, key, key_len);
       buf[cont + key_len] = 0;
     }
-  else
+  else if (left > 0)
     {
-      g_strlcpy(buf + cont, key, buf_len - cont);
+      /* truncate key */
+      memcpy(buf + cont, key, left - 1);
+      buf[cont + left - 1] = 0;
     }
 }
 

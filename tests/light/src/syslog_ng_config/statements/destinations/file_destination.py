@@ -24,15 +24,23 @@ from pathlib import Path
 
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
+from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 class FileDestination(DestinationDriver):
-    def __init__(self, file_name, **options):
+    def __init__(
+        self,
+        stats_handler: LegacyStatsHandler,
+        prometheus_stats_handler: PrometheusStatsHandler,
+        file_name: str,
+        **options,
+    ) -> None:
         self.driver_name = "file"
         self.driver_instance = file_name
         self.path = Path(file_name)
         self.io = FileIO(self.path)
-        super(FileDestination, self).__init__([self.path], options)
+        super(FileDestination, self).__init__(stats_handler, prometheus_stats_handler, [self.path], options)
 
     def get_path(self):
         return self.path

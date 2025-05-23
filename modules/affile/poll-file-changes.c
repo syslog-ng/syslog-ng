@@ -153,8 +153,8 @@ poll_file_changes_check_file(gpointer s)
         }
       else
         {
-          msg_verbose("Follow mode file still does not exist",
-                      evt_tag_str("filename", self->follow_filename));
+          msg_trace("Follow mode file still does not exist",
+                    evt_tag_str("filename", self->follow_filename));
         }
     }
 reschedule:
@@ -171,11 +171,11 @@ poll_file_changes_stop_watches(PollEvents *s)
 }
 
 static void
-poll_file_changes_rearm_timer(PollFileChanges *self)
+poll_file_changes_rearm_timer(PollFileChanges *self, glong delay)
 {
   iv_validate_now();
   self->follow_timer.expires = iv_now;
-  timespec_add_msec(&self->follow_timer.expires, self->follow_freq);
+  timespec_add_msec(&self->follow_timer.expires, delay);
   iv_timer_register(&self->follow_timer);
 }
 
@@ -188,8 +188,21 @@ poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 
   poll_file_changes_stop_watches(s);
 
+  if (self->fd < 0)
+    {
+      /* file does not exist yet, go back checking after follow_freq */
+      poll_file_changes_rearm_timer(self, self->follow_freq);
+      return;
+    }
+
   if (poll_file_changes_check_watches(self))
-    poll_file_changes_rearm_timer(self);
+    poll_file_changes_rearm_timer(self, self->follow_freq);
+  else
+    {
+      msg_trace("File exists and contains data",
+                evt_tag_str("follow_filename", self->follow_filename));
+      poll_file_changes_rearm_timer(self, 0);
+    }
 }
 
 void
@@ -207,7 +220,7 @@ poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *fol
 {
   self->super.stop_watches = poll_file_changes_stop_watches;
   self->super.update_watches = poll_file_changes_update_watches;
-  self->super.system_polled = FALSE;
+  self->super.type = FM_POLL;
   self->super.get_fd = _get_fd;
   self->super.free_fn = poll_file_changes_free;
 

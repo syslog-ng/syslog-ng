@@ -35,7 +35,7 @@ typedef struct _LogProtoClient LogProtoClient;
 typedef struct _LogProtoClientOptions
 {
   gboolean drop_input;
-  gint timeout;
+  gint idle_timeout;
 } LogProtoClientOptions;
 
 typedef union _LogProtoClientOptionsStorage
@@ -54,27 +54,25 @@ typedef struct
   gpointer user_data;
 } LogProtoClientFlowControlFuncs;
 
-void log_proto_client_options_set_drop_input(LogProtoClientOptions *options, gboolean drop_input);
-void log_proto_client_options_set_timeout(LogProtoClientOptions *options, gint timeout);
-gint log_proto_client_options_get_timeout(LogProtoClientOptions *options);
+void log_proto_client_options_set_drop_input(LogProtoClientOptionsStorage *options, gboolean drop_input);
+void log_proto_client_options_set_timeout(LogProtoClientOptionsStorage *options, gint timeout);
+gint log_proto_client_options_get_timeout(LogProtoClientOptionsStorage *options);
 
-void log_proto_client_options_defaults(LogProtoClientOptions *options);
-void log_proto_client_options_init(LogProtoClientOptions *options, GlobalConfig *cfg);
-void log_proto_client_options_destroy(LogProtoClientOptions *options);
+void log_proto_client_options_defaults(LogProtoClientOptionsStorage *options);
+void log_proto_client_options_init(LogProtoClientOptionsStorage *options, GlobalConfig *cfg);
+void log_proto_client_options_destroy(LogProtoClientOptionsStorage *options);
 
 struct _LogProtoClient
 {
   LogProtoStatus status;
-  const LogProtoClientOptions *options;
-  LogTransport *transport;
-  /* FIXME: rename to something else */
-  gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout);
+  const LogProtoClientOptionsStorage *options;
+  LogTransportStack transport_stack;
+  gboolean (*poll_prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout);
   LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*process_in)(LogProtoClient *s);
   LogProtoStatus (*flush)(LogProtoClient *s);
   gboolean (*validate_options)(LogProtoClient *s);
-  gboolean (*handshake_in_progess)(LogProtoClient *s);
-  LogProtoStatus (*handshake)(LogProtoClient *s);
+  LogProtoStatus (*handshake)(LogProtoClient *s, gboolean *handshake_finished);
   gboolean (*restart_with_state)(LogProtoClient *s, PersistState *state, const gchar *persist_name);
   void (*free_fn)(LogProtoClient *s);
   LogProtoClientFlowControlFuncs flow_control_funcs;
@@ -102,7 +100,7 @@ log_proto_client_msg_rewind(LogProtoClient *self)
 }
 
 static inline void
-log_proto_client_set_options(LogProtoClient *self, const LogProtoClientOptions *options)
+log_proto_client_set_options(LogProtoClient *self, const LogProtoClientOptionsStorage *options)
 {
   self->options = options;
 }
@@ -113,30 +111,25 @@ log_proto_client_validate_options(LogProtoClient *self)
   return self->validate_options(self);
 }
 
-static inline gboolean
-log_proto_client_handshake_in_progress(LogProtoClient *s)
-{
-  if (s->handshake_in_progess)
-    {
-      return s->handshake_in_progess(s);
-    }
-  return FALSE;
-}
-
 static inline LogProtoStatus
-log_proto_client_handshake(LogProtoClient *s)
+log_proto_client_handshake(LogProtoClient *s, gboolean *handshake_finished)
 {
   if (s->handshake)
     {
-      return s->handshake(s);
+      return s->handshake(s, handshake_finished);
     }
+  *handshake_finished = TRUE;
   return LPS_SUCCESS;
 }
 
 static inline gboolean
-log_proto_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
+log_proto_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
-  return s->prepare(s, fd, cond, timeout);
+  gboolean result = s->poll_prepare(s, fd, cond, timeout);
+
+  if (!result && *timeout < 0)
+    *timeout = s->options->super.idle_timeout;
+  return result;
 }
 
 static inline LogProtoStatus
@@ -175,7 +168,7 @@ static inline gint
 log_proto_client_get_fd(LogProtoClient *s)
 {
   /* FIXME: Layering violation */
-  return s->transport->fd;
+  return s->transport_stack.fd;
 }
 
 static inline void
@@ -193,7 +186,7 @@ log_proto_client_restart_with_state(LogProtoClient *s, PersistState *state, cons
 }
 
 gboolean log_proto_client_validate_options(LogProtoClient *self);
-void log_proto_client_init(LogProtoClient *s, LogTransport *transport, const LogProtoClientOptions *options);
+void log_proto_client_init(LogProtoClient *s, LogTransport *transport, const LogProtoClientOptionsStorage *options);
 void log_proto_client_free(LogProtoClient *s);
 void log_proto_client_free_method(LogProtoClient *s);
 
@@ -227,15 +220,14 @@ typedef struct _LogProtoClientFactory LogProtoClientFactory;
 
 struct _LogProtoClientFactory
 {
-  LogProtoClient *(*construct)(LogTransport *transport, const LogProtoClientOptions *options);
+  LogProtoClient *(*construct)(LogTransport *transport, const LogProtoClientOptionsStorage *options);
   gint default_inet_port;
-  gboolean use_multitransport;
   gboolean stateful;
 };
 
 static inline LogProtoClient *
 log_proto_client_factory_construct(LogProtoClientFactory *self, LogTransport *transport,
-                                   const LogProtoClientOptions *options)
+                                   const LogProtoClientOptionsStorage *options)
 {
   return self->construct(transport, options);
 }

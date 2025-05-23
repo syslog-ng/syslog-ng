@@ -25,24 +25,18 @@
 #ifndef TRANSPORT_FACTORY_TLS_H_INCLUDED
 #define TRANSPORT_FACTORY_TLS_H_INCLUDED
 
-#include "transport/transport-factory.h"
+#include "transport/transport-stack.h"
 #include "transport/tls-context.h"
 
-typedef struct _TransportFactoryTLS TransportFactoryTLS;
+typedef struct _LogTransportFactoryTLS LogTransportFactoryTLS;
 
-struct _TransportFactoryTLS
+struct _LogTransportFactoryTLS
 {
-  TransportFactory super;
+  LogTransportFactory super;
   TLSContext *tls_context;
   TLSVerifier *tls_verifier;
-  gboolean allow_compress;
 };
 
-TransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags);
-
-void transport_factory_tls_enable_compression(TransportFactory *);
-void transport_factory_tls_disable_compression(TransportFactory *);
-
-const TransportFactoryId *transport_factory_tls_id(void);
+LogTransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier);
 
 #endif

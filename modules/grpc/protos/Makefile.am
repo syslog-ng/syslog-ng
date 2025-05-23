@@ -16,11 +16,15 @@ OPENTELEMETRY_PROTO_BUILDDIR = $(GRPC_PROTOS_BUILDDIR)/otlp
 LOKI_PROTO_SRCDIR = $(GRPC_PROTOS_SRCDIR)/grafana-loki
 LOKI_PROTO_BUILDDIR = $(GRPC_PROTOS_BUILDDIR)/loki
 
+CLICKHOUSE_PROTO_SRCDIR = $(GRPC_PROTOS_SRCDIR)/clickhouse-proto
+CLICKHOUSE_PROTO_BUILDDIR = $(GRPC_PROTOS_BUILDDIR)/clickhouse
+
 if ENABLE_GRPC
 
 OPENTELEMETRY_PROTO_PROTOC_FLAGS = $(PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS) --proto_path=$(OPENTELEMETRY_PROTO_SRCDIR) --cpp_out=$(OPENTELEMETRY_PROTO_BUILDDIR)
 LOKI_PROTO_PROTOC_FLAGS = $(PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS) --proto_path=$(LOKI_PROTO_SRCDIR) --cpp_out=$(LOKI_PROTO_BUILDDIR)
 GOOGLEAPIS_PROTO_PROTOC_FLAGS = $(PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS) --proto_path=$(GOOGLEAPIS_PROTO_SRCDIR) --cpp_out=$(GOOGLEAPIS_PROTO_BUILDDIR)
+CLICKHOUSE_PROTO_PROTOC_FLAGS = $(PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS) --proto_path=$(CLICKHOUSE_PROTO_SRCDIR) --cpp_out=$(CLICKHOUSE_PROTO_BUILDDIR)
 
 modules/grpc/protos/otlp/%.grpc.pb.cc modules/grpc/protos/otlp/%.grpc.pb.h:
 	mkdir -p $(OPENTELEMETRY_PROTO_BUILDDIR)
@@ -45,6 +49,14 @@ modules/grpc/protos/google-proto/%.grpc.pb.cc modules/grpc/protos/google-proto/%
 modules/grpc/protos/google-proto/%.pb.cc modules/grpc/protos/google-proto/%.pb.h:
 	mkdir -p $(GOOGLEAPIS_PROTO_BUILDDIR)
 	$(PROTOC) $(GOOGLEAPIS_PROTO_PROTOC_FLAGS) $*.proto
+
+modules/grpc/protos/clickhouse/%.grpc.pb.cc modules/grpc/protos/clickhouse/%.grpc.pb.h:
+	mkdir -p $(CLICKHOUSE_PROTO_BUILDDIR)
+	$(PROTOC) $(CLICKHOUSE_PROTO_PROTOC_FLAGS) --grpc-cpp_out=$(CLICKHOUSE_PROTO_BUILDDIR) $*.proto
+
+modules/grpc/protos/clickhouse/%.pb.cc modules/grpc/protos/clickhouse/%.pb.h:
+	mkdir -p $(CLICKHOUSE_PROTO_BUILDDIR)
+	$(PROTOC) $(CLICKHOUSE_PROTO_PROTOC_FLAGS) $*.proto
 
 GRPC_PROTOS_BUILT_SOURCES = \
   $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/logs/v1/logs_service.grpc.pb.cc \
@@ -103,8 +115,21 @@ GRPC_PROTOS_BUILT_SOURCES = \
   $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/stream.pb.h \
   $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/table.pb.cc \
   $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/table.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/pubsub.grpc.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/pubsub.grpc.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/pubsub.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/pubsub.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/schema.grpc.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/schema.grpc.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/schema.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/schema.pb.h \
   $(GOOGLEAPIS_PROTO_BUILDDIR)/google/rpc/status.pb.cc \
-  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/rpc/status.pb.h
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/rpc/status.pb.h \
+  \
+  $(CLICKHOUSE_PROTO_BUILDDIR)/clickhouse_grpc.grpc.pb.cc \
+  $(CLICKHOUSE_PROTO_BUILDDIR)/clickhouse_grpc.grpc.pb.h \
+  $(CLICKHOUSE_PROTO_BUILDDIR)/clickhouse_grpc.pb.cc \
+  $(CLICKHOUSE_PROTO_BUILDDIR)/clickhouse_grpc.pb.h
 
 lib_LTLIBRARIES += modules/grpc/protos/libgrpc-protos.la
 
@@ -115,7 +140,7 @@ modules_grpc_protos_libgrpc_protos_la_SOURCES = \
 
 modules_grpc_protos_libgrpc_protos_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
-  -Wno-switch-default -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
+  -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
   $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(GOOGLEAPIS_PROTO_SRCDIR) \
@@ -123,7 +148,9 @@ modules_grpc_protos_libgrpc_protos_la_CXXFLAGS = \
   -I$(OPENTELEMETRY_PROTO_SRCDIR) \
   -I$(OPENTELEMETRY_PROTO_BUILDDIR) \
   -I$(LOKI_PROTO_SRCDIR) \
-  -I$(LOKI_PROTO_BUILDDIR)
+  -I$(LOKI_PROTO_BUILDDIR) \
+  -I$(CLICKHOUSE_PROTO_SRCDIR) \
+  -I$(CLICKHOUSE_PROTO_BUILDDIR)
 
 if ENABLE_EXTRA_WARNINGS
 modules_grpc_protos_libgrpc_protos_la_CXXFLAGS += -Wno-switch-default
@@ -148,4 +175,5 @@ EXTRA_DIST += \
   $(OPENTELEMETRY_PROTO_SRCDIR) \
   $(LOKI_PROTO_SRCDIR) \
   $(GRPC_PROTOS_SRCDIR)/CMakeLists.txt \
-  $(GOOGLEAPIS_PROTO_SRCDIR)
+  $(GOOGLEAPIS_PROTO_SRCDIR) \
+  $(CLICKHOUSE_PROTO_SRCDIR)

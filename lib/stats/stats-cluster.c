@@ -369,6 +369,9 @@ stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **
 static inline void
 _reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
+  if (!stats_cluster_key_is_legacy(&sc->key))
+    return;
+
   if (strcmp(stats_cluster_get_type_name(sc, type), "memory_usage") == 0)
     return;
 

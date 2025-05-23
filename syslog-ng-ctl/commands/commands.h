@@ -28,6 +28,11 @@
 #include "secret-storage/secret-storage.h"
 
 #include <stdio.h>
+#include <errno.h>
+
+/* Though clang has no issues, but gcc is stricter about requiring initializer elements to be compile-time constants when initializing structures directly
+ * This helper macro is used to initialize GOptionEntry structures with the same values as the GOptionEntry initializers without having to repeat the initializer values */
+#define OPTIONS_ENTRY(long_name, short_name, flags, arg, arg_data, description, arg_description) { long_name, short_name, flags, arg, arg_data, description, arg_description }
 
 extern GOptionEntry no_options[];
 
@@ -43,7 +48,7 @@ typedef struct _CommandDescriptor
 typedef gint (*CommandResponseHandlerFunc)(GString *response, gpointer user_data);
 
 gint dispatch_command(const gchar *cmd);
-gint slng_run_command(const gchar *command, CommandResponseHandlerFunc cb, gpointer user_data);
+gint attach_command(const gchar *cmd);
 gint process_response_status(GString *response);
 gboolean is_syslog_ng_running(void);
 

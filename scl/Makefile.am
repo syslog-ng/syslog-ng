@@ -16,6 +16,7 @@ SCL_SUBDIRS	= \
 	graphite	\
 	graylog2	\
 	hdfs		\
+	stats-exporter		\
 	iptables	\
 	jellyfin	\
 	junos		\
@@ -49,7 +50,8 @@ SCL_SUBDIRS	= \
 	system		\
 	websense	\
 	telegram	\
-	windowseventlog
+	windowseventlog \
+	azure
 
 
 SCL_CONFIGS	= scl.conf syslog-ng.conf

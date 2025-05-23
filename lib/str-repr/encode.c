@@ -64,19 +64,19 @@ str_repr_encode_append(GString *escaped_string, const gchar *str, gssize str_len
   if (!apostrophe && quote)
     {
       g_string_append_c(escaped_string, '\'');
-      append_unsafe_utf8_as_escaped_binary(escaped_string, str, str_len, NULL);
+      append_unsafe_utf8_as_escaped_binary(escaped_string, str, str_len, 0);
       g_string_append_c(escaped_string, '\'');
     }
   else if (!quote && apostrophe)
     {
       g_string_append_c(escaped_string, '"');
-      append_unsafe_utf8_as_escaped_binary(escaped_string, str, str_len, NULL);
+      append_unsafe_utf8_as_escaped_binary(escaped_string, str, str_len, 0);
       g_string_append_c(escaped_string, '"');
     }
   else
     {
       g_string_append_c(escaped_string, '"');
-      append_unsafe_utf8_as_escaped_binary(escaped_string, str, str_len, "\"");
+      append_unsafe_utf8_as_escaped_binary(escaped_string, str, str_len, AUTF8_UNSAFE_QUOTE);
       g_string_append_c(escaped_string, '"');
     }
 }
