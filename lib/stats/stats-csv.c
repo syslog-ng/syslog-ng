@@ -91,16 +91,25 @@ stats_csv_format_counter(StatsCluster *sc, gint type, StatsCounterItem *counter)
 }
 
 static void
-stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+stats_format_csv_or_kv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   StatsCSVRecordFunc process_record = (StatsCSVRecordFunc) args[0];
   gpointer process_record_arg = args[1];
+  gboolean csv = GPOINTER_TO_INT(args[2]);
 
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
 
-  GString *record = stats_csv_format_counter(sc, type, counter);
+  GString *record;
+  if (csv)
+    record = stats_csv_format_counter(sc, type, counter);
+  else
+    {
+      record = scratch_buffers_alloc();
+      g_string_append_printf(record, "%s=%"G_GSIZE_FORMAT"\n", stats_counter_get_name(counter), stats_counter_get(counter));
+    }
+
   if (!record)
     return;
 
@@ -109,16 +118,20 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
 }
 
 void
-stats_generate_csv(StatsCSVRecordFunc process_record, gpointer user_data, gboolean *cancelled)
+stats_generate_csv_or_kv(StatsCSVRecordFunc process_record, gpointer user_data, gboolean csv, gboolean with_header,
+                         gboolean *cancelled)
 {
-  GString *csv = g_string_sized_new(512);
+  if (with_header && csv)
+    {
+      GString *header = g_string_sized_new(512);
 
-  g_string_printf(csv, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type",
-                  "Number");
-  process_record(csv->str, user_data);
-  g_string_free(csv, TRUE);
-  gpointer format_csv_args[] = {process_record, user_data};
+      g_string_printf(header, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type",
+                      "Number");
+      process_record(header->str, user_data);
+      g_string_free(header, TRUE);
+    }
+  gpointer format_args[] = {process_record, user_data, GINT_TO_POINTER(csv)};
   stats_lock();
-  stats_foreach_legacy_counter(stats_format_csv, format_csv_args, cancelled);
+  stats_foreach_legacy_counter(stats_format_csv_or_kv, format_args, cancelled);
   stats_unlock();
 }

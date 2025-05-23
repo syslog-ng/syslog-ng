@@ -40,11 +40,11 @@ log_proto_record_server_validate_options(LogProtoServer *s)
 {
   LogProtoRecordServer *self = (LogProtoRecordServer *) s;
 
-  if (s->options->max_buffer_size < self->record_size)
+  if (s->options->super.max_buffer_size < self->record_size)
     {
       msg_error("Buffer is too small to hold the number of bytes required for a record, please make sure log-msg-size() is greater than equal to record-size",
                 evt_tag_int("record_size", self->record_size),
-                evt_tag_int("max_buffer_size", s->options->max_buffer_size));
+                evt_tag_int("max_buffer_size", s->options->super.max_buffer_size));
       return FALSE;
     }
   return log_proto_buffered_server_validate_options_method(s);
@@ -73,7 +73,8 @@ log_proto_record_server_read_data(LogProtoBufferedServer *s, guchar *buf, gsize 
 }
 
 static void
-log_proto_record_server_init(LogProtoRecordServer *self, LogTransport *transport, const LogProtoServerOptions *options,
+log_proto_record_server_init(LogProtoRecordServer *self, LogTransport *transport,
+                             const LogProtoServerOptionsStorage *options,
                              gint record_size)
 {
   log_proto_buffered_server_init(&self->super, transport, options);
@@ -98,7 +99,8 @@ log_proto_binary_record_server_fetch_from_buffer(LogProtoBufferedServer *s, cons
 }
 
 LogProtoServer *
-log_proto_binary_record_server_new(LogTransport *transport, const LogProtoServerOptions *options, gint record_size)
+log_proto_binary_record_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options,
+                                   gint record_size)
 {
   LogProtoRecordServer *self = g_new0(LogProtoRecordServer, 1);
 
@@ -124,7 +126,8 @@ log_proto_padded_record_server_fetch_from_buffer(LogProtoBufferedServer *s, cons
 }
 
 LogProtoServer *
-log_proto_padded_record_server_new(LogTransport *transport, const LogProtoServerOptions *options, gint record_size)
+log_proto_padded_record_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options,
+                                   gint record_size)
 {
   LogProtoRecordServer *self = g_new0(LogProtoRecordServer, 1);
 
