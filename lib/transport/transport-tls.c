@@ -132,7 +132,7 @@ BIO_s_transport(void)
 static BIO *
 BIO_transport_new(LogTransportTLS *transport)
 {
-  BIO *bio = BIO_new(BIO_s_transport());
+  BIO *bio = BIO_new(meth_transport);
 
   g_assert(transport != NULL);
   BIO_set_data(bio, transport);
