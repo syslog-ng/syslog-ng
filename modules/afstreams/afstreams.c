@@ -96,7 +96,6 @@ log_transport_streams_new(gint fd)
   log_transport_init_instance(self, "sun-streams", fd);
   self->cond = G_IO_IN;
   self->read = log_transport_streams_read;
-  self->free_fn = log_transport_free_method;
   return self;
 }
 
