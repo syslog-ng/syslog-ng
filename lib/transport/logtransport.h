@@ -64,6 +64,7 @@ struct _LogTransport
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
   gssize (*writev)(LogTransport *self, struct iovec *iov, gint iov_count);
+  void (*shutdown)(LogTransport *self);
   void (*free_fn)(LogTransport *self);
 
   /* read ahead */
@@ -130,6 +131,13 @@ static inline gssize
 log_transport_writev(LogTransport *self, struct iovec *iov, gint iov_count)
 {
   return self->writev(self, iov, iov_count);
+}
+
+static inline void
+log_transport_shutdown(LogTransport *self)
+{
+  if (self->shutdown)
+    return self->shutdown(self);
 }
 
 gssize _log_transport_combined_read_with_read_ahead(LogTransport *self,
