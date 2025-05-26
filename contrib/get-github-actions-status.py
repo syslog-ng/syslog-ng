@@ -13,8 +13,9 @@ def get_workflow_runs(workflow, branch='develop'):
     try:
         with urllib.request.urlopen(request) as response:
             binary_response = response.read()
-    except urllib.error.HTTPError:
+    except urllib.error.HTTPError as err:
         print('"' + workflow + '" is not a valid workflow. See .github/workflows/')
+        print("Response was: %s: %s" % (err.code, err.reason))
         sys.exit(1)
 
     runs = json.loads(binary_response.decode())["workflow_runs"]
