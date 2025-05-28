@@ -11,6 +11,7 @@ set(SCL_DIRS
     discord
     elasticsearch
     ewmm
+    freebsd-audit
     fortigate
     google
     graphite
