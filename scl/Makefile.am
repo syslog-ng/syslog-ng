@@ -12,6 +12,7 @@ SCL_SUBDIRS	= \
 	elasticsearch	\
 	ewmm		\
 	fortigate	\
+	freebsd-audit	\
 	google	\
 	graphite	\
 	graylog2	\
