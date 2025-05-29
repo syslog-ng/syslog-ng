@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Airbus Commercial Aircraft
+ * Copyright (c) 2019-2025 Airbus Commercial Aircraft
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
 #ifndef SLOG_H_INCLUDED
 #define SLOG_H_INCLUDED 1
 
+#include "slog_file.h"
+
 #define AES_BLOCKSIZE 16
 #define IV_LENGTH 12
 #define KEY_LENGTH 32
@@ -45,26 +47,20 @@
 // Buffer size for import and verification
 #define MIN_BUF_SIZE 10
 #define MAX_BUF_SIZE 1073741823 // INT_MAX/2
-#define DEF_BUF_SIZE 1000
+#define DEF_BUF_SIZE 1000  // Default size
 
 // Error message in case of invalid file
 #define FILE_ERROR "Invalid path or non existing regular file: "
 
-// Structure for command line arguments of template and utilities
+// Command line arguments of template and utilities
 typedef struct
 {
-  char *longname;
-  char shortname;
-  char *description;
-  char *type;
-  char *arg;
+    char *longname;
+    char shortname;
+    char *description;
+    char *type;
+    char *arg;
 } SLogOptions;
-
-// Dump contents of an array on STDOUT, byte by byte, converting to hex.
-void outputByteBuffer(unsigned char *buf, int length);
-
-
-void evolveKey(unsigned char *key);
 
 /*
  *  Encrypts plaintext
@@ -101,9 +97,9 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
  * -1 in case verification fails
  * 0 on error
  */
-int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *tag, unsigned char *key,
-                unsigned char *iv,
-                unsigned char *plaintext);
+int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len,
+                unsigned char *tag, unsigned char *key,
+                unsigned char *iv, unsigned char *plaintext);
 
 /*
  * Compute AES256 CMAC of input
@@ -120,11 +116,9 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
  *
  * Note: Caller must take care of memory management.
  */
-void cmac(unsigned char *key, const void *input, gsize length, unsigned char *out, gsize *outlen, gsize out_capacity);
-
-
-gchar *convertToBase64(unsigned char *input, gsize len);
-guchar *convertToBin(char *input, gsize *outLen);
+gboolean cmac(unsigned char *key, const void *input,
+              gsize length, unsigned char *out,
+              gsize *outlen, gsize out_capacity);
 
 /*
  * Derive key = evolve key multiple times
@@ -136,7 +130,7 @@ guchar *convertToBin(char *input, gsize *outLen);
  *
  * Note: Caller must take care of memory management.
  */
-void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey);
+gboolean deriveKey(unsigned char *dst, guint64 index, guint64 currentKey);
 
 /*
  * Create a new encrypted log entry
@@ -150,9 +144,15 @@ void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey);
  * 5. Parameter: The resulting encrypted log entry
  * 6. Parameter: The newly updated MAC
  * 7. Parameter: The capacity of the newly updated MAC buffer
+ *
+ * Return:
+ *   TRUE on success
+ *   FALSE on error
  */
-void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *key, unsigned char *inputBigMac,
-               GString *output, unsigned char *outputBigMac, gsize outputBigMac_capacity);
+gboolean sLogEntry(guint64 numberOfLogEntries, GString *text,
+                   unsigned char *key, unsigned char *inputBigMac,
+                   GString *output, unsigned char *outputBigMac,
+                   gsize outputBigMac_capacity);
 
 /*
  * Generate a master key
@@ -161,10 +161,10 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *key, un
  * The caller has to allocate this memory.
  *
  * Return:
- * 1 on success
- * 0 on error
+ * TRUE on success
+ * FALSE on error
  */
-int generateMasterKey(guchar *masterkey);
+gboolean generateMasterKey(guchar *masterkey);
 
 /*
  * Generate a host key based on a previously created master key
@@ -175,62 +175,96 @@ int generateMasterKey(guchar *masterkey);
  *
  * The specific unique host key k_0 is k_0 = H(master key|| MAC address || S/N)
  * and requires 48 bytes of storage. Additional 8 bytes need to be allocated to store
- * the serial number of the host key. The caller has to allocate this memory.
+ * the serial number of the host key. The caller has to allocate this
+ * memory.
  *
  * Return:
- * 1 on success
- * 0 on error
+ * TRUE on success
+ * FALSE on error
  */
-int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *hostkey);
+gboolean deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *hostkey);
 
-int readBigMAC(gchar *filename, char *outputBuffer);
-int writeBigMAC(gchar *filename, char *outputBuffer);
+/*
+ * Read and write aggregated MAC from and to file.
+ *
+ * Return
+ * TRUE on success
+ * FALSE on error
+ */
+gboolean readAggregatedMAC(gchar *filename, char *outputBuffer);
+gboolean writeAggregatedMAC(gchar *filename, char *outputBuffer);
 
 /*
  * Read key from file
  *
  * Return:
- * 1 on success
- * 0 on error
+ * TRUE on success
+ * FALSE on error
  */
-int readKey(char *destKey, guint64 *destCounter, gchar *keypath);
+gboolean readKey(char *destKey, guint64 *destCounter, gchar *keypath);
 
 /*
  * Write key to file
  *
  * Return:
- * 1 on success
- * 0 on error
+ * TRUE on success
+ * FALSE on error
  */
-int writeKey(char *key, guint64 counter, gchar *keypath);
+gboolean writeKey(char *key, guint64 counter, gchar *keypath);
 
 /*
  * Verify the integrity of an existing log file
  *
  * Return:
- * 1 on success
- * 0 on error
+ * TRUE on success
+ * FALSE on error
  */
-int fileVerify(unsigned char *key, char *inputFileName, char *outputFileName, unsigned char *bigMac,
-               guint64 entriesInFile, int chunkLength);
+gboolean fileVerify(unsigned char *key, char *inputFileName,
+                    char *outputFileName, unsigned char *bigMac,
+                    guint64 entriesInFile, int chunkLength);
 
-int initVerify(guint64 entriesInFile, unsigned char *key, guint64 *nextLogEntry, guint64 *startingEntry,
-               GString **input, GHashTable **tab);
+/*
+ * Iteratively verify the integrity of a log archive
+ *
+ * Return:
+ * TRUE on success
+ * FALSE on error
+ */
+gboolean iterativeFileVerify(unsigned char *previousMAC, unsigned char *previousKey,
+                             char *inputFileName, unsigned char *currentMAC,
+                             char *outputFileName, guint64 entriesInFile,
+                             int chunkLength, guint64 keyNumber);
 
-int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntry, unsigned char *key,
-                  unsigned char *keyZero, guint keyNumber, GString **output, guint64 *numberOfLogEntries, unsigned char *cmac_tag,
-                  gsize cmac_tag_capacity, GHashTable *tab);
+// Set up log verification
+gboolean initVerify(guint64 entriesInFile, unsigned char *key,
+                    guint64 *nextLogEntry, guint64 *startingEntry,
+                    GPtrArray *input, GHashTable **tab);
 
-int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *bigMac, unsigned char *cmac_tag,
-                   GHashTable *tab);
+// Iterate through log entries contained in a buffer and verify them
+gboolean iterateBuffer(guint64 entriesInBuffer, GPtrArray *input,
+                       guint64 *nextLogEntry, unsigned char *key,
+                       unsigned char *keyZero, guint keyNumber,
+                       GPtrArray *output, guint64 *numberOfLogEntries,
+                       unsigned char *cmac_tag, gsize cmac_tag_capacity, GHashTable *tab);
 
-int iterativeFileVerify(unsigned char *previousMAC, unsigned char *previousKey, char *inputFileName,
-                        unsigned char *currentMAC, char *outputFileName, guint64 entriesInFile, int chunkLength, guint64 keyNumber);
+// Finalize the verification
+gboolean finalizeVerify(guint64 startingEntry, guint64 entriesInFile,
+                        unsigned char *aggMac, unsigned char *cmac_tag,
+                        GHashTable *tab);
 
-void deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey);
-void deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
-void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output,
-         guint64 outputLength);
+// Create a new key based on an existing key
+gboolean evolveKey(unsigned char *key);
+
+// Key derivation for encryption key
+gboolean deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey);
+
+// Key derivation for HMAC
+gboolean deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
+
+// Pseudo-random function implementation
+gboolean PRF(unsigned char *key, unsigned char *originalInput,
+             guint64 inputLength, unsigned char *output,
+             guint64 outputLength);
 
 // Print usage message and clean up
 int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg);
@@ -243,5 +277,29 @@ int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg);
  * FALSE on error
  */
 gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer data, GError **error);
+
+// Error handlers
+void handleFileError(const char *file, int line, int code, void *object);
+void handleGPtrArrayMemoryError(const char *file, int line, int code, void *object);
+
+/** Miscellaneous helper functions */
+
+// Retrieve counter from encrypted log entry
+gboolean getCounter(GString *entry, guint64 *logEntryOnDisk);
+
+// Check whether value is contained in table
+gboolean tableContainsKey(GHashTable *table, guint64 value);
+
+// Add new value to table
+gboolean addValueToTable(GHashTable *table, guint64 value);
+
+// Get a single line from a log file
+GString* getLogEntry(SLogFile *f);
+
+// Put a single line into a log file
+gboolean putLogEntry(SLogFile *f, GString* line);
+
+// Clean up routine for GPtrArray
+void SLogStringFree(gpointer *arg);
 
 #endif

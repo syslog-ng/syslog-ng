@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Airbus Commercial Aircraft
+ * Copyright (c) 2019-2025 Airbus Commercial Aircraft
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,15 +56,15 @@
  */
 typedef struct _TFSlogState
 {
-  TFSimpleFuncState super;
+    TFSimpleFuncState super;
 
-  gchar *keypath;
-  gchar *macpath;
-  guint64 numberOfLogEntries;
+    gchar *keypath;
+    gchar *macpath;
+    guint64 numberOfLogEntries;
 
-  gboolean badKey;
-  guchar key[KEY_LENGTH];
-  guchar bigMAC[CMAC_LENGTH];
+    gboolean badKey;
+    guchar key[KEY_LENGTH];
+    guchar aggMAC[CMAC_LENGTH];
 } TFSlogState;
 
 /*
@@ -73,123 +73,126 @@ typedef struct _TFSlogState
 static gboolean
 tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
 {
-  // Get key filename and store in internal state
-  // generate initial BigMAC file
-  TFSlogState *state = (TFSlogState *) s;
+    // Get key filename and store in internal state
+    // generate initial BigMAC file
+    TFSlogState *state = (TFSlogState*)s;
 
-  gchar *keypathbuffer = NULL;
-  gchar *macpathbuffer = NULL;
-  GOptionContext *ctx;
-  GOptionGroup *grp;
+    gchar *keypathbuffer = NULL;
+    gchar *macpathbuffer = NULL;
+    GOptionContext *ctx;
+    GOptionGroup *grp;
 
-  if ((mlock(state->key, KEY_LENGTH) != 0) || (mlock(state->bigMAC, CMAC_LENGTH) != 0))
+    if ((mlock(state->key, KEY_LENGTH)!=0)||(mlock(state->aggMAC, CMAC_LENGTH)!=0))
     {
-      msg_warning("[SLOG] WARNING: Unable to acquire memory lock");
+        msg_warning("[SLOG] WARNING: Unable to acquire memory lock");
     }
 
-  state->badKey = FALSE;
+    state->badKey = FALSE;
 
-  SLogOptions options[] =
-  {
-    { "key-file", 'k', "Name of the host key file", "FILE", NULL },
-    { "mac-file", 'm', "Name of the MAC file", "FILE", NULL },
-    { NULL }
-  };
-
-  GOptionEntry slog_options[] =
-  {
-    { options[0].longname, options[0].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[0].description, options[0].type },
-    { options[1].longname, options[1].shortname, 0, G_OPTION_ARG_FILENAME, &macpathbuffer, options[1].description, options[1].type },
-    { NULL }
-  };
-
-  ctx = g_option_context_new("- Secure logging template");
-  grp = g_option_group_new("Basic options", "Basic template options", "basic", &options, NULL);
-
-  g_option_group_add_entries(grp, slog_options);
-  g_option_context_set_main_group(ctx, grp);
-
-  GError *argError = NULL;
-
-  if (!g_option_context_parse(ctx, &argc, &argv, &argError))
+    SLogOptions options[] =
     {
-      if (argError != NULL)
+        { "key-file", 'k', "Name of the host key file", "FILE", NULL },
+        { "mac-file", 'm', "Name of the MAC file", "FILE", NULL },
+        { NULL }
+    };
+
+    GOptionEntry slog_options[] =
+    {
+        { options[0].longname, options[0].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[0].description, options[0].type },
+        { options[1].longname, options[1].shortname, 0, G_OPTION_ARG_FILENAME, &macpathbuffer, options[1].description, options[1].type },
+        { NULL }
+    };
+
+    ctx = g_option_context_new("- Secure logging template");
+    grp = g_option_group_new("Basic options", "Basic template options", "basic", &options, NULL);
+
+    g_option_group_add_entries(grp, slog_options);
+    g_option_context_set_main_group(ctx, grp);
+
+    GError *argError = NULL;
+
+    if (!g_option_context_parse(ctx, &argc, &argv, &argError))
+    {
+        if (argError != NULL)
         {
-          g_propagate_error (error, argError);
+            g_propagate_error (error, argError);
         }
 
-      g_option_context_free(ctx);
-      return FALSE;
+        g_option_context_free(ctx);
+        return FALSE;
     }
 
-  if (argc < 2)
+    if (argc < 2)
     {
-      state->badKey = TRUE;
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                  "[SLOG] ERROR: Template parsing failed. Invalid number of arguments. Usage: $(slog --key-file FILE --mac-file FILE $RAWMSG)\\n");
-      g_option_context_free(ctx);
-      return FALSE;
+        state->badKey = TRUE;
+        g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                    "[SLOG] ERROR: Template parsing failed. Invalid number of arguments. Usage: $(slog --key-file FILE --mac-file FILE $RAWMSG)\\n");
+        g_option_context_free(ctx);
+        return FALSE;
     }
 
-  keypathbuffer = options[0].arg;
+    keypathbuffer = options[0].arg;
 
-  if (keypathbuffer == NULL)
+    if(keypathbuffer == NULL)
     {
-      state->badKey = TRUE;
+        state->badKey = TRUE;
 
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                  "[SLOG] ERROR: Template parsing failed. Invalid or missing key file");
-      g_option_context_free(ctx);
-      return FALSE;
+        g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                    "[SLOG] ERROR: Template parsing failed. Invalid or missing key file");
+        g_option_context_free(ctx);
+        return FALSE;
     }
 
-  if (macpathbuffer == NULL)
+    if(macpathbuffer == NULL)
     {
-      state->badKey = TRUE;
+        state->badKey = TRUE;
 
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                  "[SLOG] ERROR: Template parsing failed. Invalid or missing MAC file");
-      g_option_context_free(ctx);
-      return FALSE;
+        g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                    "[SLOG] ERROR: Template parsing failed. Invalid or missing MAC file");
+        g_option_context_free(ctx);
+        return FALSE;
     }
 
-  if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
+    if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
     {
-      state->badKey = TRUE;
-      g_option_context_free(ctx);
-      return FALSE;
+        state->badKey = TRUE;
+        g_option_context_free(ctx);
+        return FALSE;
     }
 
-  state->numberOfLogEntries = 0;
-  state->keypath = keypathbuffer;
-  state->macpath = macpathbuffer;
+    state->numberOfLogEntries = 0;
+    state->keypath = keypathbuffer;
+    state->macpath = macpathbuffer;
 
-  // Done with argument parsing
-  g_option_context_free(ctx);
+    // Done with argument parsing
+    g_option_context_free(ctx);
 
-  int res = readKey((char *)state->key, (guint64 *) & (state->numberOfLogEntries), state->keypath);
-
-  if (res == 0)
+    // Read key
+    if (!readKey((char *)state->key, (guint64 *)&(state->numberOfLogEntries), state->keypath))
     {
-      state->badKey = TRUE;
-      msg_warning("[SLOG] WARNING: Template parsing failed, key file not found or invalid. Reverting to clear text logging.");
-      return TRUE;
+        state->badKey = TRUE;
+        msg_warning("[SLOG] WARNING: Template parsing failed, key file not found or invalid. Reverting to clear text logging.");
+        return TRUE;
     }
 
-  msg_debug("[SLOG] INFO: Key successfully loaded");
+    msg_debug("[SLOG] INFO: Key successfully loaded");
 
-  res = readBigMAC(state->macpath, (char *)state->bigMAC);
-
-  if (res == 0 && state->numberOfLogEntries > 0)
+    // Read aggregated MAC
+    if(!readAggregatedMAC(state->macpath, (char *)state->aggMAC))
     {
-      msg_warning("[SLOG] ERROR: Aggregated MAC not found or invalid", evt_tag_str("File", state->macpath));
+        msg_warning("[SLOG] WARNING: Unable to read aggregated MAC", evt_tag_str("File", state->macpath));
+
+        if (state->numberOfLogEntries > 0)
+        {
+            msg_warning("[SLOG] ERROR: Aggregated MAC not found or invalid", evt_tag_str("File", state->macpath));
+        }
     }
-  else
+    else
     {
-      msg_debug("[SLOG] INFO: Template with key and MAC file successfully initialized.");
+        msg_debug("[SLOG] INFO: Template with key and MAC file successfully initialized.");
     }
 
-  return TRUE;
+    return TRUE;
 }
 
 /*
@@ -200,52 +203,52 @@ tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
              LogMessageValueType *type)
 {
 
-  TFSlogState *state = (TFSlogState *) s;
+    TFSlogState *state = (TFSlogState *) s;
 
-  *type = LM_VT_STRING;
-  // If we do not have a good key, just forward input
-  if (state->badKey == TRUE)
+    *type = LM_VT_STRING;
+    // If we do not have a good key, just forward input
+    if (state->badKey == TRUE)
     {
-      g_string_append (result, args->argv[0]->str);
-      return;
+        g_string_append (result, args->argv[0]->str);
+        return;
     }
 
-  // Compute authenticated encryption of input
-  guchar outputmacdata[CMAC_LENGTH];
+    // Compute authenticated encryption of input
+    guchar outputmacdata[CMAC_LENGTH];
 
-  // Empty string received? Parsing error?
-  if (args->argv[0]->len == 0)
+    // Empty string received? Parsing error?
+    if(args->argv[0]->len==0)
     {
-      msg_error("[SLOG] ERROR: String of length 0 received");
-      GString *errorString = g_string_new("[SLOG] ERROR: String of length 0 received");
-      sLogEntry(state->numberOfLogEntries, errorString, state->key, state->bigMAC, result, outputmacdata,
-                G_N_ELEMENTS(outputmacdata));
-      g_string_free(errorString, TRUE);
+        msg_error("[SLOG] ERROR: String of length 0 received");
+        GString *errorString = g_string_new("[SLOG] ERROR: String of length 0 received");
+        sLogEntry(state->numberOfLogEntries, errorString, state->key, state->aggMAC, result, outputmacdata,
+                  G_N_ELEMENTS(outputmacdata));
+        g_string_free(errorString, TRUE);
     }
-  else
+    else
     {
-      sLogEntry(state->numberOfLogEntries, args->argv[0], state->key, state->bigMAC, result, outputmacdata,
-                G_N_ELEMENTS(outputmacdata));
-    }
-
-  memcpy(state->bigMAC, outputmacdata, CMAC_LENGTH);
-  evolveKey(state->key);
-  state->numberOfLogEntries++;
-
-  int res = writeKey((char *)state->key, state->numberOfLogEntries, state->keypath);
-
-  if (res == 0)
-    {
-      msg_error("[SLOG] ERROR: Cannot write key to file");
-      return;
+        sLogEntry(state->numberOfLogEntries, args->argv[0], state->key, state->aggMAC, result, outputmacdata,
+                  G_N_ELEMENTS(outputmacdata));
     }
 
-  res = writeBigMAC(state->macpath, (char *)state->bigMAC);
+    memcpy(state->aggMAC, outputmacdata, CMAC_LENGTH);
+    evolveKey(state->key);
+    state->numberOfLogEntries++;
 
-  if (res == 0)
+    int res = writeKey((char *)state->key, state->numberOfLogEntries, state->keypath);
+
+    if (res == 0)
     {
-      msg_error("[SLOG] ERROR: Unable to write aggregated MAC", evt_tag_str("File", state->macpath));
-      return;
+        msg_error("[SLOG] ERROR: Cannot write key to file");
+        return;
+    }
+
+    res = writeAggregatedMAC(state->macpath, (char *)state->aggMAC);
+
+    if (res == 0)
+    {
+        msg_error("[SLOG] ERROR: Unable to write aggregated MAC", evt_tag_str("File", state->macpath));
+        return;
     }
 }
 
@@ -253,12 +256,12 @@ tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
 void
 tf_slog_func_free_state(gpointer s)
 {
-  TFSlogState *state = (TFSlogState *) s;
+    TFSlogState *state = (TFSlogState *) s;
 
-  free(state->keypath);
-  free(state->macpath);
+    free(state->keypath);
+    free(state->macpath);
 
-  tf_simple_func_free_state((gpointer)&state->super);
+    tf_simple_func_free_state((gpointer)&state->super);
 }
 
 
@@ -270,22 +273,22 @@ TEMPLATE_FUNCTION(TFSlogState, tf_slog, tf_slog_prepare, tf_simple_func_eval, tf
 
 static Plugin secure_logging_plugins[] =
 {
-  TEMPLATE_FUNCTION_PLUGIN(tf_slog, "slog"),
+    TEMPLATE_FUNCTION_PLUGIN(tf_slog, "slog"),
 };
 
 gboolean
 secure_logging_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(context, secure_logging_plugins, G_N_ELEMENTS(secure_logging_plugins));
-  return TRUE;
+    plugin_register(context, secure_logging_plugins, G_N_ELEMENTS(secure_logging_plugins));
+    return TRUE;
 }
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "secure_logging",
-  .version = SYSLOG_NG_VERSION,
-  .description = "The secure logging module provides template functions enabling forward integrity and confidentiality of logs.",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = secure_logging_plugins,
-  .plugins_len = G_N_ELEMENTS(secure_logging_plugins),
+    .canonical_name = "secure_logging",
+    .version = SYSLOG_NG_VERSION,
+    .description = "The secure logging module provides template functions enabling forward integrity and confidentiality of logs.",
+    .core_revision = SYSLOG_NG_SOURCE_REVISION,
+    .plugins = secure_logging_plugins,
+    .plugins_len = G_N_ELEMENTS(secure_logging_plugins),
 };

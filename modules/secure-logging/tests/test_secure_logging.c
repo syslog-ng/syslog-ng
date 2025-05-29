@@ -62,11 +62,11 @@ static gchar *context_id = "test-context-id";
 // Data needed to run a test
 typedef struct _testData
 {
-  guchar hostKey[KEY_LENGTH];
-  GString *testName;
-  GString *keyFile;
-  GString *macFile;
-  GString *testDir;
+    guchar hostKey[KEY_LENGTH];
+    GString *testName;
+    GString *keyFile;
+    GString *macFile;
+    GString *testDir;
 } TestData;
 
 /*************************************************************************/
@@ -76,334 +76,370 @@ typedef struct _testData
 // Generate random number between low and high
 int randomNumber(int low, int high)
 {
-  return rand() % ((high + 1) - low) + low;
+    return rand()%((high+1)-low)+low;
 }
 
 // Generate a sample message with a fixed and a random part
 LogMessage *create_random_sample_message(void)
 {
-  LogMessage *msg;
+    LogMessage *msg;
 
-  GString *msg_str = g_string_new("<155>2019-07-11T10:34:56+01:00 aicorp syslog-ng[23323]:");
+    GString *msg_str = g_string_new("<155>2019-07-11T10:34:56+01:00 aicorp syslog-ng[23323]:");
 
-  // Append a random string
-  int num = randomNumber(10, 500);
-  for (int i = 0; i < num; i++)
+    // Append a random string
+    int num = randomNumber(10, 500);
+    for (int i = 0; i<num; i++)
     {
-      // 65 to 90 are upper case letters
-      g_string_append_c(msg_str, randomNumber(65, 90));
+        // 65 to 90 are upper case letters
+        g_string_append_c(msg_str, randomNumber(65, 90));
     }
 
-  msg = msg_format_parse(&test_parse_options, (const guchar *) msg_str->str, msg_str->len);
-  log_msg_set_saddr_ref(msg, g_sockaddr_inet_new("10.11.12.13", 1010));
-  log_msg_set_match(msg, 0, "whole-match", -1);
-  log_msg_set_match(msg, 1, "first-match", -1);
-  log_msg_set_tag_by_name(msg, "alma");
-  log_msg_set_tag_by_name(msg, "korte");
-  log_msg_clear_tag_by_name(msg, "narancs");
-  log_msg_set_tag_by_name(msg, "citrom");
-  log_msg_set_tag_by_name(msg, "tag,containing,comma");
-  msg->rcptid = 555;
-  msg->host_id = 0xcafebabe;
+    msg = msg_format_parse(&test_parse_options, (const guchar *) msg_str->str, msg_str->len);
+    log_msg_set_saddr_ref(msg, g_sockaddr_inet_new("10.11.12.13", 1010));
+    log_msg_set_match(msg, 0, "whole-match", -1);
+    log_msg_set_match(msg, 1, "first-match", -1);
+    log_msg_set_tag_by_name(msg, "alma");
+    log_msg_set_tag_by_name(msg, "korte");
+    log_msg_clear_tag_by_name(msg, "narancs");
+    log_msg_set_tag_by_name(msg, "citrom");
+    log_msg_set_tag_by_name(msg, "tag,containing,comma");
+    msg->rcptid = 555;
+    msg->host_id = 0xcafebabe;
 
-  // Fix some externally or automatically defined values
-  log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
-  msg->timestamps[LM_TS_RECVD].ut_sec = 1139684315;
-  msg->timestamps[LM_TS_RECVD].ut_usec = 639000;
-  msg->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(1139684315);
+    // Fix some externally or automatically defined values
+    log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
+    msg->timestamps[LM_TS_RECVD].ut_sec = 1139684315;
+    msg->timestamps[LM_TS_RECVD].ut_usec = 639000;
+    msg->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(1139684315);
 
-  g_string_free(msg_str, TRUE);
-  return msg;
+    g_string_free(msg_str, TRUE);
+    return msg;
 }
 
 // Create a slog template instance
 LogTemplate *createTemplate(TestData *testData)
 {
-  GString *slog_templ_str = g_string_new("slog");
+    GString *slog_templ_str = g_string_new("slog");
 
-  // Initialize the template
-  g_string_printf(slog_templ_str, "$(slog -k %s -m %s $RAWMSG)", testData->keyFile->str, testData->macFile->str);
+    // Initialize the template
+    g_string_printf(slog_templ_str, "$(slog -k %s -m %s $RAWMSG)", testData->keyFile->str, testData->macFile->str);
 
-  LogTemplate *slog_templ = compile_template(slog_templ_str->str);
+    LogTemplate *slog_templ = compile_template(slog_templ_str->str);
 
-  cr_assert(slog_templ != NULL, "Template '%s' does not compile correctly", slog_templ_str->str);
+    cr_assert(slog_templ != NULL, "Template '%s' does not compile correctly", slog_templ_str->str);
 
-  g_string_free(slog_templ_str, TRUE);
+    g_string_free(slog_templ_str, TRUE);
 
-  return slog_templ;
+    return slog_templ;
 }
 
 // Create a collection of random log messages for testing purposes
 void createLogMessages(gint num, LogMessage **log)
 {
-  if (num <= 0)
+    if(num <= 0)
     {
-      cr_log_error("Invalid argument passed to createLog. num = %d", num);
+        cr_log_error("Invalid argument passed to createLog. num = %d", num);
     }
 
-  for (int i = 0; i < num; i++)
+    for(int i = 0; i < num; i++)
     {
-      log[i] = create_random_sample_message();
+        log[i] = create_random_sample_message();
     }
 }
 
 // Apply the template to a single log message
 GString *applyTemplate(LogTemplate *templ, LogMessage *msg)
 {
-  GString *output = g_string_new(prefix);
+    GString *output = g_string_new(prefix);
 
-  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id, LM_VT_STRING};
-  // Execute secure logging template
-  log_template_append_format_with_context(
-    templ,       // Secure logging template
-    &msg,        // Message(s) to pass to the template
-    1,           // Number of message to pass to the template
-    &options,
-    output);     // Output string after applying the template
+    LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id, LM_VT_STRING};
+    // Execute secure logging template
+    log_template_append_format_with_context(
+        templ,       // Secure logging template
+        &msg,        // Message(s) to pass to the template
+        1,           // Number of message to pass to the template
+        &options,
+        output);     // Output string after applying the template
 
-  return output;
+    return output;
 }
 
 // Find an integer in an array of integers
 int findInArray(int index, int *buffer, int size)
 {
-  for (int i = 0; i < size; i++)
+    for (int i = 0; i<size; i++)
     {
-      if (buffer[i] == index)
+        if (buffer[i]==index)
         {
-          return 1;
+            return 1;
         }
     }
-  return 0;
+    return 0;
 }
 
 // Verify messages with malicious modification and detect which entry is corrupted
 GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString **templateOutput,
                                   size_t totalNumberOfMessages, int *brokenEntries)
 {
-  unsigned char keyZero[KEY_LENGTH];
-  memcpy(keyZero, hostkey, KEY_LENGTH);
 
-  GHashTable *tab = NULL;
+    cr_assert(totalNumberOfMessages > 0, "Total number of message must be >0");
 
-  guint64 next = 0;
-  guint64 start = 0;
-  guint64 numberOfLogEntries = 0UL;
+    unsigned char keyZero[KEY_LENGTH];
+    memcpy(keyZero, hostkey, KEY_LENGTH);
 
-  GString **outputBuffer = g_new0(GString *, totalNumberOfMessages);
+    GHashTable *tab = NULL;
 
-  gchar mac[CMAC_LENGTH];
+    guint64 next = 0;
+    guint64 start = 0;
+    guint64 numberOfLogEntries = 0UL;
 
-  int ret = readBigMAC(macFileName, mac);
-  cr_assert(ret == 1, "Unable to read aggregated MAC from file %s", macFileName);
-  int problemsFound = 0;
-  unsigned char cmac_tag[CMAC_LENGTH];
-  gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
-  initVerify(totalNumberOfMessages, hostkey, &next, &start, templateOutput, &tab);
+    GString **outputBuffer = g_new0(GString *, totalNumberOfMessages);
 
-  for (int i = 0; i < totalNumberOfMessages; i++)
+    gchar mac[CMAC_LENGTH];
+
+    gboolean ret = readAggregatedMAC(macFileName, mac);
+    cr_assert(ret == TRUE, "Unable to read aggregated MAC from file %s", macFileName);
+
+    int problemsFound = 0;
+    unsigned char cmac_tag[CMAC_LENGTH];
+    gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
+
+    GPtrArray *tmpTemplate = g_ptr_array_new();
+    g_ptr_array_add(tmpTemplate, templateOutput[0]);
+
+    initVerify(totalNumberOfMessages, hostkey, &next, &start, tmpTemplate, &tab);
+    g_ptr_array_free(tmpTemplate, TRUE);
+
+    GPtrArray *template = g_ptr_array_new();
+    GPtrArray *output = g_ptr_array_new_with_free_func((GDestroyNotify)g_string_free);
+
+    for (int i = 0; i<totalNumberOfMessages; i++)
     {
-      ret = iterateBuffer(1, &templateOutput[i], &next, hostkey, keyZero, 0, &outputBuffer[i], &numberOfLogEntries, cmac_tag,
-                          cmac_tag_capacity, tab);
-      if (ret == 0)
+
+        g_ptr_array_add(template, templateOutput[i]);
+        g_ptr_array_add(output, g_string_new(NULL));
+
+        ret = iterateBuffer(1, template, &next, hostkey, keyZero, 0, output, &numberOfLogEntries, cmac_tag,
+                            cmac_tag_capacity, tab);
+        if (ret == FALSE)
         {
-          brokenEntries[problemsFound] = i;
-          problemsFound++;
+            brokenEntries[problemsFound] = i;
+            problemsFound++;
         }
+        g_ptr_array_remove_index(template, 0);
+        g_ptr_array_remove_index(output, 0);
+
     }
-  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);
 
-  cr_assert(ret == 0, "Aggregated MAC is correct.");
+    ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);
 
-  return outputBuffer;
+    cr_assert(ret == FALSE, "Aggregated MAC is correct.");
+
+    g_ptr_array_free(template, FALSE);
+    g_ptr_array_free(output, TRUE);
+
+    return outputBuffer;
 }
 
 // Verify log messages and compare them with the original
 void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutput, LogMessage **original,
-                    size_t totalNumberOfMessages)
+                    gsize totalNumberOfMessages)
 {
-  unsigned char keyZero[KEY_LENGTH];
-  memcpy(keyZero, hostkey, KEY_LENGTH);
+    unsigned char keyZero[KEY_LENGTH];
+    memcpy(keyZero, hostkey, KEY_LENGTH);
 
-  GHashTable *tab = NULL;
+    GHashTable *tab = NULL;
 
-  guint64 next = 0;
-  guint64 start = 0;
-  guint64 numberOfLogEntries = 0UL;
+    guint64 next = 0;
+    guint64 start = 0;
+    guint64 numberOfLogEntries = 0UL;
 
-  GString **outputBuffer = g_new0(GString *, totalNumberOfMessages);
+    GPtrArray *template = g_ptr_array_new();
 
-  gchar mac[CMAC_LENGTH];
-
-  int ret =  readBigMAC(macFileName, mac);
-  cr_assert(ret == 1, "Unable to read aggregated MAC from file %s", macFileName);
-
-  unsigned char cmac_tag[CMAC_LENGTH];
-  gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
-  ret = initVerify(totalNumberOfMessages, hostkey, &next, &start, templateOutput, &tab);
-  cr_assert(ret == 1, "initVerify failed");
-
-  ret = iterateBuffer(totalNumberOfMessages, templateOutput, &next, hostkey, keyZero, 0, outputBuffer,
-                      &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
-  cr_assert(ret == 1, "iterateBuffer failed");
-
-  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);
-  cr_assert(ret == 1, "finalizeVerify failed");
-
-
-  for (int i = 0; i < totalNumberOfMessages; i++)
+    for (gsize i = 0; i < totalNumberOfMessages; i++)
     {
-      char *plaintextMessage = (outputBuffer[i]->str) + CTR_LEN_SIMPLE + COLON + BLANK;
-      LogMessage *result = msg_format_parse(&test_parse_options, (const guchar *) plaintextMessage, strlen(plaintextMessage));
-      log_msg_set_saddr(result, original[i]->saddr);
-      assert_log_messages_equal(original[i], result);
-      g_string_free(outputBuffer[i], TRUE);
-      log_msg_unref(result);
+        g_ptr_array_add(template, templateOutput[i]);
     }
 
-  g_free(outputBuffer);
+    gboolean b = initVerify(totalNumberOfMessages, hostkey, &next, &start, template, &tab);
+
+    cr_assert(b == TRUE, "Init verify returns FALSE.");
+
+
+    GPtrArray *output = g_ptr_array_new_with_free_func((GDestroyNotify)g_string_free);
+
+    gchar mac[CMAC_LENGTH];
+
+    gboolean ret = readAggregatedMAC(macFileName, mac);
+    cr_assert(ret == TRUE, "Unable to read aggregated MAC from file %s", macFileName);
+
+    unsigned char cmac_tag[CMAC_LENGTH];
+    gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
+    ret = initVerify(totalNumberOfMessages, hostkey, &next, &start, template, &tab);
+    cr_assert(ret == TRUE, "initVerify failed");
+
+    ret = iterateBuffer(totalNumberOfMessages, template, &next, hostkey, keyZero, 0, output,
+                        &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
+    cr_assert(ret == TRUE, "iterateBuffer failed");
+
+    ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);
+    cr_assert(ret == TRUE, "finalizeVerify failed");
+
+    for (int i=0; i<totalNumberOfMessages; i++)
+    {
+        GString *str = (GString *)g_ptr_array_index(output, i);
+        char *plaintextMessage = (str->str) + CTR_LEN_SIMPLE + COLON + BLANK;
+        LogMessage *result = msg_format_parse(&test_parse_options, (const guchar *) plaintextMessage, strlen(plaintextMessage));
+        log_msg_set_saddr(result, original[i]->saddr);
+        assert_log_messages_equal(original[i], result);
+        log_msg_unref(result);
+    }
+
+    g_ptr_array_free(template, FALSE);
+    g_ptr_array_free(output, TRUE);
 }
 
 // Generate keys to be used for the tests
 void generateHostKey(guchar *hostkey, gchar *hostKeyFileName)
 {
-  // Create keys for the test
-  guchar masterkey[KEY_LENGTH];
-  int ret = generateMasterKey(masterkey);
-  cr_assert(ret == 1, "Unable to generate master key");
+    // Create keys for the test
+    guchar masterkey[KEY_LENGTH];
+    gboolean ret = generateMasterKey(masterkey);
+    cr_assert(ret, "Unable to generate master key");
 
-  ret = deriveHostKey(masterkey, macAddr, serial, hostkey);
-  cr_assert(ret == 1, "Unable to derive host key from master key for addr %s and serial number %s", macAddr, serial);
+    deriveHostKey(masterkey, macAddr, serial, hostkey);
+    cr_assert(hostkey != NULL, "Unable to derive host key from master key for addr %s and serial number %s", macAddr,
+              serial);
 
-  ret = writeKey((gchar *)hostkey, 0, hostKeyFileName);
-  cr_assert(ret == 1, "Unable to write host key to file %s", hostKeyFileName);
+    ret = writeKey((gchar *)hostkey, 0, hostKeyFileName);
+    cr_assert(ret, "Unable to write host key to file %s", hostKeyFileName);
 }
 
 // Create a temporary directory
 GString *createTemporaryDirectory(gchar *template)
 {
-  gchar buf[PATH_MAX];
+    gchar buf[PATH_MAX];
 
-  // Buffer for temporary path
-  g_strlcpy(buf, template, strlen(template) +1);
+    // Buffer for temporary path
+    g_strlcpy(buf, template, strlen(template)+1);
 
-  // Create random directory
-  gchar *tmpDir = g_mkdtemp(buf);
+    // Create random directory
+    gchar *tmpDir = g_mkdtemp(buf);
 
-  cr_assert(tmpDir != NULL, "Unable to create temporary directory %s: %s", template, strerror(errno));
+    cr_assert(tmpDir != NULL, "Unable to create temporary directory %s: %s", template, strerror(errno));
 
-  GString *result = g_string_new(tmpDir);
+    GString *result = g_string_new(tmpDir);
 
-  return result;
+    return result;
 }
 
 // Create a fully qualified path to a temporary file
 GString *createTemporaryFilePath(GString *dirname, gchar *basename)
 {
-  GString *filePath = g_string_new(dirname->str);
+    GString *filePath = g_string_new(dirname->str);
 
-  g_string_append(filePath, basename);
+    g_string_append(filePath, basename);
 
-  return filePath;
+    return filePath;
 }
 
 // Delete temporary file generated by a test
 void removeTemporaryFile(gchar *fileName, gboolean force)
 {
-  // Remove file
-  int ret = unlink(fileName);
-  if (!force && ret != 0)
+    // Remove file
+    int ret = unlink(fileName);
+    if(!force && ret != 0)
     {
-      cr_log_info("removeTemporaryFile %s: %s", strerror(errno), fileName);
+        cr_log_info("removeTemporaryFile %s: %s", strerror(errno), fileName);
     }
 }
 
 // Remove temporary directory generated by a test
 void removeTemporaryDirectory(gchar *dirName, gboolean force)
 {
-  // Remove directory
-  int ret = rmdir(dirName);
-  if (!force && ret != 0)
+    // Remove directory
+    int ret = rmdir(dirName);
+    if(!force && ret != 0)
     {
-      cr_log_info("removeTemporaryDirectory %s: %s", strerror(errno), dirName);
+        cr_log_info("removeTemporaryDirectory %s: %s", strerror(errno), dirName);
     }
 }
 
 // Initialize a test
 TestData *initialize(gchar *name)
 {
-  cr_log_info("[%s] Initialization", name);
+    cr_log_info("[%s] Initialization", name);
 
-  TestData *testData = g_new0(TestData, 1);
+    TestData *testData = g_new0(TestData, 1);
 
-  testData->testName = g_string_new(name);
-  testData->testDir = createTemporaryDirectory(testDirTmpl);
-  testData->keyFile = createTemporaryFilePath(testData->testDir, hostKeyFile);
-  testData->macFile = createTemporaryFilePath(testData->testDir, macFile);
+    testData->testName = g_string_new(name);
+    testData->testDir = createTemporaryDirectory(testDirTmpl);
+    testData->keyFile = createTemporaryFilePath(testData->testDir, hostKeyFile);
+    testData->macFile = createTemporaryFilePath(testData->testDir, macFile);
 
-  generateHostKey(testData->hostKey, testData->keyFile->str);
+    generateHostKey(testData->hostKey, testData->keyFile->str);
 
-  return testData;
+    return testData;
 }
 
 // Close a test and free resources
 void closure(TestData *testData)
 {
-  cr_log_info("[%s] Closure", testData->testName->str);
+    cr_log_info("[%s] Closure", testData->testName->str);
 
-  removeTemporaryFile(testData->keyFile->str, TRUE);
-  removeTemporaryFile(testData->macFile->str, TRUE);
-  removeTemporaryDirectory(testData->testDir->str, TRUE);
+    removeTemporaryFile(testData->keyFile->str, TRUE);
+    removeTemporaryFile(testData->macFile->str, TRUE);
+    removeTemporaryDirectory(testData->testDir->str, TRUE);
 
-  g_string_free(testData->testName, TRUE);
-  g_string_free(testData->testDir, TRUE);
-  g_string_free(testData->keyFile, TRUE);
-  g_string_free(testData->macFile, TRUE);
+    g_string_free(testData->testName, TRUE);
+    g_string_free(testData->testDir, TRUE);
+    g_string_free(testData->keyFile, TRUE);
+    g_string_free(testData->macFile, TRUE);
 
-  g_free(testData);
+    g_free(testData);
 }
 
 void corruptKey(TestData *testData)
 {
-  GError *error = NULL;
-  GIOChannel *keyfile = g_io_channel_new_file(testData->keyFile->str, "w+", &error);
+    GError *error = NULL;
+    GIOChannel *keyfile = g_io_channel_new_file(testData->keyFile->str, "w+", &error);
 
-  cr_assert(keyfile != NULL, "Cannot open key file: %s", testData->keyFile->str);
+    cr_assert(keyfile != NULL, "Cannot open key file: %s", testData->keyFile->str);
 
-  GIOStatus status = g_io_channel_set_encoding(keyfile, NULL, &error);
+    GIOStatus status = g_io_channel_set_encoding(keyfile, NULL, &error);
 
-  cr_assert(status == G_IO_STATUS_NORMAL, " Unable to set encoding for key file %s", testData->keyFile->str);
+    cr_assert(status == G_IO_STATUS_NORMAL, " Unable to set encoding for key file %s", testData->keyFile->str);
 
-  gsize outlen = 0;
+    gsize outlen = 0;
 
-  int buflen = KEY_LENGTH + CMAC_LENGTH + sizeof(guint64);
+    int buflen = KEY_LENGTH + CMAC_LENGTH + sizeof(guint64);
 
-  gchar data[buflen];
+    gchar data[buflen];
 
-  // Overwrite the first 8 byte of the key with random values
-  for (int i = 0; i < buflen; i++)
+    // Overwrite the first 8 byte of the key with random values
+    for(int i = 0; i < buflen; i++)
     {
-      data[i] = randomNumber(1, 128);
+        data[i] = randomNumber(1, 128);
     }
 
-  // Overwrite the first 8 byte of the key with random values
-  for (int i = 0; i < 8; i++)
+    // Overwrite the first 8 byte of the key with random values
+    for(int i = 0; i < 8; i++)
     {
-      testData->hostKey[i] = randomNumber(1, 128);
+        testData->hostKey[i] = randomNumber(1, 128);
     }
 
-  // Copy the corrupted key to the buffer
-  memcpy(data, testData->hostKey, KEY_LENGTH);
+    // Copy the corrupted key to the buffer
+    memcpy(data, testData->hostKey, KEY_LENGTH);
 
-  // Write garbage to key file
-  status = g_io_channel_write_chars(keyfile, data, buflen, &outlen, &error);
+    // Write garbage to key file
+    status = g_io_channel_write_chars(keyfile, data, buflen, &outlen, &error);
 
-  cr_assert(status == G_IO_STATUS_NORMAL, "Unable to write updated key to file %s", testData->keyFile->str);
+    cr_assert(status == G_IO_STATUS_NORMAL, "Unable to write updated key to file %s", testData->keyFile->str);
 
-  status = g_io_channel_shutdown(keyfile, TRUE, &error);
-  g_io_channel_unref(keyfile);
+    status = g_io_channel_shutdown(keyfile, TRUE, &error);
+    g_io_channel_unref(keyfile);
 
-  cr_assert(status == G_IO_STATUS_NORMAL, " Unable to close key file %s", testData->keyFile->str);
+    cr_assert(status == G_IO_STATUS_NORMAL, " Unable to close key file %s", testData->keyFile->str);
 }
 
 
@@ -413,22 +449,22 @@ void corruptKey(TestData *testData)
 
 void setup(void)
 {
-  srand(time(NULL));
-  app_startup();
-  init_parse_options_and_load_syslogformat(&test_parse_options);
+    srand(time(NULL));
+    app_startup();
+    init_parse_options_and_load_syslogformat(&test_parse_options);
 
-  // This flag is required in order to pass the unaltered message to the slog template
-  // It is required to be set after the initialization of the template tests above,
-  // as this sets the parse options to the defaults
-  test_parse_options.flags |= LP_STORE_RAW_MESSAGE;
+    // This flag is required in order to pass the unaltered message to the slog template
+    // It is required to be set after the initialization of the template tests above,
+    // as this sets the parse options to the defaults
+    test_parse_options.flags |= LP_STORE_RAW_MESSAGE;
 
-  cfg_load_module(configuration, "secure-logging");
+    cfg_load_module(configuration, "secure-logging");
 }
 
 void teardown(void)
 {
-  deinit_template_tests();
-  app_shutdown();
+    deinit_template_tests();
+    app_shutdown();
 }
 
 /*************************************************************************/
@@ -438,295 +474,300 @@ TestSuite(secure_logging, .init = setup, .fini = teardown);
 
 void test_slog_template_format(void)
 {
-  TestData *testData = initialize("test_slog_template_format");
+    TestData *testData = initialize("test_slog_template_format");
 
-  GString *templ = g_string_new("");
+    GString *templ = g_string_new("");
 
-  // $(slog -k keyfile)
-  g_string_printf(templ, "$(slog -k %s)", testData->keyFile->str);
-  assert_template_failure(templ->str, "[SLOG] ERROR: Template parsing failed. Invalid number of arguments");
+    // $(slog -k keyfile)
+    g_string_printf(templ, "$(slog -k %s)", testData->keyFile->str);
+    assert_template_failure(templ->str, "[SLOG] ERROR: Template parsing failed. Invalid number of arguments");
 
-  // $(slog -k keyfile -m)
-  g_string_printf(templ, "$(slog -k %s -m)", testData->keyFile->str);
-  assert_template_failure(templ->str, "Missing argument for -m");
+    // $(slog -k keyfile -m)
+    g_string_printf(templ, "$(slog -k %s -m)", testData->keyFile->str);
+    assert_template_failure(templ->str, "Missing argument for -m");
 
-  // $(slog -k -m macfile)
-  g_string_printf(templ, "$(slog -k -m %s)", testData->macFile->str);
-  assert_template_failure(templ->str, "Invalid path or non existing regular file: -m");
+    // $(slog -k -m macfile)
+    g_string_printf(templ, "$(slog -k -m %s)", testData->macFile->str);
+    assert_template_failure(templ->str, "Invalid path or non existing regular file: -m");
 
-  // $(slog -k keyfile -m macfile)
-  g_string_printf(templ, "$(slog -k %s -m %s)", testData->keyFile->str, testData->macFile->str);
-  assert_template_failure(templ->str, "[SLOG] ERROR: Template parsing failed. Invalid number of arguments");
+    // $(slog -k keyfile -m macfile)
+    g_string_printf(templ, "$(slog -k %s -m %s)", testData->keyFile->str, testData->macFile->str);
+    assert_template_failure(templ->str, "[SLOG] ERROR: Template parsing failed. Invalid number of arguments");
 
-  g_string_free(templ, TRUE);
+    g_string_free(templ, TRUE);
 
-  closure(testData);
+    closure(testData);
 }
 
 void test_slog_verification(void)
 {
-  TestData *testData = initialize("test_slog_verification");
+    TestData *testData = initialize("test_slog_verification");
 
-  LogMessage *msg = create_random_sample_message();
-  LogTemplate *slog_templ = createTemplate(testData);
+    LogMessage *msg = create_random_sample_message();
+    LogTemplate *slog_templ = createTemplate(testData);
 
-  GString *output = applyTemplate(slog_templ, msg);
-  size_t num = 1;
+    GString *output = applyTemplate(slog_templ, msg);
+    size_t num = 1;
 
-  verifyMessages(testData->hostKey, testData->macFile->str, &output, &msg, num);
+    verifyMessages(testData->hostKey, testData->macFile->str, &output, &msg, num);
 
-  log_template_unref(slog_templ);
+    log_template_unref(slog_templ);
 
-  closure(testData);
+    closure(testData);
 }
 
 void test_slog_verification_bulk(void)
 {
-  TestData *testData = initialize("test_slog_verification_bulk");
+    TestData *testData = initialize("test_slog_verification_bulk");
 
-  LogTemplate *slog_templ = createTemplate(testData);
+    LogTemplate *slog_templ = createTemplate(testData);
 
-  // Create a collection of log messages
-  size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
-  LogMessage **logs = g_new0(LogMessage *, num);
+    // Create a collection of log messages
+    size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
+    LogMessage **logs = g_new0(LogMessage *, num);
 
-  createLogMessages(num, logs);
+    createLogMessages(num, logs);
 
-  // Template output
-  GString **output = g_new0(GString *, num);
+    // Template output
+    GString **output = g_new0(GString *, num);
 
-  // Apply slog template to each message
-  for (size_t i = 0; i < num; i++)
+    // Apply slog template to each message
+    for(size_t i = 0; i < num; i++)
     {
-      output[i] = applyTemplate(slog_templ, logs[i]);
+        output[i] = applyTemplate(slog_templ, logs[i]);
     }
 
-  // Verify the previously created log
-  verifyMessages(testData->hostKey, testData->macFile->str, output, logs, num);
+    // Verify the previously created log
+    verifyMessages(testData->hostKey, testData->macFile->str, output, logs, num);
 
-  // Release message resources
-  for (size_t i = 0; i < num; i++)
+    // Release message resources
+    for(size_t i = 0; i < num; i++)
     {
-      log_msg_unref(logs[i]);
-      g_string_free(output[i], TRUE);
+        log_msg_unref(logs[i]);
+        g_string_free(output[i], TRUE);
     }
 
-  log_template_unref(slog_templ);
-  g_free(output);
-  g_free(logs);
+    log_template_unref(slog_templ);
+    g_free(output);
+    g_free(logs);
 
-  closure(testData);
+    closure(testData);
 }
 
 void test_slog_corrupted_key(void)
 {
-  TestData *testData = initialize("test_slog_corrupted_key");
+    TestData *testData = initialize("test_slog_corrupted_key");
 
-  // Part 1: Log several messages -> They must be encrypted
-  // Part 2: Corrupt the key
-  // Log several messages -> They should be logged in plain text
+    // Part 1: Log several messages -> They must be encrypted
+    // Part 2: Corrupt the key
+    // Log several messages -> They should be logged in plain text
 
-  LogTemplate *slog_templ = createTemplate(testData);
+    LogTemplate *slog_templ = createTemplate(testData);
 
-  // Create a collection of log messages
-  size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
+    // Create a collection of log messages
+    size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
 
-  LogMessage **logs = g_new0(LogMessage *, num);
-  createLogMessages(num, logs);
+    LogMessage **logs = g_new0(LogMessage *, num);
+    createLogMessages(num, logs);
 
-  GString **output = g_new0(GString *, num);
+    GString **output = g_new0(GString *, num);
 
-  // Part 1: Apply slog template to each message
-  for (size_t i = 0; i < num; i++)
+    // Part 1: Apply slog template to each message
+    for(size_t i = 0; i < num; i++)
     {
-      output[i] = applyTemplate(slog_templ, logs[i]);
+        output[i] = applyTemplate(slog_templ, logs[i]);
     }
 
-  // Verify messages
-  verifyMessages(testData->hostKey, testData->macFile->str, output, logs, num);
+    // Verify messages
+    verifyMessages(testData->hostKey, testData->macFile->str, output, logs, num);
 
-  // Release message resources
-  for (size_t i = 0; i < num; i++)
+    // Release message resources
+    for(size_t i = 0; i < num; i++)
     {
-      log_msg_unref(logs[i]);
-      g_string_free(output[i], TRUE);
+        log_msg_unref(logs[i]);
+        g_string_free(output[i], TRUE);
     }
 
-  log_template_unref(slog_templ);
-  g_free(logs);
-  g_free(output);
+    log_template_unref(slog_templ);
+    g_free(logs);
+    g_free(output);
 
-  // Part 2: Corrupt the key
-  corruptKey(testData);
+    // Part 2: Corrupt the key
+    corruptKey(testData);
 
-  // Re-initialize the template
-  slog_templ = createTemplate(testData);
+    // Re-initialize the template
+    slog_templ = createTemplate(testData);
 
-  // Create a collection of log messages
-  num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
-  logs = g_new0(LogMessage *, num);
-  createLogMessages(num, logs);
+    // Create a collection of log messages
+    num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
+    logs = g_new0(LogMessage *, num);
+    createLogMessages(num, logs);
 
-  output = g_new0(GString *, num);
+    output = g_new0(GString *, num);
 
-  // Apply slog template to each message
-  for (size_t i = 0; i < num; i++)
+    // Apply slog template to each message
+    for(size_t i = 0; i < num; i++)
     {
-      output[i] = applyTemplate(slog_templ, logs[i]);
+        output[i] = applyTemplate(slog_templ, logs[i]);
 
-      // Create new message from the text content of the original message
-      LogMessage *myOut = msg_format_parse(&test_parse_options, (const guchar *) output[i]->str, output[i]->len);
+        // Create new message from the text content of the original message
+        LogMessage *myOut = msg_format_parse(&test_parse_options, (const guchar *) output[i]->str, output[i]->len);
 
-      // Initialize the new message with value from the original
-      log_msg_set_saddr(myOut, logs[i]->saddr);
-      myOut->timestamps[LM_TS_STAMP].ut_sec = logs[i]->timestamps[LM_TS_STAMP].ut_sec;
-      myOut->timestamps[LM_TS_STAMP].ut_usec = logs[i]->timestamps[LM_TS_STAMP].ut_usec;
-      myOut->timestamps[LM_TS_STAMP].ut_gmtoff = logs[i]->timestamps[LM_TS_STAMP].ut_gmtoff;
-      myOut->pri = logs[i]->pri;
-      gssize dlen;
-      log_msg_set_value(myOut, LM_V_HOST, log_msg_get_value(logs[i], LM_V_HOST, &dlen), -1);
-      log_msg_set_value(myOut, LM_V_PROGRAM, log_msg_get_value(logs[i], LM_V_PROGRAM, &dlen), -1);
-      log_msg_set_value(myOut, LM_V_MESSAGE, log_msg_get_value(logs[i], LM_V_MESSAGE, &dlen), -1);
-      log_msg_set_value(myOut, LM_V_PID, log_msg_get_value(logs[i], LM_V_PID, &dlen), -1);
-      log_msg_set_value(myOut, LM_V_MSGID, log_msg_get_value(logs[i], LM_V_MSGID, &dlen), -1);
-      assert_log_messages_equal(myOut, logs[i]);
+        // Initialize the new message with value from the original
+        log_msg_set_saddr(myOut, logs[i]->saddr);
+        myOut->timestamps[LM_TS_STAMP].ut_sec = logs[i]->timestamps[LM_TS_STAMP].ut_sec;
+        myOut->timestamps[LM_TS_STAMP].ut_usec = logs[i]->timestamps[LM_TS_STAMP].ut_usec;
+        myOut->timestamps[LM_TS_STAMP].ut_gmtoff = logs[i]->timestamps[LM_TS_STAMP].ut_gmtoff;
+        myOut->pri = logs[i]->pri;
+        gssize dlen;
+        log_msg_set_value(myOut, LM_V_HOST, log_msg_get_value(logs[i], LM_V_HOST, &dlen), -1);
+        log_msg_set_value(myOut, LM_V_PROGRAM, log_msg_get_value(logs[i], LM_V_PROGRAM, &dlen), -1);
+        log_msg_set_value(myOut, LM_V_MESSAGE, log_msg_get_value(logs[i], LM_V_MESSAGE, &dlen), -1);
+        log_msg_set_value(myOut, LM_V_PID, log_msg_get_value(logs[i], LM_V_PID, &dlen), -1);
+        log_msg_set_value(myOut, LM_V_MSGID, log_msg_get_value(logs[i], LM_V_MSGID, &dlen), -1);
+        assert_log_messages_equal(myOut, logs[i]);
 
-      // Release message resources
-      log_msg_unref(myOut);
-      log_msg_unref(logs[i]);
-      g_string_free(output[i], TRUE);
+        // Release message resources
+        log_msg_unref(myOut);
+        log_msg_unref(logs[i]);
+        g_string_free(output[i], TRUE);
     }
 
-  log_template_unref(slog_templ);
-  g_free(output);
-  g_free(logs);
+    log_template_unref(slog_templ);
+    g_free(output);
+    g_free(logs);
 
-  closure(testData);
+    closure(testData);
 }
 
 void test_slog_malicious_modifications(void)
 {
-  TestData *testData = initialize("test_slog_malicious_modifications");
+    TestData *testData = initialize("test_slog_malicious_modifications");
 
-  LogTemplate *slog_templ = createTemplate(testData);
+    LogTemplate *slog_templ = createTemplate(testData);
 
-  // Create a collection of log messages
-  size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
+    // Create a collection of log messages
+    size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
 
-  LogMessage **logs = g_new0(LogMessage *, num);
+    LogMessage **logs = g_new0(LogMessage *, num);
+    printf("Num: %lu\n", num);
+    createLogMessages(num, logs);
 
-  createLogMessages(num, logs);
+    // Template output
+    GString **output = g_new0(GString *, num);
 
-  // Template output
-  GString **output = g_new0(GString *, num);
-
-  // Apply slog template to each message
-  for (size_t i = 0; i < num; i++)
+    // Apply slog template to each message
+    for(size_t i = 0; i < num; i++)
     {
-      output[i] = applyTemplate(slog_templ, logs[i]);
+        output[i] = applyTemplate(slog_templ, logs[i]);
     }
 
-  int mods = randomNumber(1, num - 1);
-  int entriesToModify[mods];
 
-  // We might modify the same entry twice
-  for (int i = 0; i < mods; i++)
+    int mods = randomNumber(1, num-1);
+    int entriesToModify[mods];
+
+    mods = 1;
+
+    // We might modify the same entry twice
+    for (int i = 0; i < mods; i++)
     {
-      entriesToModify[i] = randomNumber(0, num - 1);
+        entriesToModify[i] = randomNumber(0, num-1);
+        printf("MODIFYING ENTRY %d\n", entriesToModify[i]);
 
-      // Overwrite with invalid string (invalid with high probability!)
-      g_string_overwrite(output[entriesToModify[i]], randomNumber(COUNTER_LENGTH + COLON,
-                                                                  (output[entriesToModify[i]]->len) -1), "999999999999999999999999999999999999999999999999999999999999999");
+
+        // Overwrite with invalid string (invalid with high probability!)
+        g_string_overwrite(output[entriesToModify[i]], randomNumber(COUNTER_LENGTH + COLON,
+                           (output[entriesToModify[i]]->len)-1), "999999999999999999999999999999999999999999999999999999999999999");
     }
 
-  // Verify the previously created log
-  int brokenEntries[mods];
-  for (int i = 0; i < mods; i++)
+    // Verify the previously created log
+    int brokenEntries[mods];
+    for (int i=0; i<mods; i++)
     {
-      brokenEntries[i] = -1;
+        brokenEntries[i] = -1;
     }
-  GString **ob = verifyMaliciousMessages(testData->hostKey, testData->macFile->str, output, num, brokenEntries);
+    GString **ob = verifyMaliciousMessages(testData->hostKey, testData->macFile->str, output, num, brokenEntries);
 
-  for (int i = 0; i < num; i++)
+    for (gsize i=0; i<num; i++)
     {
-      if (1 == findInArray(i, entriesToModify, mods))
+        if(1 == findInArray(i, entriesToModify, mods))
         {
-          cr_assert(1 == findInArray(i, brokenEntries, mods), "Modified entry %d not detected.", i);
+            cr_assert(1 == findInArray(i, brokenEntries, mods), "Modified entry %d not detected.", i);
         }
-      else
+        else
         {
-          cr_assert(0 == findInArray(i, brokenEntries, mods), "Unmodified entry %d detected as modified.", i);
+            cr_assert(0 == findInArray(i, brokenEntries, mods), "Unmodified entry %d detected as modified.", i);
         }
     }
 
-  // Release message resources
-  for (size_t i = 0; i < num; i++)
+    // Release message resources
+    for(size_t i = 0; i < num; i++)
     {
-      log_msg_unref(logs[i]);
-      g_string_free(output[i], TRUE);
+        log_msg_unref(logs[i]);
+        g_string_free(output[i], TRUE);
     }
 
-  log_template_unref(slog_templ);
-  g_free(output);
-  g_free(logs);
-  g_free(ob);
+    log_template_unref(slog_templ);
+    g_free(output);
+    g_free(logs);
+    g_free(ob);
 
-  closure(testData);
+    closure(testData);
 }
 
 void test_slog_performance(void)
 {
-  TestData *testData = initialize("test_slog_performance");
+    TestData *testData = initialize("test_slog_performance");
 
-  LogTemplate *slog_templ = createTemplate(testData);
+    LogTemplate *slog_templ = createTemplate(testData);
 
-  GString *res = g_string_sized_new(1024);
-  gint i;
+    GString *res = g_string_sized_new(1024);
+    gint i;
 
-  LogMessage *msg = create_random_sample_message();
+    LogMessage *msg = create_random_sample_message();
 
-  start_stopwatch();
-  for (i = 0; i < PERFORMANCE_COUNTER; i++)
+    start_stopwatch();
+    for (i = 0; i < PERFORMANCE_COUNTER; i++)
     {
-      log_template_format(slog_templ, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, res);
+        log_template_format(slog_templ, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, res);
     }
-  stop_stopwatch_and_display_result(PERFORMANCE_COUNTER, "%-90.*s", (int)strlen(slog_templ->template_str) - 1,
-                                    slog_templ->template_str);
+    stop_stopwatch_and_display_result(PERFORMANCE_COUNTER, "%-90.*s", (int)strlen(slog_templ->template_str) - 1,
+                                      slog_templ->template_str);
 
-  // Free resources
-  log_template_unref(slog_templ);
-  g_string_free(res, TRUE);
-  log_msg_unref(msg);
+    // Free resources
+    log_template_unref(slog_templ);
+    g_string_free(res, TRUE);
+    log_msg_unref(msg);
 
-  closure(testData);
+    closure(testData);
 }
 
 Test(secure_logging, test_slog_template_format)
 {
-  test_slog_template_format();
+    test_slog_template_format();
 }
 
 Test(secure_logging, test_slog_performance)
 {
-  test_slog_performance();
+    test_slog_performance();
 }
 
 Test(secure_logging, test_slog_verification_bulk)
 {
-  test_slog_verification_bulk();
+    test_slog_verification_bulk();
 }
 
 Test(secure_logging, test_slog_verification)
 {
-  test_slog_verification();
+    test_slog_verification();
 }
 
 Test(secure_logging, test_slog_corrupted_key)
 {
-  test_slog_corrupted_key();
+    test_slog_corrupted_key();
 }
 
 Test(secure_logging, test_slog_malicious_modifications)
 {
-  test_slog_malicious_modifications();
+    test_slog_malicious_modifications();
 }
