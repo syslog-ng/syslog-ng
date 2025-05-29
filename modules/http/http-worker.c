@@ -279,7 +279,6 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
 
   curl_easy_setopt(self->curl, CURLOPT_HEADERDATA, self);
   curl_easy_setopt(self->curl, CURLOPT_DEBUGDATA, self);
-  curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
 
   if (owner->accept_redirects)
     {
@@ -684,6 +683,13 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
     curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, http_curl_header_list_as_slist(self->request_headers));
 
+  // Normally these sould go to the static curl initialization _setup_static_options_in_curl
+  // but we set it here instead to be sure that the debug function is set/unset
+  // if the log level is changed meanwhile (e.g. via syslog-ng-ctl)
+  // we need it only if trace_flag is set, and also must be sure verbosity is set accordingly too
+  // as they should go hand in hand, because if the verbose flag is set, but the debug function is not set
+  // then the debug messages will go to the stderr, which is what we do not want
+  curl_easy_setopt(self->curl, CURLOPT_VERBOSE, G_UNLIKELY(trace_flag) ? 1L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, G_UNLIKELY(trace_flag) ? _curl_debug_function : NULL);
   curl_easy_setopt(self->curl, CURLOPT_HEADERFUNCTION, G_UNLIKELY(trace_flag) ? _curl_header_function : NULL);
 
