@@ -4,6 +4,7 @@ BUILDER_IMAGES=	\
 	almalinux-8	\
 	almalinux-9	\
 	centos-stream9  \
+	centos-stream10  \
 	fedora-latest	\
 	fedora-rawhide	\
 	debian-bullseye	\
