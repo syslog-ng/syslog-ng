@@ -38,7 +38,7 @@ jobs:
           - centos-stream9
           - centos-stream10
           - fedora-latest
-          # - fedora-rawhide - rawhide is always a problem turning it off now
+          - fedora-rawhide # - rawhide is always a problem turning it off now
           - debian-bullseye
           - debian-bookworm
           - debian-sid
