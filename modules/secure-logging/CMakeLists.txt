@@ -1,4 +1,6 @@
 set(SECURE_LOGGING_SOURCES
+  slog_sect.c
+  slog_file.c
   slog.c
   slog.h
   )
