@@ -136,7 +136,7 @@ function add_copr_repo {
                 8)
                     yum config-manager --set-enabled powertools
                     ;;
-                9|stream9)
+                9|stream9|stream10)
                     yum config-manager --set-enabled crb
                     ;;
                 esac

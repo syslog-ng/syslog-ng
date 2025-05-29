@@ -36,6 +36,7 @@ jobs:
           - almalinux-8
           - almalinux-9
           - centos-stream9
+          - centos-stream10
           - fedora-latest
           # - fedora-rawhide - rawhide is always a problem turning it off now
           - debian-bullseye
