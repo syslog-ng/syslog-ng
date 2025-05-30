@@ -64,6 +64,9 @@ private:
   ::google::pubsub::v1::PublishRequest request;
   size_t batch_size = 0;
   size_t current_batch_bytes = 0;
+
+  bool handle_protovar(LogMessage *msg, ::google::pubsub::v1::PubsubMessage *message, size_t *message_bytes);
+  bool handle_data_attributes(LogMessage *msg, ::google::pubsub::v1::PubsubMessage *message, size_t *message_bytes);
 };
 
 }

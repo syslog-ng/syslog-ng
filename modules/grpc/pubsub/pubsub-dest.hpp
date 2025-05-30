@@ -62,6 +62,12 @@ public:
     this->data = log_template_ref(d);
   }
 
+  void set_protovar(LogTemplate *p)
+  {
+    log_template_unref(this->protovar);
+    this->protovar = log_template_ref(p);
+  }
+
   void add_attribute(const std::string &name, LogTemplate *value)
   {
     this->attributes.push_back(NameValueTemplatePair{name, value});
@@ -74,6 +80,8 @@ private:
   LogTemplate *project = nullptr;
   LogTemplate *topic = nullptr;
   LogTemplate *data = nullptr;
+  LogTemplate *protovar = nullptr;
+  LogTemplate *default_data_template = nullptr;
   std::vector<NameValueTemplatePair> attributes;
 };
 

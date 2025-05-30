@@ -56,6 +56,7 @@
 %token KW_TOPIC
 %token KW_DATA
 %token KW_ATTRIBUTES
+%token KW_PROTOVAR
 
 %type <ptr> pubsub_dest
 
@@ -84,6 +85,8 @@ pubsub_dest_option
   | KW_TOPIC '(' template_name_or_content ')' { pubsub_dd_set_topic(last_driver, $3); log_template_unref($3); }
   | KW_DATA '(' template_name_or_content ')' { pubsub_dd_set_data(last_driver, $3); log_template_unref($3); }
   | KW_ATTRIBUTES '(' pubsub_dest_attributes ')'
+  | KW_PROTOVAR '(' template_name_or_content ')' {  CHECK_ERROR(pubsub_dd_set_protovar(last_driver, $3), @1, "format is not trivial");
+                                                    log_template_unref($3); }
   | grpc_dest_general_option
   ;
 
