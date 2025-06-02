@@ -229,8 +229,9 @@ image-%:
 	BASE_IMAGE=$${BASE_IMAGE%-amd64}; \
 	BASE_IMAGE=$${BASE_IMAGE%-arm64}; \
 	DOCKERFILE=$(DBLD_DIR)/images/$${BASE_IMAGE}.dockerfile; \
+	JENKINS_URL=$${JENKINS_URL%-}; \
 	$(DBLD_DIR)/prepare-image-build $*; \
-	$(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=ARG_IMAGE_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --build-arg=CONTAINER_REGISTRY=${CONTAINER_REGISTRY} --build-arg=CONTAINER_ARCH=${CONTAINER_ARCH} --build-arg=CONTAINER_NAME_SUFFIX=${CONTAINER_NAME_SUFFIX} --network=host -t ${CONTAINER_REGISTRY}/dbld-$* -f $${DOCKERFILE} $(DBLD_DIR)
+	$(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=ARG_IMAGE_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --build-arg=CONTAINER_REGISTRY=${CONTAINER_REGISTRY} --build-arg=CONTAINER_ARCH=${CONTAINER_ARCH} --build-arg=CONTAINER_NAME_SUFFIX=${CONTAINER_NAME_SUFFIX} --build-arg=JENKINS_URL=${JENKINS_URL} --network=host -t ${CONTAINER_REGISTRY}/dbld-$* -f $${DOCKERFILE} $(DBLD_DIR)
 
 push-images: $(foreach image,$(IMAGES), push-image-$(image))
 push-image-%:
