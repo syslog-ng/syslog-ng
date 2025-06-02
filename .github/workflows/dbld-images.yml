@@ -80,7 +80,7 @@ jobs:
           gh_export CONTAINER_REGISTRY CONTAINER_ARCH CONTAINER_NAME_SUFFIX
 
       - name: Build the images
-        run: dbld/rules image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX}
+        run: dbld/rules image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX} JENKINS_URL=${RUNNER_ENVIRONMENT}
 
       - name: Should we upload the images?
         run: |
