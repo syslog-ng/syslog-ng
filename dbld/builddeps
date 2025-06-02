@@ -25,6 +25,13 @@ function update_packages() {
                 if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
                     sed -i -e 's,http://\(archive\|security\).ubuntu.com,http://eu-west-1.ec2.archive.ubuntu.com,' /etc/apt/sources.list.d/ubuntu.sources
                 fi
+            elif [ "$JENKINS_URL" = "github-hosted" ]; then
+                # we are running under GitHub's env, thus we can use Microsoft's
+                # Azure specific Ubuntu mirror. Yes, it's a dirty hack, I know ...
+                sed -i -e 's,http://\(archive\|security\).ubuntu.com,http://azure.archive.ubuntu.com,' /etc/apt/sources.list
+                if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+                    sed -i -e 's,http://\(archive\|security\).ubuntu.com,http://azure.archive.ubuntu.com,' /etc/apt/sources.list.d/ubuntu.sources
+                fi
             fi
             apt-get update
             apt-get upgrade -y
