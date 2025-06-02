@@ -16,8 +16,23 @@ function update_packages() {
             yum update -y
             ;;
         debian|ubuntu)
+            if [ "$JENKINS_URL" = "https://ci.syslog-ng.com/" ]; then
+                # we are running under the ci.syslog-ng.com thus AWS. Use their
+                # Ubuntu mirror, instead of spamming the real Ubuntu mirrors, as
+                # they are really aggressive, when it comes to banning IPs over
+                # hammering s of 2025.06.02.
+                sed -i -e 's,http://\(archive\|security\).ubuntu.com,http://eu-west-1.ec2.archive.ubuntu.com,' /etc/apt/sources.list
+                if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+                    sed -i -e 's,http://\(archive\|security\).ubuntu.com,http://eu-west-1.ec2.archive.ubuntu.com,' /etc/apt/sources.list.d/ubuntu.sources
+                fi
+            fi
             apt-get update
             apt-get upgrade -y
+
+            apt-get install -y curl
+            curl -s "https://checkip.amazonaws.com"
+            curl -s "http://whatismyip.akamai.com"
+
             ;;
         fedora)
             dnf upgrade -y
