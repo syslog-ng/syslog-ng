@@ -1498,6 +1498,14 @@ dnl ***************************************************************************
 if ! test "x$enable_grpc" = "xno"; then
     if test "x$enable_cpp" = "xno"; then
         if test "x$enable_grpc" = "xyes"; then
+            # Warn on macOS that AX_CXX_COMPILE_STDCXX might be outdated
+            if test $ostype = "Darwin"; then
+                # AX[]_CXX_COMPILE_STDCXX format is needed to prevent the text treated as a macro
+                AC_MSG_WARN([On macOS, the Homebrew-provided autoconf-archive contains an outdated version of AX[]_CXX_COMPILE_STDCXX,
+which may incorrectly detect C++14 or C++17 support with clang. This can cause GRPC/C++ configuration to fail.
+Recommended fix:
+    wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4])
+            fi
             AC_MSG_ERROR(C++ support is mandatory when the GRPC modules are enabled.)
         else
             enable_grpc=no
