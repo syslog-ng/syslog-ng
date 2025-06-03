@@ -32,6 +32,12 @@
 #include "logpipe.h"
 #include "compat/cpp-end.h"
 
+// google protobuf tries to use this even though it is not neccessarily exposed
+// that leads to hundreds of warnings
+#ifndef PROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII
+#define PROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII 0
+#endif
+
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/dynamic_message.h>
