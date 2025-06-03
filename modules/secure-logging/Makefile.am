@@ -2,6 +2,10 @@ noinst_LTLIBRARIES += modules/secure-logging/libsyslog-ng-secure-logging.la
 module_LTLIBRARIES += modules/secure-logging/libsecure-logging.la
 
 modules_secure_logging_libsyslog_ng_secure_logging_la_SOURCES =	\
+	modules/secure-logging/slog_sect.c                      \
+	modules/secure-logging/slog_sect.h                      \
+	modules/secure-logging/slog_file.c                      \
+	modules/secure-logging/slog_file.h                      \
 	modules/secure-logging/slog.c                           \
 	modules/secure-logging/slog.h
 
