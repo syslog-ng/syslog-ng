@@ -179,7 +179,7 @@ log_proto_http_scraper_responder_server_new(LogTransport *transport,
   LogProtoHTTPScraperResponderOptions *options = &((LogProtoHTTPScraperResponderOptionsStorage *)options_storage)->super;
   if (options->single_instance && single_instance)
     {
-      msg_trace("Only one Prometheus scraper responder instance is allowed");
+      msg_trace("Only one HTTP scraper responder instance is allowed");
       GString *response_data = g_string_new(http_too_many_request_msg);
       g_string_append(response_data, "\n\n");
       single_instance->super.response_sender(&single_instance->super, response_data->str,

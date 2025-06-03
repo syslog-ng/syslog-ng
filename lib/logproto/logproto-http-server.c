@@ -73,15 +73,16 @@ _http_request_processor(LogProtoHTTPServer *self, LogProtoBufferedServerState *s
 }
 
 static GString *
-_compose_response_header(LogProtoHTTPServer *self, const gchar *data, gsize data_len, gboolean close_after_sent)
+_compose_response_header(LogProtoHTTPServer *self, const gchar *data G_GNUC_UNUSED, gsize data_len,
+                         gboolean close_after_sent)
 {
   const gint maxContentNumLength = 5;
-  const gchar close_str[] = "Connection: close\n";
-  const gchar response_header_fmt[] = "%s\n"
-                                      "Content-Type: text/plain; version=0.0.4\n"
-                                      "Content-Length: %*lu\n"
-                                      "%s\n"
-                                      "\n";
+  static const gchar close_str[] = "Connection: close\n";
+  static const gchar response_header_fmt[] = "%s\n"
+                                             "Content-Type: text/plain; version=0.0.4\n"
+                                             "Content-Length: %*lu\n"
+                                             "%s\n"
+                                             "\n";
   GString *response = g_string_sized_new(G_N_ELEMENTS(response_header_fmt) - 1 +
                                          G_N_ELEMENTS(http_ok_msg) - 1 +
                                          G_N_ELEMENTS(close_str) - 1 - 2 +

@@ -37,7 +37,7 @@
 /* options */
 typedef struct _LogProtoHTTPScraperResponderOptions
 {
-  LogProtoHTTPServerOptions super; // This must be the first !!!
+  LogProtoHTTPServerOptions super;
   guint8 scraper_type;
   gchar *scraper_request_hdr_pattern;
   gint scrape_freq_limit;

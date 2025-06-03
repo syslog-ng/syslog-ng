@@ -33,7 +33,7 @@ static const gchar http_ok_msg[] = "HTTP/1.1 200 OK";
 
 typedef struct _LogProtoHTTPServerOptions
 {
-  LogProtoServerOptions super; // This must be the first !!!
+  LogProtoServerOptions super;
   gboolean close_after_send;
 
 } LogProtoHTTPServerOptions;
