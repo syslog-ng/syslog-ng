@@ -86,7 +86,7 @@ _construct_transport(FileOpener *self, gint fd)
 }
 
 static LogProtoServer *
-_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptions *proto_options)
+_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptionsStorage *proto_options)
 {
   return log_proto_file_reader_new(transport, proto_options);
 }

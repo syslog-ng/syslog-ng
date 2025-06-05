@@ -374,7 +374,7 @@ static LogProtoServer *
 _construct_proto(FileReader *self, gint fd)
 {
   LogReaderOptions *reader_options = &self->options->reader_options;
-  LogProtoFileReaderOptions *proto_options = file_reader_options_get_log_proto_options(self->options);
+  LogProtoFileReaderOptionsStorage *proto_options = file_reader_options_get_log_proto_options(self->options);
   LogTransport *transport = _construct_transport(self, fd);
   MsgFormatHandler *format_handler = reader_options->parse_options.format_handler;
 

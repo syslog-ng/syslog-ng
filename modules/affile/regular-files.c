@@ -59,7 +59,7 @@ _construct_src_transport(FileOpener *self, gint fd)
 }
 
 static LogProtoServer *
-_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptions *proto_options)
+_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptionsStorage *proto_options)
 {
   log_proto_server_options_set_ack_tracker_factory(&proto_options->storage,
                                                    consecutive_ack_tracker_factory_new());
