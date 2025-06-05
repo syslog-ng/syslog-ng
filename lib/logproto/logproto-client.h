@@ -43,6 +43,9 @@ typedef union _LogProtoClientOptionsStorage
   LogProtoClientOptions super;
   gchar __padding[LOG_PROTO_CLIENT_OPTIONS_SIZE];
 } LogProtoClientOptionsStorage;
+// _Static_assert() is a C11 feature, so we use a typedef trick to perform the static assertion
+typedef char static_assert_size_check_LogProtoClientOptions[
+   LOG_PROTO_CLIENT_OPTIONS_SIZE >= sizeof(LogProtoClientOptions) ? 1 : -1];
 
 typedef void (*LogProtoClientAckCallback)(gint num_msg_acked, gpointer user_data);
 typedef void (*LogProtoClientRewindCallback)(gpointer user_data);

@@ -39,6 +39,9 @@ typedef union _LogProtoFileReaderOptionsStorage
   LogProtoFileReaderOptions super;
 
 } LogProtoFileReaderOptionsStorage;
+// _Static_assert() is a C11 feature, so we use a typedef trick to perform the static assertion
+typedef char static_assert_size_check_LogProtoFileReaderOptions[
+   sizeof(LogProtoServerOptionsStorage) >= sizeof(LogProtoFileReaderOptions) ? 1 : -1];
 
 LogProtoServer *log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptionsStorage *options);
 
