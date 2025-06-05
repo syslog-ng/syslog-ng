@@ -60,6 +60,7 @@ get_inited_proto_http_scraper_server_options(void)
   // G=Full teardown of the base options (log_proto_server_options_destroy) will not work either as both
   // log_proto_server_options_init and log_proto_server_options_destroy are called only once, at suit init/teardown
   log_proto_http_scraper_responder_options_init(&proto_server_options, configuration);
+  log_proto_http_scraper_responder_options_set_scrape_pattern(&proto_server_options, "GET /metrics*");
   return (LogProtoHTTPScraperResponderOptionsStorage *)&proto_server_options;
 }
 
@@ -254,11 +255,6 @@ static void
 test_scrape_pattern(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoHTTPScraperResponderOptionsStorage *options = get_inited_proto_http_scraper_server_options();
-  log_proto_http_scraper_responder_options_set_scrape_type((LogProtoServerOptionsStorage *)options,
-                                                           "pattern-driven");
-  log_proto_http_scraper_responder_options_set_scrape_pattern((LogProtoServerOptionsStorage *)options,
-                                                              "GET /metrics*");
-
   LogProtoServer *proto = log_proto_http_scraper_responder_server_new(
                             log_transport_mock_new(
                               MOCKED_REQUEST_H1 "\n", -1,

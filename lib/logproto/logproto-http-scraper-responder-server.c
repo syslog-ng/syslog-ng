@@ -120,25 +120,12 @@ _check_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_
       return status;
     }
 
-  gchar *expected_header = self->options->scraper_request_hdr_pattern;
-  switch (self->options->scraper_type)
-    {
-    case SCT_PROMETHEUS:
-      expected_header = "GET /metrics*";
-      break;
-    case SCT_PATTERN_DRIVEN:
-      break;
-    default:
-      g_assert_not_reached();
-      break;
-    }
-
-  GPatternSpec *pattern = g_pattern_spec_new(expected_header);
+  GPatternSpec *pattern = g_pattern_spec_new(self->options->scraper_request_hdr_pattern);
   GString *header = g_string_new_len(buffer_start, buffer_bytes);
   if (FALSE == g_pattern_spec_match_string(pattern, header->str))
     {
       msg_trace("Scraper request header did not match", evt_tag_str("header", header->str), evt_tag_str("expected-header",
-                expected_header));
+                self->options->scraper_request_hdr_pattern));
       status = 400; // HTTP/1.1 400 Bad Request
     }
   g_string_free(header, TRUE);
@@ -216,7 +203,6 @@ log_proto_http_scraper_responder_options_defaults(LogProtoServerOptionsStorage *
   options_storage->super.destroy = log_proto_http_scraper_responder_options_destroy;
 
   options->stat_type = 0;
-  options->scraper_type = 0;
   options->scrape_freq_limit = -1;
 }
 
@@ -231,8 +217,6 @@ log_proto_http_scraper_responder_options_init(LogProtoServerOptionsStorage *opti
 
   if (options->stat_type == 0)
     options->stat_type = STT_STATS;
-  if (options->scraper_type == 0)
-    options->scraper_type = SCT_PROMETHEUS;
   if (options->scrape_freq_limit == -1)
     options->scrape_freq_limit = 0;
 }
@@ -257,10 +241,9 @@ log_proto_http_scraper_responder_options_validate(LogProtoServerOptionsStorage *
   if (FALSE == log_proto_http_server_options_validate(options_storage))
     return FALSE;
 
-  if (options->scraper_type == SCT_PATTERN_DRIVEN && (options->scraper_request_hdr_pattern == NULL ||
-                                                      options->scraper_request_hdr_pattern[0] == '\0'))
+  if (options->scraper_request_hdr_pattern == NULL || options->scraper_request_hdr_pattern[0] == '\0')
     {
-      msg_error("stats-exporter() 'scrape-type' is 'pattern-driven' but scraper request header pattern is not set");
+      msg_error("stats-exporter() 'scrape-pattern()' is mandatory and cannot be empty");
       return FALSE;
     }
 
@@ -270,32 +253,7 @@ log_proto_http_scraper_responder_options_validate(LogProtoServerOptionsStorage *
       return FALSE;
     }
 
-  if (options->scraper_type != SCT_PROMETHEUS && options->scraper_type != SCT_PATTERN_DRIVEN)
-    {
-      msg_error("stats-exporter() 'scrape-type' must be 'prometheus' or 'pattern-driven'");
-      return FALSE;
-    }
-
   return TRUE;
-}
-
-gboolean
-log_proto_http_scraper_responder_options_set_scrape_type(LogProtoServerOptionsStorage *options_storage,
-                                                         const gchar *value)
-{
-  LogProtoHTTPScraperResponderOptions *options = &((LogProtoHTTPScraperResponderOptionsStorage *)options_storage)->super;
-
-  if (strcmp(value, "prometheus") == 0)
-    {
-      options->scraper_type = SCT_PROMETHEUS;
-      return TRUE;
-    }
-  else if (strcmp(value, "pattern-driven") == 0)
-    {
-      options->scraper_type = SCT_PATTERN_DRIVEN;
-      return TRUE;
-    }
-  return FALSE;
 }
 
 void
