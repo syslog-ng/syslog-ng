@@ -149,280 +149,291 @@ dnl ***************************************************************************
 dnl Arguments
 
 AC_ARG_WITH(libnet,
-   [  --with-libnet=path      use path to libnet-config script],
-   ,
-   [with_libnet=""])
+    AS_HELP_STRING([--with-libnet=path], [use path to libnet-config script]),
+    , [with_libnet=""])
 
 AC_ARG_WITH(net-snmp,
-   [  --with-net-snmp=path      use path to net-snmp-config script],
-   ,
-   [with_net_snmp=""])
+    AS_HELP_STRING([--with-net-snmp=path], [use path to net-snmp-config script]),
+    , [with_net_snmp=""])
 
 AC_ARG_WITH(pidfile-dir,
-   [  --with-pidfile-dir=path   Use path as the directory for storing pidfiles],
-   pidfiledir=$with_pidfile_dir)
+    AS_HELP_STRING([--with-pidfile-dir=path], [Use path as the directory for storing pidfiles]),
+    pidfiledir=$with_pidfile_dir)
 
 AC_ARG_WITH(module-dir,
-   [  --with-module-dir=path   Use path as the directory to install modules into],
-   moduledir=$with_module_dir)
+    AS_HELP_STRING([--with-module-dir=path], [Use path as the directory to install modules into]),
+    moduledir=$with_module_dir)
 
 AC_ARG_WITH(loggen-plugin-dir,
-   [  --with-loggen-plugin-dir=path   Use path as the directory to install loggen plugins into],
-   loggenplugindir=$with_loggen_plugin_dir)
+    AS_HELP_STRING([--with-loggen-plugin-dir=path], [Use path as the directory to install loggen plugins into]),
+    loggenplugindir=$with_loggen_plugin_dir)
 
 AC_ARG_WITH(python-venv-dir,
-   [  --with-python-venv-dir=path   Use path as the directory to install the Python venv into],
-   python_venvdir=$with_python_venv_dir)
+    AS_HELP_STRING([--with-python-venv-dir=path], [Use path as the directory to install the Python venv into]),
+    python_venvdir=$with_python_venv_dir)
 
 AC_ARG_WITH(module-path,
-   [  --with-module-path=path   Use path as the list of ':' separated directories looked up when searching for modules],
-   module_path=$with_module_path)
+    AS_HELP_STRING([--with-module-path=path], [Use path as the list of ':' separated directories looked up when searching for modules]),
+    module_path=$with_module_path)
 
 AC_ARG_WITH(timezone-dir,
-   [  --with-timezone-dir=path   Use path as the directory to get the timezone files],
-   timezonedir=$with_timezone_dir)
+    AS_HELP_STRING([--with-timezone-dir=path], [Use path as the directory to get the timezone files]),
+    timezonedir=$with_timezone_dir)
 
 AC_ARG_WITH(ld-library-path,
-   [  --with-ld-library-path=path  Set LD_LIBRARY_PATH during runtime to the value given],
-   env_ld_library_path=$with_ld_library_path)
+    AS_HELP_STRING([--with-ld-library-path=path], [Set LD_LIBRARY_PATH during runtime to the value given]),
+    env_ld_library_path=$with_ld_library_path)
 
-AC_ARG_WITH([systemdsystemunitdir],
-   AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]))
+AC_ARG_WITH(systemdsystemunitdir,
+    AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]))
 
 AC_ARG_WITH(package_name,
-   [  --with-package-name=package name Package name is printed out when syslog-ng started with --version],
-   PACKAGE_NAME=$with_package_name)
+    AS_HELP_STRING([--with-package-name=package name], [Package name is printed out when syslog-ng started with --version]),
+    PACKAGE_NAME=$with_package_name)
 
 AC_ARG_ENABLE(forced_server_mode,
-              [  --enable-forced-server-mode   Enable forced server mode.],, enable_forced_server_mode="yes")
+    AS_HELP_STRING([--enable-forced-server-mode], [Enable forced server mode.]),
+    , enable_forced_server_mode="yes")
 
 AC_ARG_ENABLE(debug,
-              [  --enable-debug      Enable debugging code.],, enable_debug="no")
+    AS_HELP_STRING([--enable-debug], [Enable debugging code.]),
+    , enable_debug="no")
 
 AC_ARG_ENABLE(example-modules,
-              [  --enable-example-modules Enable example modules.],, enable_example_modules="yes")
+    AS_HELP_STRING([--enable-example-modules], [Enable example modules.]),
+    , enable_example_modules="yes")
 
 AC_ARG_ENABLE(force_gnu99,
-              [  --enable-force-gnu99      Enforce C99 with gnu extensions.],, force_gnu99="no")
+    AS_HELP_STRING([--enable-force-gnu99], [Enforce C99 with gnu extensions.]),
+    , force_gnu99="no")
 
 AC_ARG_ENABLE(extra-warnings,
-              [  --enable-extra-warnings      Enable extra compiler warnings (recommended).],, enable_extra_warnings="no")
+    AS_HELP_STRING([--enable-extra-warnings], [Enable extra compiler warnings (recommended).]),
+    , enable_extra_warnings="no")
 
 AC_ARG_ENABLE(env-wrapper,
-              [  --enable-env-wrapper    Enable wrapper program to set up various environment variables],, enable_env_wrapper=auto)
+    AS_HELP_STRING([--enable-env-wrapper], [Enable wrapper program to set up various environment variables]),
+    , enable_env_wrapper=auto)
 
 AC_ARG_ENABLE(gprof,
-              [  --enable-gprof      Enable gcc profiling.],, enable_gprof="no")
+    AS_HELP_STRING([--enable-gprof], [Enable gcc profiling.]),
+    , enable_gprof="no")
 
 AC_ARG_ENABLE(memtrace,
-              [  --enable-memtrace   Enable alternative leak debugging code.])
+    AS_HELP_STRING([--enable-memtrace], [Enable alternative leak debugging code.]))
 
 AC_ARG_WITH(sanitizer,
-              [  --with-sanitizer=[address/undefined/etc...]
-                                         Enables compiler sanitizer supports (default: no)]
-              ,,with_sanitizer="no")
+    AS_HELP_STRING([--with-sanitizer=[address/undefined/etc...]], [Enables compiler sanitizer supports (default: no)]),
+    , with_sanitizer="no")
 
 AC_ARG_ENABLE(dynamic-linking,
-              [  --enable-dynamic-linking        Link everything dynamically.],,enable_dynamic_linking="auto")
+    AS_HELP_STRING([--enable-dynamic-linking], [Link everything dynamically.]),
+    , enable_dynamic_linking="auto")
 
 AC_ARG_ENABLE(mixed-linking,
-              [  --enable-mixed-linking          Link 3rd party libraries statically, system libraries dynamically],,enable_mixed_linking="auto")
+    AS_HELP_STRING([--enable-mixed-linking], [Link 3rd party libraries statically, system libraries dynamically]),
+    , enable_mixed_linking="auto")
 
 AC_ARG_ENABLE(force-classic-linking,
-              [  --enable-force-classic-linking  Link using ld-classic (default: no)],, enable_force_classic_linking="no")
+    AS_HELP_STRING([--enable-force-classic-linking], [Link using ld-classic (default: no)]),
+    , enable_force_classic_linking="no")
 
 AC_ARG_ENABLE(ipv6,
-              [  --enable-ipv6           Enable support for IPv6.],,enable_ipv6="auto")
+    AS_HELP_STRING([--enable-ipv6], [Enable support for IPv6.]),
+    , enable_ipv6="auto")
 
 AC_ARG_ENABLE(tcp-wrapper,
-              [  --enable-tcp-wrapper    Enable support for TCP wrappers.],,enable_tcp_wrapper="auto")
+    AS_HELP_STRING([--enable-tcp-wrapper], [Enable support for TCP wrappers.]),
+    , enable_tcp_wrapper="auto")
 
 AC_ARG_ENABLE(spoof-source,
-              [  --enable-spoof-source   Enable support for spoofed source addresses.]
-              ,,enable_spoof_source="auto")
+    AS_HELP_STRING([--enable-spoof-source], [Enable support for spoofed source addresses.]),
+    , enable_spoof_source="auto")
 
 AC_ARG_ENABLE(sun-streams,
-              [  --enable-sun-streams    Enable support for Solaris /dev/log STREAMS device.]
-              ,,enable_sun_streams="auto")
+    AS_HELP_STRING([--enable-sun-streams], [Enable support for Solaris /dev/log STREAMS device.]),
+    , enable_sun_streams="auto")
 
 AC_ARG_ENABLE(darwin-osl,
-              [  --enable-darwin-osl    Enable support for Darwin OS Log source. (default: auto)]
-              ,,enable_darwin_osl="auto")
+    AS_HELP_STRING([--enable-darwin-osl], [Enable support for Darwin OS Log source. (default: auto)]),
+    , enable_darwin_osl="auto")
 
 AC_ARG_ENABLE(openbsd-system-source,
-              [  --enable-openbsd-system-source    Enable support for OpenBSD /dev/klog device.]
-              ,,enable_openbsd_system_source="auto")
+    AS_HELP_STRING([--enable-openbsd-system-source], [Enable support for OpenBSD /dev/klog device.]),
+    , enable_openbsd_system_source="auto")
 
 AC_ARG_ENABLE(sql,
-	      [  --enable-sql            Enable support for SQL destinations. (default: auto)]
-	      ,,enable_sql="auto")
+    AS_HELP_STRING([--enable-sql], [Enable support for SQL destinations. (default: auto)]),
+    , enable_sql="auto")
 
 AC_ARG_ENABLE(pacct,
-              [  --enable-pacct          Enable support for reading Process Accounting files (EXPERIMENTAL, Linux only).]
-              ,,enable_pacct="no")
+    AS_HELP_STRING([--enable-pacct], [Enable support for reading Process Accounting files (EXPERIMENTAL, Linux only).]),
+    , enable_pacct="no")
 
 AC_ARG_ENABLE(linux-caps,
-              [  --enable-linux-caps     Enable support for managing Linux capabilities (default: auto)]
-              ,,enable_linux_caps="auto")
+    AS_HELP_STRING([--enable-linux-caps], [Enable support for managing Linux capabilities (default: auto)]),
+    , enable_linux_caps="auto")
 
 AC_ARG_ENABLE(ebpf,
-              [  --enable-ebpf           Enable support for loading of eBPF programs (default: no)]
-              ,,enable_ebpf="no")
+    AS_HELP_STRING([--enable-ebpf], [Enable support for loading of eBPF programs (default: no)]),
+    , enable_ebpf="no")
 
 AC_ARG_ENABLE(gcov,
-              [  --enable-gcov           Enable coverage profiling (default: no)]
-              ,,enable_gcov="no")
+    AS_HELP_STRING([--enable-gcov], [Enable coverage profiling (default: no)]),
+    , enable_gcov="no")
 
 AC_ARG_ENABLE(mongodb,
-	      [  --enable-mongodb        Enable mongodb destination (default: auto)]
-              ,,enable_mongodb="auto")
+    AS_HELP_STRING([--enable-mongodb], [Enable mongodb destination (default: auto)]),
+    , enable_mongodb="auto")
 
 AC_ARG_WITH(jsonc,
-              [  --with-jsonc=[yes/no]
-                                         Link against the system supplied jsonc library or explicitly disable it. (default: yes)]
-              ,,with_jsonc="yes")
+    AS_HELP_STRING([--with-jsonc=[yes/no]], [Link against the system supplied jsonc library or explicitly disable it. (default: yes)]),
+    , with_jsonc="yes")
 
 AC_ARG_ENABLE(json,
-             [ --enable-json=[yes/no]            Enable JSON support (default: yes)]
-              ,[if test "x$enableval" != "xno"; then with_jsonc="system"; else with_jsonc="no"; fi],)
+    AS_HELP_STRING([--enable-json=[yes/no]], [Enable JSON support (default: yes)]),
+    [if test "x$enableval" != "xno"; then with_jsonc="system"; else with_jsonc="no"; fi])
 
 AC_ARG_ENABLE(amqp,
-          [  --enable-amqp        Enable amqp destination (default: auto)]
-              ,,enable_amqp="auto")
+    AS_HELP_STRING([--enable-amqp], [Enable amqp destination (default: auto)]),
+    , enable_amqp="auto")
 
 AC_ARG_ENABLE(stomp,
-          [  --enable-stomp        Enable stomp destination (default: yes)]
-              ,,enable_stomp="yes")
+    AS_HELP_STRING([--enable-stomp], [Enable stomp destination (default: yes)]),
+    , enable_stomp="yes")
 
 AC_ARG_WITH(ivykis,
-              [  --with-ivykis=[system/internal]
-                                         Link against the system supplied or the built-in ivykis library. (default: internal)]
-              ,,with_ivykis="internal")
+    AS_HELP_STRING([--with-ivykis=[system/internal]], [Link against the system supplied or the built-in ivykis library. (default: internal)]),
+    , with_ivykis="internal")
 
 AC_ARG_ENABLE(smtp,
-              [  --disable-smtp          Disable SMTP support (default: auto)]
-              ,,enable_smtp="auto")
+    AS_HELP_STRING([--disable-smtp], [Disable SMTP support (default: auto)]),
+    , enable_smtp="auto")
 
 AC_ARG_WITH(libesmtp,
-             AC_HELP_STRING([--with-libesmtp=DIR],
-                            [use libesmtp library from (prefix) directory DIR]),,)
+    AS_HELP_STRING([--with-libesmtp=DIR], [use libesmtp library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(mqtt,
-              [  --disable-mqtt          Disable MQTT support (default: auto)]
-              ,,enable_mqtt="auto")
+    AS_HELP_STRING([--disable-mqtt], [Disable MQTT support (default: auto)]),
+    , enable_mqtt="auto")
 
 AC_ARG_WITH(libpaho-mqtt,
-             AC_HELP_STRING([--with-libpaho-mqtt=DIR],
-                            [use libpaho-mqtt library from (prefix) directory DIR]),,)
+    AS_HELP_STRING([--with-libpaho-mqtt=DIR], [use libpaho-mqtt library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(grpc,
-              [  --enable-grpc           Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, Pub/Sub, ClickHouse) (default: auto)]
-              ,,enable_grpc="auto")
+    AS_HELP_STRING([--enable-grpc], [Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, Pub/Sub, ClickHouse) (default: auto)]),
+    , enable_grpc="auto")
 
 AC_ARG_WITH(protoc,
-            AC_HELP_STRING([--with-protoc=PATH],
-                           [use protoc binary at PATH]),,)
+    AS_HELP_STRING([--with-protoc=PATH], [use protoc binary at PATH]))
 
 AC_ARG_WITH(protoc_gen_grpc_cpp_plugin,
-            AC_HELP_STRING([--with-protoc-gen-grpc-cpp-plugin=PATH],
-                           [use protoc-gen-grpc-cpp plugin at PATH]),,)
+    AS_HELP_STRING([--with-protoc-gen-grpc-cpp-plugin=PATH], [use protoc-gen-grpc-cpp plugin at PATH]))
 
 AC_ARG_ENABLE(cloud_auth,
-              [  --enable-cloud-auth     Enable cloud authentication methods (GCP) (default: auto)]
-              ,,enable_cloud_auth="auto")
+    AS_HELP_STRING([--enable-cloud-auth], [Enable cloud authentication methods (GCP) (default: auto)]),
+    , enable_cloud_auth="auto")
 
 AC_ARG_ENABLE(cpp,
-              [  --enable-cpp           Enable C++ support (default: auto)]
-              ,,enable_cpp="auto")
+    AS_HELP_STRING([--enable-cpp], [Enable C++ support (default: auto)]),
+    , enable_cpp="auto")
 
 AC_ARG_ENABLE(http,
-              [  --disable-http          Disable http support (default: auto)]
-              ,,enable_http="auto")
+    AS_HELP_STRING([--disable-http], [Disable http support (default: auto)]),
+    , enable_http="auto")
 
 AC_ARG_WITH(libcurl,
-             AC_HELP_STRING([--with-libcurl=DIR],
-                            [use libcurl library from (prefix) directory DIR]),,)
+    AS_HELP_STRING([--with-libcurl=DIR], [use libcurl library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(redis,
-              [  --disable-redis          Disable REDIS support (default: auto)]
-              ,,enable_redis="auto")
+    AS_HELP_STRING([--disable-redis], [Disable REDIS support (default: auto)]),
+    , enable_redis="auto")
 
 AC_ARG_WITH(libhiredis,
-             AC_HELP_STRING([--with-libhiredis=DIR],
-                            [use libhiredis library from (prefix) directory DIR]),,)
+    AS_HELP_STRING([--with-libhiredis=DIR], [use libhiredis library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(systemd,
-              [  --enable-systemd        Enable systemd support (default: auto)]
-              ,,enable_systemd="auto")
+    AS_HELP_STRING([--enable-systemd], [Enable systemd support (default: auto)]),
+    , enable_systemd="auto")
 
 AC_ARG_ENABLE(geoip2,
-              [  --enable-geoip2          Enable GeoIP2 support (default: auto)]
-              ,,enable_geoip2="auto")
+    AS_HELP_STRING([--enable-geoip2], [Enable GeoIP2 support (default: auto)]),
+    , enable_geoip2="auto")
 
 AC_ARG_ENABLE(riemann,
-              [  --disable-riemann       Disable riemann destination]
-              ,,enable_riemann="auto")
+    AS_HELP_STRING([--disable-riemann], [Disable riemann destination]),
+    , enable_riemann="auto")
 
 AC_ARG_WITH(compile-date,
-	      [  --without-compile-date  Do not include the compile date in the binary]
-	      ,wcmp_date="${withval}", wcmp_date="yes")
+    AS_HELP_STRING([--without-compile-date], [Do not include the compile date in the binary]),
+    wcmp_date="${withval}", wcmp_date="yes")
 
 AC_ARG_WITH(systemd-journal,
-              [  --with-systemd-journal=[system/optional/auto]
-                                         Link against the system supplied or the wrapper library. (default: auto)]
-              ,,with_systemd_journal="auto")
+    AS_HELP_STRING([--with-systemd-journal=[system/optional/auto]], [Link against the system supplied or the wrapper library. (default: auto)]),
+    , with_systemd_journal="auto")
 
 AC_ARG_ENABLE(kafka,
-              [  --enable-kafka         Enable rdkafka support]
-              ,,enable_kafka="auto")
+    AS_HELP_STRING([--enable-kafka], [Enable rdkafka support]),
+    , enable_kafka="auto")
 
 AC_ARG_ENABLE(python,
-              [  --disable-python       Disable Python module]
-              ,,enable_python="auto")
+    AS_HELP_STRING([--disable-python], [Disable Python module]),
+    , enable_python="auto")
 
 AC_ARG_ENABLE(python-modules,
-              [  --disable-python-modules  Disable Python based syslog-ng addons while installing the core Python modules]
-              ,,enable_python_modules="auto")
+    AS_HELP_STRING([--disable-python-modules], [Disable Python based syslog-ng addons while installing the core Python modules]),
+    , enable_python_modules="auto")
 
 AC_ARG_WITH(python,
-              [  --with-python=VERSION    Build with a specific version of python]
-              ,,with_python="auto")
+    AS_HELP_STRING([--with-python=VERSION], [Build with a specific version of python]),
+    , with_python="auto")
 
 AC_ARG_WITH(python-packages,
-              [  --with-python-packages=[system|venv|none]    Use Python packages from the system or a private virtualenv or skip their installation (default: venv)]
-              ,,with_python_packages="venv")
+    AS_HELP_STRING([--with-python-packages=[system|venv|none]], [Use Python packages from the system or a private virtualenv or skip their installation (default: venv)]),
+    , with_python_packages="venv")
 
 AC_ARG_WITH(python3-home,
-              [  --with-python3-home=path Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable],
-              python3_home_dir=$with_python3_home)
+    AS_HELP_STRING([--with-python3-home=path], [Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable]),
+    python3_home_dir=$with_python3_home)
 
 AC_ARG_WITH(pylint,
-              [  --with-pylint=ABSOLUTE_PATH    Specify pylint location])
+    AS_HELP_STRING([--with-pylint=ABSOLUTE_PATH], [Specify pylint location]))
 
 AC_ARG_WITH(docbook,
-            [  --with-docbook=FILE    Compiling manpages using docbook in the specified path, if not set, it will be searched on the system, or online version will be used from http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl]
-            ,,with_docbook="auto")
+    AS_HELP_STRING([--with-docbook=FILE], [Compiling manpages using docbook in the specified path, if not set, it will be searched on the system, or online version will be used from http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl]),
+    , with_docbook="auto")
 
-AC_ARG_ENABLE(manpages, AC_HELP_STRING([ --enable-manpages], [ Enable generation of manpages (default: no)]), , [enable_manpages="no"; XSL_STYLESHEET=""])
-AC_ARG_ENABLE(manpages-install, AC_HELP_STRING([ --enable-manpages-install], [ Enable installation of manpages (default: auto)]), , [enable_manpages_install="auto"])
+AC_ARG_ENABLE(manpages,
+    AS_HELP_STRING([--enable-manpages], [Enable generation of manpages (default: no)]),
+    , [enable_manpages="no"; XSL_STYLESHEET=""])
 
-AC_ARG_ENABLE(java, [ --enable-java  Enable java destination (default: auto)],, enable_java="auto")
+AC_ARG_ENABLE(manpages-install,
+    AS_HELP_STRING([--enable-manpages-install], [Enable installation of manpages (default: auto)]),
+    , enable_manpages_install="auto")
 
-AC_ARG_ENABLE(java-modules, [ --enable-java-modules  Compile all Java modules (default: auto)],, enable_java_modules="auto")
+AC_ARG_ENABLE(java,
+    AS_HELP_STRING([--enable-java], [Enable java destination (default: auto)]),
+    , enable_java="auto")
+
+AC_ARG_ENABLE(java-modules,
+    AS_HELP_STRING([--enable-java-modules], [Compile all Java modules (default: auto)]),
+    , enable_java_modules="auto")
 
 AC_ARG_ENABLE(native,
-              [  --enable-native        Enable native bindings (default: auto)]
-              ,,enable_native="auto")
+    AS_HELP_STRING([--enable-native], [Enable native bindings (default: auto)]),
+    , enable_native="auto")
 
-AC_ARG_ENABLE(afsnmp, [ --enable-afsnmp Enable afsnmp module (default: auto)],, enable_afsnmp="auto")
+AC_ARG_ENABLE(afsnmp,
+    AS_HELP_STRING([--enable-afsnmp], [Enable afsnmp module (default: auto)]),
+    , enable_afsnmp="auto")
 
 AC_ARG_ENABLE(stackdump,
-              [  --disable-stackdump       Disable stackdump support]
-              ,,enable_stackdump="auto")
+    AS_HELP_STRING([--disable-stackdump], [Disable stackdump support]),
+    , enable_stackdump="auto")
 
 AC_ARG_ENABLE(all-modules,
-              [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
-              ,,enable_all_modules="auto")
+    AS_HELP_STRING([--enable-all-modules], [Forcibly enable all modules. (default: auto)]),
+    , enable_all_modules="auto")
 
 if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
@@ -1498,6 +1509,14 @@ dnl ***************************************************************************
 if ! test "x$enable_grpc" = "xno"; then
     if test "x$enable_cpp" = "xno"; then
         if test "x$enable_grpc" = "xyes"; then
+            # Warn on macOS that AX_CXX_COMPILE_STDCXX might be outdated
+            if test $ostype = "Darwin"; then
+                # AX[]_CXX_COMPILE_STDCXX format is needed to prevent the text treated as a macro
+                AC_MSG_WARN([On macOS, the Homebrew-provided autoconf-archive contains an outdated version of AX[]_CXX_COMPILE_STDCXX,
+which may incorrectly detect C++14 or C++17 support with clang. This can cause GRPC/C++ configuration to fail.
+Recommended fix:
+    wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4])
+            fi
             AC_MSG_ERROR(C++ support is mandatory when the GRPC modules are enabled.)
         else
             enable_grpc=no
