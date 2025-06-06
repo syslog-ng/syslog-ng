@@ -87,7 +87,6 @@ log_transport_file_init_instance(LogTransportFile *self, gint fd)
   self->super.read = log_transport_file_read_method;
   self->super.write = log_transport_file_write_method;
   self->super.writev = log_transport_file_writev_method;
-  self->super.free_fn = log_transport_free_method;
 }
 
 LogTransport *
