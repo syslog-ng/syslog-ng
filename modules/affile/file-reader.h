@@ -51,10 +51,10 @@ struct _FileReader
   void (*on_file_moved)(FileReader *);
 };
 
-static inline LogProtoFileReaderOptions *
+static inline LogProtoFileReaderOptionsStorage *
 file_reader_options_get_log_proto_options(FileReaderOptions *options)
 {
-  return (LogProtoFileReaderOptions *) &options->reader_options.proto_options;
+  return (LogProtoFileReaderOptionsStorage *) &options->reader_options.proto_options;
 }
 
 FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *opener, LogSrcDriver *owner,

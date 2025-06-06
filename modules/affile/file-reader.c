@@ -374,15 +374,16 @@ static LogProtoServer *
 _construct_proto(FileReader *self, gint fd)
 {
   LogReaderOptions *reader_options = &self->options->reader_options;
-  LogProtoFileReaderOptions *proto_options = file_reader_options_get_log_proto_options(self->options);
+  LogProtoFileReaderOptionsStorage *proto_options = file_reader_options_get_log_proto_options(self->options);
   LogTransport *transport = _construct_transport(self, fd);
   MsgFormatHandler *format_handler = reader_options->parse_options.format_handler;
 
   if ((format_handler && format_handler->construct_proto))
     {
-      log_proto_server_options_set_ack_tracker_factory(&proto_options->super,
+      log_proto_server_options_set_ack_tracker_factory(&proto_options->storage,
                                                        consecutive_ack_tracker_factory_new());
-      return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super);
+      return format_handler->construct_proto(&reader_options->parse_options, transport,
+                                             &proto_options->storage);
     }
 
   return file_opener_construct_src_proto(self->opener, transport, proto_options);

@@ -27,6 +27,7 @@
 static gboolean stats_options_reset_is_set = FALSE;
 static gboolean stats_options_remove_orphans = FALSE;
 static gboolean stats_options_legacy_metrics = FALSE;
+static gboolean stats_options_without_header = FALSE;
 static gchar *stats_options_out_format = NULL;
 static gchar **stats_legacy_commands = NULL;
 
@@ -54,18 +55,20 @@ _stats_command_builder(GOptionContext *ctx)
     }
 
   gboolean command_is_csv = stats_command && g_str_equal(stats_command, "csv");
+  gboolean command_is_kv = stats_command && g_str_equal(stats_command, "kv");
   gboolean command_is_prometheus = stats_command && g_str_equal(stats_command, "prometheus");
   gboolean option_is_csv = stats_options_out_format && g_str_equal(stats_options_out_format, "csv");
+  gboolean option_is_kv = stats_options_out_format && g_str_equal(stats_options_out_format, "kv");
   gboolean option_is_prometheus = stats_options_out_format && g_str_equal(stats_options_out_format, "prometheus");
 
-  if (stats_command && FALSE == command_is_csv && FALSE == command_is_prometheus)
+  if (stats_command && FALSE == command_is_csv && FALSE == command_is_kv && FALSE == command_is_prometheus)
     {
       g_option_context_set_description(ctx, "stats");
       fprintf(stderr, "Error parsing command line arguments: Unknown stats format, %s\n", stats_command);
       return NULL;
     }
 
-  if (stats_options_out_format && FALSE == option_is_csv && FALSE == option_is_prometheus)
+  if (stats_options_out_format && FALSE == option_is_csv && FALSE == option_is_kv && FALSE == option_is_prometheus)
     {
       g_option_context_set_description(ctx, "stats");
       fprintf(stderr, "Error parsing command line arguments: Unknown stats format, %s\n", stats_options_out_format);
@@ -75,13 +78,22 @@ _stats_command_builder(GOptionContext *ctx)
   if ((stats_command == NULL && stats_options_out_format == NULL) ||
       command_is_csv || option_is_csv)
     {
-      if (option_is_prometheus || command_is_prometheus)
+      if (option_is_prometheus || command_is_prometheus || option_is_kv || command_is_kv)
         goto on_collision;
-      return "STATS CSV";
+      if (stats_options_without_header)
+        return "STATS CSV WITHOUT_HEADER";
+      else
+        return "STATS CSV";
+    }
+  else if (command_is_kv || option_is_kv)
+    {
+      if (option_is_csv || command_is_csv || option_is_prometheus || command_is_prometheus)
+        goto on_collision;
+      return "STATS KV";
     }
   else if (command_is_prometheus || option_is_prometheus)
     {
-      if (option_is_csv || command_is_csv)
+      if (option_is_csv || command_is_csv || option_is_kv || command_is_kv)
         goto on_collision;
       if (stats_options_legacy_metrics)
         return "STATS PROMETHEUS WITH_LEGACY";
@@ -92,8 +104,9 @@ _stats_command_builder(GOptionContext *ctx)
 on_collision:
   g_option_context_set_description(ctx, "stats");
   fprintf(stderr,
-          "Error parsing command line arguments: Colliding stats format recieved: %s <-> %s\nUsing the `stats csv|stats prometheus` format is deprecated, please use the new `--%s csv|--%s prometheus` options instead\n\n",
-          stats_options_out_format, stats_command, stats_options[3].long_name, stats_options[3].long_name);
+          "Error parsing command line arguments: Colliding stats format recieved: %s <-> %s\nUsing the `stats csv|kv|stats prometheus` format is deprecated, please use the new `--%s csv|--%s kv|--%s prometheus` options instead\n\n",
+          stats_options_out_format, stats_command,
+          stats_options[3].long_name, stats_options[3].long_name, stats_options[3].long_name);
   return NULL;
 }
 
@@ -111,8 +124,9 @@ GOptionEntry stats_options[] =
 {
   { "reset", 'r', 0, G_OPTION_ARG_NONE, &stats_options_reset_is_set, "reset counters", NULL },
   { "remove-orphans", 'o', 0, G_OPTION_ARG_NONE, &stats_options_remove_orphans, "remove orphaned statistics", NULL},
-  { "with-legacy-metrics", 'l', 0, G_OPTION_ARG_NONE, &stats_options_legacy_metrics, "show legacy metrics", NULL},
-  { "format", 'm', 0, G_OPTION_ARG_STRING, &stats_options_out_format, "output format, default is <csv>", "<csv|prometheus>" },
+  { "with-legacy-metrics", 'l', 0, G_OPTION_ARG_NONE, &stats_options_legacy_metrics, "show legacy metrics (only for prometheus format)", NULL},
+  { "no-header", 'n', 0, G_OPTION_ARG_NONE, &stats_options_without_header, "do not print stats header", NULL},
+  { "format", 'm', 0, G_OPTION_ARG_STRING, &stats_options_out_format, "output format, default is <csv>", "<csv|kv|prometheus>" },
   { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &stats_legacy_commands, NULL, NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
 };

@@ -322,6 +322,7 @@
 %token KW_SDATA_PREFIX                10302
 
 %token KW_PORT                        10323
+%token KW_HTTP                        10324
 /* misc options */
 
 %token KW_USE_TIME_RECVD              10340
@@ -1445,7 +1446,7 @@ source_reader_option
 	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ last_reader_options->fetch_limit = $3; }
         | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
         | { last_source_options = &last_reader_options->super; } source_option
-        | { last_proto_server_options = &last_reader_options->proto_options.super; } source_proto_option
+        | { last_proto_server_options = &last_reader_options->proto_options; } source_proto_option
         | { last_msg_format_options = &last_reader_options->parse_options; } msg_format_option
 	;
 
@@ -1465,9 +1466,9 @@ source_proto_option
                         "unknown encoding \"%s\"", $3);
             free($3);
           }
-        | KW_LOG_MSG_SIZE '(' positive_integer ')'      { last_proto_server_options->max_msg_size = $3; }
-        | KW_IDLE_TIMEOUT '(' positive_integer ')'      { last_proto_server_options->idle_timeout = $3; }
-        | KW_TRIM_LARGE_MESSAGES '(' yesno ')'          { last_proto_server_options->trim_large_messages = $3; }
+        | KW_LOG_MSG_SIZE '(' positive_integer ')'      { last_proto_server_options->super.max_msg_size = $3; }
+        | KW_TRIM_LARGE_MESSAGES '(' yesno ')'          { last_proto_server_options->super.trim_large_messages = $3; }
+        | KW_IDLE_TIMEOUT '(' positive_integer ')'      { last_proto_server_options->super.idle_timeout = $3; }
         ;
 
 host_resolve_option

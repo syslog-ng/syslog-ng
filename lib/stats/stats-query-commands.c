@@ -70,24 +70,17 @@ _ctl_format_get(gpointer user_data)
   // This one is the legacy format, kept for backward compatibility
   if (g_str_equal(fmt, "kv"))
     g_string_append_printf(str, "%s=%"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
-  else if (g_str_equal(fmt, "prometheus"))
+  else
     {
       ScratchBuffersMarker marker;
       scratch_buffers_mark(&marker);
 
-      GString *record = stats_prometheus_format_counter(sc, type, ctr);
-      if (record == NULL)
-        return FALSE;
+      GString *record = NULL;
+      if (g_str_equal(fmt, "prometheus"))
+        record = stats_prometheus_format_counter(sc, type, ctr);
+      else if (g_str_equal(fmt, "csv"))
+        record = stats_csv_format_counter(sc, type, ctr);
 
-      g_string_append(str, record->str);
-      scratch_buffers_reclaim_marked(marker);
-    }
-  else if (g_str_equal(fmt, "csv"))
-    {
-      ScratchBuffersMarker marker;
-      scratch_buffers_mark(&marker);
-
-      GString *record = stats_csv_format_counter(sc, type, ctr);
       if (record == NULL)
         return FALSE;
 
@@ -226,17 +219,24 @@ _dispatch_query(gint cmd_id, const gchar *output_fmt, const gchar *filter_expr, 
   return QUERY_CMDS[cmd_id](output_fmt, filter_expr, result);
 }
 
-void
-process_query_command(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
+GString *
+stats_execute_query_command(const gchar *command, gpointer user_data, gboolean *cancelled)
 {
   GString *result = g_string_new("");
-  gchar **cmds = g_strsplit(command->str, " ", 4);
+  gchar **cmds = g_strsplit(command, " ", 4);
 
   g_assert(g_str_equal(cmds[CMD_STR], "QUERY"));
 
   _dispatch_query(_command_str_to_id(cmds[QUERY_CMD_STR]), cmds[QUERY_OUT_FMT_STR], cmds[QUERY_FILTER_STR], result);
 
   g_strfreev(cmds);
+  return result;
+}
+
+void
+stats_process_query_command(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
+{
+  GString *result = stats_execute_query_command(command->str, user_data, cancelled);
 
   if (result->len == 0)
     g_string_assign(result, "\n");

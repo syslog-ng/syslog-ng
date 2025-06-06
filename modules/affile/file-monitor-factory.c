@@ -71,7 +71,7 @@ create_file_monitor_events(FileReader *self, FollowMethod file_follow_mode, gint
 #endif
 
     case FM_POLL:
-      if (file_reader_options_get_log_proto_options(self->options)->multi_line_options.mode == MLM_NONE)
+      if (file_reader_options_get_log_proto_options(self->options)->super.super.multi_line_options.mode == MLM_NONE)
         poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
       else
         poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,

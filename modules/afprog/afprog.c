@@ -295,7 +295,7 @@ afprogram_sd_init(LogPipe *s)
       LogProtoServer *proto;
 
       transport = log_transport_pipe_new(fd);
-      proto = log_proto_text_server_new(transport, &self->reader_options.proto_options.super);
+      proto = log_proto_text_server_new(transport, &self->reader_options.proto_options);
 
       self->reader = log_reader_new(s->cfg);
       log_pipe_set_options(&self->reader->super.super, &self->super.super.super.options);
@@ -463,7 +463,7 @@ afprogram_dd_reopen(AFProgramDestDriver *self)
     return FALSE;
 
   log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_pipe_new(fd),
-                                                            &self->writer_options.proto_options.super));
+                                                            &self->writer_options.proto_options));
   return TRUE;
 }
 

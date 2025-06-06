@@ -44,7 +44,7 @@
 #include <string.h>
 
 FileReaderOptions *last_file_reader_options;
-LogProtoFileReaderOptions *last_log_proto_options;
+LogProtoFileReaderOptionsStorage *last_log_proto_options;
 MultiLineOptions *last_multi_line_options;
 WildcardSourceDriver *last_legacy_wildcard_src_driver;
 
@@ -56,7 +56,7 @@ affile_grammar_set_file_source_driver(AFFileSourceDriver *sd)
   last_reader_options = &last_file_reader_options->reader_options;
   last_file_perm_options = &sd->file_opener_options.file_perm_options;
   last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
-  last_multi_line_options = &last_log_proto_options->multi_line_options;
+  last_multi_line_options = &last_log_proto_options->super.super.multi_line_options;
 }
 
 static void
@@ -67,7 +67,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
   last_reader_options = &last_file_reader_options->reader_options;
   last_file_perm_options = &sd->file_opener_options.file_perm_options;
   last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
-  last_multi_line_options = &last_log_proto_options->multi_line_options;
+  last_multi_line_options = &last_log_proto_options->super.super.multi_line_options;
 }
 
 }
@@ -183,7 +183,7 @@ source_affile_options
 source_affile_option
   : KW_FOLLOW_FREQ '(' nonnegative_float ')' { file_reader_options_set_follow_freq(last_file_reader_options, (gint) ($3 * 1000)); }
   | KW_FOLLOW_METHOD '(' string ')' { CHECK_ERROR(file_reader_options_set_follow_method(last_file_reader_options, $3), @3, "Invalid follow-method"); free($3); }
-  | KW_PAD_SIZE '(' nonnegative_integer ')' { last_log_proto_options->pad_size = $3; }
+  | KW_PAD_SIZE '(' nonnegative_integer ')' { last_log_proto_options->super.pad_size = $3; }
   | multi_line_option
   | multi_line_timeout
   | file_perm_option
@@ -235,7 +235,7 @@ source_afpipe_options
 
 source_afpipe_option
   : KW_OPTIONAL '(' yesno ')' { last_driver->optional = $3; }
-  | KW_PAD_SIZE '(' nonnegative_integer ')'  { last_log_proto_options->pad_size = $3; }
+  | KW_PAD_SIZE '(' nonnegative_integer ')'  { last_log_proto_options->super.pad_size = $3; }
   | KW_CREATE_DIRS '(' yesno ')' { pipe_sd_set_create_dirs(last_driver, $3); }
   | multi_line_option
   | file_perm_option

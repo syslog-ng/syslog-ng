@@ -34,23 +34,34 @@ struct _LogProtoTextServer
   MultiLineLogic *multi_line;
 
   const guchar *(*find_eom)(const guchar *s, gsize n);
+  gboolean (*extracted_raw_data_handler)(LogProtoTextServer *self, LogProtoBufferedServerState *state,
+                                         const guchar *buffer_start, gsize buffer_bytesl);
   gint32 consumed_len;
   gint32 cached_eol_pos;
 };
-
-void log_proto_text_server_set_multi_line(LogProtoServer *s, MultiLineLogic *multi_line);
 
 /* LogProtoTextServer
  *
  * This class processes text files/streams. Each record is terminated via an EOL character.
  */
-LogProtoServer *log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptions *options);
-LogProtoServer *log_proto_text_with_nuls_server_new(LogTransport *transport, const LogProtoServerOptions *options);
+LogProtoServer *log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options);
+LogProtoServer *log_proto_text_with_nuls_server_new(LogTransport *transport,
+                                                    const LogProtoServerOptionsStorage *options);
+LogProtoServer *log_proto_text_multiline_server_new(LogTransport *transport,
+                                                    const LogProtoServerOptionsStorage *options);
+
+void log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport,
+                                const LogProtoServerOptionsStorage *options);
+void log_proto_text_with_nuls_server_init(LogProtoTextServer *self, LogTransport *transport,
+                                          const LogProtoServerOptionsStorage *options);
+void log_proto_text_multiline_server_init(LogProtoTextServer *self, LogTransport *transport,
+                                          const LogProtoServerOptionsStorage *options);
+
+LogProtoPrepareAction log_proto_text_server_poll_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout);
 
 void log_proto_text_server_free(LogProtoServer *self);
-void log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport,
-                                const LogProtoServerOptions *options);
-LogProtoPrepareAction log_proto_text_server_poll_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout);
+
+void log_proto_text_server_set_multi_line(LogProtoServer *s, MultiLineLogic *multi_line);
 
 static inline gboolean
 log_proto_text_server_validate_options_method(LogProtoServer *s)

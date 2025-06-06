@@ -99,7 +99,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
                       if (avail_in > sizeof(state->raw_buffer_leftover))
                         {
                           msg_error("Invalid byte sequence, the remaining raw buffer is larger than the supported leftover size",
-                                    evt_tag_str("encoding", self->super.options->encoding),
+                                    evt_tag_str("encoding", self->super.options->super.encoding),
                                     evt_tag_int("avail_in", avail_in),
                                     evt_tag_int("leftover_size", sizeof(state->raw_buffer_leftover)));
                           goto error;
@@ -108,7 +108,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
                       state->raw_buffer_leftover_size = avail_in;
                       state->raw_buffer_size -= avail_in;
                       msg_trace("Leftover characters remained after conversion, delaying message until another chunk arrives",
-                                evt_tag_str("encoding", self->super.options->encoding),
+                                evt_tag_str("encoding", self->super.options->super.encoding),
                                 evt_tag_int("avail_in", avail_in));
                       goto success;
                     }
@@ -116,7 +116,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
               else
                 {
                   msg_error("Byte sequence too short, cannot convert an individual frame in its entirety",
-                            evt_tag_str("encoding", self->super.options->encoding),
+                            evt_tag_str("encoding", self->super.options->super.encoding),
                             evt_tag_int("avail_in", avail_in));
                   goto error;
                 }
@@ -125,25 +125,25 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
               state->pending_buffer_end = state->buffer_size - avail_out;
               /* extend the buffer */
 
-              if (state->buffer_size < self->super.options->max_buffer_size)
+              if (state->buffer_size < self->super.options->super.max_buffer_size)
                 {
                   state->buffer_size *= 2;
-                  if (state->buffer_size > self->super.options->max_buffer_size)
-                    state->buffer_size = self->super.options->max_buffer_size;
+                  if (state->buffer_size > self->super.options->super.max_buffer_size)
+                    state->buffer_size = self->super.options->super.max_buffer_size;
 
                   self->buffer = g_realloc(self->buffer, state->buffer_size);
                 }
               else
                 {
                   msg_error("Incoming byte stream requires a too large conversion buffer, probably invalid character sequence",
-                            evt_tag_str("encoding", self->super.options->encoding),
+                            evt_tag_str("encoding", self->super.options->super.encoding),
                             evt_tag_mem("buffer", self->buffer, state->pending_buffer_end));
                   goto error;
                 }
               break;
             case EILSEQ:
               msg_notice("Invalid byte sequence, skipping character",
-                         evt_tag_str("encoding", self->super.options->encoding),
+                         evt_tag_str("encoding", self->super.options->super.encoding),
                          evt_tag_printf("char", "0x%02x", *(guchar *) raw_buffer));
               raw_buffer++;
               avail_in--;
@@ -153,7 +153,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
             default:
               msg_error("Unknown error while converting input",
                         evt_tag_error("errno"),
-                        evt_tag_str("encoding", self->super.options->encoding),
+                        evt_tag_str("encoding", self->super.options->super.encoding),
                         evt_tag_printf("char", "0x%02x", *(guchar *) raw_buffer));
               goto error;
             }
@@ -191,7 +191,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
 
   if (!self->buffer)
     {
-      gssize buffer_size = MAX(state->buffer_size, self->super.options->init_buffer_size);
+      gssize buffer_size = MAX(state->buffer_size, self->super.options->super.init_buffer_size);
       self->buffer = g_malloc(buffer_size);
       state->buffer_size = buffer_size;
     }
@@ -226,7 +226,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
       gssize rc;
       guchar *raw_buffer;
 
-      if (!self->super.options->encoding)
+      if (!self->super.options->super.encoding)
         {
           /* no conversion, we read directly into our buffer */
           if (state->raw_buffer_size > state->buffer_size)
@@ -235,20 +235,20 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
                          evt_tag_str("state", persist_name),
                          evt_tag_int("raw_buffer_size", state->raw_buffer_size),
                          evt_tag_int("buffer_size", state->buffer_size),
-                         evt_tag_int("init_buffer_size", self->super.options->init_buffer_size));
+                         evt_tag_int("init_buffer_size", self->super.options->super.init_buffer_size));
               goto error;
             }
           raw_buffer = self->buffer;
         }
       else
         {
-          if (state->raw_buffer_size > self->super.options->max_buffer_size)
+          if (state->raw_buffer_size > self->super.options->super.max_buffer_size)
             {
               msg_notice("Invalid LogProtoBufferedServerState.raw_buffer_size, larger than max_buffer_size, restarting from the beginning",
                          evt_tag_str("state", persist_name),
                          evt_tag_int("raw_buffer_size", state->raw_buffer_size),
-                         evt_tag_int("init_buffer_size", self->super.options->init_buffer_size),
-                         evt_tag_int("max_buffer_size", self->super.options->max_buffer_size));
+                         evt_tag_int("init_buffer_size", self->super.options->super.init_buffer_size),
+                         evt_tag_int("max_buffer_size", self->super.options->super.max_buffer_size));
               goto error;
             }
           raw_buffer = g_alloca(state->raw_buffer_size);
@@ -263,7 +263,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
         }
 
       state->pending_buffer_end = 0;
-      if (self->super.options->encoding)
+      if (self->super.options->super.encoding)
         {
           if (!log_proto_buffered_server_convert_from_raw(self, raw_buffer, rc))
             {
@@ -412,7 +412,7 @@ log_proto_buffered_server_convert_state(LogProtoBufferedServer *self, guint8 per
 
       if (!self->buffer || state->buffer_size < buffer_len)
         {
-          gsize buffer_size = MAX(self->super.options->init_buffer_size, buffer_len);
+          gsize buffer_size = MAX(self->super.options->super.init_buffer_size, buffer_len);
           self->buffer = g_realloc(self->buffer, buffer_size);
         }
       serialize_archive_free(archive);
@@ -640,11 +640,11 @@ log_proto_buffered_server_get_raw_size_of_buffer(LogProtoBufferedServer *self, c
        * which in turn will speed up the reversal of the UTF8 buffer
        * size to raw buffer sizes.
        */
-      self->convert_scale = log_proto_get_char_size_for_fixed_encoding(self->super.options->encoding);
+      self->convert_scale = log_proto_get_char_size_for_fixed_encoding(self->super.options->super.encoding);
       if (self->convert_scale == 0)
         {
           /* this encoding is not known, do the conversion for real :( */
-          self->reverse_convert = g_iconv_open(self->super.options->encoding, "utf-8");
+          self->reverse_convert = g_iconv_open(self->super.options->super.encoding, "utf-8");
         }
     }
 
@@ -697,7 +697,7 @@ log_proto_buffered_server_split_buffer(LogProtoBufferedServer *self, LogProtoBuf
          duplicate some data */
 
       gsize raw_split_size;
-      if (self->super.options->encoding)
+      if (self->super.options->super.encoding)
         raw_split_size = log_proto_buffered_server_get_raw_size_of_buffer(self, *buffer_start, buffer_bytes);
       else
         raw_split_size = buffer_bytes;
@@ -760,7 +760,7 @@ exit:
 static inline void
 log_proto_buffered_server_allocate_buffer(LogProtoBufferedServer *self, LogProtoBufferedServerState *state)
 {
-  state->buffer_size = self->super.options->init_buffer_size;
+  state->buffer_size = self->super.options->super.init_buffer_size;
   self->buffer = g_malloc(state->buffer_size);
 }
 
@@ -797,9 +797,9 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
       /* if conversion is needed, we first read into an on-stack
        * buffer, and then convert it into our internal buffer */
 
-      raw_buffer = g_alloca(self->super.options->init_buffer_size + state->raw_buffer_leftover_size);
+      raw_buffer = g_alloca(self->super.options->super.init_buffer_size + state->raw_buffer_leftover_size);
       memcpy(raw_buffer, state->raw_buffer_leftover, state->raw_buffer_leftover_size);
-      avail = self->super.options->init_buffer_size;
+      avail = self->super.options->super.init_buffer_size;
     }
 
   if (avail == 0)
@@ -1042,10 +1042,10 @@ log_proto_buffered_server_validate_options_method(LogProtoServer *s)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
 
-  if (self->super.options->encoding && self->convert == (GIConv) -1)
+  if (self->super.options->super.encoding && self->convert == (GIConv) -1)
     {
       msg_error("Unknown character set name specified",
-                evt_tag_str("encoding", self->super.options->encoding));
+                evt_tag_str("encoding", self->super.options->super.encoding));
       return FALSE;
     }
   return log_proto_server_validate_options_method(s);
@@ -1075,7 +1075,7 @@ log_proto_buffered_server_free_method(LogProtoServer *s)
 
 void
 log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport,
-                               const LogProtoServerOptions *options)
+                               const LogProtoServerOptionsStorage *options)
 {
   log_proto_server_init(&self->super, transport, options);
   self->super.poll_prepare = log_proto_buffered_server_poll_prepare;
@@ -1087,8 +1087,8 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   self->reverse_convert = (GIConv) -1;
   self->read_data = log_proto_buffered_server_read_data_method;
   self->io_status = G_IO_STATUS_NORMAL;
-  if (options->encoding)
-    self->convert = g_iconv_open("utf-8", options->encoding);
+  if (options->super.encoding)
+    self->convert = g_iconv_open("utf-8", options->super.encoding);
   else
     self->convert = (GIConv) -1;
   self->stream_based = TRUE;

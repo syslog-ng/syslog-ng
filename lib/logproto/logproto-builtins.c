@@ -27,6 +27,8 @@
 #include "logproto-framed-client.h"
 #include "logproto-framed-server.h"
 #include "logproto-auto-server.h"
+#include "logproto/logproto-http-server.h"
+#include "logproto/logproto-http-scraper-responder-server.h"
 #include "plugin.h"
 #include "plugin-types.h"
 
@@ -38,6 +40,8 @@ DEFINE_LOG_PROTO_SERVER(log_proto_dgram);
 DEFINE_LOG_PROTO_CLIENT(log_proto_text);
 DEFINE_LOG_PROTO_SERVER(log_proto_text);
 DEFINE_LOG_PROTO_SERVER(log_proto_text_with_nuls);
+DEFINE_LOG_PROTO_SERVER(log_proto_http);
+DEFINE_LOG_PROTO_SERVER(log_proto_http_scraper_responder);
 DEFINE_LOG_PROTO_CLIENT(log_proto_framed);
 DEFINE_LOG_PROTO_SERVER(log_proto_framed);
 DEFINE_LOG_PROTO_SERVER(log_proto_auto);
@@ -50,6 +54,8 @@ static Plugin framed_server_plugins[] =
   LOG_PROTO_CLIENT_PLUGIN(log_proto_text, "text"),
   LOG_PROTO_SERVER_PLUGIN(log_proto_text, "text"),
   LOG_PROTO_SERVER_PLUGIN(log_proto_text_with_nuls, "text-with-nuls"),
+  LOG_PROTO_SERVER_PLUGIN(log_proto_http, "http"),
+  LOG_PROTO_SERVER_PLUGIN(log_proto_http_scraper_responder, "http-scraper"),
   LOG_PROTO_CLIENT_PLUGIN(log_proto_framed, "framed"),
   LOG_PROTO_SERVER_PLUGIN(log_proto_framed, "framed"),
   LOG_PROTO_SERVER_PLUGIN(log_proto_auto, "auto"),

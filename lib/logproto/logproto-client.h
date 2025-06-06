@@ -43,6 +43,9 @@ typedef union _LogProtoClientOptionsStorage
   LogProtoClientOptions super;
   gchar __padding[LOG_PROTO_CLIENT_OPTIONS_SIZE];
 } LogProtoClientOptionsStorage;
+// _Static_assert() is a C11 feature, so we use a typedef trick to perform the static assertion
+typedef char static_assert_size_check_LogProtoClientOptions[
+   LOG_PROTO_CLIENT_OPTIONS_SIZE >= sizeof(LogProtoClientOptions) ? 1 : -1];
 
 typedef void (*LogProtoClientAckCallback)(gint num_msg_acked, gpointer user_data);
 typedef void (*LogProtoClientRewindCallback)(gpointer user_data);
@@ -54,18 +57,18 @@ typedef struct
   gpointer user_data;
 } LogProtoClientFlowControlFuncs;
 
-void log_proto_client_options_set_drop_input(LogProtoClientOptions *options, gboolean drop_input);
-void log_proto_client_options_set_timeout(LogProtoClientOptions *options, gint timeout);
-gint log_proto_client_options_get_timeout(LogProtoClientOptions *options);
+void log_proto_client_options_set_drop_input(LogProtoClientOptionsStorage *options, gboolean drop_input);
+void log_proto_client_options_set_timeout(LogProtoClientOptionsStorage *options, gint timeout);
+gint log_proto_client_options_get_timeout(LogProtoClientOptionsStorage *options);
 
-void log_proto_client_options_defaults(LogProtoClientOptions *options);
-void log_proto_client_options_init(LogProtoClientOptions *options, GlobalConfig *cfg);
-void log_proto_client_options_destroy(LogProtoClientOptions *options);
+void log_proto_client_options_defaults(LogProtoClientOptionsStorage *options);
+void log_proto_client_options_init(LogProtoClientOptionsStorage *options, GlobalConfig *cfg);
+void log_proto_client_options_destroy(LogProtoClientOptionsStorage *options);
 
 struct _LogProtoClient
 {
   LogProtoStatus status;
-  const LogProtoClientOptions *options;
+  const LogProtoClientOptionsStorage *options;
   LogTransportStack transport_stack;
   gboolean (*poll_prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout);
   LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
@@ -100,7 +103,7 @@ log_proto_client_msg_rewind(LogProtoClient *self)
 }
 
 static inline void
-log_proto_client_set_options(LogProtoClient *self, const LogProtoClientOptions *options)
+log_proto_client_set_options(LogProtoClient *self, const LogProtoClientOptionsStorage *options)
 {
   self->options = options;
 }
@@ -128,7 +131,7 @@ log_proto_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, g
   gboolean result = s->poll_prepare(s, fd, cond, timeout);
 
   if (!result && *timeout < 0)
-    *timeout = s->options->idle_timeout;
+    *timeout = s->options->super.idle_timeout;
   return result;
 }
 
@@ -186,7 +189,7 @@ log_proto_client_restart_with_state(LogProtoClient *s, PersistState *state, cons
 }
 
 gboolean log_proto_client_validate_options(LogProtoClient *self);
-void log_proto_client_init(LogProtoClient *s, LogTransport *transport, const LogProtoClientOptions *options);
+void log_proto_client_init(LogProtoClient *s, LogTransport *transport, const LogProtoClientOptionsStorage *options);
 void log_proto_client_free(LogProtoClient *s);
 void log_proto_client_free_method(LogProtoClient *s);
 
@@ -220,14 +223,14 @@ typedef struct _LogProtoClientFactory LogProtoClientFactory;
 
 struct _LogProtoClientFactory
 {
-  LogProtoClient *(*construct)(LogTransport *transport, const LogProtoClientOptions *options);
+  LogProtoClient *(*construct)(LogTransport *transport, const LogProtoClientOptionsStorage *options);
   gint default_inet_port;
   gboolean stateful;
 };
 
 static inline LogProtoClient *
 log_proto_client_factory_construct(LogProtoClientFactory *self, LogTransport *transport,
-                                   const LogProtoClientOptions *options)
+                                   const LogProtoClientOptionsStorage *options)
 {
   return self->construct(transport, options);
 }
