@@ -59,9 +59,9 @@ _construct_src_transport(FileOpener *self, gint fd)
 }
 
 static LogProtoServer *
-_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptions *proto_options)
+_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptionsStorage *proto_options)
 {
-  log_proto_server_options_set_ack_tracker_factory(&proto_options->super,
+  log_proto_server_options_set_ack_tracker_factory(&proto_options->storage,
                                                    consecutive_ack_tracker_factory_new());
   return log_proto_file_reader_new(transport, proto_options);
 }
@@ -85,7 +85,7 @@ typedef struct _FileOpenerRegularDestFiles
 } FileOpenerRegularDestFiles;
 
 static LogProtoClient *
-_construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptions *proto_options)
+_construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptionsStorage *proto_options)
 {
   FileOpenerRegularDestFiles *self = (FileOpenerRegularDestFiles *) s;
 

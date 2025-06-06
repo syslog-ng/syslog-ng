@@ -20,20 +20,28 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng_ctl.driver_stats_handler import DriverStatsHandler
+from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 class Parser(object):
     group_type = "parser"
 
-    def __init__(self, driver_name, **options):
+    def __init__(
+        self,
+        driver_name: str,
+        stats_handler: LegacyStatsHandler,
+        prometheus_stats_handler: PrometheusStatsHandler,
+        **options,
+    ) -> None:
         self.driver_name = driver_name
+        self.stats_handler = stats_handler
+        self.prometheus_stats_handler = prometheus_stats_handler
         self.options = options
         self.positional_parameters = []
-        self.stats_handler = DriverStatsHandler(group_type=self.group_type, driver_name=self.driver_name)
 
     def get_stats(self):
-        return self.stats_handler.get_stats()
+        return self.stats_handler.get_stats(self.group_type, self.driver_name)
 
     def get_query(self):
-        return self.stats_handler.get_query()
+        return self.stats_handler.get_query(self.group_type, self.driver_name)

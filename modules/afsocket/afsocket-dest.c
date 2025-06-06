@@ -37,25 +37,29 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-typedef struct _ReloadStoreItem
-{
-  LogProtoClientFactory *proto_factory;
-  GSockAddr *dest_addr;
-  LogWriter *writer;
-} ReloadStoreItem;
 
-static ReloadStoreItem *
-_reload_store_item_new(AFSocketDestDriver *afsocket_dd)
+void
+afsocket_kept_alive_connection_init_instance(AFSocketDestKeptAliveConnection *s, const gchar *transport,
+                                             const gchar *proto, GSockAddr *dest_addr, LogWriter *writer)
 {
-  ReloadStoreItem *item = g_new(ReloadStoreItem, 1);
-  item->proto_factory = afsocket_dd->proto_factory;
-  item->writer = afsocket_dd->writer;
-  item->dest_addr = g_sockaddr_ref(afsocket_dd->dest_addr);
-  return item;
+  s->transport = g_strdup(transport);
+  s->proto = g_strdup(proto);
+  s->writer = writer;
+  s->dest_addr = g_sockaddr_ref(dest_addr);
+  s->free_fn = afsocket_kept_alive_connection_free_method;
 }
 
-static void
-_reload_store_item_free(ReloadStoreItem *self)
+static AFSocketDestKeptAliveConnection *
+_kept_alive_connection_new(const gchar *transport, const gchar *proto, GSockAddr *dest_addr, LogWriter *writer)
+{
+  AFSocketDestKeptAliveConnection *conn = g_new(AFSocketDestKeptAliveConnection, 1);
+  afsocket_kept_alive_connection_init_instance(conn, transport, proto, dest_addr, writer);
+
+  return conn;
+}
+
+void
+afsocket_kept_alive_connection_free_method(AFSocketDestKeptAliveConnection *self)
 {
   if (!self)
     return;
@@ -64,11 +68,12 @@ _reload_store_item_free(ReloadStoreItem *self)
     log_pipe_unref((LogPipe *) self->writer);
 
   g_sockaddr_unref(self->dest_addr);
-  g_free(self);
+  g_free(self->transport);
+  g_free(self->proto);
 }
 
 static LogWriter *
-_reload_store_item_release_writer(ReloadStoreItem *self)
+_kept_alive_connection_steal_writer(AFSocketDestKeptAliveConnection *self)
 {
   LogWriter *writer = self->writer;
   self->writer = NULL;
@@ -76,10 +81,11 @@ _reload_store_item_release_writer(ReloadStoreItem *self)
   return writer;
 }
 
-static inline gboolean
-_is_protocol_compatible_with_writer_after_reload(AFSocketDestDriver *self, ReloadStoreItem *item)
+gboolean
+afsocket_dd_should_restore_connection_method(AFSocketDestDriver *self, AFSocketDestKeptAliveConnection *c)
 {
-  return (self->proto_factory->construct == item->proto_factory->construct);
+  return g_strcmp0(transport_mapper_get_transport(self->transport_mapper), c->transport) == 0
+         && g_strcmp0(transport_mapper_get_logproto(self->transport_mapper), c->proto) == 0;
 }
 
 void
@@ -88,14 +94,6 @@ afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
 
   self->connections_kept_alive_across_reloads = enable;
-}
-
-void
-afsocket_dd_set_close_on_input(LogDriver *s, gboolean close_on_input)
-{
-  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
-
-  self->close_on_input = close_on_input;
 }
 
 static const gchar *_module_name = "afsocket_dd";
@@ -259,17 +257,10 @@ _update_legacy_connection_persist_name(AFSocketDestDriver *self)
   return persist_state_move_entry(cfg->state, legacy_persist_name, current_persist_name);
 }
 
-static LogTransport *
-afsocket_dd_construct_transport(AFSocketDestDriver *self, gint fd)
-{
-  return transport_mapper_construct_log_transport(self->transport_mapper, fd);
-}
-
 static gboolean
 afsocket_dd_connected(AFSocketDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-  LogTransport *transport;
   LogProtoClient *proto;
   gchar buf1[256], buf2[256];
 
@@ -281,11 +272,13 @@ afsocket_dd_connected(AFSocketDestDriver *self)
              evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
              evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)));
 
-  transport = afsocket_dd_construct_transport(self, self->fd);
-  if (!transport)
-    return FALSE;
+  proto = log_proto_client_factory_construct(self->proto_factory, NULL, &self->writer_options.proto_options);
 
-  proto = log_proto_client_factory_construct(self->proto_factory, transport, &self->writer_options.proto_options.super);
+  if (!transport_mapper_setup_stack(self->transport_mapper, &proto->transport_stack, self->fd))
+    {
+      log_proto_client_free(proto);
+      return FALSE;
+    }
 
   log_proto_client_restart_with_state(proto, cfg->state, afsocket_dd_format_connections_name(self));
   log_writer_reopen(self->writer, proto);
@@ -432,8 +425,6 @@ afsocket_dd_setup_proto_factory(AFSocketDestDriver *self)
       return FALSE;
     }
 
-  self->transport_mapper->create_multitransport = self->proto_factory->use_multitransport;
-
   return TRUE;
 }
 
@@ -475,21 +466,30 @@ _afsocket_dd_try_to_restore_connection_state(AFSocketDestDriver *self)
   if (self->writer)
     return TRUE;
 
-  ReloadStoreItem *item = cfg_persist_config_fetch(
-                            log_pipe_get_config(&self->super.super.super),
-                            afsocket_dd_format_connections_name(self));
+  AFSocketDestKeptAliveConnection *item = cfg_persist_config_fetch(log_pipe_get_config(&self->super.super.super),
+                                          afsocket_dd_format_connections_name(self));
 
   /* We don't have an item stored in the reload cache, which means */
   /* it is the first time when we try to initialize the writer */
   if (!item)
     return FALSE;
 
-  if (_is_protocol_compatible_with_writer_after_reload(self, item))
-    self->writer = _reload_store_item_release_writer(item);
+  if (!self->should_restore_connection(self, item))
+    {
+      afsocket_kept_alive_connection_free(item);
+      return FALSE;
+    }
 
-  self->dest_addr = g_sockaddr_ref(item->dest_addr);
-  _reload_store_item_free(item);
+  self->restore_connection(self, item);
+  afsocket_kept_alive_connection_free(item);
   return TRUE;
+}
+
+void
+afsocket_dd_restore_connection_method(AFSocketDestDriver *self, AFSocketDestKeptAliveConnection *item)
+{
+  self->writer = _kept_alive_connection_steal_writer(item);
+  self->dest_addr = g_sockaddr_ref(item->dest_addr);
 }
 
 LogWriter *
@@ -498,8 +498,6 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
   guint32 writer_flags = 0;
 
   writer_flags |= LW_FORMAT_PROTO;
-  if (self->transport_mapper->sock_type == SOCK_STREAM && self->close_on_input)
-    writer_flags |= LW_DETECT_EOF;
 
   LogWriter *writer = log_writer_new(writer_flags, self->super.super.super.cfg);
   log_pipe_set_options((LogPipe *) writer, &self->super.super.super.options);
@@ -719,18 +717,24 @@ afsocket_dd_stop_writer(AFSocketDestDriver *self)
     log_pipe_deinit((LogPipe *) self->writer);
 }
 
-static void
-afsocket_dd_save_connection(AFSocketDestDriver *self)
+void
+afsocket_dd_save_connection(AFSocketDestDriver *self, AFSocketDestKeptAliveConnection *c)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
-  if (self->connections_kept_alive_across_reloads)
-    {
-      ReloadStoreItem *item = _reload_store_item_new(self);
-      cfg_persist_config_add(cfg, afsocket_dd_format_connections_name(self), item,
-                             (GDestroyNotify)_reload_store_item_free);
-      self->writer = NULL;
-    }
+  cfg_persist_config_add(cfg, afsocket_dd_format_connections_name(self), c,
+                         (GDestroyNotify) afsocket_kept_alive_connection_free);
+  self->writer = NULL;
+}
+
+static void
+afsocket_dd_save_connection_method(AFSocketDestDriver *self)
+{
+  const gchar *transport = transport_mapper_get_transport(self->transport_mapper);
+  const gchar *proto = transport_mapper_get_logproto(self->transport_mapper);
+  AFSocketDestKeptAliveConnection *item = _kept_alive_connection_new(transport, proto, self->dest_addr, self->writer);
+
+  afsocket_dd_save_connection(self, item);
 }
 
 gboolean
@@ -741,9 +745,9 @@ afsocket_dd_deinit(LogPipe *s)
   afsocket_dd_stop_watches(self);
   afsocket_dd_stop_writer(self);
 
-  if (self->connection_initialized)
+  if (self->connection_initialized && self->connections_kept_alive_across_reloads)
     {
-      afsocket_dd_save_connection(self);
+      self->save_connection(self);
     }
 
   afsocket_dd_unregister_stats(self);
@@ -805,10 +809,12 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->super.super.super.generate_persist_name = afsocket_dd_format_name;
   self->setup_addresses = afsocket_dd_setup_addresses_method;
   self->construct_writer = afsocket_dd_construct_writer_method;
+  self->should_restore_connection = afsocket_dd_should_restore_connection_method;
+  self->restore_connection = afsocket_dd_restore_connection_method;
+  self->save_connection = afsocket_dd_save_connection_method;
   self->transport_mapper = transport_mapper;
   self->socket_options = socket_options;
   self->connections_kept_alive_across_reloads = TRUE;
-  self->close_on_input = TRUE;
   self->connection_initialized = FALSE;
 
   self->writer_options.mark_mode = MM_GLOBAL;

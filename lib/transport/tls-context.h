@@ -90,6 +90,7 @@ struct _TLSContext
   gchar *ecdh_curve_list;
   gchar *sni;
   gboolean ocsp_stapling_verify;
+  gboolean allow_compress;
 
   SSL_CTX *ssl_ctx;
   GList *conf_cmds_list;
@@ -111,10 +112,6 @@ enum TLSContextError
   TLSCONTEXT_INTERNAL_ERROR,
 };
 
-#define TMI_ALLOW_COMPRESS 0x1
-
-
-
 gboolean tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str);
 gboolean tls_context_set_ssl_options_by_name(TLSContext *self, GList *options);
 gboolean tls_context_set_ssl_version_by_name(TLSContext *self, const gchar *value);
@@ -130,6 +127,7 @@ void tls_context_set_ca_dir(TLSContext *self, const gchar *ca_dir);
 void tls_context_set_crl_dir(TLSContext *self, const gchar *crl_dir);
 void tls_context_set_ca_file(TLSContext *self, const gchar *ca_file);
 void tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite);
+void tls_context_set_allow_compress(TLSContext *self, gboolean allow);
 gboolean tls_context_set_tls13_cipher_suite(TLSContext *self, const gchar *tls13_cipher_suite, GError **error);
 gboolean tls_context_set_sigalgs(TLSContext *self, const gchar *sigalgs, GError **error);
 gboolean tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs, GError **error);

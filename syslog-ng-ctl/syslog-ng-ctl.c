@@ -37,6 +37,7 @@
 #include "commands/query.h"
 #include "commands/license.h"
 #include "commands/healthcheck.h"
+#include "commands/attach.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -49,7 +50,7 @@
 #endif
 
 static const gchar *control_name;
-static void print_usage(const gchar *bin_name, CommandDescriptor *descriptors);
+static void print_usage(const gchar *bin_name, const gchar *command, CommandDescriptor *descriptors);
 
 static gint
 slng_stop(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
@@ -111,7 +112,8 @@ slng_export_config_graph(int argc, char *argv[], const gchar *mode, GOptionConte
 
 static CommandDescriptor modes[] =
 {
-  { "stats", stats_options, "Get syslog-ng statistics. Possible commands: csv, prometheus; default: csv", slng_stats, NULL },
+  { "attach", no_options, "Attach to a running syslog-ng instance. Possible commands: stdio, logs, debugger", NULL, attach_commands },
+  { "stats", stats_options, "Get syslog-ng statistics", slng_stats, NULL }, // do not reference the legacy sub-commands anymore, use the new --format option instead
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose, NULL },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose, NULL },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose, NULL },
@@ -119,7 +121,7 @@ static CommandDescriptor modes[] =
   { "stop", no_options, "Stop syslog-ng process", slng_stop, NULL },
   { "reload", no_options, "Reload syslog-ng", slng_reload, NULL },
   { "reopen", no_options, "Re-open of log destination files", slng_reopen, NULL },
-  { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query, NULL },
+  { "query", no_options, "Query syslog-ng statistics. Possible commands: list [pattern], get [pattern]", NULL, query_commands },
   { "show-license-info", license_options, "Show information about the license", slng_license, NULL },
   { "credentials", no_options, "Credentials manager", NULL, credentials_commands },
   { "config", config_options, "Print current config", slng_config, NULL },
@@ -130,30 +132,34 @@ static CommandDescriptor modes[] =
 };
 
 static void
-print_usage(const gchar *bin_name, CommandDescriptor *descriptors)
+print_usage(const gchar *bin_name, const gchar *command, CommandDescriptor *descriptors)
 {
   gint mode;
+  gboolean has_command = command && *command;
 
-  fprintf(stderr, "Syntax: %s <command> [options]\nPossible commands are:\n", bin_name);
+  // NOTE: this does not handle more than 2 commands, but currently we do not have such a case
+  fprintf(stderr, "Usage:\n  %s%s%s <%s[command]> [options]\n\nPossible commands are:\n",
+          bin_name,
+          has_command ? " " : "",
+          has_command ? command : "",
+          has_command ? "" : "command ");
   for (mode = 0; descriptors[mode].mode; mode++)
     {
       fprintf(stderr, "    %-20s %s\n", descriptors[mode].mode, descriptors[mode].description);
     }
-}
-
-gboolean
-_is_help(gchar *cmd)
-{
-  return g_str_equal(cmd, "--help");
+  fprintf(stderr,
+          "\nFor detailed help of a given command use:\n    %s <command> --help|-h\n    %s --help|-h <command>\n\nFor options of the given command use:\n    %s <command> [option] --help|-h\n    %s --help|-h <command> [option]\n",
+          bin_name, bin_name, bin_name, bin_name);
 }
 
 static CommandDescriptor *
-find_active_mode(CommandDescriptor descriptors[], gint *argc, char **argv, GString *cmdname_accumulator)
+find_active_mode(GString *bin_name, CommandDescriptor descriptors[], gint *argc, char **argv,
+                 GString *cmdname_accumulator)
 {
   const gchar *mode_string = get_mode(argc, &argv);
   if (!mode_string)
     {
-      print_usage(cmdname_accumulator->str, descriptors);
+      print_usage(bin_name->str, cmdname_accumulator->str, descriptors);
       exit(1);
     }
 
@@ -161,11 +167,14 @@ find_active_mode(CommandDescriptor descriptors[], gint *argc, char **argv, GStri
     if (strcmp(descriptors[mode].mode, mode_string) == 0)
       {
         if (descriptors[mode].main)
-          return &descriptors[mode];
+          {
+            g_string_append_printf(cmdname_accumulator, "%s%s", cmdname_accumulator->len > 0 ? " " : "", mode_string);
+            return &descriptors[mode];
+          }
 
         g_assert(descriptors[mode].subcommands);
-        g_string_append_printf(cmdname_accumulator, " %s", mode_string);
-        return find_active_mode(descriptors[mode].subcommands, argc, argv, cmdname_accumulator);
+        g_string_append_printf(cmdname_accumulator, "%s%s", cmdname_accumulator->len > 0 ? " " : "", mode_string);
+        return find_active_mode(bin_name, descriptors[mode].subcommands, argc, argv, cmdname_accumulator);
       }
 
   return NULL;
@@ -177,7 +186,7 @@ setup_help_context(const gchar *cmdname, CommandDescriptor *active_mode)
   if (!active_mode)
     return NULL;
 
-  GOptionContext *ctx = g_option_context_new(cmdname);
+  GOptionContext *ctx = g_option_context_new(cmdname ? : active_mode->mode);
   g_option_context_set_summary(ctx, active_mode->description);
   g_option_context_add_main_entries(ctx, active_mode->options, NULL);
   g_option_context_add_main_entries(ctx, slng_options, NULL);
@@ -195,33 +204,32 @@ main(int argc, char *argv[])
 
   control_name = get_installation_path_for(PATH_CONTROL_SOCKET);
 
-  if (argc > 1 && _is_help(argv[1]))
-    {
-      print_usage(argv[0], modes);
-      exit(0);
-    }
-
-  GString *cmdname_accumulator = g_string_new(argv[0]);
-  CommandDescriptor *active_mode = find_active_mode(modes, &argc, argv, cmdname_accumulator);
-  GOptionContext *ctx = setup_help_context(cmdname_accumulator->str, active_mode);
+  GString *bin_name = g_string_new(g_path_get_basename(argv[0]));
+  GString *cmdname_accumulator = g_string_new(NULL);
+  CommandDescriptor *active_mode = find_active_mode(bin_name, modes, &argc, argv, cmdname_accumulator);
+  GOptionContext *ctx = setup_help_context(cmdname_accumulator->len > 0 ? cmdname_accumulator->str : NULL, active_mode);
   g_string_free(cmdname_accumulator, TRUE);
 
-  if (!ctx)
+  if (ctx == NULL)
     {
-      fprintf(stderr, "Unknown command\n");
-      print_usage(argv[0], modes);
-      exit(1);
+      fprintf(stderr, "Unknown command\n\n");
+      print_usage(bin_name->str, "", modes);
+      return EINVAL;
     }
 
-  if (!g_option_context_parse(ctx, &argc, &argv, &error))
+  if (FALSE == g_option_context_parse(ctx, &argc, &argv, &error))
     {
       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
       g_clear_error(&error);
-      g_option_context_free(ctx);
-      return 1;
+      print_usage(bin_name->str, g_option_context_get_description(ctx), modes);
+      result = EINVAL;
+    }
+  else
+    {
+      if ((result = run(control_name, argc, argv, active_mode, ctx)) == EINVAL)
+        print_usage(bin_name->str, g_option_context_get_description(ctx), modes);
     }
 
-  result = run(control_name, argc, argv, active_mode, ctx);
   g_option_context_free(ctx);
   return result;
 }

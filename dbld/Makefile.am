@@ -29,6 +29,7 @@ EXTRA_DIST += \
 	dbld/images/almalinux-8.dockerfile \
 	dbld/images/almalinux-9.dockerfile \
 	dbld/images/centos-stream9.dockerfile \
+	dbld/images/centos-stream10.dockerfile \
 	dbld/images/devshell.dockerfile \
 	dbld/images/fedora-latest.dockerfile \
 	dbld/images/fedora-rawhide.dockerfile \

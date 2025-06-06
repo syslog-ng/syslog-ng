@@ -29,6 +29,7 @@
 #include "plugin.h"
 #include "cloud-auth.h"
 #include "google-auth.h"
+#include "azure-auth.h"
 
 LogDriverPlugin *last_plugin;
 CloudAuthenticator *last_authenticator;
@@ -55,6 +56,12 @@ CloudAuthenticator *last_authenticator;
 %token KW_USER_MANAGED_SERVICE_ACCOUNT
 %token KW_NAME
 %token KW_METADATA_URL
+%token KW_AZURE
+%token KW_MONITOR
+%token KW_TENANT_ID
+%token KW_APP_ID
+%token KW_APP_SECRET
+%token KW_SCOPE
 
 %%
 
@@ -80,7 +87,14 @@ inner_destination_cloud_auth_option
     {
       cloud_auth_dest_plugin_set_authenticator(last_plugin, last_authenticator);
     }
-  |
+  | KW_AZURE
+    {
+      last_authenticator = azure_authenticator_new();
+    }
+    '(' azure_dest_auth_options ')'
+    {
+      cloud_auth_dest_plugin_set_authenticator(last_plugin, last_authenticator);
+    }
   ;
 
 google_dest_auth_options
@@ -120,6 +134,31 @@ google_dest_auth_user_managed_service_account_options
 google_dest_auth_user_managed_service_account_option
   : KW_NAME '(' string ')' { google_authenticator_set_user_managed_service_account_name(last_authenticator, $3); free($3); }
   | KW_METADATA_URL '(' string ')' { google_authenticator_set_user_managed_service_account_metadata_url(last_authenticator, $3); free($3); }
+  ;
+
+azure_dest_auth_options
+  : azure_dest_auth_option azure_dest_auth_options
+  |
+  ;
+
+azure_dest_auth_option
+  : KW_MONITOR
+    {
+      azure_authenticator_set_auth_mode(last_authenticator, AAAM_MONITOR);
+    }
+    '(' azure_dest_monitor_options ')'
+  ;
+
+azure_dest_monitor_options
+  : azure_dest_monitor_option azure_dest_monitor_options
+  |
+  ;
+
+azure_dest_monitor_option
+  : KW_TENANT_ID '(' string ')' {azure_authenticator_set_tenant_id(last_authenticator, $3); free($3);}
+  | KW_APP_ID '(' string ')' {azure_authenticator_set_app_id(last_authenticator, $3); free($3);}
+  | KW_APP_SECRET '(' string ')' {azure_authenticator_set_app_secret(last_authenticator, $3); free($3);}
+  | KW_SCOPE '(' string ')' {azure_authenticator_set_scope(last_authenticator, $3); free($3);}
   ;
 
 /* INCLUDE_RULES */

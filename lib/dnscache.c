@@ -161,7 +161,7 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
   INIT_IV_LIST_HEAD(&entry->list);
   if (!persistent)
     {
-      entry->resolved = iv_now.tv_sec;
+      entry->resolved = get_cached_realtime_sec();
       iv_list_add(&entry->list, &self->cache_list);
     }
   else
@@ -304,8 +304,7 @@ dns_cache_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname
   DNSCacheEntry *entry;
   time_t now;
 
-  iv_validate_now();
-  now = iv_now.tv_sec;
+  now = get_cached_realtime_sec();
   dns_cache_check_hosts(self, now);
 
   dns_cache_fill_key(&key, family, addr);

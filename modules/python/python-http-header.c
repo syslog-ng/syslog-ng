@@ -382,11 +382,10 @@ _attach(LogDriverPlugin *s, LogDriver *driver)
       return FALSE;
     }
 
-  g_assert(s->signal_connector == NULL);
-  s->signal_connector = signal_slot_connector_ref(driver->super.signal_slot_connector);
+  SignalSlotConnector *ssc = driver->signal_slot_connector;
 
-  CONNECT(s->signal_connector, signal_http_header_request, _append_headers, self);
-  CONNECT(s->signal_connector, signal_http_response_received, _on_http_response_received, self);
+  CONNECT(ssc, signal_http_header_request, _append_headers, self);
+  CONNECT(ssc, signal_http_response_received, _on_http_response_received, self);
 
   return TRUE;
 }
@@ -395,12 +394,10 @@ static void
 _detach(LogDriverPlugin *s, LogDriver *driver)
 {
   PythonHttpHeaderPlugin *self = (PythonHttpHeaderPlugin *) s;
+  SignalSlotConnector *ssc = driver->signal_slot_connector;
 
-  DISCONNECT(s->signal_connector, signal_http_header_request, _append_headers, self);
-  DISCONNECT(s->signal_connector, signal_http_response_received, _on_http_response_received, self);
-
-  signal_slot_connector_unref(s->signal_connector);
-  s->signal_connector = NULL;
+  DISCONNECT(ssc, signal_http_header_request, _append_headers, self);
+  DISCONNECT(ssc, signal_http_response_received, _on_http_response_received, self);
 
   python_binding_deinit(&self->binding);
 }

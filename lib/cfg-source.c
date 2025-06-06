@@ -234,7 +234,10 @@ _extract_source_from_buffer_location(GString *result, const gchar *buffer_conten
   if (num_lines <= yylloc->first_line)
     goto exit;
 
-  for (gint lineno = yylloc->first_line; lineno <= yylloc->last_line; lineno++)
+  if (yylloc->first_column < 1)
+    goto exit;
+
+  for (gint lineno = yylloc->first_line; lineno < num_lines && lineno <= yylloc->last_line; lineno++)
     {
       gchar *line = lines[lineno - 1];
       gint linelen = strlen(line);

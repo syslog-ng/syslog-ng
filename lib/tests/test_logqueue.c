@@ -59,7 +59,7 @@ _threaded_feed(gpointer args)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg, *tmpl;
   struct timespec start, end;
-  glong diff;
+  gint64 diff;
 
   iv_init();
   /* emulate main loop for LogQueue */

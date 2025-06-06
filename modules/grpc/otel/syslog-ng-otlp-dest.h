@@ -29,8 +29,6 @@
 
 #include "otel-dest.h"
 
-typedef OtelDestDriver SyslogNgOtlpDestDriverWrapper;
-
 LogDriver *syslog_ng_otlp_dd_new(GlobalConfig *cfg);
 
 #include "compat/cpp-end.h"

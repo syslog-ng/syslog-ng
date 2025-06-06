@@ -20,12 +20,11 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng_config.statements.filters.filter import Match
 
 
 def test_set_tag(config, syslog_ng):
-    match = Match(config.stringify("MATCHSTRING"), value=config.stringify("MSG"))
-    notmatch = Match(config.stringify("NONE"), value=config.stringify("MSG"))
+    match = config.create_match_filter(match_string=config.stringify("MATCHSTRING"), value=config.stringify("MSG"))
+    notmatch = config.create_match_filter(match_string=config.stringify("NONE"), value=config.stringify("MSG"))
 
     generator_source = config.create_example_msg_generator_source(num=1, template=config.stringify("input with MATCHSTRING in it"))
     set_tag_with_matching = config.create_rewrite_set_tag(config.stringify("SHOULDMATCH"), condition=match)

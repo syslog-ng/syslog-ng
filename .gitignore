@@ -53,3 +53,4 @@ GRTAGS
 GTAGS
 modules/python-modules/syslogng.egg-info
 aclocal.m4-e
+modules/java-modules/.gradle
