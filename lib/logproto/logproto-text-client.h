@@ -41,6 +41,9 @@ void log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transpor
                                 const LogProtoClientOptionsStorage *options);
 LogProtoClient *log_proto_text_client_new(LogTransport *transport, const LogProtoClientOptionsStorage *options);
 
+LogProtoClient *log_proto_unidirectional_text_client_new(LogTransport *transport,
+                                                         const LogProtoClientOptionsStorage *options);
+
 #define log_proto_text_client_free_method log_proto_client_free_method
 
 #endif

@@ -39,6 +39,18 @@ log_proto_text_client_poll_prepare(LogProtoClient *s, GIOCondition *cond, GIOCon
   return self->partial != NULL;
 }
 
+static gboolean
+log_proto_unidirectional_text_client_poll_prepare(LogProtoClient *s, GIOCondition *cond, GIOCondition *idle_cond,
+                                                  gint *timeout)
+{
+  LogProtoTextClient *self = (LogProtoTextClient *) s;
+
+  *cond = G_IO_OUT;
+  *idle_cond = 0;
+
+  return self->partial != NULL;
+}
+
 static LogProtoStatus
 log_proto_text_client_process_input(LogProtoClient *s)
 {
@@ -83,6 +95,14 @@ log_proto_text_client_process_input(LogProtoClient *s)
 
   return LPS_SUCCESS;
 }
+
+static LogProtoStatus
+_prohibit_in(LogProtoClient *s)
+{
+  g_assert_not_reached();
+  return LPS_ERROR;
+}
+
 
 static LogProtoStatus
 log_proto_text_client_flush(LogProtoClient *s)
@@ -223,5 +243,17 @@ log_proto_text_client_new(LogTransport *transport, const LogProtoClientOptionsSt
   LogProtoTextClient *self = g_new0(LogProtoTextClient, 1);
 
   log_proto_text_client_init(self, transport, options);
+  return &self->super;
+}
+
+LogProtoClient *
+log_proto_unidirectional_text_client_new(LogTransport *transport, const LogProtoClientOptionsStorage *options)
+{
+  LogProtoTextClient *self = g_new0(LogProtoTextClient, 1);
+
+  log_proto_text_client_init(self, transport, options);
+  self->super.poll_prepare = log_proto_unidirectional_text_client_poll_prepare;
+  self->super.process_in = _prohibit_in;
+
   return &self->super;
 }
