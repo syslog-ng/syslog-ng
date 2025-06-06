@@ -149,6 +149,7 @@ pipe_dd_new(LogTemplate *filename_template, GlobalConfig *cfg)
   AFFileDestDriver *self = affile_dd_new_instance(filename_template, cfg);
 
   self->writer_options.stats_source = stats_register_type("pipe");
+  self->writer_options.proto_options.super.drop_input = TRUE;
   self->file_opener = file_opener_for_named_pipes_new();
   return &self->super.super;
 }
