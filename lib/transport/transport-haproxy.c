@@ -522,6 +522,7 @@ _save_addresses(LogTransportHAProxy *self)
       log_transport_aux_data_set_local_addr_ref(&stack->aux_data,
                                                 g_sockaddr_inet_new(self->info.dst_ip, self->info.dst_port));
     }
+#if SYSLOG_NG_ENABLE_IPV6
   else if (self->info.ip_version == 6)
     {
       log_transport_aux_data_set_peer_addr_ref(&stack->aux_data,
@@ -529,6 +530,7 @@ _save_addresses(LogTransportHAProxy *self)
       log_transport_aux_data_set_local_addr_ref(&stack->aux_data,
                                                 g_sockaddr_inet6_new(self->info.dst_ip, self->info.dst_port));
     }
+#endif
   else
     g_assert_not_reached();
 }
