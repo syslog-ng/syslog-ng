@@ -26,52 +26,83 @@
 
 #include <errno.h>
 
+static LogProtoStatus log_proto_text_client_flush(LogProtoClient *s);
+
 static gboolean
-log_proto_text_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
+log_proto_text_client_poll_prepare(LogProtoClient *s, GIOCondition *cond, GIOCondition *idle_cond, gint *timeout)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
 
-  if (log_transport_stack_poll_prepare(&self->super.transport_stack, cond))
-    return TRUE;
+  *cond = G_IO_OUT | G_IO_IN;
+  *idle_cond = G_IO_IN;
 
-  *fd = self->super.transport_stack.fd;
+  return self->partial != NULL;
+}
 
-  /* if there's no pending I/O in the transport layer, then we want to do a write */
-  if (*cond == 0)
-    *cond = G_IO_OUT;
+static gboolean
+log_proto_unidirectional_text_client_poll_prepare(LogProtoClient *s, GIOCondition *cond, GIOCondition *idle_cond,
+                                                  gint *timeout)
+{
+  LogProtoTextClient *self = (LogProtoTextClient *) s;
+
+  *cond = G_IO_OUT;
+  *idle_cond = 0;
 
   return self->partial != NULL;
 }
 
 static LogProtoStatus
-log_proto_text_client_drop_input(LogProtoClient *s)
+log_proto_text_client_process_input(LogProtoClient *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   guchar buf[1024];
-  gint rc = -1;
+  gssize rc = -1;
+  gsize read_limit = 0;
+  gsize read = 0;
 
   do
     {
       rc = log_transport_stack_read(&self->super.transport_stack, buf, sizeof(buf), NULL);
-    }
-  while (rc > 0);
+      read_limit++;
 
-  if (rc == -1 && errno != EAGAIN)
+      if (rc > 0)
+        read += rc;
+    }
+  while (rc > 0 && read_limit < 100);
+
+  if (read > 0 && !self->super.options->super.drop_input)
     {
-      msg_error("Error reading data",
-                evt_tag_int("fd", self->super.transport_stack.fd),
-                evt_tag_error("error"));
+      msg_error("Unexpected input, closing", evt_tag_int("fd", self->super.transport_stack.fd));
       return LPS_ERROR;
     }
-  else if (rc == 0)
+
+  if (rc < 0)
     {
-      msg_error("EOF occurred while idle",
-                evt_tag_int("fd", self->super.transport_stack.fd));
-      return LPS_ERROR;
+      if (errno != EAGAIN)
+        {
+          msg_error("Error reading data", evt_tag_int("fd", self->super.transport_stack.fd), evt_tag_error("error"));
+          return LPS_ERROR;
+        }
+
+      return LPS_SUCCESS;
+    }
+
+  if (rc == 0)
+    {
+      msg_notice("EOF occurred", evt_tag_int("fd", self->super.transport_stack.fd));
+      return LPS_EOF;
     }
 
   return LPS_SUCCESS;
 }
+
+static LogProtoStatus
+_prohibit_in(LogProtoClient *s)
+{
+  g_assert_not_reached();
+  return LPS_ERROR;
+}
+
 
 static LogProtoStatus
 log_proto_text_client_flush(LogProtoClient *s)
@@ -97,6 +128,7 @@ log_proto_text_client_flush(LogProtoClient *s)
                     evt_tag_error(EVT_TAG_OSERROR));
           return LPS_ERROR;
         }
+
       return LPS_SUCCESS;
     }
 
@@ -199,8 +231,7 @@ log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport,
   log_proto_client_init(&self->super, transport, options);
   self->super.poll_prepare = log_proto_text_client_poll_prepare;
   self->super.flush = log_proto_text_client_flush;
-  if (options->super.drop_input)
-    self->super.process_in = log_proto_text_client_drop_input;
+  self->super.process_in = log_proto_text_client_process_input;
   self->super.post = log_proto_text_client_post;
   self->super.free_fn = log_proto_text_client_free;
   self->next_state = -1;
@@ -212,5 +243,17 @@ log_proto_text_client_new(LogTransport *transport, const LogProtoClientOptionsSt
   LogProtoTextClient *self = g_new0(LogProtoTextClient, 1);
 
   log_proto_text_client_init(self, transport, options);
+  return &self->super;
+}
+
+LogProtoClient *
+log_proto_unidirectional_text_client_new(LogTransport *transport, const LogProtoClientOptionsStorage *options)
+{
+  LogProtoTextClient *self = g_new0(LogProtoTextClient, 1);
+
+  log_proto_text_client_init(self, transport, options);
+  self->super.poll_prepare = log_proto_unidirectional_text_client_poll_prepare;
+  self->super.process_in = _prohibit_in;
+
   return &self->super;
 }
