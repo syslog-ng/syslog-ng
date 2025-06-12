@@ -133,10 +133,12 @@ python-numpy                    [kira]
 python3-numpy                   [kira]
 python-yaml                     [kira]
 python3-yaml                    [kira]
-systemd-sysv                    [kira]
 python-is-python2               [kira]
 python2-dev                     [kira]
 python2-dbg                     [kira]
+psmisc                          [kira]
+socat                           [kira]
+systemd-sysv                    [kira]
 
 
 #############################################################################
