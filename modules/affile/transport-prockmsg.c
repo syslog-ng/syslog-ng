@@ -71,6 +71,5 @@ log_transport_prockmsg_new(gint fd, gint timeout)
   self->timeout = timeout;
   self->super.read = log_transport_prockmsg_read_method;
   self->super.write = NULL;
-  self->super.free_fn = log_transport_free_method;
   return &self->super;
 }

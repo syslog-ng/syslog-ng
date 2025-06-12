@@ -96,14 +96,6 @@ afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
   self->connections_kept_alive_across_reloads = enable;
 }
 
-void
-afsocket_dd_set_close_on_input(LogDriver *s, gboolean close_on_input)
-{
-  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
-
-  self->close_on_input = close_on_input;
-}
-
 static const gchar *_module_name = "afsocket_dd";
 
 static const gchar *
@@ -506,8 +498,6 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
   guint32 writer_flags = 0;
 
   writer_flags |= LW_FORMAT_PROTO;
-  if (self->transport_mapper->sock_type == SOCK_STREAM && self->close_on_input)
-    writer_flags |= LW_DETECT_EOF;
 
   LogWriter *writer = log_writer_new(writer_flags, self->super.super.super.cfg);
   log_pipe_set_options((LogPipe *) writer, &self->super.super.super.options);
@@ -825,7 +815,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->transport_mapper = transport_mapper;
   self->socket_options = socket_options;
   self->connections_kept_alive_across_reloads = TRUE;
-  self->close_on_input = TRUE;
   self->connection_initialized = FALSE;
 
   self->writer_options.mark_mode = MM_GLOBAL;

@@ -38,6 +38,7 @@ log_proto_client_validate_options_method(LogProtoClient *s)
 void
 log_proto_client_free_method(LogProtoClient *s)
 {
+  log_transport_stack_shutdown(&s->transport_stack);
   log_transport_stack_deinit(&s->transport_stack);
 }
 

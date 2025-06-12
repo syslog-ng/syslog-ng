@@ -51,6 +51,15 @@ log_transport_adapter_writev_method(LogTransport *s, struct iovec *iov, gint iov
 }
 
 void
+log_transport_adapter_shutdown_method(LogTransport *s)
+{
+  LogTransportAdapter *self = (LogTransportAdapter *) s;
+  LogTransport *transport = log_transport_stack_get_or_create_transport(s->stack, self->base_index);
+
+  log_transport_shutdown(transport);
+}
+
+void
 log_transport_adapter_init_instance(LogTransportAdapter *self, const gchar *name,
                                     LogTransportIndex base_index)
 {
@@ -58,6 +67,7 @@ log_transport_adapter_init_instance(LogTransportAdapter *self, const gchar *name
   self->super.read = log_transport_adapter_read_method;
   self->super.write = log_transport_adapter_write_method;
   self->super.writev = log_transport_adapter_writev_method;
+  self->super.shutdown = log_transport_adapter_shutdown_method;
 
   self->base_index = base_index;
 }

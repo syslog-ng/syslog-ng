@@ -36,6 +36,7 @@ struct _LogTransportAdapter
 gssize log_transport_adapter_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux);
 gssize log_transport_adapter_write_method(LogTransport *s, const gpointer buf, gsize count);
 gssize log_transport_adapter_writev_method(LogTransport *s, struct iovec *iov, gint iov_count);
+void log_transport_adapter_shutdown_method(LogTransport *s);
 
 void log_transport_adapter_init_instance(LogTransportAdapter *self, const gchar *name,
                                          LogTransportIndex base);

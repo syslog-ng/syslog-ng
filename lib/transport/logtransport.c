@@ -130,7 +130,7 @@ log_transport_init_instance(LogTransport *self, const gchar *name, gint fd)
 {
   self->name = name;
   self->fd = fd;
-  self->cond = 0;
+  self->cond = LTIO_NOTHING;
   self->free_fn = log_transport_free_method;
 }
 

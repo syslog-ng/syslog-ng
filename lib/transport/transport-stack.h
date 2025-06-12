@@ -155,6 +155,13 @@ log_transport_stack_poll_prepare(LogTransportStack *self, GIOCondition *cond)
   return log_transport_poll_prepare(transport, cond);
 }
 
+static inline LogTransportIOCond
+log_transport_stack_get_io_requirement(LogTransportStack *self)
+{
+  LogTransport *transport = log_transport_stack_get_active(self);
+  return log_transport_get_io_requirement(transport);
+}
+
 static inline gssize
 log_transport_stack_write(LogTransportStack *self, const gpointer buf, gsize count)
 {
@@ -188,6 +195,7 @@ void log_transport_stack_add_factory(LogTransportStack *self, LogTransportFactor
 void log_transport_stack_add_transport(LogTransportStack *self, gint index, LogTransport *);
 gboolean log_transport_stack_switch(LogTransportStack *self, gint index);
 void log_transport_stack_move(LogTransportStack *self, LogTransportStack *other);
+void log_transport_stack_shutdown(LogTransportStack *self);
 
 void log_transport_stack_init(LogTransportStack *self, LogTransport *initial_transport);
 void log_transport_stack_deinit(LogTransportStack *self);
