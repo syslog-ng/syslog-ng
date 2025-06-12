@@ -23,14 +23,6 @@
  */
 #include "poll-fd-events.h"
 
-#include <iv.h>
-
-typedef struct _PollFdEvents
-{
-  PollEvents super;
-  struct iv_fd fd_watch;
-} PollFdEvents;
-
 #define IV_FD_CALLBACK(x) ((void (*)(void *)) (x))
 
 static inline gint
@@ -75,7 +67,7 @@ poll_fd_events_update_watches(PollEvents *s, GIOCondition cond)
 
   poll_events_suspend_watches(s);
 
-  if (poll_events_check_watches(s))
+  if (poll_events_check_watches(s) && FALSE == poll_events_system_notified(s))
     {
       if (cond & G_IO_IN)
         iv_fd_set_handler_in(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
@@ -99,7 +91,7 @@ poll_fd_events_new(gint fd)
   self->super.stop_watches = poll_fd_events_stop_watches;
   self->super.update_watches = poll_fd_events_update_watches;
   self->super.suspend_watches = poll_fd_events_suspend_watches;
-  self->super.system_polled = TRUE;
+  self->super.type = FM_SYSTEM_POLL;
   self->super.get_fd = _get_fd;
 
   IV_FD_INIT(&self->fd_watch);

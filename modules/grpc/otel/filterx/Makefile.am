@@ -22,7 +22,7 @@ modules_grpc_otel_filterx_libfilterx_la_SOURCES = \
 
 modules_grpc_otel_filterx_libfilterx_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
-  -Wno-switch-default -Wno-double-promotion -Wno-deprecated -Wno-deprecated-declarations -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
+  -Wno-double-promotion -Wno-deprecated -Wno-deprecated-declarations -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
   $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(OPENTELEMETRY_PROTO_BUILDDIR) \

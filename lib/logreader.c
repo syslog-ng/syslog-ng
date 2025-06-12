@@ -27,9 +27,10 @@
 #include "mainloop-call.h"
 #include "ack-tracker/ack_tracker.h"
 #include "ack-tracker/ack_tracker_factory.h"
+#include "str-format.h"
 
 static void log_reader_io_handle_in(gpointer s);
-static gboolean log_reader_fetch_log(LogReader *self);
+static gint log_reader_fetch_log(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
 
 /*****************************************************************************
@@ -56,14 +57,6 @@ log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr)
 }
 
 void
-log_reader_set_immediate_check(LogReader *s)
-{
-  LogReader *self = (LogReader *) s;
-
-  self->immediate_check = TRUE;
-}
-
-void
 log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options,
                        const gchar *stats_id, StatsClusterKeyBuilder *kb)
 {
@@ -85,7 +78,7 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
   self->control = log_pipe_ref(control);
 
   self->options = options;
-  log_proto_server_set_options(self->proto, &self->options->proto_options.super);
+  log_proto_server_set_options(self->proto, &self->options->proto_options);
 }
 
 void
@@ -160,7 +153,6 @@ log_reader_disable_watches(LogReader *self)
 static void
 log_reader_suspend_until_awoken(LogReader *self)
 {
-  self->immediate_check = FALSE;
   log_reader_disable_watches(self);
   self->suspended = TRUE;
 }
@@ -168,7 +160,6 @@ log_reader_suspend_until_awoken(LogReader *self)
 static void
 log_reader_force_check_in_next_poll(LogReader *self)
 {
-  self->immediate_check = FALSE;
   log_reader_disable_watches(self);
   self->suspended = FALSE;
 
@@ -314,7 +305,7 @@ log_reader_update_watches(LogReader *self)
       return;
     }
 
-  LogProtoPrepareAction prepare_action = log_proto_server_prepare(self->proto, &cond, &idle_timeout);
+  LogProtoPrepareAction prepare_action = log_proto_server_poll_prepare(self->proto, &cond, &idle_timeout);
 
   if (idle_timeout > 0)
     {
@@ -324,12 +315,6 @@ log_reader_update_watches(LogReader *self)
       self->idle_timer.expires.tv_sec += idle_timeout;
 
       iv_timer_register(&self->idle_timer);
-    }
-
-  if (self->immediate_check)
-    {
-      log_reader_force_check_in_next_poll(self);
-      return;
     }
 
   switch (prepare_action)
@@ -413,12 +398,18 @@ log_reader_work_finished(void *s, gpointer arg)
       g_mutex_unlock(&self->pending_close_lock);
     }
 
-  if (self->notify_code)
+  if (self->notify_code && self->notify_code != NC_AGAIN)
     {
       gint notify_code = self->notify_code;
 
       self->notify_code = 0;
       log_pipe_notify(self->control, notify_code, self);
+
+      if (notify_code == NC_CLOSE && (self->options->flags & LR_EXIT_ON_EOF))
+        {
+          msg_trace("Exiting because exit-on-eof was set");
+          cfg_shutdown(log_pipe_get_config(s));
+        }
     }
 
   if ((self->super.super.flags & PIF_INITIALIZED) && self->proto)
@@ -433,6 +424,11 @@ log_reader_work_finished(void *s, gpointer arg)
         }
       log_proto_server_reset_error(self->proto);
       log_reader_update_watches(self);
+
+      if (self->notify_code == NC_AGAIN && poll_events_system_notified(self->poll_events))
+        {
+          log_reader_force_check_in_next_poll(self);
+        }
     }
 }
 
@@ -451,7 +447,17 @@ _add_aux_nvpair(const gchar *name, const gchar *value, gsize value_len, gpointer
 static inline gint
 log_reader_process_handshake(LogReader *self)
 {
-  LogProtoStatus status = log_proto_server_handshake(self->proto);
+  gboolean handshake_finished = FALSE;
+  LogProtoServer *proto_replacement = NULL;
+  LogProtoStatus status = log_proto_server_handshake(self->proto, &handshake_finished, &proto_replacement);
+
+  if (proto_replacement)
+    {
+      g_assert(handshake_finished == FALSE);
+      log_transport_stack_move(&proto_replacement->transport_stack, &self->proto->transport_stack);
+      log_proto_server_free(self->proto);
+      self->proto = proto_replacement;
+    }
 
   switch (status)
     {
@@ -459,6 +465,8 @@ log_reader_process_handshake(LogReader *self)
     case LPS_ERROR:
       return status == LPS_ERROR ? NC_READ_ERROR : NC_CLOSE;
     case LPS_SUCCESS:
+      if (handshake_finished)
+        self->handshake_in_progress = FALSE;
       break;
     case LPS_AGAIN:
       break;
@@ -474,6 +482,32 @@ _log_reader_insert_msg_length_stats(LogReader *self, gsize len)
 {
   stats_aggregator_add_data_point(self->max_message_size, len);
   stats_aggregator_add_data_point(self->average_messages_size, len);
+}
+
+static inline void
+_set_addresses(LogReader *self, LogMessage *msg, LogTransportAuxData *aux)
+{
+  GSockAddr *source_addr = self->peer_addr;
+  if (!aux->peer_addr)
+    goto set;
+
+  source_addr = aux->peer_addr;
+
+  if (!self->peer_addr)
+    goto set;
+
+  gchar buf[MAX_SOCKADDR_STRING];
+
+  const gchar *ip = g_sockaddr_format(self->peer_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
+  log_msg_set_value(msg, LM_V_PEER_IP, ip, -1);
+
+  guint16 port = g_sockaddr_get_port(self->peer_addr);
+  gint len = format_uint32_base10_rev(buf, sizeof(buf), 0, port);
+  log_msg_set_value(msg, LM_V_PEER_PORT, buf, len);
+
+set:
+  log_msg_set_saddr(msg, source_addr);
+  log_msg_set_daddr(msg, aux->local_addr ? : self->local_addr);
 }
 
 static gboolean
@@ -494,8 +528,9 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
 
   if (aux)
     {
-      log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);
-      log_msg_set_daddr(m, aux->local_addr ? : self->local_addr);
+      _set_addresses(self, m, aux);
+      m->proto = aux->proto;
+
       if (aux->timestamp.tv_sec)
         {
           /* accurate timestamp was received from the transport layer, use
@@ -503,7 +538,6 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
           m->timestamps[LM_TS_RECVD].ut_sec = aux->timestamp.tv_sec;
           m->timestamps[LM_TS_RECVD].ut_usec = aux->timestamp.tv_nsec / 1000;
         }
-      m->proto = aux->proto;
     }
   log_msg_refcache_start_producer(m);
 
@@ -518,41 +552,50 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
 static gint
 log_reader_fetch_log(LogReader *self)
 {
-  gint msg_count = 0;
-  gboolean may_read = TRUE;
   LogTransportAuxData aux_storage, *aux = &aux_storage;
-
   if ((self->options->flags & LR_IGNORE_AUX_DATA))
     aux = NULL;
-
   log_transport_aux_data_init(aux);
-  if (log_proto_server_handshake_in_progress(self->proto))
+
+  if (self->handshake_in_progress)
     {
-      return log_reader_process_handshake(self);
+      gint result = log_reader_process_handshake(self);
+      /* TODO: usage of can_fetch_after_handshake might not needed at all here, just wanted to keep the original flow
+       *       to be surely backward compatible, my bet is that every successfull handshake can be followed by an
+       *       immediate fetch normally */
+      if (FALSE == self->can_fetch_after_handshake || result != 0 || self->handshake_in_progress)
+        {
+          log_transport_aux_data_destroy(aux);
+          return result;
+        }
     }
 
   /* NOTE: this loop is here to decrease the load on the main loop, we try
    * to fetch a couple of messages in a single run (but only up to
    * fetch_limit).
    */
-  while (msg_count < self->options->fetch_limit && !main_loop_worker_job_quit())
+  gint msg_count = 0;
+  gboolean may_read = TRUE;
+  gint result = 0;
+  while (!main_loop_worker_job_quit())
     {
-      Bookmark *bookmark;
-      const guchar *msg;
-      gsize msg_len;
-      LogProtoStatus status;
+      if (msg_count >= self->options->fetch_limit)
+        {
+          result = NC_AGAIN;
+          break;
+        }
 
-      msg = NULL;
+      log_transport_aux_data_reinit(aux);
+      Bookmark *bookmark = ack_tracker_request_bookmark(self->super.ack_tracker);
+      const guchar *msg = NULL;
+      gsize msg_len;
 
       /* NOTE: may_read is used to implement multi-read checking. It
        * is initialized to TRUE to indicate that the protocol is
        * allowed to issue a read(). If multi-read is disallowed in the
        * protocol, it resets may_read to FALSE after the first read was issued.
        */
-
-      log_transport_aux_data_reinit(aux);
-      bookmark = ack_tracker_request_bookmark(self->super.ack_tracker);
-      status = log_proto_server_fetch(self->proto, &msg, &msg_len, &may_read, aux, bookmark);
+      LogProtoStatus status = log_proto_server_fetch(self->proto, &msg, &msg_len, &may_read, aux, bookmark);
       switch (status)
         {
         case LPS_EOF:
@@ -588,9 +631,7 @@ log_reader_fetch_log(LogReader *self)
     }
   log_transport_aux_data_destroy(aux);
 
-  if (msg_count == self->options->fetch_limit)
-    self->immediate_check = TRUE;
-  return 0;
+  return result;
 }
 
 static void
@@ -799,8 +840,7 @@ log_reader_new(GlobalConfig *cfg)
   self->super.super.free_fn = log_reader_free;
   self->super.wakeup = log_reader_wakeup;
   self->super.schedule_dynamic_window_realloc = _schedule_dynamic_window_realloc;
-  self->super.metrics.raw_bytes_enabled = TRUE;
-  self->immediate_check = FALSE;
+  self->handshake_in_progress = TRUE;
   log_reader_init_watches(self);
   g_mutex_init(&self->pending_close_lock);
   g_cond_init(&self->pending_close_cond);
@@ -815,7 +855,7 @@ void
 log_reader_options_defaults(LogReaderOptions *options)
 {
   log_source_options_defaults(&options->super);
-  log_proto_server_options_defaults(&options->proto_options.super);
+  log_proto_server_options_defaults(&options->proto_options);
   msg_format_options_defaults(&options->parse_options);
   options->fetch_limit = 10;
 }
@@ -851,7 +891,7 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     return;
 
   log_source_options_init(&options->super, cfg, group_name);
-  log_proto_server_options_init(&options->proto_options.super, cfg);
+  log_proto_server_options_init(&options->proto_options, cfg);
   msg_format_options_init(&options->parse_options, cfg);
 
   if (options->check_hostname == -1)
@@ -875,6 +915,11 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     options->parse_options.flags |= LP_ASSUME_UTF8;
   if (cfg->threaded)
     options->flags |= LR_THREADED;
+  if (options->check_program == -1)
+    options->check_program = cfg->check_program;
+  if (options->check_program)
+    options->parse_options.flags |= LP_CHECK_PROGRAM;
+
   options->initialized = TRUE;
 }
 
@@ -882,7 +927,7 @@ void
 log_reader_options_destroy(LogReaderOptions *options)
 {
   log_source_options_destroy(&options->super);
-  log_proto_server_options_destroy(&options->proto_options.super);
+  log_proto_server_options_destroy(&options->proto_options);
   msg_format_options_destroy(&options->parse_options);
   options->initialized = FALSE;
 }
@@ -896,6 +941,7 @@ CfgFlagHandler log_reader_flag_handlers[] =
   { "empty-lines",                CFH_SET, offsetof(LogReaderOptions, flags),               LR_EMPTY_LINES },
   { "threaded",                   CFH_SET, offsetof(LogReaderOptions, flags),               LR_THREADED },
   { "ignore-aux-data",            CFH_SET, offsetof(LogReaderOptions, flags),               LR_IGNORE_AUX_DATA },
+  { "exit-on-eof",                CFH_SET, offsetof(LogReaderOptions, flags),               LR_EXIT_ON_EOF },
   { NULL },
 };
 

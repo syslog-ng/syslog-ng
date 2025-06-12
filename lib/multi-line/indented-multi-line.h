@@ -25,7 +25,8 @@
 #define MULTI_LINE_INDENTED_MULTI_LINE_INCLUDED
 
 #include "multi-line-logic.h"
+#include "multi-line/multi-line-factory.h"
 
-MultiLineLogic *indented_multi_line_new(void);
+MultiLineLogic *indented_multi_line_new(const MultiLineOptions *options);
 
 #endif

@@ -163,7 +163,7 @@ affile_dw_reopen(AFFileDestWriter *self)
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 
       proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
-                                              &self->owner->writer_options.proto_options.super);
+                                              &self->owner->writer_options.proto_options);
     }
   else if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
     {
@@ -461,13 +461,13 @@ affile_dd_set_time_reap(LogDriver *s, gint time_reap)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
 
-  log_proto_client_options_set_timeout(&self->writer_options.proto_options.super, time_reap);
+  log_proto_client_options_set_timeout(&self->writer_options.proto_options, time_reap);
 }
 
 static gint
 affile_dd_get_time_reap(AFFileDestDriver *self)
 {
-  return log_proto_client_options_get_timeout(&self->writer_options.proto_options.super);
+  return log_proto_client_options_get_timeout(&self->writer_options.proto_options);
 }
 
 static inline const gchar *

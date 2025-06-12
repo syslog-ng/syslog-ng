@@ -1,6 +1,6 @@
 [submodule "lib/ivykis"]
 	path = lib/ivykis
-	url = https://github.com/buytenh/ivykis.git
+	url = https://github.com/balabit/ivykis.git
 	ignore = dirty
 [submodule "modules/grpc/otel/opentelemetry-proto"]
 	path = modules/grpc/protos/opentelemetry-proto

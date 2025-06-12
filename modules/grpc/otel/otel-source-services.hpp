@@ -123,13 +123,15 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
                 }
 
               LogMessage *msg = log_msg_new_empty();
+              log_msg_set_recvd_rawmsg_size(msg, span.ByteSizeLong());
+
               ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_spans_schema_url, scope,
                                                  scope_spans_schema_url);
               ProtobufParser::store_raw(msg, span);
               worker.post(msg);
 
               msgs_in_fetch_round++;
-              if (msgs_in_fetch_round == worker.driver.fetch_limit)
+              if (msgs_in_fetch_round == worker.driver.get_fetch_limit())
                 {
                   log_threaded_source_worker_close_batch(&worker.super->super);
                   msgs_in_fetch_round = 0;
@@ -180,6 +182,8 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
                 }
 
               LogMessage *msg = log_msg_new_empty();
+              log_msg_set_recvd_rawmsg_size(msg, log_record.ByteSizeLong());
+
               if (ProtobufParser::is_syslog_ng_log_record(resource, resource_logs_schema_url, scope,
                                                           scope_logs_schema_url))
                 {
@@ -194,7 +198,7 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
               worker.post(msg);
 
               msgs_in_fetch_round++;
-              if (msgs_in_fetch_round == worker.driver.fetch_limit)
+              if (msgs_in_fetch_round == worker.driver.get_fetch_limit())
                 {
                   log_threaded_source_worker_close_batch(&worker.super->super);
                   msgs_in_fetch_round = 0;
@@ -245,13 +249,15 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
                 }
 
               LogMessage *msg = log_msg_new_empty();
+              log_msg_set_recvd_rawmsg_size(msg, metric.ByteSizeLong());
+
               ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_metrics_schema_url, scope,
                                                  scope_metrics_schema_url);
               ProtobufParser::store_raw(msg, metric);
               worker.post(msg);
 
               msgs_in_fetch_round++;
-              if (msgs_in_fetch_round == worker.driver.fetch_limit)
+              if (msgs_in_fetch_round == worker.driver.get_fetch_limit())
                 {
                   log_threaded_source_worker_close_batch(&worker.super->super);
                   msgs_in_fetch_round = 0;

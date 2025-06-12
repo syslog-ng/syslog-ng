@@ -213,6 +213,7 @@
 %token KW_BATCH_LINES                 10087
 %token KW_BATCH_TIMEOUT               10088
 %token KW_TRIM_LARGE_MESSAGES         10089
+
 %token KW_STATS                       10400
 %token KW_FREQ                        10401
 %token KW_LEVEL                       10402
@@ -228,6 +229,8 @@
 %token KW_CHECK_HOSTNAME              10093
 %token KW_BAD_HOSTNAME                10094
 %token KW_LOG_LEVEL                   10095
+%token KW_IDLE_TIMEOUT                10096
+%token KW_CHECK_PROGRAM               10097
 
 %token KW_KEEP_TIMESTAMP              10100
 
@@ -319,6 +322,7 @@
 %token KW_SDATA_PREFIX                10302
 
 %token KW_PORT                        10323
+%token KW_HTTP                        10324
 /* misc options */
 
 %token KW_USE_TIME_RECVD              10340
@@ -1053,6 +1057,7 @@ options_item
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ configuration->keep_hostname = $3; }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ configuration->check_hostname = $3; }
+	| KW_CHECK_PROGRAM '(' yesno ')' { configuration->check_program = $3; }
 	| KW_BAD_HOSTNAME '(' string ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
 	| KW_TIME_REOPEN '(' positive_integer ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' nonnegative_integer ')'		{ configuration->time_reap = $3; }
@@ -1097,7 +1102,7 @@ stat_option
 	: KW_STATS_FREQ '(' nonnegative_integer ')'          { last_stats_options->log_freq = $3; }
 	| KW_STATS_LEVEL '(' nonnegative_integer ')'         { last_stats_options->level = $3; }
 	| KW_STATS_LIFETIME '(' positive_integer ')'      { last_stats_options->lifetime = $3; }
-  | KW_STATS_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
+	| KW_STATS_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
 	| KW_STATS '(' stats_group_options ')'
 	;
 
@@ -1436,17 +1441,19 @@ source_reader_option
         /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
 
 	: KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
+	| KW_CHECK_PROGRAM '(' yesno ')' { last_reader_options->check_program = $3; }
 	| KW_FLAGS '(' source_reader_option_flags ')'
 	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ last_reader_options->fetch_limit = $3; }
         | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
         | { last_source_options = &last_reader_options->super; } source_option
-        | { last_proto_server_options = &last_reader_options->proto_options.super; } source_proto_option
+        | { last_proto_server_options = &last_reader_options->proto_options; } source_proto_option
         | { last_msg_format_options = &last_reader_options->parse_options; } msg_format_option
 	;
 
 source_reader_option_flags
         : string source_reader_option_flags     { CHECK_ERROR(log_reader_options_process_flag(last_reader_options, $1), @1, "Unknown flag \"%s\"", $1); free($1); }
         | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
+        | KW_CHECK_PROGRAM source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-program"); }
 	|
 	;
 
@@ -1459,8 +1466,9 @@ source_proto_option
                         "unknown encoding \"%s\"", $3);
             free($3);
           }
-        | KW_LOG_MSG_SIZE '(' positive_integer ')'      { last_proto_server_options->max_msg_size = $3; }
-        | KW_TRIM_LARGE_MESSAGES '(' yesno ')'          { last_proto_server_options->trim_large_messages = $3; }
+        | KW_LOG_MSG_SIZE '(' positive_integer ')'      { last_proto_server_options->super.max_msg_size = $3; }
+        | KW_TRIM_LARGE_MESSAGES '(' yesno ')'          { last_proto_server_options->super.trim_large_messages = $3; }
+        | KW_IDLE_TIMEOUT '(' positive_integer ')'      { last_proto_server_options->super.idle_timeout = $3; }
         ;
 
 host_resolve_option

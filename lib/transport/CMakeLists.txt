@@ -1,19 +1,17 @@
 set(TRANSPORT_HEADERS
     transport/logtransport.h
     transport/transport-aux-data.h
+    transport/transport-adapter.h
     transport/transport-tls.h
     transport/transport-file.h
     transport/transport-pipe.h
     transport/transport-socket.h
-    transport/transport-socket-proxy.h
-    transport/transport-socket-proxy-private.h
+    transport/transport-haproxy.h
     transport/transport-udp-socket.h
-    transport/transport-factory-id.h
-    transport/transport-factory.h
-    transport/transport-factory-registry.h
-    transport/multitransport.h
+    transport/transport-stack.h
     transport/transport-factory-tls.h
-    transport/transport-factory-socket.h
+    transport/transport-factory-haproxy.h
+    transport/transport-globals.h
     transport/tls-context.h
     transport/tls-verifier.h
     transport/tls-session.h
@@ -22,17 +20,17 @@ set(TRANSPORT_HEADERS
 set(TRANSPORT_SOURCES
     transport/logtransport.c
     transport/transport-aux-data.c
+    transport/transport-adapter.c
     transport/transport-file.c
     transport/transport-pipe.c
     transport/transport-socket.c
-    transport/transport-socket-proxy.c
+    transport/transport-haproxy.c
     transport/transport-udp-socket.c
     transport/transport-tls.c
-    transport/transport-factory-id.c
-    transport/transport-factory-registry.c
-    transport/multitransport.c
+    transport/transport-stack.c
     transport/transport-factory-tls.c
-    transport/transport-factory-socket.c
+    transport/transport-factory-haproxy.c
+    transport/transport-globals.c
     transport/tls-context.c
     transport/tls-verifier.c
     transport/tls-session.c

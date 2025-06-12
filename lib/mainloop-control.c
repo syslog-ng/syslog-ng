@@ -31,8 +31,11 @@
 #include "secret-storage/secret-storage.h"
 #include "cfg-walker.h"
 #include "logpipe.h"
+#include "console.h"
+#include "debugger/debugger-main.h"
 
 #include <string.h>
+#include <unistd.h>
 
 static gboolean
 _control_process_log_level(const gchar *level, GString *result)
@@ -102,6 +105,149 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
 exit:
   g_strfreev(cmds);
   control_connection_send_reply(cc, result);
+}
+
+void
+_wait_until_peer_disappears(ControlConnection *cc, gint max_seconds, gboolean *cancelled)
+{
+  while (max_seconds != 0 && !(*cancelled))
+    {
+      sleep(1);
+      if (max_seconds > 0)
+        max_seconds--;
+      control_connection_send_batched_reply(cc, g_string_new("ALIVE\n"));
+    }
+  console_release();
+}
+
+typedef struct _AttachCommandArgs
+{
+  gboolean start_debugger;
+  gint fds_to_steal;
+  gint n_seconds;
+  gboolean log_stderr;
+  gint log_level;
+} AttachCommandArgs;
+
+static gboolean
+_parse_attach_command_args(GString *command, AttachCommandArgs *args, GString *result)
+{
+  gboolean success = FALSE;
+  gchar **cmds = g_strsplit(command->str, " ", 5);
+
+  if (cmds[1] == NULL)
+    {
+      g_string_assign(result, "FAIL Invalid arguments received");
+      goto exit;
+    }
+
+  if (g_str_equal(cmds[1], "STDIO"))
+    {
+      if (cmds[3])
+        args->fds_to_steal = atoi(cmds[3]);
+    }
+  else if (g_str_equal(cmds[1], "LOGS"))
+    {
+      args->log_stderr = TRUE;
+      /* NOTE: as log_stderr uses stderr (what a surprise)
+       *          - we need to steal only the stderr
+       *          - caller of the `attach logs` will get the stderr output as well, so
+       *            they should redirect stderr to stdout if they want to capture it for
+       *            further processing e.g.
+       *                syslog-ng-ctl attach logs |& grep -i error
+       */
+      args->fds_to_steal = (1 << STDERR_FILENO);
+    }
+  else if (g_str_equal(cmds[1], "DEBUGGER"))
+    {
+      args->start_debugger = TRUE;
+    }
+  else
+    {
+      g_string_assign(result, "FAIL This version of syslog-ng only supports attaching to STDIO or LOGS");
+      goto exit;
+    }
+
+  if (cmds[2])
+    args->n_seconds = atoi(cmds[2]);
+
+  if (cmds[4])
+    args->log_level = msg_map_string_to_log_level(cmds[4]);
+  if (args->log_level < 0)
+    {
+      g_string_assign(result, "FAIL Invalid log level");
+      goto exit;
+    }
+  success = TRUE;
+
+exit:
+  g_strfreev(cmds);
+  return success;
+}
+
+static void
+control_connection_attach(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
+{
+  MainLoop *main_loop = (MainLoop *) user_data;
+  GString *result = g_string_sized_new(128);
+  struct
+  {
+    gboolean log_stderr;
+    gint log_level;
+  } old_values =
+  {
+    log_stderr,
+    msg_get_log_level()
+  };
+  AttachCommandArgs cmd_args =
+  {
+    .start_debugger = FALSE,
+    .fds_to_steal = (1 << STDOUT_FILENO) | (1 << STDERR_FILENO),
+    .n_seconds = -1,
+    .log_stderr = old_values.log_stderr,
+    .log_level = old_values.log_level
+  };
+
+  if (FALSE == _parse_attach_command_args(command, &cmd_args, result))
+    goto exit;
+
+  gint fds[3];
+  gsize num_fds = G_N_ELEMENTS(fds);
+  if (FALSE == control_connection_get_attached_fds(cc, fds, &num_fds) || num_fds != 3)
+    {
+      g_string_assign(result,
+                      "FAIL The underlying transport for syslog-ng-ctl does not support fd passing or incorrect number of fds received");
+      goto exit;
+    }
+
+  if (FALSE == console_acquire_from_fds(fds, cmd_args.fds_to_steal))
+    {
+      g_string_assign(result, "FAIL Error acquiring console");
+      goto exit;
+    }
+
+  log_stderr = cmd_args.log_stderr;
+  msg_set_log_level(cmd_args.log_level);
+
+  if (cmd_args.start_debugger && FALSE == debugger_is_running())
+    {
+      //cfg_load_module(self->current_configuration, "mod-python");
+      debugger_start(main_loop, main_loop_get_current_config(main_loop));
+    }
+
+  _wait_until_peer_disappears(cc, cmd_args.n_seconds, cancelled);
+
+  if (cmd_args.start_debugger && debugger_is_running())
+    debugger_stop();
+
+  log_stderr = old_values.log_stderr;
+  msg_set_log_level(old_values.log_level);
+
+  g_string_assign(result, "OK [Console output ends here]");
+
+exit:
+  control_connection_send_batched_reply(cc, result);
+  control_connection_send_close_batch(cc);
 }
 
 static void
@@ -452,6 +598,7 @@ export_config_graph(ControlConnection *cc, GString *command, gpointer user_data,
 
 ControlCommand default_commands[] =
 {
+  { "ATTACH", control_connection_attach, .threaded = TRUE },
   { "LOG", control_connection_message_log },
   { "STOP", control_connection_stop_process },
   { "RELOAD", control_connection_reload },

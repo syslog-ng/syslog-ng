@@ -25,17 +25,6 @@
 using namespace syslogng::grpc::otel;
 using namespace opentelemetry::proto::logs::v1;
 
-LogThreadedDestWorker *
-SyslogNgDestWorker::construct(LogThreadedDestDriver *o, gint worker_index)
-{
-  SyslogNgOtlpDestWorker *self = g_new0(SyslogNgOtlpDestWorker, 1);
-
-  otel_dw_init_super(&self->super, o, worker_index);
-  self->cpp = new SyslogNgDestWorker(self);
-
-  return &self->super;
-}
-
 ScopeLogs *
 SyslogNgDestWorker::lookup_scope_logs(LogMessage *msg)
 {
@@ -67,6 +56,12 @@ SyslogNgDestWorker::insert(LogMessage *msg)
   size_t log_record_bytes = log_record->ByteSizeLong();
   logs_current_batch_bytes += log_record_bytes;
   log_threaded_dest_driver_insert_msg_length_stats(super->super.owner, log_record_bytes);
+
+  if (!client_context.get())
+    {
+      client_context = std::make_unique<::grpc::ClientContext>();
+      prepare_context_dynamic(*client_context, msg);
+    }
 
   if (should_initiate_flush())
     return log_threaded_dest_worker_flush(&super->super, LTF_FLUSH_NORMAL);

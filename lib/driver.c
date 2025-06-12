@@ -135,6 +135,9 @@ log_driver_free(LogPipe *s)
     g_free(self->group);
   if (self->id)
     g_free(self->id);
+
+  signal_slot_connector_free(self->signal_slot_connector);
+
   log_pipe_free_method(s);
 }
 
@@ -149,6 +152,8 @@ log_driver_init_instance(LogDriver *self, GlobalConfig *cfg)
   self->super.init = log_driver_init_method;
   self->super.deinit = log_driver_deinit_method;
   self->super.post_deinit = log_driver_post_deinit_method;
+
+  self->signal_slot_connector = signal_slot_connector_new();
 }
 
 /* LogSrcDriver */

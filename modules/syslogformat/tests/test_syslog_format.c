@@ -102,6 +102,92 @@ Test(syslog_format, rfc3164_error_invalid_pri)
   log_msg_unref(msg);
 }
 
+Test(syslog_format, rfc3164_check_program_valid_name)
+{
+  const gchar *data =
+    "<189> Feb  3 12:34:56 host program_0123456789-abcdefghijklmnopqrstuvwxyz(ABCDEFGHIJKLMNOPQRSTUVWXYZ).valid/chars[pid]: message";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  parse_options.flags |= LP_CHECK_PROGRAM;
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  assert_log_message_value_by_name(msg, "HOST", "host");
+  assert_log_message_value_by_name(msg, "PROGRAM",
+                                   "program_0123456789-abcdefghijklmnopqrstuvwxyz(ABCDEFGHIJKLMNOPQRSTUVWXYZ).valid/chars");
+  assert_log_message_value_by_name(msg, "PID", "pid");
+  assert_log_message_value_by_name(msg, "MSG", "message");
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "rfc3164");
+  cr_assert(!log_msg_is_tag_by_name(msg, "syslog.rfc3164_invalid_program"));
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, rfc3164_check_program_decimal_number)
+{
+  const gchar *data = "<189> Feb  3 12:34:56 host 323235243.2354[pid]: message";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  parse_options.flags |= LP_CHECK_PROGRAM;
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  assert_log_message_value_by_name(msg, "HOST", "host");
+  assert_log_message_value_by_name(msg, "PROGRAM", "");
+  assert_log_message_value_by_name(msg, "PID", "");
+  assert_log_message_value_by_name(msg, "MSG", "323235243.2354[pid]: message");
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "rfc3164");
+  assert_log_message_has_tag(msg, "syslog.rfc3164_invalid_program");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, rfc3164_check_program_invalid_character)
+{
+  const gchar *data = "<189> Feb  3 12:34:56 host program![pid]: message";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  parse_options.flags |= LP_CHECK_PROGRAM;
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  assert_log_message_value_by_name(msg, "HOST", "host");
+  assert_log_message_value_by_name(msg, "PROGRAM", "");
+  assert_log_message_value_by_name(msg, "PID", "");
+  assert_log_message_value_by_name(msg, "MSG", "program![pid]: message");
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "rfc3164");
+  assert_log_message_has_tag(msg, "syslog.rfc3164_invalid_program");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, rfc3164_check_program_ip_address)
+{
+  const gchar *data = "<189> Feb  3 12:34:56 host 127.0.0.1[pid]: message";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  parse_options.flags |= LP_CHECK_PROGRAM;
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  assert_log_message_value_by_name(msg, "HOST", "host");
+  assert_log_message_value_by_name(msg, "PROGRAM", "");
+  assert_log_message_value_by_name(msg, "PID", "");
+  assert_log_message_value_by_name(msg, "MSG", "127.0.0.1[pid]: message");
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "rfc3164");
+  assert_log_message_has_tag(msg, "syslog.rfc3164_invalid_program");
+
+  log_msg_unref(msg);
+}
+
 Test(syslog_format, rfc3164_error_missing_timestamp)
 {
   /* incorrect pri value */

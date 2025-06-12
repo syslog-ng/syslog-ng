@@ -24,27 +24,74 @@
 
 #include "debugger/debugger.h"
 #include "logpipe.h"
+#include "mainloop-worker.h"
+#include "mainloop-call.h"
 
 static Debugger *current_debugger;
 
 static gboolean
 _pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
-  if ((s->flags & PIF_CONFIG_RELATED) == 0)
-    return TRUE;
-
   if (msg->flags & LF_STATE_TRACING)
     return debugger_perform_tracing(current_debugger, s, msg);
   else
     return debugger_stop_at_breakpoint(current_debugger, s, msg);
 }
 
+gboolean
+debugger_is_running(void)
+{
+  return current_debugger != NULL;
+}
+
+static void
+_install_hook(gpointer user_data)
+{
+  /* NOTE: this is invoked via main_loop_worker_sync_call(), e.g. all workers are stopped */
+
+  pipe_single_step_hook = _pipe_hook;
+}
+
+static gpointer
+_attach_debugger(gpointer user_data)
+{
+  /* NOTE: this function is always run in the main thread via main_loop_call. */
+  main_loop_worker_sync_call(_install_hook, NULL);
+
+  debugger_start_console(current_debugger);
+  return NULL;
+}
+
+static void
+_remove_hook_and_clean_up_the_debugger(gpointer user_data)
+{
+  /* NOTE: this is invoked via main_loop_worker_sync_call(), e.g. all workers are stopped */
+
+  pipe_single_step_hook = NULL;
+
+  Debugger *d = current_debugger;
+  current_debugger = NULL;
+
+  debugger_exit(d);
+  debugger_free(d);
+}
+
+static gpointer
+_detach_debugger(gpointer user_data)
+{
+  main_loop_worker_sync_call(_remove_hook_and_clean_up_the_debugger, NULL);
+  return NULL;
+}
+
 void
 debugger_start(MainLoop *main_loop, GlobalConfig *cfg)
 {
-  /* we don't support threaded mode (yet), force it to non-threaded */
-  cfg->threaded = FALSE;
   current_debugger = debugger_new(main_loop, cfg);
-  pipe_single_step_hook = _pipe_hook;
-  debugger_start_console(current_debugger);
+  main_loop_call(_attach_debugger, current_debugger, FALSE);
+}
+
+void
+debugger_stop(void)
+{
+  main_loop_call(_detach_debugger, NULL, FALSE);
 }

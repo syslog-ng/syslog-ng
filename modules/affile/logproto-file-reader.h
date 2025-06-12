@@ -24,20 +24,29 @@
 #ifndef LOG_PROTO_FILE_READER_H_INCLUDED
 #define LOG_PROTO_FILE_READER_H_INCLUDED
 
-#include "logproto/logproto-multiline-server.h"
+#include "logproto/logproto-text-server.h"
 #include "multi-line/multi-line-factory.h"
 
 typedef struct _LogProtoFileReaderOptions
 {
   LogProtoServerOptions super;
-  MultiLineOptions multi_line_options;
   gint pad_size;
 } LogProtoFileReaderOptions;
 
-LogProtoServer *log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options);
+typedef union _LogProtoFileReaderOptionsStorage
+{
+  LogProtoServerOptionsStorage storage;
+  LogProtoFileReaderOptions super;
 
-void log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options);
-gboolean log_proto_file_reader_options_init(LogProtoFileReaderOptions *options, GlobalConfig *cfg);
-void log_proto_file_reader_options_destroy(LogProtoFileReaderOptions *options);
+} LogProtoFileReaderOptionsStorage;
+// _Static_assert() is a C11 feature, so we use a typedef trick to perform the static assertion
+typedef char static_assert_size_check_LogProtoFileReaderOptions[
+   sizeof(LogProtoServerOptionsStorage) >= sizeof(LogProtoFileReaderOptions) ? 1 : -1];
+
+LogProtoServer *log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptionsStorage *options);
+
+void log_proto_file_reader_options_defaults(LogProtoFileReaderOptionsStorage *options);
+gboolean log_proto_file_reader_options_init(LogProtoFileReaderOptionsStorage *options, GlobalConfig *cfg);
+void log_proto_file_reader_options_destroy(LogProtoFileReaderOptionsStorage *options);
 
 #endif

@@ -39,6 +39,7 @@
 #define LR_EMPTY_LINES     0x0004
 #define LR_IGNORE_AUX_DATA 0x0008
 #define LR_THREADED        0x0040
+#define LR_EXIT_ON_EOF     0x0080
 
 /* options */
 
@@ -52,6 +53,7 @@ typedef struct _LogReaderOptions
   gint fetch_limit;
   const gchar *group_name;
   gboolean check_hostname;
+  gboolean check_program;
 } LogReaderOptions;
 
 typedef struct _LogReader LogReader;
@@ -60,7 +62,6 @@ struct _LogReader
 {
   LogSource super;
   LogProtoServer *proto;
-  gboolean immediate_check;
   LogPipe *control;
   LogReaderOptions *options;
   PollEvents *poll_events;
@@ -69,14 +70,14 @@ struct _LogReader
   StatsAggregator *max_message_size;
   StatsAggregator *average_messages_size;
   StatsAggregator *CPS;
-
-  /* NOTE: these used to be LogReaderWatch members, which were merged into
-   * LogReader with the multi-thread refactorization */
-
   struct iv_task restart_task;
   struct iv_event schedule_wakeup;
   MainLoopIOWorkerJob io_job;
-  guint watches_running:1, suspended:1, realloc_window_after_fetch:1;
+  guint watches_running:1,
+        suspended:1,
+        realloc_window_after_fetch:1,
+        handshake_in_progress:1,
+        can_fetch_after_handshake:1;
   gint notify_code;
 
   /* proto & poll_events pending to be applied. As long as the previous
@@ -96,7 +97,6 @@ void log_reader_set_follow_filename(LogReader *self, const gchar *follow_filenam
 void log_reader_set_name(LogReader *s, const gchar *name);
 void log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr);
 void log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr);
-void log_reader_set_immediate_check(LogReader *s);
 void log_reader_disable_bookmark_saving(LogReader *s);
 void log_reader_trigger_one_check(LogReader *s);
 gboolean log_reader_is_opened(LogReader *s);

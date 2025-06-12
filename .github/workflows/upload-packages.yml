@@ -10,12 +10,12 @@ on:
       distros:
         required: false
         type: string
-        default: 
-          #"debian-sid", - curently this is broken again
+        default:
           '[
             "debian-testing",
             "debian-bullseye",
             "debian-bookworm",
+            "debian-sid",
             "ubuntu-focal",
             "ubuntu-jammy",
             "ubuntu-noble"

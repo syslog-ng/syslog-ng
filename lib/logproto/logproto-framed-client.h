@@ -27,6 +27,6 @@
 #include "logproto-client.h"
 
 /* framed */
-LogProtoClient *log_proto_framed_client_new(LogTransport *transport, const LogProtoClientOptions *options);
+LogProtoClient *log_proto_framed_client_new(LogTransport *transport, const LogProtoClientOptionsStorage *options);
 
 #endif

@@ -58,8 +58,6 @@ typedef gpointer cap_t;
 
 #endif
 
-void g_process_message(const gchar *fmt, ...) G_GNUC_PRINTF(1, 2);
-
 void g_process_set_mode(GProcessMode mode);
 GProcessMode g_process_get_mode(void);
 void g_process_set_name(const gchar *name);
