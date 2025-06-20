@@ -1,12 +1,14 @@
 FROM almalinux:8
-LABEL maintainer="Laszlo Varady <laszlo.varady@balabit.com>"
-ENV OS_DISTRIBUTION=almalinux
-ENV OS_DISTRIBUTION_CODE_NAME=8
-
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
-ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
+
+LABEL maintainer="kira.syslogng@gmail.com"
+LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 LABEL COMMIT=${COMMIT}
+
+ENV OS_DISTRIBUTION=almalinux
+ENV OS_DISTRIBUTION_CODE_NAME=8
+ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
 
 COPY images/entrypoint.sh /
 COPY . /dbld/
