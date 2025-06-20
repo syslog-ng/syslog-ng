@@ -22,7 +22,7 @@ on:
           #     - dbld images used by this package builder are already run and published their results, scheduled, prior this one runs
           #     - the draft, and based on that the stable, releases are published only from this images (to AZURE)
           #     - from this packager we do have a single published docker image, the bookworm one Tagged as Nighlty
-          # These are also built and published by the dbld-images builder, but not used now in the above steps at all
+          # These are also built and published by the dbld-images builder, but not used now in the bellow steps at all
           #   "almalinux-8",
           #   "almalinux-9",
           #   "centos-stream9",
