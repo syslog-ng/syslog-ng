@@ -1,12 +1,14 @@
 FROM debian:sid
-LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
-ENV OS_DISTRIBUTION=debian
-ENV OS_DISTRIBUTION_CODE_NAME=sid
-
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
-ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
+
+LABEL maintainer="kira.syslogng@gmail.com"
+LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 LABEL COMMIT=${COMMIT}
+
+ENV OS_DISTRIBUTION=debian
+ENV OS_DISTRIBUTION_CODE_NAME=sid
+ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN=true
