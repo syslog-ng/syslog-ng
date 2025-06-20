@@ -296,33 +296,6 @@ afinet_dd_set_failback_successful_probes_required(LogDriver *s, gint successful_
   afinet_dd_failover_set_successful_probes_required(self->failover, successful_probes_required);
 }
 
-static void
-_disable_connection_closure_on_input(LogWriter *writer)
-{
-  /* SSL is duplex, so we can certainly expect input from the server, which
-   * would cause the LogWriter to close this connection.  In a better world
-   * LW_DETECT_EOF would be implemented by the LogProto class and would
-   * inherently work w/o mockery in LogWriter.  Defer that change for now
-   * (and possibly for all eternity :)
-   */
-
-  log_writer_set_flags(writer, log_writer_get_flags(writer) & ~LW_DETECT_EOF);
-}
-
-static LogWriter *
-afinet_dd_construct_writer(AFSocketDestDriver *s)
-{
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
-  TransportMapperInet *transport_mapper_inet = ((TransportMapperInet *) (self->super.transport_mapper));
-
-  LogWriter *writer = afsocket_dd_construct_writer_method(s);
-
-  if (((self->super.transport_mapper->sock_type == SOCK_STREAM) && transport_mapper_inet->tls_context))
-    _disable_connection_closure_on_input(writer);
-
-  return writer;
-}
-
 static gint
 _determine_port(const AFInetDestDriver *self)
 {
@@ -802,7 +775,6 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, Globa
   self->super.super.super.super.deinit = afinet_dd_deinit;
   self->super.super.super.super.queue = afinet_dd_queue;
   self->super.super.super.super.free_fn = afinet_dd_free;
-  self->super.construct_writer = afinet_dd_construct_writer;
   self->super.setup_addresses = afinet_dd_setup_addresses;
   self->super.get_dest_name = afinet_dd_get_dest_name;
   self->super.should_restore_connection = afinet_dd_should_restore_connection;
@@ -845,13 +817,7 @@ afinet_dd_new_udp6(gchar *host, GlobalConfig *cfg)
 static LogWriter *
 afinet_dd_syslog_construct_writer(AFSocketDestDriver *s)
 {
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
-  TransportMapperInet *transport_mapper_inet = ((TransportMapperInet *) (self->super.transport_mapper));
-
   LogWriter *writer = afsocket_dd_construct_writer_method(s);
-
-  if (((self->super.transport_mapper->sock_type == SOCK_STREAM) && transport_mapper_inet->tls_context))
-    _disable_connection_closure_on_input(writer);
 
   log_writer_set_flags(writer, log_writer_get_flags(writer) | LW_SYSLOG_PROTOCOL);
   return writer;

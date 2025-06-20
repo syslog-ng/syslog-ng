@@ -70,7 +70,7 @@ struct _LogProtoClient
   LogProtoStatus status;
   const LogProtoClientOptionsStorage *options;
   LogTransportStack transport_stack;
-  gboolean (*poll_prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout);
+  gboolean (*poll_prepare)(LogProtoClient *s, GIOCondition *cond, GIOCondition *idle_cond, gint *timeout);
   LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*process_in)(LogProtoClient *s);
   LogProtoStatus (*flush)(LogProtoClient *s);
@@ -126,39 +126,45 @@ log_proto_client_handshake(LogProtoClient *s, gboolean *handshake_finished)
 }
 
 static inline gboolean
-log_proto_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
+log_proto_client_poll_prepare(LogProtoClient *self, GIOCondition *cond, GIOCondition *idle_cond, gint *timeout)
 {
-  gboolean result = s->poll_prepare(s, fd, cond, timeout);
+  GIOCondition transport_cond = 0;
+  gboolean result = TRUE;
+
+  if (log_transport_stack_poll_prepare(&self->transport_stack, &transport_cond))
+    goto exit;
+
+  result = self->poll_prepare(self, cond, idle_cond, timeout);
 
   if (!result && *timeout < 0)
-    *timeout = s->options->super.idle_timeout;
+    *timeout = self->options->super.idle_timeout;
+
+exit:
+  /* transport I/O needs take precedence */
+  if (transport_cond != 0)
+    *cond = transport_cond;
+
   return result;
 }
 
+static inline LogProtoStatus log_proto_client_process_in(LogProtoClient *s);
+
 static inline LogProtoStatus
-log_proto_client_flush(LogProtoClient *s)
+log_proto_client_flush(LogProtoClient *self)
 {
-  if (s->flush)
-    return s->flush(s);
-  else
-    return LPS_SUCCESS;
+  if (log_transport_stack_get_io_requirement(&self->transport_stack) == LTIO_READ_WANTS_WRITE)
+    return self->process_in(self);
+
+  return self->flush(self);
 }
 
 static inline LogProtoStatus
-log_proto_client_process_in(LogProtoClient *s)
+log_proto_client_process_in(LogProtoClient *self)
 {
-  if (s->process_in)
-    return s->process_in(s);
-  else if (s->flush)
-    /*
-     * In some clients, flush is used for input processing, but it should not be.
-     * Fix these clients, than remove the flush call here.
-     *
-     * SSL_ERROR_WANT_READ in the TLS transport is also built upon this.
-     */
-    return s->flush(s);
-  else
-    return LPS_SUCCESS;
+  if (log_transport_stack_get_io_requirement(&self->transport_stack) == LTIO_WRITE_WANTS_READ)
+    return self->flush(self);
+
+  return self->process_in(self);
 }
 
 static inline LogProtoStatus

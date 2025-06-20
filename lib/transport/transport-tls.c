@@ -151,11 +151,11 @@ _handle_shutdown_error(LogTransportTLS *self, gint ssl_error)
   switch (ssl_error)
     {
     case SSL_ERROR_WANT_READ:
-      self->super.super.cond = G_IO_IN;
+      self->super.super.cond = LTIO_READ_WANTS_READ;
       errno = EAGAIN;
       break;
     case SSL_ERROR_WANT_WRITE:
-      self->super.super.cond = G_IO_OUT;
+      self->super.super.cond = LTIO_READ_WANTS_WRITE;
       errno = EAGAIN;
       break;
     case SSL_ERROR_SYSCALL:
@@ -198,12 +198,10 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
   gint ssl_error;
   gint rc;
 
+  self->super.super.cond = LTIO_NOTHING;
+
   if (G_UNLIKELY(self->sending_shutdown))
     return (log_transport_tls_send_shutdown(self) >= 0) ? 0 : -1;
-
-  /* assume that we need to poll our input for reading unless
-   * SSL_ERROR_WANT_WRITE is specified by libssl */
-  self->super.super.cond = G_IO_IN;
 
   if (aux)
     {
@@ -233,13 +231,14 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
           switch (ssl_error)
             {
             case SSL_ERROR_WANT_READ:
+              /* SSL_ERROR_WANT_READ is not a must, LTIO_READ_WANTS_READ should NOT be set */
               rc = -1;
               errno = EAGAIN;
               break;
             case SSL_ERROR_WANT_WRITE:
               /* although we are reading this fd, libssl wants to write. This
                * happens during renegotiation for example */
-              self->super.super.cond = G_IO_OUT;
+              self->super.super.cond = LTIO_READ_WANTS_WRITE;
               rc = -1;
               errno = EAGAIN;
               break;
@@ -259,9 +258,6 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
         }
     }
   while (rc == -1 && errno == EINTR);
-
-  if (rc > 0)
-    self->super.super.cond = 0;
 
   return rc;
 tls_error:
@@ -283,10 +279,7 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
   gint ssl_error;
   gint rc;
 
-  /* assume that we need to poll our output for writing unless
-   * SSL_ERROR_WANT_READ is specified by libssl */
-
-  self->super.super.cond = G_IO_OUT;
+  self->super.super.cond = LTIO_NOTHING;
 
   rc = SSL_write(self->tls_session->ssl, buf, buflen);
 
@@ -298,10 +291,16 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
         case SSL_ERROR_WANT_READ:
           /* although we are writing this fd, libssl wants to read. This
            * happens during renegotiation for example */
-          self->super.super.cond = G_IO_IN;
+          self->super.super.cond = LTIO_WRITE_WANTS_READ;
           errno = EAGAIN;
           break;
         case SSL_ERROR_WANT_WRITE:
+          /*
+           * If you get SSL_ERROR_WANT_WRITE from SSL_write() then you should
+           * not do any other operation that could trigger IO other than to
+           * repeat the previous SSL_write() call.
+           */
+          self->super.super.cond = LTIO_WRITE_WANTS_WRITE;
           errno = EAGAIN;
           break;
         case SSL_ERROR_SYSCALL:
@@ -320,10 +319,6 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
         default:
           goto tls_error;
         }
-    }
-  else
-    {
-      self->super.super.cond = 0;
     }
 
   return rc;
@@ -357,7 +352,7 @@ log_transport_tls_new(TLSSession *tls_session, LogTransportIndex base)
   LogTransportTLS *self = g_new0(LogTransportTLS, 1);
 
   log_transport_adapter_init_instance(&self->super, TLS_TRANSPORT_NAME, base);
-  self->super.super.cond = 0;
+  self->super.super.cond = LTIO_NOTHING;
   self->super.super.read = log_transport_tls_read_method;
   self->super.super.write = log_transport_tls_write_method;
   self->super.super.free_fn = log_transport_tls_free_method;

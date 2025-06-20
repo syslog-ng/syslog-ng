@@ -32,11 +32,10 @@
 #include "stats/stats-cluster-key-builder.h"
 
 /* writer constructor flags */
-#define LW_DETECT_EOF        0x0001
-#define LW_FORMAT_FILE       0x0002
-#define LW_FORMAT_PROTO      0x0004
-#define LW_SYSLOG_PROTOCOL   0x0008
-#define LW_SOFT_FLOW_CONTROL 0x0010
+#define LW_FORMAT_FILE       0x0001
+#define LW_FORMAT_PROTO      0x0002
+#define LW_SYSLOG_PROTOCOL   0x0004
+#define LW_SOFT_FLOW_CONTROL 0x0008
 
 /* writer options (set by the user) */
 #define LWO_SYSLOG_PROTOCOL   0x0001
