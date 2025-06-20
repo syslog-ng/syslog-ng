@@ -124,6 +124,7 @@ log_proto_server_validate_options_method(LogProtoServer *self)
 void
 log_proto_server_free_method(LogProtoServer *self)
 {
+  log_transport_stack_shutdown(&self->transport_stack);
   log_transport_stack_deinit(&self->transport_stack);
 }
 

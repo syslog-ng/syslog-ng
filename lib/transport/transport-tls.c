@@ -132,7 +132,7 @@ BIO_s_transport(void)
 static BIO *
 BIO_transport_new(LogTransportTLS *transport)
 {
-  BIO *bio = BIO_new(BIO_s_transport());
+  BIO *bio = BIO_new(meth_transport);
 
   g_assert(transport != NULL);
   BIO_set_data(bio, transport);
@@ -343,6 +343,16 @@ log_tansport_tls_get_session(LogTransport *s)
   return self->tls_session;
 }
 
+static void
+log_transport_tls_shutdown_method(LogTransport *s)
+{
+  LogTransportTLS *self = (LogTransportTLS *) s;
+
+  /* TODO: should handle SSL_ERROR_WANT_* and retry */
+  if (!SSL_in_init(self->tls_session->ssl))
+    log_transport_tls_send_shutdown(self);
+  log_transport_adapter_shutdown_method(s);
+}
 
 static void log_transport_tls_free_method(LogTransport *s);
 
@@ -355,6 +365,7 @@ log_transport_tls_new(TLSSession *tls_session, LogTransportIndex base)
   self->super.super.cond = LTIO_NOTHING;
   self->super.super.read = log_transport_tls_read_method;
   self->super.super.write = log_transport_tls_write_method;
+  self->super.super.shutdown = log_transport_tls_shutdown_method;
   self->super.super.free_fn = log_transport_tls_free_method;
   self->tls_session = tls_session;
 
@@ -367,10 +378,6 @@ static void
 log_transport_tls_free_method(LogTransport *s)
 {
   LogTransportTLS *self = (LogTransportTLS *) s;
-
-  /* TODO: should handle SSL_ERROR_WANT_* and retry */
-  if (!SSL_in_init(self->tls_session->ssl))
-    log_transport_tls_send_shutdown(self);
 
   tls_session_free(self->tls_session);
   log_transport_adapter_free_method(s);

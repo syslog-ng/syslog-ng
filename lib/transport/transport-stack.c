@@ -114,6 +114,14 @@ log_transport_stack_move(LogTransportStack *self, LogTransportStack *other)
 }
 
 void
+log_transport_stack_shutdown(LogTransportStack *self)
+{
+  LogTransport *active_transport = log_transport_stack_get_active(self);
+  if (active_transport)
+    log_transport_shutdown(active_transport);
+}
+
+void
 log_transport_stack_init(LogTransportStack *self, LogTransport *initial_transport)
 {
   memset(self, 0, sizeof(*self));
