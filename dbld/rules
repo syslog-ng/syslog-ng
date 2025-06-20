@@ -12,10 +12,14 @@ BUILDER_IMAGES=	\
 	debian-bookworm-arm64	\
 	debian-sid	\
 	debian-testing	\
+	opensuse-tumbleweed	\
 	ubuntu-focal	\
 	ubuntu-jammy \
 	ubuntu-noble \
 	ubuntu-noble-arm64	\
+	rhel-8 \
+	rhel-9 \
+	rocky-8 \
 	kira	\
 	tarball
 
