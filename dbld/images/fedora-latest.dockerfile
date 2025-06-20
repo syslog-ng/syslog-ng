@@ -1,12 +1,14 @@
 FROM fedora:latest
-LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
-ENV OS_DISTRIBUTION=fedora
-ENV OS_DISTRIBUTION_CODE_NAME=latest
-
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
-ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
+
+LABEL maintainer="kira.syslogng@gmail.com"
+LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 LABEL COMMIT=${COMMIT}
+
+ENV OS_DISTRIBUTION=fedora
+ENV OS_DISTRIBUTION_CODE_NAME=latest
+ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
 
 COPY images/entrypoint.sh /
 COPY . /dbld/
