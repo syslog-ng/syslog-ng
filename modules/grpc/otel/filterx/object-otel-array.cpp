@@ -354,9 +354,11 @@ OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRef
       if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(list)))
         return _set_array_field_from_list(message, reflectors, object, assoc_object);
 
+      std::string name(reflectors.fieldDescriptor->name());
+      std::string type_name(reflectors.fieldDescriptor->type_name());
       msg_error("otel-array: Failed to convert field, type is unsupported",
-                evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
-                evt_tag_str("expected_type", reflectors.fieldDescriptor->type_name()),
+                evt_tag_str("field", name.c_str()),
+                evt_tag_str("expected_type", type_name.c_str()),
                 evt_tag_str("type", object->type->name));
       return false;
     }

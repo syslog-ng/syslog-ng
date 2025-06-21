@@ -42,9 +42,11 @@ using namespace syslogng::grpc::otel;
 void
 log_type_error(ProtoReflectors reflectors, const char *type)
 {
+  std::string name(reflectors.fieldDescriptor->name());
+  std::string type_name(reflectors.fieldDescriptor->type_name());
   msg_error("protobuf-field: Failed to convert field, type is unsupported",
-            evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
-            evt_tag_str("expected_type", reflectors.fieldDescriptor->type_name()),
+            evt_tag_str("field", name.c_str()),
+            evt_tag_str("expected_type", type_name.c_str()),
             evt_tag_str("type", type));
 }
 
@@ -159,8 +161,9 @@ public:
     uint64_t val = reflectors.reflection->GetUInt64(*message, reflectors.fieldDescriptor);
     if (val > INT64_MAX)
       {
+        std::string name(reflectors.fieldDescriptor->name());
         msg_error("protobuf-field: exceeding FilterX number value range",
-                  evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
+                  evt_tag_str("field", name.c_str()),
                   evt_tag_long("range_min", INT64_MIN),
                   evt_tag_long("range_max", INT64_MAX),
                   evt_tag_printf("current", "%" G_GUINT64_FORMAT, val));
@@ -218,8 +221,8 @@ public:
         const gchar *json_literal = filterx_json_to_json_literal(object);
         if (!json_literal)
           {
-            msg_error("protobuf-field: json marshal error",
-                      evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()));
+            std::string name(reflectors.fieldDescriptor->name());
+            msg_error("protobuf-field: json marshal error", evt_tag_str("field", name.c_str()));
             return false;
           }
         reflectors.reflection->SetString(message, reflectors.fieldDescriptor, json_literal);
