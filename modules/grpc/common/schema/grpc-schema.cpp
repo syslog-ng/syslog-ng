@@ -190,7 +190,7 @@ Schema::load_protobuf_schema()
 
       LogTemplate *value = (LogTemplate *) current_value->data;
 
-      this->fields.push_back(Field{field->name(), (google::protobuf::FieldDescriptorProto::Type) field->type(), value});
+      this->fields.push_back(Field{std::string(field->name()), (google::protobuf::FieldDescriptorProto::Type) field->type(), value});
       this->fields[i].field_desc = field;
 
       current_value = current_value->next;
