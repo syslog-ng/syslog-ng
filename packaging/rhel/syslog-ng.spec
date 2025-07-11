@@ -28,7 +28,7 @@ Source3: syslog-ng.service
 %bcond_with mqtt
 %endif
 
-%if 0%{?rhel} >= 9
+%if 0%{?rhel} >= 9 || 0%{?rocky} >= 9
 %bcond_with sql
 %else
 %bcond_without sql

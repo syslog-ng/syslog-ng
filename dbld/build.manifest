@@ -43,5 +43,5 @@ fedora				python3
 almalinux			python3
 centos				python3
 rhel				  python3
-rocky				  python3
-opensuse  		python3
+rocky				  python3,sql
+opensuse  		python3,sql

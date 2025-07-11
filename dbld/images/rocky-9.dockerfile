@@ -1,4 +1,5 @@
-FROM rockylinux/rockylinux:latest
+# NOTE: arm64 image is not in the :latest tag, so using the 9 tag instead.
+FROM rockylinux/rockylinux:9
 LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 ENV OS_DISTRIBUTION=rocky
 ENV OS_DISTRIBUTION_CODE_NAME=9
@@ -20,6 +21,7 @@ RUN /dbld/builddeps install_dnf_packages
 RUN /dbld/builddeps install_rpm_build_deps
 
 RUN /dbld/builddeps install_gradle
+RUN /dbld/builddeps install_bison_from_source
 
 VOLUME /source
 VOLUME /build

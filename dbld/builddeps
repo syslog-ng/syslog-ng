@@ -175,12 +175,12 @@ function add_copr_repo {
             fi
             dnf copr enable -y czanik/syslog-ng-githead
             ;;
+        rocky)
+            dnf config-manager --set-enabled crb
+            ;;
         # rhel)
         #     dnf copr enable -y czanik/syslog-ng-githead
         #     ;;
-        rocky)
-            dnf config-manager --set-enabled powertools
-            ;;
     esac
 
     update_packages
@@ -232,6 +232,9 @@ function install_rpm_build_deps {
             ;;
         fedora|rhel|rocky)
             rpm_run_build_command dnf builddep -y --allowerasing ${RPM_SPEC_FILE}
+            ;;
+        opensuse)
+            ??????      rpm_run_build_command zypper --build-deps-only ${RPM_SPEC_FILE}
             ;;
     esac
 }
