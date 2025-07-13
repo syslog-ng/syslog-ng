@@ -102,6 +102,7 @@ def run_testcase(test_name, config, verbose, test_case):
 
 # import test modules
 import test_file_source
+import test_file_source_exclude
 import test_filters
 import test_input_drivers
 import test_performance
@@ -109,7 +110,7 @@ import test_sql
 import test_python
 import test_map_value_pairs
 
-tests = (test_input_drivers, test_sql, test_file_source, test_filters, test_performance, test_python, test_map_value_pairs)
+tests = (test_input_drivers, test_sql, test_file_source, test_file_source_exclude, test_filters, test_performance, test_python, test_map_value_pairs)
 failed_tests = []
 
 init_env()

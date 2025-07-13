@@ -99,6 +99,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 %token KW_WILDCARD_FILE
 %token KW_BASE_DIR
 %token KW_FILENAME_PATTERN
+%token KW_EXCLUDE_PATTERN
 %token KW_RECURSIVE
 %token KW_MAX_FILES
 %token KW_MONITOR_METHOD
@@ -196,6 +197,11 @@ source_wildcard_option
   | KW_FILENAME_PATTERN '(' string ')'
     {
       wildcard_sd_set_filename_pattern(last_driver, $3);
+      free($3);
+    }
+  | KW_EXCLUDE_PATTERN '(' string ')'
+    {
+      wildcard_sd_set_exclude_pattern(last_driver, $3);
       free($3);
     }
   | KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
