@@ -1,6 +1,6 @@
 ---
-name: Feature request
-about: Use this template for raising a feature request.
+name: syslog-ng application feature request
+about: Use this template for raising a syslog-ng application feature request.
 title: ''
 labels: 'enhancement'
 assignees: ''
