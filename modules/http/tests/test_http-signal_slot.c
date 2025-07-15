@@ -104,7 +104,7 @@ _check(const gchar *expected_body, HttpHeaderRequestSignalData *data)
 
 Test(test_http_signal_slot, basic)
 {
-  SignalSlotConnector *ssc = driver->super.super.super.super.signal_slot_connector;
+  SignalSlotConnector *ssc = driver->super.super.super.signal_slot_connector;
 
   const gchar *test_msg = "test message";
   CONNECT(ssc, signal_http_header_request, _check, test_msg);
@@ -123,7 +123,7 @@ Test(test_http_signal_slot, single_with_prefix_suffix)
   http_dd_set_body_suffix((LogDriver *)driver, "]");
   http_dd_set_delimiter((LogDriver *)driver, ",");
 
-  SignalSlotConnector *ssc = driver->super.super.super.super.signal_slot_connector;
+  SignalSlotConnector *ssc = driver->super.super.super.signal_slot_connector;
 
   CONNECT(ssc, signal_http_header_request, _check, "[almafa]");
 
@@ -143,7 +143,7 @@ Test(test_http_signal_slot, batch_with_prefix_suffix)
   log_threaded_dest_driver_set_batch_lines((LogDriver *)driver, 2);
   log_threaded_dest_driver_set_batch_timeout((LogDriver *)driver, 1000);
 
-  SignalSlotConnector *ssc = driver->super.super.super.super.signal_slot_connector;
+  SignalSlotConnector *ssc = driver->super.super.super.signal_slot_connector;
 
   CONNECT(ssc, signal_http_header_request, _check, "[1,2]");
 

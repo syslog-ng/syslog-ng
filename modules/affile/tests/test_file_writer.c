@@ -32,7 +32,7 @@ static void _ack_callback(gint num_acked, gpointer user_data);
 
 /* helper variables used by all testcases below */
 
-static LogProtoClientOptions options = {0};
+static LogProtoClientOptionsStorage options = {0};
 static LogMessage *msg;
 static LogTransport *transport;
 static LogProtoClientFlowControlFuncs flow_control_funcs =

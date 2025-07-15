@@ -26,6 +26,8 @@ from xml.etree.ElementTree import SubElement
 from xml.etree.ElementTree import tostring
 
 from src.syslog_ng_config.statements.parsers.parser import Parser
+from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 class DBParserConfig(object):
@@ -56,8 +58,20 @@ class DBParserConfig(object):
 class DBParser(Parser):
     index = 0
 
-    def __init__(self, config, **options):
+    def __init__(
+        self,
+        stats_handler: LegacyStatsHandler,
+        prometheus_stats_handler: PrometheusStatsHandler,
+        config: DBParserConfig,
+        **options,
+    ) -> None:
         path = Path("patterndb-{}.xml".format(self.index))
         config.write_to(path)
         self.index += 1
-        super(DBParser, self).__init__("db-parser", file=path.resolve(), **options)
+        super(DBParser, self).__init__(
+            "db-parser",
+            stats_handler=stats_handler,
+            prometheus_stats_handler=prometheus_stats_handler,
+            file=path.resolve(),
+            **options,
+        )

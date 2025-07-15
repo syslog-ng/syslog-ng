@@ -121,7 +121,7 @@ _init(void)
   app_startup();
   configuration = cfg_new_snippet();
   test_event = test_deleted_file_state_event_new();
-  reader = (WildcardFileReader *)wildcard_file_reader_new(TEST_FILE_NAME, NULL, NULL, NULL, configuration);
+  reader = (WildcardFileReader *)wildcard_file_reader_new(TEST_FILE_NAME, NULL, NULL, NULL, configuration, FALSE);
   wildcard_file_reader_on_deleted_file_eof(reader, _eof, test_event);
   cr_assert_eq(log_pipe_init(&reader->super.super), TRUE);
 }

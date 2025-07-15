@@ -30,8 +30,9 @@
 #elif SYSLOG_NG_HAVE_KQUEUE
 #include "directory-monitor-kqueue.h"
 #endif
-
 #include "directory-monitor-poll.h"
+
+#include "pathutils.h"
 #include "apphook.h"
 #include <glib/gstdio.h>
 #include <unistd.h>

@@ -45,6 +45,8 @@
 #include "transport-mapper-inet.h"
 #include "service-management.h"
 #include "string-list.h"
+#include "multi-line/multi-line-factory.h"
+#include "logproto/logproto-http-scraper-responder-server.h"
 
 #include "systemd-syslog-source.h"
 #include "afsocket-systemd-override.h"
@@ -56,6 +58,7 @@ static SocketOptions *last_sock_options;
 static TransportMapper *last_transport_mapper;
 
 TLSContext *last_tls_context;
+MultiLineOptions *last_multi_line_options;
 
 
 #if ! SYSLOG_NG_ENABLE_IPV6
@@ -70,9 +73,10 @@ afsocket_grammar_set_source_driver(AFSocketSourceDriver *sd)
   last_driver = &sd->super.super;
 
   last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+  last_proto_server_options = &last_reader_options->proto_options;
+  last_multi_line_options = &last_proto_server_options->super.multi_line_options;
   last_sock_options = ((AFSocketSourceDriver *) last_driver)->socket_options;
   last_transport_mapper = ((AFSocketSourceDriver *) last_driver)->transport_mapper;
-  last_proto_server_options = &last_reader_options->proto_options.super;
 }
 
 static void
@@ -83,7 +87,7 @@ afsocket_grammar_set_dest_driver(AFSocketDestDriver *dd)
   last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
   last_sock_options = ((AFSocketDestDriver *) last_driver)->socket_options;
   last_transport_mapper = ((AFSocketDestDriver *) last_driver)->transport_mapper;
-  last_proto_client_options = &last_writer_options->proto_options.super;
+  last_proto_client_options = &last_writer_options->proto_options;
 }
 
 void
@@ -136,9 +140,18 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TCP6
 %token KW_UDP6
 %token KW_NETWORK
+%token KW_HTTP
 %token KW_TRANSPORT
 %token KW_IP_PROTOCOL
 %token KW_SYSTEMD_SYSLOG
+
+%token KW_HTTP_SCRAPER
+%token KW_SCRAPE_PATTERN
+%token KW_SCRAPE_FREQ_LIMIT
+%token KW_SINGLE_INSTANCE
+%token KW_STAT_TYPE
+%token KW_STAT_QUERY
+%token KW_STAT_FORMAT
 
 %token KW_IP_TTL
 %token KW_SO_BROADCAST
@@ -351,11 +364,21 @@ source_afinet_udp_option
 	: source_afinet_option
 	;
 
+source_afinet_multi_line_option
+	: KW_MULTI_LINE_MODE '(' string ')'
+		{
+			CHECK_ERROR(multi_line_options_set_mode(last_multi_line_options, $3), @3, "Invalid multi-line mode");
+			CHECK_ERROR(last_multi_line_options->mode == MLM_EMPTY_LINE_SEPARATED, @3, "Invalid multi-line mode, only 'empty-line-separated' supported for an AFInetSource yet");
+			free($3);
+		}
+	;
+
 source_afinet_option
 	: KW_LOCALIP '(' string ')'		{ afinet_sd_set_localip(last_driver, $3); free($3); }
 	| KW_IP '(' string ')'			{ afinet_sd_set_localip(last_driver, $3); free($3); }
 	| KW_LOCALPORT '(' string_or_number ')' { CHECK_ERROR(cfg_check_port($3), @3, "Illegal port number: %s", $3); afinet_sd_set_localport(last_driver, $3); free($3); }
 	| KW_PORT '(' string_or_number ')' { CHECK_ERROR(cfg_check_port($3), @3, "Illegal port number: %s", $3); afinet_sd_set_localport(last_driver, $3); free($3); }
+	| source_afinet_multi_line_option
 	| source_reader_option
 	| source_driver_option
 	| inet_socket_option
@@ -449,7 +472,7 @@ source_afnetwork_params
             afinet_grammar_set_source_driver(d);
 	  }
 	  source_afnetwork_options	{ $$ = last_driver; }
-        ;
+	;
 
 source_afnetwork_options
 	: source_afnetwork_option source_afnetwork_options
@@ -457,42 +480,77 @@ source_afnetwork_options
 	;
 
 source_afnetwork_option
-        : source_afinet_option
-        | source_afsocket_transport
+	: source_afinet_option
+	| source_afsocket_transport
+	| proto_http_scraper_transport
 	| source_afsocket_stream_params		{}
+	;
+
+stats_option
+	: KW_STAT_TYPE '(' string ')' { CHECK_ERROR(log_proto_http_scraper_responder_options_set_stat_type(last_proto_server_options, $3), @3, "Invalid prometheus scraper stat type: %s", $3); free($3); }
+	| KW_STAT_QUERY '(' string ')' { log_proto_http_scraper_responder_options_set_stat_query(last_proto_server_options, $3); free($3); }
+	| KW_STAT_FORMAT '(' string ')' { CHECK_ERROR(log_proto_http_scraper_responder_options_set_stat_format(last_proto_server_options, $3), @3, "Invalid prometheus scraper stat format: %s", $3); free($3); }
+	;
+
+stats_options
+	: stats_option stats_options
+	|
+	;
+
+proto_http_scraper_option
+	: KW_SCRAPE_PATTERN '(' string ')' { log_proto_http_scraper_responder_options_set_scrape_pattern(last_proto_server_options, $3); free($3); }
+	| KW_SCRAPE_FREQ_LIMIT '(' nonnegative_integer ')' { log_proto_http_scraper_responder_options_set_scrape_freq_limit(last_proto_server_options, $3); }
+	| KW_SINGLE_INSTANCE '(' yesno ')' { log_proto_http_scraper_responder_options_set_single_instance(last_proto_server_options, $3); }
+  ;
+
+proto_http_scraper_options
+	: proto_http_scraper_option proto_http_scraper_options
+	| stats_options
+	;
+
+proto_http_scraper_transport
+	: KW_TRANSPORT '('
+      KW_HTTP_SCRAPER '('
+				{
+					transport_mapper_set_transport(last_transport_mapper, "http-scraper");
+					log_proto_http_scraper_responder_options_defaults(last_proto_server_options);
+				}
+				proto_http_scraper_options
+			')'
+    ')'
 	;
 
 source_afsocket_transport
 	: afsocket_transport
-        | KW_TRANSPORT '(' string
-          {
-            Plugin *p;
-            gint context = LL_CONTEXT_SERVER_PROTO;
+		| KW_TRANSPORT '(' string
+		{
+			Plugin *p;
+			gint context = LL_CONTEXT_SERVER_PROTO;
 
-            p = cfg_find_plugin(configuration, context, $3);
-            if (p)
-              {
-                /* for transports with grammar */
-                if (p->parser)
-                  {
-                    LogProtoServerFactory *sf = cfg_parse_plugin(configuration, p, &@3, last_proto_server_options);
-                    ((AFSocketSourceDriver *) last_driver)->proto_factory = sf;
-                  }
-              }
-            transport_mapper_set_transport(last_transport_mapper, $3);
-          }
-        ')'	{ free($3); }
+			p = cfg_find_plugin(configuration, context, $3);
+			if (p)
+				{
+					/* for transports with grammar */
+					if (p->parser)
+						{
+							LogProtoServerFactory *sf = cfg_parse_plugin(configuration, p, &@3, last_proto_server_options);
+							((AFSocketSourceDriver *) last_driver)->proto_factory = sf;
+						}
+				}
+			transport_mapper_set_transport(last_transport_mapper, $3);
+		}
+	  ')'	{ free($3); }
 	| KW_TLS
 	  {
-            gchar buf[256];
+			gchar buf[256];
 
 	    last_tls_context = tls_context_new(TM_SERVER, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
 	  }
 	  '(' tls_options ')'
 	  {
 	    afinet_sd_set_tls_context(last_driver, last_tls_context);
-          }
-        ;
+    }
+  ;
 
 source_systemd_syslog
 	: KW_SYSTEMD_SYSLOG '(' _inner_src_context_push source_systemd_syslog_params _inner_src_context_pop ')'  { $$ = $4; }
@@ -683,7 +741,6 @@ dest_afsocket_option
         : KW_KEEP_ALIVE '(' yesno ')'        { afsocket_dd_set_keep_alive(last_driver, $3); }
         | KW_CLOSE_ON_INPUT '(' yesno ')'
           {
-            afsocket_dd_set_close_on_input(last_driver, $3);
             log_proto_client_options_set_drop_input(last_proto_client_options, !$3);
           }
         ;
@@ -739,24 +796,26 @@ dest_afnetwork_option
 
 dest_afsocket_transport
 	: afsocket_transport
-        | KW_TRANSPORT '(' string
-          {
-            Plugin *p;
-            gint context = LL_CONTEXT_CLIENT_PROTO;
+	| KW_TRANSPORT '(' string
+		{
+			CHECK_ERROR(strcmp($3, "http"), @1, "This transport cannot be used with this destination driver, use the http() destination driver instead");
 
-            p = cfg_find_plugin(configuration, context, $3);
-            if (p)
-              {
-                /* for transports with grammar */
-                if (p->parser)
-                  {
-                    LogProtoClientFactory *cf = cfg_parse_plugin(configuration, p, &@3, last_proto_client_options);
-                    ((AFSocketDestDriver *) last_driver)->proto_factory = cf;
-                  }
-              }
-            transport_mapper_set_transport(last_transport_mapper, $3);
-          }
-        ')'	{ free($3); }
+			Plugin *p;
+			gint context = LL_CONTEXT_CLIENT_PROTO;
+
+			p = cfg_find_plugin(configuration, context, $3);
+			if (p)
+				{
+					/* for transports with grammar */
+					if (p->parser)
+						{
+							LogProtoClientFactory *cf = cfg_parse_plugin(configuration, p, &@3, last_proto_client_options);
+							((AFSocketDestDriver *) last_driver)->proto_factory = cf;
+						}
+				}
+			transport_mapper_set_transport(last_transport_mapper, $3);
+		}
+    ')'	{ free($3); }
 	| dest_afinet_dgram_option
 	| KW_TLS
 	  {
@@ -774,6 +833,7 @@ afsocket_transport
         : KW_TRANSPORT '(' KW_TCP ')'                    { transport_mapper_set_transport(last_transport_mapper, "tcp"); }
         | KW_TRANSPORT '(' KW_UDP ')'                    { transport_mapper_set_transport(last_transport_mapper, "udp"); }
         | KW_TRANSPORT '(' KW_TLS ')'                    { transport_mapper_set_transport(last_transport_mapper, "tls"); }
+        | KW_TRANSPORT '(' KW_AUTO ')'                   { transport_mapper_set_transport(last_transport_mapper, "auto"); }
         | KW_IP_PROTOCOL '(' inet_ip_protocol_option ')' { transport_mapper_set_address_family(last_transport_mapper, $3); }
         ;
 
@@ -900,7 +960,7 @@ tls_option
     }
   | KW_ALLOW_COMPRESS '(' yesno ')'
     {
-      transport_mapper_inet_set_allow_compress(last_transport_mapper, $3);
+      tls_context_set_allow_compress(last_tls_context, $3);
     }
 	| KW_CONF_CMDS '(' tls_conf_cmds ')'
 	  {

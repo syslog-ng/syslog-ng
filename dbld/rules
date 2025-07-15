@@ -4,6 +4,7 @@ BUILDER_IMAGES=	\
 	almalinux-8	\
 	almalinux-9	\
 	centos-stream9  \
+	centos-stream10  \
 	fedora-latest	\
 	fedora-rawhide	\
 	debian-bullseye	\
@@ -23,7 +24,7 @@ DEFAULT_IMAGE ?= ubuntu-noble
 TARBALL_IMAGE ?= tarball
 DEFAULT_DEB_IMAGE=ubuntu-noble
 DEFAULT_RPM_IMAGE=almalinux-8
-DOCKER=docker
+DOCKER ?= docker
 CONTAINER_REGISTRY ?= ghcr.io/syslog-ng
 CONTAINER_ARCH ?= amd64
 CONTAINER_NAME_SUFFIX := $(if $(filter-out amd64,$(CONTAINER_ARCH)),-$(CONTAINER_ARCH))
@@ -276,12 +277,12 @@ exec-%: setup
 	$(DOCKER) exec ${DOCKER_INTERACTIVE}  $$container $(EXEC_COMMAND)
 
 login: login-$(DEFAULT_IMAGE)
-login-%: EXEC_COMMAND=sudo -u $(shell whoami) /dbld/shell
+login-%: EXEC_COMMAND=sudo -E -u $(shell whoami) /dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
 login-%: exec-%
 	@true
 
 root-login: root-login-$(DEFAULT_IMAGE)
-root-login-%: EXEC_COMMAND=bash
+root-login-%: EXEC_COMMAND=/dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
 root-login-%: exec-%
 	@true
 

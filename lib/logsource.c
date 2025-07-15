@@ -106,7 +106,7 @@ _flow_control_rate_adjust(LogSource *self)
       if ((cur_ack_count & 0x3FFF) == 0)
         {
           struct timespec now;
-          glong diff;
+          gint64 diff;
 
           /* do this every once in a while, once in 16k messages should be fine */
 
@@ -495,11 +495,8 @@ _register_counters(LogSource *self)
 
   stats_unlock();
 
-  if (self->metrics.raw_bytes_enabled)
-    {
-      level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : STATS_LEVEL1;
-      _register_raw_bytes_stats(self, level);
-    }
+  level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : STATS_LEVEL1;
+  _register_raw_bytes_stats(self, level);
 }
 
 gboolean
@@ -522,8 +519,7 @@ log_source_init(LogPipe *s)
 static void
 _unregister_counters(LogSource *self)
 {
-  if (self->metrics.raw_bytes_enabled)
-    _unregister_raw_bytes_stats(self);
+  _unregister_raw_bytes_stats(self);
 
   stats_lock();
 
@@ -691,6 +687,8 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   /* message setup finished, send it out */
 
+  guint64 rcptid = msg->rcptid;
+
   stats_counter_inc(self->metrics.recvd_messages);
   stats_counter_set_time(self->metrics.last_message_seen, msg->timestamps[LM_TS_RECVD].ut_sec);
   stats_byte_counter_add(&self->metrics.recvd_bytes, msg->recvd_rawmsg_size);
@@ -707,7 +705,8 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     }
   msg_diagnostics("<<<<<< Source side message processing finish",
                   log_pipe_location_tag(s),
-                  evt_tag_msg_reference(msg));
+                  evt_tag_printf("msg", "%p", msg),
+                  evt_tag_printf("rcptid", "%" G_GUINT64_FORMAT, rcptid));
 
   msg_set_context(NULL);
 }

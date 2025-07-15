@@ -68,7 +68,7 @@ def check_env():
 
     found = False
     paths = (os.environ.get('dbd_dir', ''), '/usr/local/lib/dbd', '/usr/lib/dbd',
-        '/usr/lib64/dbd/', '/opt/syslog-ng/lib/dbd', '/usr/lib/x86_64-linux-gnu/dbd')
+        '/usr/lib64/dbd/', '/opt/syslog-ng/lib/dbd', '/usr/lib/x86_64-linux-gnu/dbd', '/usr/lib/aarch64-linux-gnu/dbd')
     for pth in paths:
         if pth and os.path.isfile('%s/libdbdsqlite3%s' % (pth, soext)):
             found = True

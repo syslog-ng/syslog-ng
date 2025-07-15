@@ -83,6 +83,7 @@ struct _GlobalConfig
   gboolean chain_hostnames;
   gboolean keep_hostname;
   gboolean check_hostname;
+  gboolean check_program;
   gboolean bad_hostname_compiled;
   regex_t bad_hostname;
   gchar *bad_hostname_re;

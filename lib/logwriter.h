@@ -32,11 +32,10 @@
 #include "stats/stats-cluster-key-builder.h"
 
 /* writer constructor flags */
-#define LW_DETECT_EOF        0x0001
-#define LW_FORMAT_FILE       0x0002
-#define LW_FORMAT_PROTO      0x0004
-#define LW_SYSLOG_PROTOCOL   0x0008
-#define LW_SOFT_FLOW_CONTROL 0x0010
+#define LW_FORMAT_FILE       0x0001
+#define LW_FORMAT_PROTO      0x0002
+#define LW_SYSLOG_PROTOCOL   0x0004
+#define LW_SOFT_FLOW_CONTROL 0x0008
 
 /* writer options (set by the user) */
 #define LWO_SYSLOG_PROTOCOL   0x0001
@@ -86,6 +85,7 @@ gboolean log_writer_has_pending_writes(LogWriter *self);
 gboolean log_writer_opened(LogWriter *self);
 void log_writer_reopen(LogWriter *self, LogProtoClient *proto);
 LogProtoClient *log_writer_steal_proto(LogWriter *self);
+LogProtoClient *log_writer_get_proto(LogWriter *self);
 void log_writer_set_queue(LogWriter *self, LogQueue *queue);
 LogQueue *log_writer_get_queue(LogWriter *s);
 LogWriter *log_writer_new(guint32 flags, GlobalConfig *cfg);

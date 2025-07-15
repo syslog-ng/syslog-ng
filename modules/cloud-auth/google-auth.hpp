@@ -29,7 +29,6 @@
 #include <mutex>
 #include <string>
 #include <jwt-cpp/jwt.h>
-#include <picojson/picojson.h>
 
 #include "compat/curl.h"
 

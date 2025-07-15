@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -30,17 +31,7 @@
 #include "driver.h"
 #include "credentials/grpc-credentials-builder.h"
 
-typedef struct OtelSourceWorker_ OtelSourceWorker;
-typedef struct OtelSourceDriver_ OtelSourceDriver;
-
 LogDriver *otel_sd_new(GlobalConfig *cfg);
-void otel_sd_set_port(LogDriver *s, guint64 port);
-void otel_sd_set_fetch_limit(LogDriver *s, gint fetch_limit);
-void otel_sd_set_concurrent_requests(LogDriver *s, gint concurrent_requests);
-void otel_sd_add_int_channel_arg(LogDriver *s, const gchar *name, gint64 value);
-void otel_sd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value);
-
-GrpcServerCredentialsBuilderW *otel_sd_get_credentials_builder(LogDriver *s);
 
 #include "compat/cpp-end.h"
 

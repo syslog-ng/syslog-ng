@@ -871,12 +871,9 @@ _register_worker_stats(LogThreadedDestWorker *self)
     stats_cluster_key_builder_add_label(kb, stats_cluster_label("id", self->owner->super.super.id ? : ""));
     _format_stats_key(self->owner, kb);
 
-    if (self->owner->metrics.raw_bytes_enabled)
-      {
-        stats_cluster_key_builder_set_name(kb, "output_event_bytes_total");
-        self->metrics.output_event_bytes_sc_key = stats_cluster_key_builder_build_single(kb);
-        stats_byte_counter_init(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key, level, SBCP_KIB);
-      }
+    stats_cluster_key_builder_set_name(kb, "output_event_bytes_total");
+    self->metrics.output_event_bytes_sc_key = stats_cluster_key_builder_build_single(kb);
+    stats_byte_counter_init(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key, level, SBCP_KIB);
   }
   stats_cluster_key_builder_pop(kb);
 
@@ -1482,6 +1479,7 @@ log_threaded_dest_driver_free(LogPipe *s)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
   g_free(self->workers);
+  log_template_unref(self->worker_partition_key);
   log_dest_driver_free((LogPipe *)self);
 }
 

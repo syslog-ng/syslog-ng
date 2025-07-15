@@ -26,7 +26,6 @@
 
 #include "commands.h"
 
-extern GOptionEntry query_options[];
-gint slng_query(int argc, char *argv[], const gchar *mode, GOptionContext *ctx);
+extern CommandDescriptor query_commands[];
 
 #endif

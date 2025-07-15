@@ -26,8 +26,6 @@
 #include "syslog-ng-otlp-dest.hpp"
 #include "otel-dest-worker.hpp"
 
-typedef OtelDestWorker SyslogNgOtlpDestWorker;
-
 namespace syslogng {
 namespace grpc {
 namespace otel {
@@ -36,7 +34,6 @@ class SyslogNgDestWorker : public DestWorker
 {
 public:
   using DestWorker::DestWorker;
-  static LogThreadedDestWorker *construct(LogThreadedDestDriver *o, gint worker_index);
 
   ScopeLogs *lookup_scope_logs(LogMessage *msg) override;
   LogThreadedResult insert(LogMessage *msg) override;

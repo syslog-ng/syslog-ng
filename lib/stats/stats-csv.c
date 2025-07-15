@@ -25,6 +25,7 @@
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster.h"
 #include "utf8utils.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 
@@ -47,27 +48,24 @@ stats_format_csv_escapevar(const gchar *var)
     {
       gchar *result;
       /* quote */
-      result = convert_unsafe_utf8_to_escaped_binary(var, -1, "\"");
+      result = convert_unsafe_utf8_to_escaped_binary(var, -1, AUTF8_UNSAFE_QUOTE);
       escaped_result = g_strdup_printf("\"%s\"", result);
       g_free(result);
     }
   else
     {
-      escaped_result = convert_unsafe_utf8_to_escaped_binary(var, -1, NULL);
+      escaped_result = convert_unsafe_utf8_to_escaped_binary(var, -1, 0);
     }
   return escaped_result;
 }
 
-static void
-stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+GString *
+stats_csv_format_counter(StatsCluster *sc, gint type, StatsCounterItem *counter)
 {
-  gpointer *args = (gpointer *) user_data;
-  StatsCSVRecordFunc process_record = (StatsCSVRecordFunc) args[0];
-  gpointer process_record_arg = args[1];
   gchar *s_id, *s_instance, *tag_name;
   gchar buf[32];
   gchar state;
-  GString *csv = g_string_sized_new(512);
+  GString *csv = scratch_buffers_alloc();
 
   s_id = stats_format_csv_escapevar(sc->key.legacy.id);
   s_instance = stats_format_csv_escapevar(sc->key.legacy.instance);
@@ -80,27 +78,60 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
     state = 'a';
 
   tag_name = stats_format_csv_escapevar(stats_cluster_get_type_name(sc, type));
+
   g_string_printf(csv, "%s;%s;%s;%c;%s;%"G_GSIZE_FORMAT"\n",
                   stats_cluster_get_component_name(sc, buf, sizeof(buf)),
                   s_id, s_instance, state, tag_name, stats_counter_get(&sc->counter_group.counters[type]));
-  process_record(csv->str, process_record_arg);
-  g_string_free(csv, TRUE);
+
   g_free(tag_name);
   g_free(s_id);
   g_free(s_instance);
+
+  return csv;
+}
+
+static void
+stats_format_csv_or_kv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  StatsCSVRecordFunc process_record = (StatsCSVRecordFunc) args[0];
+  gpointer process_record_arg = args[1];
+  gboolean csv = GPOINTER_TO_INT(args[2]);
+
+  ScratchBuffersMarker marker;
+  scratch_buffers_mark(&marker);
+
+  GString *record;
+  if (csv)
+    record = stats_csv_format_counter(sc, type, counter);
+  else
+    {
+      record = scratch_buffers_alloc();
+      g_string_append_printf(record, "%s=%"G_GSIZE_FORMAT"\n", stats_counter_get_name(counter), stats_counter_get(counter));
+    }
+
+  if (!record)
+    return;
+
+  process_record(record->str, process_record_arg);
+  scratch_buffers_reclaim_marked(marker);
 }
 
 void
-stats_generate_csv(StatsCSVRecordFunc process_record, gpointer user_data, gboolean *cancelled)
+stats_generate_csv_or_kv(StatsCSVRecordFunc process_record, gpointer user_data, gboolean csv, gboolean with_header,
+                         gboolean *cancelled)
 {
-  GString *csv = g_string_sized_new(512);
+  if (with_header && csv)
+    {
+      GString *header = g_string_sized_new(512);
 
-  g_string_printf(csv, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type",
-                  "Number");
-  process_record(csv->str, user_data);
-  g_string_free(csv, TRUE);
-  gpointer format_csv_args[] = {process_record, user_data};
+      g_string_printf(header, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type",
+                      "Number");
+      process_record(header->str, user_data);
+      g_string_free(header, TRUE);
+    }
+  gpointer format_args[] = {process_record, user_data, GINT_TO_POINTER(csv)};
   stats_lock();
-  stats_foreach_legacy_counter(stats_format_csv, format_csv_args, cancelled);
+  stats_foreach_legacy_counter(stats_format_csv_or_kv, format_args, cancelled);
   stats_unlock();
 }

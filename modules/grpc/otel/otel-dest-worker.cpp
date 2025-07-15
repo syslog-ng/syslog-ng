@@ -31,8 +31,6 @@
 
 #include "otel-dest-worker.hpp"
 
-#define get_DestWorker(s) (((OtelDestWorker *) s)->cpp)
-
 using namespace syslogng::grpc::otel;
 using namespace google::protobuf::util;
 using namespace opentelemetry::proto::logs::v1;
@@ -41,53 +39,28 @@ using namespace opentelemetry::proto::trace::v1;
 
 /* C++ Implementations */
 
-DestWorker::DestWorker(OtelDestWorker *s)
-  : super(s),
-    owner(*((OtelDestDriver *) s->super.owner)->cpp),
+DestWorker::DestWorker(GrpcDestWorker *s)
+  : syslogng::grpc::DestWorker(s),
     logs_current_batch_bytes(0),
     metrics_current_batch_bytes(0),
     spans_current_batch_bytes(0),
     formatter(s->super.owner->super.super.super.cfg)
 {
-  ::grpc::ChannelArguments args;
-
-  if (owner.get_compression())
+  std::shared_ptr<::grpc::ChannelCredentials> credentials = DestWorker::create_credentials();
+  if (!credentials)
     {
-      args.SetCompressionAlgorithm(GRPC_COMPRESS_GZIP);
+      msg_error("Error querying OTel credentials",
+                evt_tag_str("url", this->owner.get_url().c_str()),
+                log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      throw std::runtime_error("Error querying OTel credentials");
     }
 
-  for (auto nv : owner.int_extra_channel_args)
-    args.SetInt(nv.first, nv.second);
-  for (auto nv : owner.string_extra_channel_args)
-    args.SetString(nv.first, nv.second);
+  ::grpc::ChannelArguments args = this->create_channel_args();
 
-  channel = ::grpc::CreateCustomChannel(owner.get_url(), owner.credentials_builder.build(), args);
+  channel = ::grpc::CreateCustomChannel(owner.get_url(), credentials, args);
   logs_service_stub = LogsService::NewStub(channel);
   metrics_service_stub = MetricsService::NewStub(channel);
   trace_service_stub = TraceService::NewStub(channel);
-}
-
-bool
-DestWorker::init()
-{
-  return log_threaded_dest_worker_init_method(&super->super);
-}
-
-void
-DestWorker::deinit()
-{
-  log_threaded_dest_worker_deinit_method(&super->super);
-}
-
-bool
-DestWorker::connect()
-{
-  return true;
-}
-
-void
-DestWorker::disconnect()
-{
 }
 
 void
@@ -371,6 +344,12 @@ DestWorker::insert(LogMessage *msg)
       g_assert_not_reached();
     }
 
+  if (!client_context.get())
+    {
+      client_context = std::make_unique<::grpc::ClientContext>();
+      prepare_context_dynamic(*client_context, msg);
+    }
+
   if (should_initiate_flush())
     return log_threaded_dest_worker_flush(&super->super, LTF_FLUSH_NORMAL);
 
@@ -432,24 +411,17 @@ permanent_error:
   return LTR_DROP;
 }
 
-void
-DestWorker::prepare_context(::grpc::ClientContext &context)
-{
-  for (auto nv : owner.headers)
-    context.AddMetadata(nv.first, nv.second);
-}
-
 LogThreadedResult
 DestWorker::flush_log_records()
 {
-  ::grpc::ClientContext client_context;
-  prepare_context(client_context);
-
   logs_service_response.Clear();
-  ::grpc::Status status = logs_service_stub->Export(&client_context, logs_service_request,
+  ::grpc::Status status = logs_service_stub->Export(client_context.get(), logs_service_request,
                                                     &logs_service_response);
   owner.metrics.insert_grpc_request_stats(status);
-  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  LogThreadedResult result;
+  if (!owner.handle_response(status, &result))
+    result = _map_grpc_status_to_log_threaded_result(status);
 
   if (result == LTR_SUCCESS)
     {
@@ -463,14 +435,14 @@ DestWorker::flush_log_records()
 LogThreadedResult
 DestWorker::flush_metrics()
 {
-  ::grpc::ClientContext client_context;
-  prepare_context(client_context);
-
   metrics_service_response.Clear();
-  ::grpc::Status status = metrics_service_stub->Export(&client_context, metrics_service_request,
+  ::grpc::Status status = metrics_service_stub->Export(client_context.get(), metrics_service_request,
                                                        &metrics_service_response);
   owner.metrics.insert_grpc_request_stats(status);
-  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  LogThreadedResult result;
+  if (!owner.handle_response(status, &result))
+    result = _map_grpc_status_to_log_threaded_result(status);
 
   if (result == LTR_SUCCESS)
     {
@@ -484,14 +456,14 @@ DestWorker::flush_metrics()
 LogThreadedResult
 DestWorker::flush_spans()
 {
-  ::grpc::ClientContext client_context;
-  prepare_context(client_context);
-
   trace_service_response.Clear();
-  ::grpc::Status status = trace_service_stub->Export(&client_context, trace_service_request,
+  ::grpc::Status status = trace_service_stub->Export(client_context.get(), trace_service_request,
                                                      &trace_service_response);
   owner.metrics.insert_grpc_request_stats(status);
-  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  LogThreadedResult result;
+  if (!owner.handle_response(status, &result))
+    result = _map_grpc_status_to_log_threaded_result(status);
 
   if (result == LTR_SUCCESS)
     {
@@ -505,7 +477,7 @@ DestWorker::flush_spans()
 LogThreadedResult
 DestWorker::flush(LogThreadedFlushMode mode)
 {
-  LogThreadedResult result;
+  LogThreadedResult result = LTR_SUCCESS;
 
   if (mode == LTF_FLUSH_EXPEDITE)
     return LTR_RETRY;
@@ -532,6 +504,7 @@ DestWorker::flush(LogThreadedFlushMode mode)
     }
 
 exit:
+  client_context.reset();
   logs_service_request.Clear();
   metrics_service_request.Clear();
   trace_service_request.Clear();
@@ -540,74 +513,4 @@ exit:
   logs_current_batch_bytes = metrics_current_batch_bytes = spans_current_batch_bytes = 0;
 
   return result;
-}
-
-/* C Wrappers */
-
-static gboolean
-_init(LogThreadedDestWorker *s)
-{
-  return get_DestWorker(s)->init();
-}
-
-static void
-_deinit(LogThreadedDestWorker *s)
-{
-  get_DestWorker(s)->deinit();
-}
-
-static gboolean
-_connect(LogThreadedDestWorker *s)
-{
-  return get_DestWorker(s)->connect();
-}
-
-static void
-_disconnect(LogThreadedDestWorker *s)
-{
-  get_DestWorker(s)->disconnect();
-}
-
-LogThreadedResult
-_insert(LogThreadedDestWorker *s, LogMessage *msg)
-{
-  return get_DestWorker(s)->insert(msg);
-}
-
-LogThreadedResult
-_flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
-{
-  return get_DestWorker(s)->flush(mode);
-}
-
-static void
-_free(LogThreadedDestWorker *s)
-{
-  delete get_DestWorker(s);
-  log_threaded_dest_worker_free_method(s);
-}
-
-void
-otel_dw_init_super(LogThreadedDestWorker *s, LogThreadedDestDriver *o, gint worker_index)
-{
-  log_threaded_dest_worker_init_instance(s, o, worker_index);
-
-  s->init = _init;
-  s->deinit = _deinit;
-  s->connect = _connect;
-  s->disconnect = _disconnect;
-  s->insert = _insert;
-  s->flush = _flush;
-  s->free_fn = _free;
-}
-
-LogThreadedDestWorker *
-DestWorker::construct(LogThreadedDestDriver *o, gint worker_index)
-{
-  OtelDestWorker *self = g_new0(OtelDestWorker, 1);
-
-  otel_dw_init_super(&self->super, o, worker_index);
-  self->cpp = new DestWorker(self);
-
-  return &self->super;
 }

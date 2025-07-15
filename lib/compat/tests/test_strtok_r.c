@@ -64,7 +64,7 @@ assert_if_tokenizer_concatenated_result_not_match(STRTOK_R_FUN tokenizer,
                                                   const char *expected)
 {
   gchar *token;
-  gchar *saveptr;
+  gchar *saveptr = NULL;
   gchar *result = (char *)g_malloc(strlen(input)+1);
   gchar *raw_string;
   gchar *result_ref = NULL;

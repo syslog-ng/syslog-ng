@@ -76,10 +76,8 @@ _attach(LogDriverPlugin *s, LogDriver *driver)
     }
   self->random->bss->number_of_sockets = self->number_of_sockets;
 
-  g_assert(s->signal_connector == NULL);
-  s->signal_connector = signal_slot_connector_ref(driver->super.signal_slot_connector);
-
-  CONNECT(s->signal_connector, signal_afsocket_setup_socket, _slot_setup_socket, self);
+  SignalSlotConnector *ssc = driver->signal_slot_connector;
+  CONNECT(ssc, signal_afsocket_setup_socket, _slot_setup_socket, self);
 
   return TRUE;
 }
@@ -89,9 +87,8 @@ _detach(LogDriverPlugin *s, LogDriver *driver)
 {
   EBPFReusePort *self = (EBPFReusePort *)s;
 
-  DISCONNECT(s->signal_connector, signal_afsocket_setup_socket, _slot_setup_socket, self);
-  signal_slot_connector_unref(s->signal_connector);
-  s->signal_connector = NULL;
+  SignalSlotConnector *ssc = driver->signal_slot_connector;
+  DISCONNECT(ssc, signal_afsocket_setup_socket, _slot_setup_socket, self);
 }
 
 static void

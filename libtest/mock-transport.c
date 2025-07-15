@@ -211,7 +211,7 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTr
   switch (g_array_index(self->value, data_t, self->current_value_ndx).type)
     {
     case DATA_STRING:
-      if (self->input_is_a_stream)
+      if (self->input_is_a_stream && count > 0)
         count = 1;
 
       current_iov = &g_array_index(self->value, data_t, self->current_value_ndx).iov;
@@ -345,7 +345,7 @@ log_transport_mock_init(LogTransportMock *self, const gchar *read_buffer1, gssiz
   const gchar *buffer;
   gssize length;
 
-  log_transport_init_instance(&self->super, 0);
+  log_transport_init_instance(&self->super, "mock", 0);
   self->super.read = log_transport_mock_read_method;
   self->super.write = log_transport_mock_write_method;
   self->super.writev = log_transport_mock_writev_method;
@@ -422,5 +422,18 @@ log_transport_mock_endless_records_new(const gchar *read_buffer1, gssize read_bu
   log_transport_mock_init(self, read_buffer1, read_buffer_length1, va);
   va_end(va);
   self->eof_is_eagain = TRUE;
+  return &self->super;
+}
+
+LogTransport *
+log_transport_mock_http_screaper_new(const gchar *read_buffer1, gssize read_buffer_length1, ...)
+{
+  LogTransportMock *self = log_transport_mock_new();
+  va_list va;
+
+  va_start(va, read_buffer_length1);
+  log_transport_mock_init(self, read_buffer1, read_buffer_length1, va);
+  va_end(va);
+  self->input_is_a_stream = TRUE;
   return &self->super;
 }

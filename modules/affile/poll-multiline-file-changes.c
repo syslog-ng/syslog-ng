@@ -139,6 +139,21 @@ poll_multiline_file_changes_stop_watches(PollEvents *s)
   poll_file_changes_stop_watches(s);
 }
 
+static void
+poll_multiline_file_changes_init_instance(PollMultilineFileChanges *self, gint fd, const gchar *follow_filename,
+                                          gint follow_freq, gint multi_line_timeout, FileReader *reader)
+{
+  self->file_reader = reader;
+  self->multi_line_timeout = multi_line_timeout;
+
+  self->super.on_read = poll_multiline_file_changes_on_read;
+  self->super.on_eof = poll_multiline_file_changes_on_eof;
+  self->super.on_file_moved = poll_multiline_file_changes_on_file_moved;
+
+  self->super.super.update_watches = poll_file_changes_update_watches;
+  self->super.super.stop_watches = poll_multiline_file_changes_stop_watches;
+}
+
 PollEvents *
 poll_multiline_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq,
                                 gint multi_line_timeout, FileReader *reader)
@@ -146,18 +161,8 @@ poll_multiline_file_changes_new(gint fd, const gchar *follow_filename, gint foll
   PollMultilineFileChanges *self = g_new0(PollMultilineFileChanges, 1);
   poll_file_changes_init_instance(&self->super, fd, follow_filename, follow_freq, &reader->super);
 
-  self->multi_line_timeout = multi_line_timeout;
-
-  if (!self->multi_line_timeout)
-    return &self->super.super;
-
-  self->file_reader = reader;
-  self->super.on_read = poll_multiline_file_changes_on_read;
-  self->super.on_eof = poll_multiline_file_changes_on_eof;
-  self->super.on_file_moved = poll_multiline_file_changes_on_file_moved;
-
-  self->super.super.update_watches = poll_file_changes_update_watches;
-  self->super.super.stop_watches = poll_multiline_file_changes_stop_watches;
+  if (multi_line_timeout != 0)
+    poll_multiline_file_changes_init_instance(self, fd, follow_filename, follow_freq, multi_line_timeout, reader);
 
   return &self->super.super;
 }

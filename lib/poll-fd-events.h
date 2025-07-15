@@ -25,6 +25,13 @@
 #define POLL_FD_EVENTS_H_INCLUDED
 
 #include "poll-events.h"
+#include <iv.h>
+
+typedef struct _PollFdEvents
+{
+  PollEvents super;
+  struct iv_fd fd_watch;
+} PollFdEvents;
 
 PollEvents *poll_fd_events_new(gint fd);
 

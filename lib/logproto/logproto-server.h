@@ -29,9 +29,11 @@
 #include "persist-state.h"
 #include "transport/transport-aux-data.h"
 #include "ack-tracker/bookmark.h"
+#include "multi-line/multi-line-factory.h"
 
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
+typedef union _LogProtoServerOptionsStorage LogProtoServerOptionsStorage;
 
 typedef enum
 {
@@ -40,32 +42,42 @@ typedef enum
   LPPA_SUSPEND
 } LogProtoPrepareAction;
 
-#define LOG_PROTO_SERVER_OPTIONS_SIZE 128
+#define LOG_PROTO_SERVER_OPTIONS_SIZE 160
 
 struct _LogProtoServerOptions
 {
-  void (*destroy)(LogProtoServerOptions *self);
+  void (*init)(LogProtoServerOptionsStorage *self, GlobalConfig *cfg);
+  void (*destroy)(LogProtoServerOptionsStorage *self);
+  gboolean (*validate)(LogProtoServerOptionsStorage *self);
   gboolean initialized;
+
   gchar *encoding;
   /* maximum message length in bytes */
   gint max_msg_size;
   gboolean trim_large_messages;
-  gint max_buffer_size;
   gint init_buffer_size;
+  gint max_buffer_size;
+  gint idle_timeout;
   AckTrackerFactory *ack_tracker_factory;
+  MultiLineOptions multi_line_options;
 };
 
-typedef union LogProtoServerOptionsStorage
+/* See logproto-file-reader.h and logreader.c - log_reader_options_defaults for the details of the options mess */
+union _LogProtoServerOptionsStorage
 {
   LogProtoServerOptions super;
   gchar __padding[LOG_PROTO_SERVER_OPTIONS_SIZE];
-} LogProtoServerOptionsStorage;
+};
+// _Static_assert() is a C11 feature, so we use a typedef trick to perform the static assertion
+typedef char static_assert_size_check_LogProtoServerOptions[
+   LOG_PROTO_SERVER_OPTIONS_SIZE >= sizeof(LogProtoServerOptions) ? 1 : -1];
 
-gboolean log_proto_server_options_set_encoding(LogProtoServerOptions *s, const gchar *encoding);
-void log_proto_server_options_set_ack_tracker_factory(LogProtoServerOptions *s, AckTrackerFactory *factory);
-void log_proto_server_options_defaults(LogProtoServerOptions *options);
-void log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg);
-void log_proto_server_options_destroy(LogProtoServerOptions *options);
+gboolean log_proto_server_options_set_encoding(LogProtoServerOptionsStorage *s, const gchar *encoding);
+void log_proto_server_options_set_ack_tracker_factory(LogProtoServerOptionsStorage *s, AckTrackerFactory *factory);
+void log_proto_server_options_defaults(LogProtoServerOptionsStorage *options);
+void log_proto_server_options_init(LogProtoServerOptionsStorage *options, GlobalConfig *cfg);
+gboolean log_proto_server_options_validate(LogProtoServerOptionsStorage *options);
+void log_proto_server_options_destroy(LogProtoServerOptionsStorage *options);
 
 typedef void (*LogProtoServerWakeupFunc)(gpointer user_data);
 typedef struct _LogProtoServerWakeupCallback
@@ -77,19 +89,17 @@ typedef struct _LogProtoServerWakeupCallback
 struct _LogProtoServer
 {
   LogProtoStatus status;
-  const LogProtoServerOptions *options;
-  LogTransport *transport;
+  const LogProtoServerOptionsStorage *options;
+  LogTransportStack transport_stack;
   AckTracker *ack_tracker;
 
   LogProtoServerWakeupCallback wakeup_callback;
-  /* FIXME: rename to something else */
-  LogProtoPrepareAction (*prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
+  LogProtoPrepareAction (*poll_prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                           LogTransportAuxData *aux, Bookmark *bookmark);
   gboolean (*validate_options)(LogProtoServer *s);
-  gboolean (*handshake_in_progess)(LogProtoServer *s);
-  LogProtoStatus (*handshake)(LogProtoServer *s);
+  LogProtoStatus (*handshake)(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement);
   void (*free_fn)(LogProtoServer *s);
 };
 
@@ -99,36 +109,51 @@ log_proto_server_validate_options(LogProtoServer *self)
   return self->validate_options(self);
 }
 
-static inline gboolean
-log_proto_server_handshake_in_progress(LogProtoServer *s)
-{
-  if (s->handshake_in_progess)
-    {
-      return s->handshake_in_progess(s);
-    }
-  return FALSE;
-}
-
 static inline LogProtoStatus
-log_proto_server_handshake(LogProtoServer *s)
+log_proto_server_handshake(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement)
 {
   if (s->handshake)
     {
-      return s->handshake(s);
+      LogProtoStatus status;
+
+      g_assert(*proto_replacement == NULL);
+      status = s->handshake(s, handshake_finished, proto_replacement);
+      if (*proto_replacement)
+        {
+          g_assert(status == LPS_SUCCESS || status == LPS_AGAIN);
+        }
+      return status;
     }
+  *handshake_finished = TRUE;
   return LPS_SUCCESS;
 }
 
 static inline void
-log_proto_server_set_options(LogProtoServer *self, const LogProtoServerOptions *options)
+log_proto_server_set_options(LogProtoServer *self, const LogProtoServerOptionsStorage *options)
 {
   self->options = options;
 }
 
-static inline gboolean
-log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+static inline const LogProtoServerOptionsStorage *
+log_proto_server_get_options(LogProtoServer *self)
 {
-  return s->prepare(s, cond, timeout);
+  return self->options;
+}
+
+static inline const MultiLineOptions *
+log_proto_server_get_multi_line_options(LogProtoServer *self)
+{
+  return &self->options->super.multi_line_options;
+}
+
+static inline LogProtoPrepareAction
+log_proto_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+{
+  LogProtoPrepareAction result = s->poll_prepare(s, cond, timeout);
+
+  if (result == LPPA_POLL_IO && *timeout < 0)
+    *timeout = s->options->super.idle_timeout;
+  return result;
 }
 
 static inline gboolean
@@ -154,7 +179,7 @@ log_proto_server_get_fd(LogProtoServer *s)
   /* FIXME: Layering violation, as transport may not be fd based at all.
    * But LogReader assumes it is.  */
 
-  return s->transport->fd;
+  return s->transport_stack.fd;
 }
 
 static inline void
@@ -181,7 +206,7 @@ AckTrackerFactory *log_proto_server_get_ack_tracker_factory(LogProtoServer *s);
 gboolean log_proto_server_is_position_tracked(LogProtoServer *s);
 
 gboolean log_proto_server_validate_options_method(LogProtoServer *s);
-void log_proto_server_init(LogProtoServer *s, LogTransport *transport, const LogProtoServerOptions *options);
+void log_proto_server_init(LogProtoServer *s, LogTransport *transport, const LogProtoServerOptionsStorage *options);
 void log_proto_server_free_method(LogProtoServer *s);
 void log_proto_server_free(LogProtoServer *s);
 
@@ -221,14 +246,13 @@ typedef struct _LogProtoServerFactory LogProtoServerFactory;
 
 struct _LogProtoServerFactory
 {
-  LogProtoServer *(*construct)(LogTransport *transport, const LogProtoServerOptions *options);
+  LogProtoServer *(*construct)(LogTransport *transport, const LogProtoServerOptionsStorage *options);
   gint default_inet_port;
-  gboolean use_multitransport;
 };
 
 static inline LogProtoServer *
 log_proto_server_factory_construct(LogProtoServerFactory *self, LogTransport *transport,
-                                   const LogProtoServerOptions *options)
+                                   const LogProtoServerOptionsStorage *options)
 {
   return self->construct(transport, options);
 }

@@ -76,7 +76,7 @@ log_proto_framed_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg,
 }
 
 LogProtoClient *
-log_proto_framed_client_new(LogTransport *transport, const LogProtoClientOptions *options)
+log_proto_framed_client_new(LogTransport *transport, const LogProtoClientOptionsStorage *options)
 {
   LogProtoFramedClient *self = g_new0(LogProtoFramedClient, 1);
 

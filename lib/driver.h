@@ -113,6 +113,9 @@ struct _LogDriver
   gboolean optional;
   gchar *group;
   gchar *id;
+
+  SignalSlotConnector *signal_slot_connector;
+
   GList *plugins;
 
   StatsCounterItem *processed_group_messages;

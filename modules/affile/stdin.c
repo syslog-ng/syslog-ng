@@ -33,7 +33,7 @@ _construct_transport(FileOpener *self, gint fd)
 }
 
 static LogProtoServer *
-_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptions *proto_options)
+_construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptionsStorage *proto_options)
 {
   return log_proto_file_reader_new(transport, proto_options);
 }
@@ -71,12 +71,12 @@ stdin_sd_init(LogPipe *s)
 LogDriver *
 stdin_sd_new(GlobalConfig *cfg)
 {
-  AFFileSourceDriver *self = affile_sd_new_instance("-", cfg);
+  AFFileSourceDriver *self = affile_sd_new_instance("/dev/stdin", cfg);
 
   self->super.super.super.init = stdin_sd_init;
 
   self->file_reader_options.restore_state = FALSE;
-  self->file_reader_options.exit_on_eof = TRUE;
+  self->file_reader_options.reader_options.flags |= LR_EXIT_ON_EOF;
   self->file_reader_options.reader_options.super.stats_source = stats_register_type("stdin");
   self->file_opener = file_opener_for_stdin_new();
   affile_sd_set_transport_name(self, "local+stdin");

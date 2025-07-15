@@ -30,7 +30,7 @@
 #include "libtest/msg_parse_lib.h"
 
 #include "multi-line/multi-line-factory.h"
-#include "logproto/logproto-multiline-server.h"
+#include "logproto/logproto-text-server.h"
 
 
 static LogProtoServer *
@@ -38,19 +38,15 @@ log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
                                               const gchar *prefix,
                                               const gchar *garbage)
 {
-  MultiLineOptions multi_line_options;
-
-  multi_line_options_defaults(&multi_line_options);
-  multi_line_options_set_mode(&multi_line_options, "prefix-garbage");
+  LogProtoServerOptions *options = &get_inited_proto_server_options()->super;
+  MultiLineOptions *multi_line_options = &options->multi_line_options;
+  multi_line_options_set_mode(multi_line_options, "prefix-garbage");
   if (prefix)
-    multi_line_options_set_prefix(&multi_line_options, prefix, NULL);
+    multi_line_options_set_prefix(multi_line_options, prefix, NULL);
   if (garbage)
-    multi_line_options_set_garbage(&multi_line_options, garbage, NULL);
+    multi_line_options_set_garbage(multi_line_options, garbage, NULL);
 
-  LogProtoServer *server = log_proto_multiline_server_new(transport, get_inited_proto_server_options(),
-                                                          multi_line_factory_construct(&multi_line_options));
-  multi_line_options_destroy(&multi_line_options);
-  return server;
+  return log_proto_text_multiline_server_new(transport, get_inited_proto_server_options());
 }
 
 static LogProtoServer *
@@ -58,19 +54,15 @@ log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
                                              const gchar *prefix,
                                              const gchar *suffix)
 {
-  MultiLineOptions multi_line_options;
-
-  multi_line_options_defaults(&multi_line_options);
-  multi_line_options_set_mode(&multi_line_options, "prefix-suffix");
+  LogProtoServerOptions *options = &get_inited_proto_server_options()->super;
+  MultiLineOptions *multi_line_options = &options->multi_line_options;
+  multi_line_options_set_mode(multi_line_options, "prefix-suffix");
   if (prefix)
-    multi_line_options_set_prefix(&multi_line_options, prefix, NULL);
+    multi_line_options_set_prefix(multi_line_options, prefix, NULL);
   if (suffix)
-    multi_line_options_set_garbage(&multi_line_options, suffix, NULL);
+    multi_line_options_set_garbage(multi_line_options, suffix, NULL);
 
-  LogProtoServer *server = log_proto_multiline_server_new(transport, get_inited_proto_server_options(),
-                                                          multi_line_factory_construct(&multi_line_options));
-  multi_line_options_destroy(&multi_line_options);
-  return server;
+  return log_proto_text_multiline_server_new(transport, get_inited_proto_server_options());
 }
 
 
@@ -252,22 +244,19 @@ ParameterizedTestParameters(log_proto, test_first_line_without_prefix)
 
 ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto, test_first_line_without_prefix)
 {
-  LogProtoServer *proto;
-
-  proto = log_proto_prefix_garbage_multiline_server_new(
-            /* 32 bytes max line length, which means that the complete
-             * multi-line block plus one additional line must fit into 32
-             * bytes. */
-            (*log_transport_mock_new)(
-              "First Line\n"
-              "Foo Second Line\n"
-              "Foo Third Line\n"
-              "Foo Multiline\n"
-              "multi\n"
-              "Foo final\n", -1,
-              LTM_PADDING,
-              LTM_EOF),
-            "^Foo", NULL);
+  /* 32 bytes max line length, which means that the complete
+   * multi-line block plus one additional line must fit into 32
+   * bytes. */
+  LogTransport *transport_mock = (*log_transport_mock_new)(
+                                   "First Line\n"
+                                   "Foo Second Line\n"
+                                   "Foo Third Line\n"
+                                   "Foo Multiline\n"
+                                   "multi\n"
+                                   "Foo final\n", -1,
+                                   LTM_PADDING,
+                                   LTM_EOF);
+  LogProtoServer *proto = log_proto_prefix_garbage_multiline_server_new(transport_mock, "^Foo", NULL);
 
   assert_proto_server_fetch(proto, "First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);

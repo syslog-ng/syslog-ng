@@ -68,7 +68,9 @@ SyslogNgDestDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 LogThreadedDestWorker *
 SyslogNgDestDriver::construct_worker(int worker_index)
 {
-  return SyslogNgDestWorker::construct(&super->super, worker_index);
+  GrpcDestWorker *worker = grpc_dw_new(this->super, worker_index);
+  worker->cpp = new SyslogNgDestWorker(worker);
+  return &worker->super;
 }
 
 bool
@@ -107,11 +109,7 @@ SyslogNgDestDriver::init()
 LogDriver *
 syslog_ng_otlp_dd_new(GlobalConfig *cfg)
 {
-  SyslogNgOtlpDestDriverWrapper *self = g_new0(SyslogNgOtlpDestDriverWrapper, 1);
-
-  otel_dd_init_super(&self->super, cfg);
-  self->super.stats_source = stats_register_type("syslog-ng-otlp");
+  GrpcDestDriver *self = grpc_dd_new(cfg, "syslog-ng-otlp");
   self->cpp = new SyslogNgDestDriver(self);
-
   return &self->super.super.super;
 }

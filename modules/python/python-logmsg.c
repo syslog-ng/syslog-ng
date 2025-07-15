@@ -376,6 +376,20 @@ py_log_message_set_source_ipaddress(PyLogMessage *self, PyObject *args, PyObject
 }
 
 static PyObject *
+py_log_message_set_recvd_rawmsg_size(PyLogMessage *self, PyObject *args, PyObject *kwrds)
+{
+  gulong rawmsg_size;
+
+  static const gchar *kwlist[] = {"rawmsg_size", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "k", (gchar **) kwlist, &rawmsg_size))
+    return NULL;
+
+  log_msg_set_recvd_rawmsg_size(self->msg, rawmsg_size);
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *
 py_log_message_set_timestamp(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 {
   PyObject *py_timestamp;
@@ -466,6 +480,7 @@ static PyMethodDef py_log_message_methods[] =
   { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set syslog priority" },
   { "get_pri", (PyCFunction)py_log_message_get_pri, METH_VARARGS | METH_KEYWORDS, "Get syslog priority" },
   { "set_source_ipaddress", (PyCFunction)py_log_message_set_source_ipaddress, METH_VARARGS | METH_KEYWORDS, "Set source address" },
+  { "set_recvd_rawmsg_size", (PyCFunction)py_log_message_set_recvd_rawmsg_size, METH_VARARGS | METH_KEYWORDS, "Set raw message size" },
   { "set_timestamp", (PyCFunction)py_log_message_set_timestamp, METH_VARARGS | METH_KEYWORDS, "Set timestamp" },
   { "get_timestamp", (PyCFunction)py_log_message_get_timestamp, METH_VARARGS | METH_KEYWORDS, "Get timestamp" },
   { "set_bookmark", (PyCFunction)py_log_message_set_bookmark, METH_VARARGS | METH_KEYWORDS, "Set bookmark" },

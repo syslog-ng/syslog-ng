@@ -3,8 +3,6 @@ if ENABLE_GRPC
 noinst_LTLIBRARIES += modules/grpc/otel/libotel_cpp.la
 
 modules_grpc_otel_libotel_cpp_la_SOURCES = \
-  $(grpc_credentials_sources) \
-  $(grpc_metrics_sources) \
   modules/grpc/otel/otel-source.h \
   modules/grpc/otel/otel-source.hpp \
   modules/grpc/otel/otel-source.cpp \
@@ -34,13 +32,14 @@ modules_grpc_otel_libotel_cpp_la_CXXFLAGS = \
   -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
   $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
+  $(GRPC_COMMON_CFLAGS) \
   -I$(OPENTELEMETRY_PROTO_BUILDDIR) \
   -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/otel \
   -I$(top_builddir)/modules/grpc/otel
 
 modules_grpc_otel_libotel_cpp_la_LIBADD = $(MODULE_DEPS_LIBS) $(PROTOBUF_LIBS) $(GRPCPP_LIBS)
-modules_grpc_otel_libotel_cpp_la_LDFLAGS = $(MODULE_LDFLAGS)
+modules_grpc_otel_libotel_cpp_la_LDFLAGS =  $(MODULE_LDFLAGS)
 EXTRA_modules_grpc_otel_libotel_cpp_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 module_LTLIBRARIES += modules/grpc/otel/libotel.la
@@ -53,13 +52,14 @@ modules_grpc_otel_libotel_la_SOURCES = \
 
 modules_grpc_otel_libotel_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
+  $(GRPC_COMMON_CFLAGS) \
   -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/otel \
-  -I$(top_builddir)/modules/grpc/otel \
-  -I$(top_srcdir)/modules/grpc
+  -I$(top_builddir)/modules/grpc/otel
 
 modules_grpc_otel_libotel_la_LIBADD = \
   $(MODULE_DEPS_LIBS) \
+  $(GRPC_COMMON_LIBS) \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/otel/libotel_cpp.la \
   $(top_builddir)/modules/grpc/otel/filterx/libfilterx.la
@@ -70,6 +70,7 @@ modules_grpc_otel_libotel_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 EXTRA_modules_grpc_otel_libotel_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
+  $(GRPC_COMMON_LIBS) \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/otel/libotel_cpp.la \
   $(top_builddir)/modules/grpc/otel/filterx/libfilterx.la
@@ -78,6 +79,8 @@ modules/grpc/otel modules/grpc/otel/ mod-otel: modules/grpc/otel/libotel.la
 else
 modules/grpc/otel modules/grpc/otel/ mod-otel:
 endif
+
+modules/grpc/otel/otel-grammar.y: modules/grpc/common/grpc-grammar.ym
 
 BUILT_SOURCES += \
   modules/grpc/otel/otel-grammar.y \

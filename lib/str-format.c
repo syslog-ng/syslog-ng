@@ -146,7 +146,7 @@ format_int64_padded(GString *result, gint field_len, gchar pad_char, gint base, 
 
 /* format 32 bit ints */
 
-static inline gint
+gint
 format_uint32_base10_rev(gchar *result, gsize result_len, gint sign, guint32 value)
 {
   gchar *p;
@@ -262,7 +262,7 @@ format_int32_padded(GString *result, gint field_len, gchar pad_char, gint base, 
 }
 
 gchar *
-format_hex_string_with_delimiter(gpointer data, gsize data_len, gchar *result, gsize result_len, gchar delimiter)
+format_hex_string_with_delimiter(gconstpointer data, gsize data_len, gchar *result, gsize result_len, gchar delimiter)
 {
   gint i;
   gint pos = 0;
@@ -285,7 +285,7 @@ format_hex_string_with_delimiter(gpointer data, gsize data_len, gchar *result, g
 }
 
 gchar *
-format_hex_string(gpointer data, gsize data_len, gchar *result, gsize result_len)
+format_hex_string(gconstpointer data, gsize data_len, gchar *result, gsize result_len)
 {
   return format_hex_string_with_delimiter(data, data_len, result, result_len, 0);
 }

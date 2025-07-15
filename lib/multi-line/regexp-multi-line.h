@@ -28,6 +28,7 @@
 
 #include "multi-line/multi-line-logic.h"
 #include "multi-line/multi-line-pattern.h"
+#include "multi-line/multi-line-factory.h"
 
 typedef struct _RegexpMultiLine
 {
@@ -41,6 +42,6 @@ typedef struct _RegexpMultiLine
   MultiLinePattern *garbage;
 } RegexpMultiLine;
 
-MultiLineLogic *regexp_multi_line_new(gint mode, MultiLinePattern *prefix, MultiLinePattern *garbage_or_suffix);
+MultiLineLogic *regexp_multi_line_new(gint mode, const MultiLineOptions *options);
 
 #endif
