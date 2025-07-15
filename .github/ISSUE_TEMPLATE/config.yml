@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ❓ Ask a syslog-ng application question
+    url: https://github.com/syslog-ng/syslog-ng/discussions
+    about: Ask questions and discuss the syslog-ng application related topics with other community members
+  - name: 📚 Create a documentation issue
+    url: https://github.com/syslog-ng/syslog-ng.github.io/issues/new/choose
+    about: Use this template for reporting an issue in the documentation of syslog-ng.
+  - name: 📚❓ Ask a Documentation question
+    url: https://github.com/syslog-ng/syslog-ng.github.io/discussions
+    about: Ask questions and discuss the documentation related topics with other community members
