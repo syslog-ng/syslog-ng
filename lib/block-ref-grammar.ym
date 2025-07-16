@@ -49,7 +49,6 @@ start
 
 block_args
         : driver_like_context '(' driver_block_args ')'
-        | function_like_context '(' function_block_args ')'
         ;
 
 driver_like_context
@@ -64,11 +63,6 @@ driver_like_context
         | LL_CONTEXT_INNER_SRC
         | LL_CONTEXT_OPTIONS
 	;
-
-function_like_context
-	: LL_CONTEXT_FILTERX
-	;
-
 
 /* generator(arg1(value) arg2(value)...) */
 driver_block_args

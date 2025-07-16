@@ -149,13 +149,9 @@
 %token LL_CONTEXT_OPTIONS             20
 %token LL_CONTEXT_CONFIG              21
 %token LL_CONTEXT_TEMPLATE_REF        22
-%token LL_CONTEXT_FILTERX             23
-%token LL_CONTEXT_FILTERX_SIMPLE_FUNC 24
-%token LL_CONTEXT_FILTERX_ENUM        25
-%token LL_CONTEXT_FILTERX_FUNC        26
 
 /* this is a placeholder for unit tests, must be the latest & largest */
-%token LL_CONTEXT_MAX                 27
+%token LL_CONTEXT_MAX                 23
 
 %left ';'
 
@@ -187,7 +183,6 @@
 %token KW_IF                          10010
 %token KW_ELSE                        10011
 %token KW_ELIF                        10012
-%token KW_FILTERX                     10013
 
 /* source & destination items */
 %token KW_INTERNAL                    10020
@@ -430,7 +425,6 @@
 %type   <num> type_hint
 
 %type   <ptr> filter_content
-%type   <ptr> filterx_content
 
 %type   <ptr> parser_content
 
@@ -665,16 +659,6 @@ filter_content
 	  }
 	;
 
-filterx_content
-        : _filterx_context_push <ptr>{
-            GList *filterx_stmts = NULL;
-
-	    CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filterx_parser, lexer, (gpointer *) &filterx_stmts, NULL), @$);
-
-            $$ = log_expr_node_new_pipe(log_filterx_pipe_new(filterx_stmts, configuration), &@$);
-	  } _filterx_context_pop			{ $$ = $2; }
-	;
-
 parser_content
         :
           {
@@ -740,7 +724,6 @@ log_item
         | KW_SOURCE '{' source_content '}'      { $$ = log_expr_node_new_source(NULL, $3, &@$); }
         | KW_FILTER '(' string ')'		{ $$ = log_expr_node_new_filter_reference($3, &@$); free($3); }
         | KW_FILTER '{' filter_content '}'      { $$ = log_expr_node_new_filter(NULL, $3, &@$); }
-        | KW_FILTERX '{' filterx_content '}'    { $$ = log_expr_node_new_filter(NULL, $3, &@$); }
         | KW_PARSER '(' string ')'              { $$ = log_expr_node_new_parser_reference($3, &@$); free($3); }
         | KW_PARSER '{' parser_content '}'      { $$ = log_expr_node_new_parser(NULL, $3, &@$); }
         | KW_REWRITE '(' string ')'             { $$ = log_expr_node_new_rewrite_reference($3, &@$); free($3); }
@@ -1726,8 +1709,6 @@ _rewrite_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_REWRITE, NULL,
 _rewrite_context_pop: { cfg_lexer_pop_context(lexer); };
 _filter_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_FILTER, NULL, "filter statement"); };
 _filter_context_pop: { cfg_lexer_pop_context(lexer); };
-_filterx_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_FILTERX, NULL, "filterx statement"); };
-_filterx_context_pop: { cfg_lexer_pop_context(lexer); };
 _log_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_LOG, NULL, "log statement"); };
 _log_context_pop: { cfg_lexer_pop_context(lexer); };
 _block_def_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, block_def_keywords, "block definition"); };

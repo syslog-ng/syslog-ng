@@ -61,8 +61,7 @@ modules_grpc_otel_libotel_la_LIBADD = \
   $(MODULE_DEPS_LIBS) \
   $(GRPC_COMMON_LIBS) \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
-  $(top_builddir)/modules/grpc/otel/libotel_cpp.la \
-  $(top_builddir)/modules/grpc/otel/filterx/libfilterx.la
+  $(top_builddir)/modules/grpc/otel/libotel_cpp.la
 
 nodist_EXTRA_modules_grpc_otel_libotel_la_SOURCES = force-cpp-linker-with-default-stdlib.cpp
 
@@ -72,8 +71,7 @@ EXTRA_modules_grpc_otel_libotel_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
   $(GRPC_COMMON_LIBS) \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
-  $(top_builddir)/modules/grpc/otel/libotel_cpp.la \
-  $(top_builddir)/modules/grpc/otel/filterx/libfilterx.la
+  $(top_builddir)/modules/grpc/otel/libotel_cpp.la
 
 modules/grpc/otel modules/grpc/otel/ mod-otel: modules/grpc/otel/libotel.la
 else
@@ -94,4 +92,3 @@ EXTRA_DIST += \
 .PHONY: modules/grpc/otel/ mod-otel
 
 include modules/grpc/otel/tests/Makefile.am
-include modules/grpc/otel/filterx/Makefile.am
