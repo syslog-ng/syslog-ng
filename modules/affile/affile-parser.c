@@ -40,6 +40,7 @@ static CfgLexerKeyword affile_keywords[] =
   { "wildcard_file",      KW_WILDCARD_FILE },
   { "base_dir",           KW_BASE_DIR },
   { "filename_pattern",   KW_FILENAME_PATTERN },
+  { "exclude_pattern",    KW_EXCLUDE_PATTERN },
   { "recursive",          KW_RECURSIVE },
   { "max_files",          KW_MAX_FILES },
   { "monitor_method",     KW_MONITOR_METHOD },
