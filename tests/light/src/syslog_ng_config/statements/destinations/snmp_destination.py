@@ -21,9 +21,16 @@
 #
 #############################################################################
 from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
+from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 class SnmpDestination(DestinationDriver):
-    def __init__(self, **options):
+    def __init__(
+        self,
+        stats_handler: LegacyStatsHandler,
+        prometheus_stats_handler: PrometheusStatsHandler,
+        **options,
+    ) -> None:
         self.driver_name = "snmp"
-        super(SnmpDestination, self).__init__(None, options)
+        super(SnmpDestination, self).__init__(stats_handler, prometheus_stats_handler, None, options)

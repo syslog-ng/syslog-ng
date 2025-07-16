@@ -24,6 +24,14 @@
 #include "multi-line/multi-line-pattern.h"
 #include "messages.h"
 
+#define MULTI_LINE_PATTERN_ERROR multi_line_pattern_error_quark()
+
+static GQuark
+multi_line_pattern_error_quark(void)
+{
+  return g_quark_from_static_string("multi_line_pattern");
+}
+
 MultiLinePattern *
 multi_line_pattern_compile(const gchar *regexp, GError **error)
 {
@@ -41,7 +49,7 @@ multi_line_pattern_compile(const gchar *regexp, GError **error)
       PCRE2_UCHAR error_message[128];
 
       pcre2_get_error_message(rc, error_message, sizeof(error_message));
-      g_set_error(error, 0, 0,
+      g_set_error(error, MULTI_LINE_PATTERN_ERROR, 0,
                   "Error while compiling multi-line regexp as a PCRE expression, error=%s, error_at=%" G_GSIZE_FORMAT,
                   (gchar *) error_message, erroffset);
       goto error;

@@ -20,46 +20,42 @@
 # COPYING for details.
 #
 #############################################################################
-from typing import Dict
-from typing import NamedTuple
-from typing import Optional
+import typing
 
 import prometheus_client.parser
 from prometheus_client.samples import Sample
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 __all__ = ["PrometheusStatsHandler", "MetricFilter", "Sample"]
 
 
-class MetricFilter(NamedTuple):
+class MetricFilter(typing.NamedTuple):
     name: str
-    labels: Optional[Dict[str, str]] = None
+    labels: typing.Optional[typing.Dict[str, str]] = None
 
 
 class PrometheusStatsHandler(object):
-    def __init__(self, metric_filters):
-        self.__metric_filters = metric_filters
-        self.__syslog_ng_ctl = SyslogNgCtl(tc_parameters.INSTANCE_PATH)
+    def __init__(self, syslog_ng_ctl: SyslogNgCtl) -> None:
+        self.__syslog_ng_ctl = syslog_ng_ctl
 
-    def __filter_raw_samples(self, raw_samples):
+    def __filter_raw_samples(self, metric_filters: typing.List[MetricFilter], raw_samples: str) -> typing.List[Sample]:
         samples = []
 
         for metric_family in prometheus_client.parser.text_string_to_metric_families(raw_samples):
             for sample in metric_family.samples:
-                for metric_filter in self.__metric_filters:
+                for metric_filter in metric_filters:
                     if metric_filter.name == sample.name and metric_filter.labels.items() <= sample.labels.items():
                         samples.append(sample)
 
         return samples
 
-    def get_samples(self):
-        if len(self.__metric_filters) == 0:
+    def get_samples(self, metric_filters: typing.List[MetricFilter]) -> typing.List[Sample]:
+        if len(metric_filters) == 0:
             return []
 
         ctl_output = self.__syslog_ng_ctl.stats_prometheus()
         if ctl_output["exit_code"] != 0:
             return []
 
-        return self.__filter_raw_samples(ctl_output["stdout"])
+        return self.__filter_raw_samples(metric_filters, ctl_output["stdout"])

@@ -36,11 +36,12 @@ jobs:
           - almalinux-8
           - almalinux-9
           - centos-stream9
+          - centos-stream10
           - fedora-latest
-          - fedora-rawhide
+          - fedora-rawhide # - rawhide is always a problem turning it off now
           - debian-bullseye
           - debian-bookworm
-          #- debian-sid - curently this is broken again
+          - debian-sid
           - debian-testing
           - ubuntu-focal
           - ubuntu-jammy
@@ -84,10 +85,11 @@ jobs:
 
       - name: Should we upload the images?
         run: |
+          # Use the develop for the published dbld images/packages
           if [ "${{ github.event.inputs.testing_image_upload }}" = "true" ] || \
              ( \
               [ "${{ github.repository_owner }}" = "syslog-ng" ] && \
-              [ "${{ github.ref }}" = "refs/heads/master" ] && \
+              [ "${{ github.ref }}" = "refs/heads/develop" ] && \
               [[ "${{ github.event_name }}" =~ ^(push|workflow_dispatch|schedule)$ ]] \
             )
           then

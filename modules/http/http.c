@@ -443,16 +443,22 @@ http_dd_init(LogPipe *s)
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
-  if ((self->super.batch_lines || self->batch_bytes) && http_load_balancer_is_url_templated(self->load_balancer) &&
-      self->super.num_workers > 1 && !self->super.worker_partition_key)
+  if ((self->super.batch_lines || self->batch_bytes) && http_load_balancer_is_url_templated(self->load_balancer))
     {
-      msg_error("http: worker-partition-key() must be set if using templates in the url() option "
-                "while batching is enabled and multiple workers are configured. "
-                "Make sure to set worker-partition-key() with a template that contains all the templates "
-                "used in the url() option",
-                log_pipe_location_tag(&self->super.super.super.super));
-      return FALSE;
+      log_threaded_dest_driver_set_flush_on_worker_key_change(&self->super.super.super, TRUE);
+
+      if (!self->super.worker_partition_key)
+        {
+          msg_error("http: worker-partition-key() must be set if using templates in the url() option "
+                    "while batching is enabled. "
+                    "Make sure to set worker-partition-key() with a template that contains all the templates "
+                    "used in the url() option",
+                    log_pipe_location_tag(&self->super.super.super.super));
+          return FALSE;
+        }
     }
+  if (self->batch_bytes > 0 && self->super.batch_lines == 0)
+    self->super.batch_lines = G_MAXINT;
 
   log_template_options_init(&self->template_options, cfg);
 
@@ -507,11 +513,8 @@ http_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = http_dd_free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format_stats_key = _format_stats_key;
-  self->super.metrics.raw_bytes_enabled = TRUE;
   self->super.stats_source = stats_register_type("http");
   self->super.worker.construct = http_dw_new;
-
-  log_threaded_dest_driver_set_flush_on_worker_key_change(&self->super.super.super, TRUE);
 
   curl_global_init(CURL_GLOBAL_ALL);
 

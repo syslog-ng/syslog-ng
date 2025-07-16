@@ -60,6 +60,7 @@ enum
   LP_NO_HEADER = 0x2000,
   LP_NO_RFC3164_FALLBACK = 0x4000,
   LP_PIGGYBACK_ERRORS = 0x8000,
+  LP_CHECK_PROGRAM = 0x10000,
 };
 
 typedef struct _MsgFormatHandler MsgFormatHandler;
@@ -87,7 +88,7 @@ struct _MsgFormatHandler
    * the "pacct" plugin to set the record length the proper size
    */
   LogProtoServer *(*construct_proto)(const MsgFormatOptions *options, LogTransport *transport,
-                                     const LogProtoServerOptions *proto_options);
+                                     const LogProtoServerOptionsStorage *proto_options);
   gboolean (*parse)(const MsgFormatOptions *options, LogMessage *msg,
                     const guchar *data, gsize length,
                     gsize *problem_position);

@@ -17,7 +17,7 @@ applications or forwarded by systemd) and writes everything to a single
 file:
 
 ``` config
-@version: 4.8
+@version: current
 @include "scl.conf"
 
 log {
@@ -29,7 +29,7 @@ log {
 This one additionally processes logs from the network (TCP/514 by default):
 
 ``` config
-@version: 4.8
+@version: current
 @include "scl.conf"
 
 log {
@@ -43,7 +43,7 @@ log {
 This config is designed for structured/application logging, using local submission via JSON, and outputting in key=value format:
 
 ``` config
-@version: 4.8
+@version: current
 @include "scl.conf"
 
 log {
@@ -208,7 +208,7 @@ syslog-ng packages are released for the following distribution versions:
 
 #### Nightly builds
 
-Nightly packages are built and released from the git `master` branch everyday.
+Nightly packages are built and released from the git `develop` branch everyday.
 
 Use `nightly` instead of `stable` in step 2 to use the nightly APT repository. E.g.:
 
@@ -262,4 +262,4 @@ The official documentation of the earlier versions (3.X) of syslog-ng Open Sourc
 
 ## Contributing
 
-If you would like to contribute to syslog-ng, to fix a bug or create a new module, the [syslog-ng pages](https://syslog-ng.github.io/dev-guide/README) helps you take the first steps to working with the code base.
+If you would like to contribute to syslog-ng, to fix a bug or create a new module, the [syslog-ng developer pages](https://syslog-ng.github.io/dev-guide/README) helps you take the first steps to working with the code base.

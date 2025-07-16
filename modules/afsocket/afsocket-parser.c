@@ -38,6 +38,16 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "tcp",                KW_TCP },
   { "syslog",             KW_SYSLOG },
   { "network",            KW_NETWORK },
+  { "http",               KW_HTTP },
+
+  { "http_scraper",       KW_HTTP_SCRAPER },
+  { "scrape_pattern",     KW_SCRAPE_PATTERN},
+  { "scrape_freq_limit",  KW_SCRAPE_FREQ_LIMIT},
+  { "single_instance",    KW_SINGLE_INSTANCE},
+  { "stat_type",          KW_STAT_TYPE},
+  { "stat_query",         KW_STAT_QUERY},
+  { "stat_format",        KW_STAT_FORMAT},
+
 #if SYSLOG_NG_ENABLE_IPV6
   { "udp6",               KW_UDP6 },
   { "tcp6",               KW_TCP6 },

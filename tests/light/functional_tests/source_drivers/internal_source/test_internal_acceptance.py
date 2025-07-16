@@ -27,7 +27,11 @@ def test_internal_source_with_threaded_destination(config, syslog_ng):
     example_destination = config.create_example_destination(filename="output.txt")
     config.create_logpath(statements=[internal_source, example_destination])
 
-    syslog_ng.start(config, stderr=False, debug=True, trace=False, verbose=False)
+    syslog_ng.start_params.stderr = False
+    syslog_ng.start_params.trace = False
+    syslog_ng.start_params.verbose = False
+
+    syslog_ng.start(config)
     assert example_destination.read_until_logs(["syslog-ng starting up"])
 
     for _ in range(0, 5):

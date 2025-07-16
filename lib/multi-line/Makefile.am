@@ -7,7 +7,8 @@ multilineinclude_HEADERS = \
 	lib/multi-line/indented-multi-line.h \
 	lib/multi-line/regexp-multi-line.h \
 	lib/multi-line/multi-line-pattern.h \
-	lib/multi-line/smart-multi-line.h
+	lib/multi-line/smart-multi-line.h \
+	lib/multi-line/empty-line-separated-multi-line.h
 
 
 multiline_sources = \
@@ -16,7 +17,9 @@ multiline_sources = \
 	lib/multi-line/indented-multi-line.c \
 	lib/multi-line/regexp-multi-line.c \
 	lib/multi-line/multi-line-pattern.c \
-	lib/multi-line/smart-multi-line.c
+	lib/multi-line/smart-multi-line.c \
+	lib/multi-line/empty-line-separated-multi-line.c
+
 
 pkgdata_DATA = lib/multi-line/smart-multi-line.fsm
 

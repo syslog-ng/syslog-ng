@@ -54,9 +54,9 @@ _construct_devkmsg_transport(FileOpener *self, gint fd)
 }
 
 static LogProtoServer *
-_construct_devkmsg_proto(FileOpener *self, LogTransport *transport, LogProtoFileReaderOptions *options)
+_construct_devkmsg_proto(FileOpener *self, LogTransport *transport, LogProtoFileReaderOptionsStorage *options)
 {
-  return log_proto_dgram_server_new(transport, &options->super);
+  return log_proto_dgram_server_new(transport, &options->storage);
 }
 
 FileOpener *
@@ -74,7 +74,7 @@ file_opener_for_devkmsg_new(void)
  **************************************************************/
 
 static LogProtoServer *
-log_proto_linux_proc_kmsg_reader_new(LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_linux_proc_kmsg_reader_new(LogTransport *transport, const LogProtoServerOptionsStorage *options)
 {
   LogProtoServer *proto;
 
@@ -91,9 +91,9 @@ _construct_prockmsg_transport(FileOpener *self, gint fd)
 }
 
 static LogProtoServer *
-_construct_prockmsg_proto(FileOpener *self, LogTransport *transport, LogProtoFileReaderOptions *options)
+_construct_prockmsg_proto(FileOpener *self, LogTransport *transport, LogProtoFileReaderOptionsStorage *options)
 {
-  return log_proto_linux_proc_kmsg_reader_new(transport, &options->super);
+  return log_proto_linux_proc_kmsg_reader_new(transport, &options->storage);
 }
 
 FileOpener *

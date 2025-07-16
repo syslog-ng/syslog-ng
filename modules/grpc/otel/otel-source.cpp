@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,7 +23,6 @@
 
 #include "otel-source.hpp"
 #include "otel-source-services.hpp"
-#include "credentials/grpc-credentials-builder.hpp"
 
 #include "compat/cpp-start.h"
 #include "messages.h"
@@ -31,161 +31,128 @@
 #include <string>
 
 #include <grpcpp/grpcpp.h>
-#include <grpcpp/server_builder.h>
-
-#define get_SourceDriver(s) (((OtelSourceDriver *) s)->cpp)
-#define get_SourceWorker(s) (((OtelSourceWorker *) s)->cpp)
 
 using namespace syslogng::grpc::otel;
 
-/* C++ Implementations */
-
-syslogng::grpc::otel::SourceDriver::SourceDriver(OtelSourceDriver *s)
-  : super(s)
+SourceDriver::SourceDriver(GrpcSourceDriver *s)
+  : syslogng::grpc::SourceDriver(s)
 {
-  credentials_builder_wrapper.self = &credentials_builder;
+  this->port = 4317;
 }
 
 void
-syslogng::grpc::otel::SourceDriver::request_exit()
+SourceDriver::request_exit()
 {
-  msg_debug("Shutting down OpenTelemetry server", evt_tag_int("port", port));
+  msg_debug("Shutting down OpenTelemetry server", evt_tag_int("port", this->port));
   server->Shutdown(std::chrono::system_clock::now() + std::chrono::seconds(30));
 }
 
 void
-syslogng::grpc::otel::SourceDriver::format_stats_key(StatsClusterKeyBuilder *kb)
+SourceDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 {
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "opentelemetry"));
 
   gchar num[64];
-  g_snprintf(num, sizeof(num), "%" G_GUINT64_FORMAT, port);
+  g_snprintf(num, sizeof(num), "%" G_GUINT32_FORMAT, this->port);
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("port", num));
 }
 
 const char *
-syslogng::grpc::otel::SourceDriver::generate_persist_name()
+SourceDriver::generate_persist_name()
 {
   static char persist_name[1024];
 
-  if (super->super.super.super.super.persist_name)
+  if (this->super->super.super.super.super.persist_name)
     g_snprintf(persist_name, sizeof(persist_name), "opentelemetry.%s",
-               super->super.super.super.super.persist_name);
+               this->super->super.super.super.super.persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "opentelemetry(%" G_GUINT64_FORMAT ")",
-               port);
+    g_snprintf(persist_name, sizeof(persist_name), "opentelemetry(%" G_GUINT32_FORMAT ")",
+               this->port);
 
   return persist_name;
 }
 
 gboolean
-syslogng::grpc::otel::SourceDriver::init()
+SourceDriver::init()
 {
-  if (!credentials_builder.validate())
-    return FALSE;
-
-  std::string address = std::string("[::]:").append(std::to_string(port));
-
-  ::grpc::EnableDefaultHealthCheckService(true);
+  this->super->super.worker_options.super.keep_hostname = TRUE;
 
   ::grpc::ServerBuilder builder;
-  builder.AddListeningPort(address, credentials_builder.build());
-
-  for (auto nv : int_extra_channel_args)
-    builder.AddChannelArgument(nv.first, nv.second);
-  for (auto nv : string_extra_channel_args)
-    builder.AddChannelArgument(nv.first, nv.second);
+  if (!this->prepare_server_builder(builder))
+    return FALSE;
 
   trace_service = std::make_unique<TraceService::AsyncService>();
   logs_service = std::make_unique<LogsService::AsyncService>();
   metrics_service = std::make_unique<MetricsService::AsyncService>();
 
-  builder.RegisterService(trace_service.get());
-  builder.RegisterService(logs_service.get());
-  builder.RegisterService(metrics_service.get());
+  builder.RegisterService(this->trace_service.get());
+  builder.RegisterService(this->logs_service.get());
+  builder.RegisterService(this->metrics_service.get());
 
-  for (int i = 0; i < super->super.num_workers; i++)
-    cqs.push_back(builder.AddCompletionQueue());
+  for (int i = 0; i < this->super->super.num_workers; i++)
+    this->cqs.push_back(builder.AddCompletionQueue());
 
   server = builder.BuildAndStart();
   if (!server)
     {
-      msg_error("Failed to start OpenTelemetry server", evt_tag_int("port", port));
-      return false;
+      msg_error("Failed to start OpenTelemetry server", evt_tag_int("port", this->port));
+      return FALSE;
     }
 
-  msg_info("OpenTelemetry server accepting connections", evt_tag_int("port", port));
+  if (!syslogng::grpc::SourceDriver::init())
+    return FALSE;
 
-  if (fetch_limit == -1)
-    {
-      if (super->super.worker_options.super.init_window_size != -1)
-        fetch_limit = super->super.worker_options.super.init_window_size / super->super.num_workers;
-      else
-        fetch_limit = 100;
-    }
-
-  /*
-   * syslog-ng-otlp(): the original HOST is always kept
-   * opentelemetry(): there is no parsing in this source, HOST always falls back to saddr (LogSource)
-   */
-  super->super.worker_options.super.keep_hostname = TRUE;
-
-  return log_threaded_source_driver_init_method(&super->super.super.super.super);
+  msg_info("OpenTelemetry server accepting connections", evt_tag_int("port", this->port));
+  return TRUE;
 }
 
 gboolean
-syslogng::grpc::otel::SourceDriver::deinit()
+SourceDriver::deinit()
 {
-  trace_service = nullptr;
-  logs_service = nullptr;
-  metrics_service = nullptr;
+  this->trace_service = nullptr;
+  this->logs_service = nullptr;
+  this->metrics_service = nullptr;
 
-  return log_threaded_source_driver_deinit_method(&super->super.super.super.super);
+  return syslogng::grpc::SourceDriver::deinit();
 }
 
-void
-SourceDriver::add_extra_channel_arg(std::string name, long value)
+LogThreadedSourceWorker *
+SourceDriver::construct_worker(int worker_index)
 {
-  int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
+  GrpcSourceWorker *worker = grpc_sw_new(this->super, worker_index);
+  worker->cpp = new SourceWorker(worker, *this);
+  return &worker->super;
 }
 
-void
-SourceDriver::add_extra_channel_arg(std::string name, std::string value)
-{
-  string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
-}
 
-GrpcServerCredentialsBuilderW *
-SourceDriver::get_credentials_builder_wrapper()
+SourceWorker::SourceWorker(GrpcSourceWorker *s, syslogng::grpc::SourceDriver &d)
+  : syslogng::grpc::SourceWorker(s, d)
 {
-  return &credentials_builder_wrapper;
-}
-
-SourceWorker::SourceWorker(OtelSourceWorker *s, SourceDriver &d)
-  : super(s), driver(d)
-{
-  cq = std::move(driver.cqs.front());
-  driver.cqs.pop_front();
+  SourceDriver *owner_ = otel_sd_get_cpp(this->driver.super);
+  cq = std::move(owner_->cqs.front());
+  owner_->cqs.pop_front();
 }
 
 void
 syslogng::grpc::otel::SourceWorker::run()
 {
+  SourceDriver *owner_ = otel_sd_get_cpp(this->driver.super);
+
   /* Proceed() will immediately create a new ServiceCall,
    * so creating 1 ServiceCall here results in 2 concurrent requests.
    *
    * Because of this we should create (concurrent_requests - 1) ServiceCalls here.
    */
-  for (int i = 0; i < driver.concurrent_requests - 1; i++)
+  for (int i = 0; i < owner_->concurrent_requests - 1; i++)
     {
-      new TraceServiceCall(*this, driver.trace_service.get(), cq.get());
-      new LogsServiceCall(*this, driver.logs_service.get(), cq.get());
-      new MetricsServiceCall(*this, driver.metrics_service.get(), cq.get());
+      new TraceServiceCall(*this, owner_->trace_service.get(), this->cq.get());
+      new LogsServiceCall(*this, owner_->logs_service.get(), this->cq.get());
+      new MetricsServiceCall(*this, owner_->metrics_service.get(), this->cq.get());
     }
 
   void *tag;
   bool ok;
-  while (cq->Next(&tag, &ok))
+  while (this->cq->Next(&tag, &ok))
     {
       static_cast<AsyncServiceCallInterface *>(tag)->Proceed(ok);
     }
@@ -194,139 +161,20 @@ syslogng::grpc::otel::SourceWorker::run()
 void
 syslogng::grpc::otel::SourceWorker::request_exit()
 {
-  driver.request_exit();
-  cq->Shutdown();
+  this->driver.request_exit();
+  this->cq->Shutdown();
 }
 
-void
-SourceWorker::post(LogMessage *msg)
+SourceDriver *
+otel_sd_get_cpp(GrpcSourceDriver *self)
 {
-  log_threaded_source_worker_blocking_post(&super->super, msg);
-}
-
-/* Config setters */
-
-void
-otel_sd_set_port(LogDriver *s, guint64 port)
-{
-  get_SourceDriver(s)->port = port;
-}
-
-void
-otel_sd_set_fetch_limit(LogDriver *s, gint fetch_limit)
-{
-  get_SourceDriver(s)->fetch_limit = fetch_limit;
-}
-
-void
-otel_sd_set_concurrent_requests(LogDriver *s, gint concurrent_requests)
-{
-  get_SourceDriver(s)->concurrent_requests = concurrent_requests;
-}
-
-void
-otel_sd_add_int_channel_arg(LogDriver *s, const gchar *name, gint64 value)
-{
-  get_SourceDriver(s)->add_extra_channel_arg(name, value);
-}
-
-void
-otel_sd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value)
-{
-  get_SourceDriver(s)->add_extra_channel_arg(name, value);
-}
-
-GrpcServerCredentialsBuilderW *
-otel_sd_get_credentials_builder(LogDriver *s)
-{
-  return get_SourceDriver(s)->get_credentials_builder_wrapper();
-}
-
-/* C Wrappers */
-
-static void
-_worker_free(LogPipe *s)
-{
-  delete get_SourceWorker(s);
-  log_threaded_source_worker_free(s);
-}
-
-static void
-_worker_run(LogThreadedSourceWorker *s)
-{
-  get_SourceWorker(s)->run();
-}
-
-static void
-_worker_request_exit(LogThreadedSourceWorker *s)
-{
-  get_SourceWorker(s)->request_exit();
-}
-
-static LogThreadedSourceWorker *
-_construct_worker(LogThreadedSourceDriver *s, gint worker_index)
-{
-  OtelSourceWorker *worker = g_new0(OtelSourceWorker, 1);
-  log_threaded_source_worker_init_instance(&worker->super, s, worker_index);
-
-  worker->cpp = new SourceWorker(worker, *get_SourceDriver(s));
-
-  worker->super.run = _worker_run;
-  worker->super.request_exit = _worker_request_exit;
-  worker->super.super.super.free_fn = _worker_free;
-
-  return &worker->super;
-}
-
-static void
-_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
-{
-  get_SourceDriver(s)->format_stats_key(kb);
-}
-
-static const gchar *
-_generate_persist_name(const LogPipe *s)
-{
-  return get_SourceDriver(s)->generate_persist_name();
-}
-
-static gboolean
-_init(LogPipe *s)
-{
-  return get_SourceDriver(s)->init();
-}
-
-static gboolean
-_deinit(LogPipe *s)
-{
-  return get_SourceDriver(s)->deinit();
-}
-
-static void
-_free(LogPipe *s)
-{
-  delete get_SourceDriver(s);
-  log_threaded_source_driver_free_method(s);
+  return (SourceDriver *) self->cpp;
 }
 
 LogDriver *
 otel_sd_new(GlobalConfig *cfg)
 {
-  OtelSourceDriver *s = g_new0(OtelSourceDriver, 1);
-  log_threaded_source_driver_init_instance(&s->super, cfg);
-  log_threaded_source_driver_set_transport_name(&s->super, "otlp");
-  s->cpp = new syslogng::grpc::otel::SourceDriver(s);
-
-  s->super.super.super.super.init = _init;
-  s->super.super.super.super.deinit = _deinit;
-  s->super.super.super.super.free_fn = _free;
-  s->super.super.super.super.generate_persist_name = _generate_persist_name;
-
-  s->super.worker_options.super.stats_source = stats_register_type("opentelemetry");
-  s->super.format_stats_key = _format_stats_key;
-  s->super.worker_construct = _construct_worker;
-
-  s->super.auto_close_batches = FALSE;
-
-  return &s->super.super.super;
+  GrpcSourceDriver *self = grpc_sd_new(cfg, "opentelemetry", "otlp");
+  self->cpp = new SourceDriver(self);
+  return &self->super.super.super;
 }

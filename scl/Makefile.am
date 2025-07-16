@@ -12,10 +12,12 @@ SCL_SUBDIRS	= \
 	elasticsearch	\
 	ewmm		\
 	fortigate	\
+	freebsd-audit	\
 	google	\
 	graphite	\
 	graylog2	\
 	hdfs		\
+	stats-exporter		\
 	iptables	\
 	jellyfin	\
 	junos		\
@@ -49,7 +51,8 @@ SCL_SUBDIRS	= \
 	system		\
 	websense	\
 	telegram	\
-	windowseventlog
+	windowseventlog \
+	azure
 
 
 SCL_CONFIGS	= scl.conf syslog-ng.conf

@@ -31,8 +31,9 @@ typedef gboolean (*StatsFormatCb)(gpointer user_data);
 
 gboolean stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 gboolean stats_query_list_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result);
-gboolean stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result);
-gboolean stats_query_get_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result);
+gboolean stats_query_get(const gchar *expr, StatsFormatCb format_cb, const gchar *output_fmt, gpointer result);
+gboolean stats_query_get_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, const gchar *output_fmt,
+                                            gpointer result);
 gboolean stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 gboolean stats_query_get_sum_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 

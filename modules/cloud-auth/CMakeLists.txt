@@ -29,6 +29,9 @@ set(CLOUD_AUTH_CPP_SOURCES
   google-auth.h
   google-auth.cpp
   google-auth.hpp
+  azure-auth.h
+  azure-auth.cpp
+  azure-auth.hpp
 )
 
 set(OTEL_SOURCES

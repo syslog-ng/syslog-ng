@@ -35,15 +35,11 @@ static gboolean
 _attach(LogDriverPlugin *s, LogDriver *d)
 {
   CloudAuthDestPlugin *self = (CloudAuthDestPlugin *) s;
-  LogDestDriver *driver = (LogDestDriver *) d;
 
   if (!cloud_authenticator_init(self->authenticator))
     return FALSE;
 
-  g_assert(s->signal_connector == NULL);
-  s->signal_connector = signal_slot_connector_ref(driver->super.super.signal_slot_connector);
-
-  CONNECT(s->signal_connector, signal_http_header_request, cloud_authenticator_handle_http_header_request,
+  CONNECT(d->signal_slot_connector, signal_http_header_request, cloud_authenticator_handle_http_header_request,
           self->authenticator);
 
   return TRUE;
@@ -56,11 +52,8 @@ _detach(LogDriverPlugin *s, LogDriver *d)
 
   cloud_authenticator_deinit(self->authenticator);
 
-  DISCONNECT(s->signal_connector, signal_http_header_request, cloud_authenticator_handle_http_header_request,
+  DISCONNECT(d->signal_slot_connector, signal_http_header_request, cloud_authenticator_handle_http_header_request,
              self->authenticator);
-
-  signal_slot_connector_unref(s->signal_connector);
-  s->signal_connector = NULL;
 }
 
 void

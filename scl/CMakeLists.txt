@@ -11,11 +11,13 @@ set(SCL_DIRS
     discord
     elasticsearch
     ewmm
+    freebsd-audit
     fortigate
     google
     graphite
     graylog2
     hdfs
+    stats-exporter
     iptables
     jellyfin
     junos
@@ -50,6 +52,7 @@ set(SCL_DIRS
     telegram
     websense
     windowseventlog
+    azure
 )
 
 install(DIRECTORY ${SCL_DIRS} DESTINATION share/syslog-ng/include/scl)

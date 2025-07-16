@@ -19,23 +19,28 @@ Source3: syslog-ng.service
 %bcond_without amqp
 %bcond_without kafka
 %bcond_without afsnmp
-%bcond_without mqtt
 %bcond_without cloudauth
 %bcond_without java
 
-%if 0%{?rhel} == 9
+%if 0%{?fedora} >= 36 || 0%{?rhel} < 10
+%bcond_without mqtt
+%else
+%bcond_with mqtt
+%endif
+
+%if 0%{?rhel} >= 9
 %bcond_with sql
 %else
 %bcond_without sql
 %endif
 
-%if 0%{?fedora} >= 36 || 0%{?rhel} == 9
+%if 0%{?fedora} >= 36 || 0%{?rhel} >= 9
 %bcond_without	grpc
 %else
 %bcond_with grpc
 %endif
 
-%if 0%{?fedora} >= 37 || 0%{?rhel} == 9
+%if 0%{?fedora} >= 37 || 0%{?rhel} >= 9
 %bcond_without bpf
 %else
 %bcond_with bpf
@@ -90,6 +95,7 @@ BuildRequires:  python3-urllib3
 BuildRequires:  python3-websocket-client
 BuildRequires:  python3-boto3
 BuildRequires:  python3-botocore
+BuildRequires:  python3-tornado
 %endif
 
 %if %{with grpc}
@@ -296,7 +302,7 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description grpc
 This module supports the GRPC, a common requirement
-for OpenTelemetry and Loki support.
+for OpenTelemetry, Google BigQuery, Google Pub/Sub, Grafana Loki and ClickHouse support.
 
 
 %package opentelemetry
@@ -325,6 +331,24 @@ Requires: %{name}-grpc
 
 %description bigquery
 This module adds Google BigQuery support.
+
+%package clickhouse
+Summary: ClickHouse support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: %{name}-grpc
+
+%description clickhouse
+This module adds ClickHouse support.
+
+%package pubsub
+Summary: Google Pub/Sub support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: %{name}-grpc
+
+%description pubsub
+This module adds Foofle Pub/Sub support.
 
 %package bpf
 Summary: Faster UDP log collection for %{name}
@@ -376,6 +400,7 @@ Requires:  python3-urllib3
 Requires:  python3-websocket-client
 Requires:  python3-boto3
 Requires:  python3-botocore
+Requires:  python3-tornado
 %endif
 
 %description python-modules
@@ -423,9 +448,6 @@ ryslog is not on the system.
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
     --disable-tcp-wrapper \
-%if 0%{?rhel} == 9
-    --disable-cpp \
-%endif
 %if %{with cloudauth}
     --enable-cloud-auth \
 %else
@@ -479,7 +501,7 @@ make DESTDIR=%{buildroot} install
 %if 0%{?rhel} == 8
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
 %endif
-%if 0%{?fedora} >= 28 || 0%{?rhel} == 9
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 9
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog-ng
 %endif
 
@@ -620,6 +642,12 @@ fi
 
 %files bigquery
 %{_libdir}/%{name}/libbigquery.so
+
+%files clickhouse
+%{_libdir}/%{name}/libclickhouse.so
+
+%files pubsub
+%{_libdir}/%{name}/libpubsub.so
 %endif
 
 %if %{with amqp}

@@ -46,7 +46,6 @@ typedef struct _TLSSession
   } peer_info;
 } TLSSession;
 
-void tls_session_configure_allow_compress(TLSSession *tls_session, gboolean allow_compress);
 void tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints);
 void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
 void tls_session_set_verifier(TLSSession *self, TLSVerifier *verifier);

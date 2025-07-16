@@ -35,7 +35,7 @@ Test(log_proto, test_log_proto_framed_server_simple_messages)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   proto = log_proto_framed_server_new(
             log_transport_mock_stream_new(
               "32 0123456789ABCDEF0123456789ABCDEF", -1,
@@ -69,7 +69,7 @@ Test(log_proto, test_log_proto_framed_server_io_error)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   proto = log_proto_framed_server_new(
             log_transport_mock_stream_new(
               "32 0123456789ABCDEF0123456789ABCDEF", -1,
@@ -86,7 +86,7 @@ Test(log_proto, test_log_proto_framed_server_invalid_header)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   proto = log_proto_framed_server_new(
             log_transport_mock_stream_new(
               "1q 0123456789ABCDEF0123456789ABCDEF", -1,
@@ -100,7 +100,7 @@ Test(log_proto, test_log_proto_framed_server_too_long_line)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   proto = log_proto_framed_server_new(
             log_transport_mock_stream_new(
               "48 0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF", -1,
@@ -116,8 +116,8 @@ Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed)
 
   /* the simplest trimming scenario as a base test */
 
-  proto_server_options.max_msg_size = 32;
-  proto_server_options.trim_large_messages = TRUE;
+  proto_server_options.super.max_msg_size = 32;
+  proto_server_options.super.trim_large_messages = TRUE;
   proto = log_proto_framed_server_new(
             log_transport_mock_stream_new(
               "48 0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF", -1,
@@ -137,8 +137,8 @@ Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_multiple_cycl
    * - checking with a normal message, that the buffer is still handled correctly.
    */
 
-  proto_server_options.max_msg_size = 2;
-  proto_server_options.trim_large_messages = TRUE;
+  proto_server_options.super.max_msg_size = 2;
+  proto_server_options.super.trim_large_messages = TRUE;
   proto = log_proto_framed_server_new(
             log_transport_mock_records_new(
               "1 0", -1,
@@ -167,8 +167,8 @@ Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_frame_at_the_
    * - checking with a normal message, that the buffer is still handled correctly
    */
 
-  proto_server_options.max_msg_size = 8;
-  proto_server_options.trim_large_messages = TRUE;
+  proto_server_options.super.max_msg_size = 8;
+  proto_server_options.super.trim_large_messages = TRUE;
   proto = log_proto_framed_server_new(
             log_transport_mock_records_new(
               "3 01\n15 ", -1,
@@ -191,8 +191,8 @@ Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_one_big_messa
   /* Input is bigger than the buffer size. With a small and a bigger (expected to be trimmed) message.
    * There is a small message and a large message.*/
   LogProtoServer *proto;
-  proto_server_options.max_msg_size = 10;
-  proto_server_options.trim_large_messages = TRUE;
+  proto_server_options.super.max_msg_size = 10;
+  proto_server_options.super.trim_large_messages = TRUE;
   proto = log_proto_framed_server_new(
             log_transport_mock_stream_new(
               "2 ab16 0123456789ABCDEF", -1,
@@ -210,7 +210,7 @@ Test(log_proto, test_log_proto_framed_server_message_exceeds_buffer)
   /* should cause the buffer to be extended, shifted, as the first message
    * resizes the buffer to 16+10 == 26 bytes. */
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   proto = log_proto_framed_server_new(
             log_transport_mock_records_new(
               "16 0123456789ABCDE\n16 0123456789ABCDE\n", -1,
@@ -227,9 +227,9 @@ Test(log_proto, test_log_proto_framed_server_buffer_shift_before_fetch)
 
   /* this testcase fills the initially 10 byte buffer with data, which
    * causes a shift in log_proto_framed_server_fetch() */
-  proto_server_options.max_msg_size = 32;
-  proto_server_options.init_buffer_size = 10;
-  proto_server_options.max_buffer_size = 10;
+  proto_server_options.super.max_msg_size = 32;
+  proto_server_options.super.init_buffer_size = 10;
+  proto_server_options.super.max_buffer_size = 10;
   proto = log_proto_framed_server_new(
             log_transport_mock_records_new(
               "7 012345\n4", 10,
@@ -247,9 +247,9 @@ Test(log_proto, test_log_proto_framed_server_buffer_shift_to_make_space_for_a_fr
 
   /* this testcase fills the initially 10 byte buffer with data, which
    * causes a shift in log_proto_framed_server_fetch() */
-  proto_server_options.max_msg_size = 32;
-  proto_server_options.init_buffer_size = 10;
-  proto_server_options.max_buffer_size = 10;
+  proto_server_options.super.max_msg_size = 32;
+  proto_server_options.super.init_buffer_size = 10;
+  proto_server_options.super.max_buffer_size = 10;
   proto = log_proto_framed_server_new(
             log_transport_mock_records_new(
               "6 01234\n4 ", 10,
@@ -265,7 +265,7 @@ Test(log_proto, test_log_proto_framed_server_multi_read)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   proto = log_proto_framed_server_new(
             log_transport_mock_records_new(
               "7 foobar\n", -1,

@@ -8,7 +8,7 @@ gnupg                           [centos, almalinux, fedora]
 wget                            [centos, almalinux, fedora, debian, ubuntu]
 ca-certificates       	        [centos, almalinux, fedora, debian, ubuntu]
 
-# criterion compilation
+# cmake, c++ modules, criterion compilation
 cmake                           [centos, almalinux, fedora, debian, ubuntu]
 gcc-c++                         [centos, almalinux, fedora]
 
@@ -113,6 +113,9 @@ libmongoc-dev                   [debian]
 # added as comments.
 #############################################################################
 
+# Our ivykis fork has uring support, let's use it in the devshell and the
+# packages we provide
+liburing-dev                    [debian, ubuntu-jammy, ubuntu-noble, devshell]
 
 #############################################################################
 # Tools required to run @kira-syslogng, our testbot.
@@ -130,10 +133,12 @@ python-numpy                    [kira]
 python3-numpy                   [kira]
 python-yaml                     [kira]
 python3-yaml                    [kira]
-systemd-sysv                    [kira]
 python-is-python2               [kira]
 python2-dev                     [kira]
 python2-dbg                     [kira]
+psmisc                          [kira]
+socat                           [kira]
+systemd-sysv                    [kira]
 
 
 #############################################################################
@@ -149,6 +154,7 @@ lcov                            [devshell]
 libc6-dbg                       [devshell]
 libglib2.0-dev                  [devshell]
 libjemalloc-dev                 [devshell]
+libunwind-dev                   [devshell]
 libssl-dev                      [devshell]
 linux-perf                      [devshell]
 locales                         [devshell]
@@ -165,3 +171,10 @@ snmptrapd                       [devshell]
 dwarves                         [devshell]
 jq                              [devshell]
 curl                            [devshell]
+
+#############################################################################
+# Functional tests in the devshell
+#############################################################################
+
+sqlite3                         [devshell]
+libdbd-sqlite3                  [devshell]

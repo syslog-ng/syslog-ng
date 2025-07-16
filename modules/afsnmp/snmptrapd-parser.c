@@ -125,7 +125,7 @@ _append_name_value_to_generated_message(GString *generated_message, const gchar 
   if (generated_message->len > 0)
     g_string_append(generated_message, ", ");
 
-  append_unsafe_utf8_as_escaped_text(escaped_value, value, value_length, "'");
+  append_unsafe_utf8_as_escaped_text(escaped_value, value, value_length, AUTF8_UNSAFE_APOSTROPHE);
   g_string_append_printf(generated_message, "%s='%s'", key, escaped_value->str);
 
   scratch_buffers_reclaim_marked(marker);

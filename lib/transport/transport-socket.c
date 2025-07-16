@@ -160,7 +160,7 @@ _extract_from_msghdr_method(LogTransportSocket *self, struct msghdr *msg, LogTra
   _parse_cmsg_to_aux(self, msg, aux);
 }
 
-static gssize
+gssize
 log_transport_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportSocket *self = (LogTransportSocket *) s;
@@ -208,9 +208,9 @@ log_transport_socket_write_method(LogTransport *s, const gpointer buf, gsize buf
 }
 
 static void
-log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
+log_transport_socket_init_instance(LogTransportSocket *self, const gchar *name, gint fd)
 {
-  log_transport_init_instance(&self->super, fd);
+  log_transport_init_instance(&self->super, name, fd);
   self->super.read = log_transport_socket_read_method;
   self->super.write = log_transport_socket_write_method;
   self->address_family = _determine_address_family(fd);
@@ -218,20 +218,6 @@ log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
   self->parse_cmsg = log_transport_socket_parse_cmsg_method;
 
   _setup_fd(self, fd);
-}
-
-static void
-log_transport_socket_free_method(LogTransport *s)
-{
-  LogTransportSocket *self = (LogTransportSocket *) s;
-
-  if (self->proxy)
-    {
-      log_transport_socket_proxy_free(self->proxy);
-      self->proxy = NULL;
-    }
-
-  log_transport_free_method(s);
 }
 
 static gssize
@@ -269,18 +255,9 @@ log_transport_dgram_socket_write_method(LogTransport *s, const gpointer buf, gsi
 }
 
 void
-log_transport_socket_set_proxied(LogTransportSocket *self, LogTransportSocketProxy *proxy)
-{
-  g_assert(self->proto == IPPROTO_TCP);
-  g_assert(self->proxy == NULL && "Transport socket already proxied");
-
-  self->proxy = proxy;
-}
-
-void
 log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd)
 {
-  log_transport_socket_init_instance(self, fd);
+  log_transport_socket_init_instance(self, "dgram-socket", fd);
   self->super.read = log_transport_dgram_socket_read_method;
   self->super.write = log_transport_dgram_socket_write_method;
 }
@@ -294,22 +271,18 @@ log_transport_dgram_socket_new(gint fd)
   return &self->super;
 }
 
-void
-log_transport_stream_socket_free_method(LogTransport *s)
+static void
+log_transport_stream_socket_shutdown(LogTransport *s)
 {
   if (s->fd != -1)
     shutdown(s->fd, SHUT_RDWR);
-  log_transport_socket_free_method(s);
 }
 
 void
 log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd)
 {
-  g_assert(self->proxy == NULL
-           && "log_transport_stream_socket_init_instance must be called before log_transport_socket_set_proxied ");
-
-  log_transport_socket_init_instance(self, fd);
-  self->super.free_fn = log_transport_stream_socket_free_method;
+  log_transport_socket_init_instance(self, "stream-socket", fd);
+  self->super.shutdown = log_transport_stream_socket_shutdown;
 }
 
 LogTransport *

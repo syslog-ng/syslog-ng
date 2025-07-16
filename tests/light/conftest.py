@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 #############################################################################
+# Copyright (c) 2025 Axoflow
+# Copyright (c) 2025 Attila Szakacs <attila.szakacs@axoflow.com>
 # Copyright (c) 2015-2018 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -22,6 +24,7 @@
 #############################################################################
 import argparse
 import logging
+import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -33,9 +36,13 @@ from src.helpers.loggen.loggen import Loggen
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
 from src.syslog_ng.syslog_ng import SyslogNg
+from src.syslog_ng.syslog_ng_docker_executor import SyslogNgDockerExecutor
+from src.syslog_ng.syslog_ng_local_executor import SyslogNgLocalExecutor
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
+from src.syslog_ng_ctl.syslog_ng_ctl_docker_executor import SyslogNgCtlDockerExecutor
+from src.syslog_ng_ctl.syslog_ng_ctl_local_executor import SyslogNgCtlLocalExecutor
 from src.testcase_parameters.testcase_parameters import TestcaseParameters
 
 logger = logging.getLogger(__name__)
@@ -59,11 +66,24 @@ class InstallDirAction(argparse.Action):
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
     parser.addoption("--run-under", help="Run syslog-ng under selected tool, example tools: [valgrind, strace]")
+
+    parser.addoption(
+        "--runner",
+        default="local",
+        choices=["local", "docker"],
+        help="How to run syslog-ng.",
+    )
     parser.addoption(
         "--installdir",
         action=InstallDirAction,
-        help="Set installdir for installed syslog-ng. Used when installmode is: custom. Example path: '/home/user/syslog-ng/installdir/'",
+        help="Look for syslog-ng binaries here. Used when 'runner' is 'local'. Example path: '/home/user/syslog-ng/install/'",
     )
+    parser.addoption(
+        "--docker-image",
+        default="balabit/syslog-ng:latest",
+        help="Docker image to use for running syslog-ng. Used when 'runner' is 'docker'. Default: balabit/syslog-ng:latest",
+    )
+
     parser.addoption(
         "--reports",
         action="store",
@@ -98,18 +118,26 @@ def pytest_runtest_logreport(report):
 # Pytest Fixtures
 @pytest.fixture
 def testcase_parameters(request):
-    return TestcaseParameters(request)
+    parameters = TestcaseParameters(request)
+    tc_parameters.INSTANCE_PATH = SyslogNgPaths(parameters).set_syslog_ng_paths("server")
+    return parameters
 
 
 @pytest.fixture
-def config(request, teardown):
-    return SyslogNgConfig(request.getfixturevalue("version"), teardown)
+def config(request, syslog_ng, teardown) -> SyslogNgConfig:
+    return syslog_ng.create_config(request.getfixturevalue("version"), teardown)
 
 
 @pytest.fixture
-def syslog_ng(request, testcase_parameters, teardown):
-    tc_parameters.INSTANCE_PATH = SyslogNgPaths(testcase_parameters).set_syslog_ng_paths("server")
-    syslog_ng = SyslogNg(tc_parameters.INSTANCE_PATH, testcase_parameters, teardown)
+def syslog_ng(request: pytest.FixtureRequest, testcase_parameters: TestcaseParameters, syslog_ng_ctl: SyslogNgCtl, container_name: str, teardown):
+    if request.config.getoption("--runner") == "local":
+        executor = SyslogNgLocalExecutor(tc_parameters.INSTANCE_PATH.get_syslog_ng_bin())
+    elif request.config.getoption("--runner") == "docker":
+        executor = SyslogNgDockerExecutor(container_name, request.config.getoption("--docker-image"))
+    else:
+        raise ValueError("Invalid runner")
+
+    syslog_ng = SyslogNg(executor, syslog_ng_ctl, tc_parameters.INSTANCE_PATH, testcase_parameters, teardown)
     teardown.register(syslog_ng.stop)
     return syslog_ng
 
@@ -133,8 +161,24 @@ def teardown():
 
 
 @pytest.fixture
-def syslog_ng_ctl(syslog_ng):
-    return SyslogNgCtl(syslog_ng.instance_paths)
+def syslog_ng_ctl(request: pytest.FixtureRequest, testcase_parameters, container_name):
+    if request.config.getoption("--runner") == "local":
+        executor = SyslogNgCtlLocalExecutor(
+            tc_parameters.INSTANCE_PATH.get_syslog_ng_ctl_bin(),
+            tc_parameters.INSTANCE_PATH.get_control_socket_path(),
+        )
+    elif request.config.getoption("--runner") == "docker":
+        executor = SyslogNgCtlDockerExecutor(container_name)
+    else:
+        raise ValueError("Invalid runner")
+
+    return SyslogNgCtl(tc_parameters.INSTANCE_PATH, executor)
+
+
+@pytest.fixture
+def container_name(request: pytest.FixtureRequest, testcase_parameters: TestcaseParameters):
+    container_name = f"{testcase_parameters.get_testcase_name()}_{tc_parameters.INSTANCE_PATH.get_instance_name()}"
+    return re.sub(r'[^a-zA-Z0-9_.-]', '_', container_name)
 
 
 @pytest.fixture

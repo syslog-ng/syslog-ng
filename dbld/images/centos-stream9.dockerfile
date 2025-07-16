@@ -20,6 +20,8 @@ RUN /dbld/builddeps install_rpm_build_deps
 
 RUN /dbld/builddeps install_criterion
 RUN /dbld/builddeps install_gradle
+# bison is too old, at least version 3.7.6 is required
+RUN /dbld/builddeps install_bison_from_source
 
 VOLUME /source
 VOLUME /build

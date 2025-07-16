@@ -657,8 +657,6 @@ python_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = python_dd_free;
   self->super.super.super.super.generate_persist_name = python_dd_format_persist_name;
 
-  self->super.metrics.raw_bytes_enabled = TRUE;
-
   self->super.worker.connect = python_dd_connect;
   self->super.worker.disconnect = python_dd_disconnect;
   self->super.worker.insert = python_dd_insert;

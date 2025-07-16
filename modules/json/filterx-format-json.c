@@ -175,7 +175,7 @@ _format_and_append_string(FilterXObject *value, GString *result)
 
   _append_comma_if_needed(result);
   g_string_append_c(result, '"');
-  append_unsafe_utf8_as_escaped(result, string_value, string_value_len, "\"", "\\u%04x", "\\\\x%02x");
+  append_unsafe_utf8_as_escaped(result, string_value, string_value_len, AUTF8_UNSAFE_QUOTE, "\\u%04x", "\\\\x%02x");
   g_string_append_c(result, '"');
   return TRUE;
 }
@@ -192,7 +192,7 @@ _format_and_append_dict_elem(FilterXObject *key, FilterXObject *value, gpointer 
 
   _append_comma_if_needed(result);
   g_string_append_c(result, '"');
-  append_unsafe_utf8_as_escaped(result, key_str, key_str_len, "\"", "\\u%04x", "\\\\x%02x");
+  append_unsafe_utf8_as_escaped(result, key_str, key_str_len, AUTF8_UNSAFE_QUOTE, "\\u%04x", "\\\\x%02x");
   g_string_append(result, "\":");
 
   return _format_and_append_value(value, result);
@@ -248,7 +248,7 @@ _repr_append(FilterXObject *value, GString *result)
 
   _append_comma_if_needed(result);
   g_string_append_c(result, '"');
-  append_unsafe_utf8_as_escaped(result, repr->str, repr->len, "\"", "\\u%04x", "\\\\x%02x");
+  append_unsafe_utf8_as_escaped(result, repr->str, repr->len, AUTF8_UNSAFE_QUOTE, "\\u%04x", "\\\\x%02x");
   g_string_append_c(result, '"');
 
 exit:

@@ -83,8 +83,7 @@ if (ENABLE_GRPC)
     gRPC::grpc++
     protobuf::libprotobuf)
 
-  add_subdirectory(credentials)
-  add_subdirectory(metrics)
+  add_subdirectory(common)
   add_subdirectory(protos)
 endif()
 
@@ -94,3 +93,5 @@ endif()
 add_subdirectory(loki)
 add_subdirectory(otel)
 add_subdirectory(bigquery)
+add_subdirectory(pubsub)
+add_subdirectory(clickhouse)

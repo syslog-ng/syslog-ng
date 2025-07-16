@@ -31,6 +31,10 @@
 #include "stats/stats-counter.h"
 #include "stats/stats-query.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-prometheus.h"
+#include "stats/stats-csv.h"
+#include "scratch-buffers.h"
+
 #include <string.h>
 
 guint SCS_FILE;
@@ -132,12 +136,11 @@ static gboolean
 _test_format_log_msg_get(gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
-  StatsCounterItem *ctr = (StatsCounterItem *) args[0];
-  LogMessage *msg = (LogMessage *) args[1];
-  gchar *name, *value;
+  StatsCounterItem *ctr = (StatsCounterItem *) args[2];
+  LogMessage *msg = (LogMessage *) args[4];
 
-  name = g_strdup_printf("%s", stats_counter_get_name(ctr));
-  value = g_strdup_printf("%"G_GSIZE_FORMAT, stats_counter_get(ctr));
+  gchar *name = g_strdup_printf("%s", stats_counter_get_name(ctr));
+  gchar *value = g_strdup_printf("%"G_GSIZE_FORMAT, stats_counter_get(ctr));
 
   log_msg_set_value_by_name(msg, name, value, -1);
 
@@ -147,14 +150,72 @@ _test_format_log_msg_get(gpointer user_data)
   return TRUE;
 }
 
+// FIXME: this must be mocked to _ctl_format_get of stats-query-commands.c instead of duplicating the code
 static gboolean
 _test_format_str_get(gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
-  StatsCounterItem *ctr = (StatsCounterItem *) args[0];
-  GString *str = (GString *) args[1];
-  g_string_append_printf(str, "%s: %"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
+  StatsCluster *sc = (StatsCluster *) args[0];
+  gint type = GPOINTER_TO_INT(args[1]);
+  StatsCounterItem *ctr = (StatsCounterItem *) args[2];
+  const gchar *fmt = (const gchar *) args[3];
+  GString *str = (GString *)args[4];
 
+  if (g_str_equal(fmt, "kv"))
+    g_string_append_printf(str, "%s=%"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
+  else if (g_str_equal(fmt, "prometheus"))
+    {
+      ScratchBuffersMarker marker;
+      scratch_buffers_mark(&marker);
+
+      GString *record = stats_prometheus_format_counter(sc, type, ctr);
+      if (record == NULL)
+        return FALSE;
+
+      g_string_append(str, record->str);
+      scratch_buffers_reclaim_marked(marker);
+    }
+  else if (g_str_equal(fmt, "csv"))
+    {
+      ScratchBuffersMarker marker;
+      scratch_buffers_mark(&marker);
+
+      GString *record = stats_csv_format_counter(sc, type, ctr);
+      if (record == NULL)
+        return FALSE;
+
+      g_string_append(str, record->str);
+      scratch_buffers_reclaim_marked(marker);
+    }
+
+  return TRUE;
+}
+
+// FIXME: this must be mocked to _ctl_format_name_without_value of stats-query-commands.c instead of duplicating the code
+static gboolean
+_test_format_list(gpointer user_data)
+{
+  // Other user_data elements are
+  //  - StatsCluster * = args[0]
+  //  - gint type = args[1];
+  //  - const gchar * fmt = args[3];  gpointer *args = (gpointer *) user_data;
+  gpointer *args = (gpointer *) user_data;
+  StatsCounterItem *ctr = (StatsCounterItem *) args[2];
+  GString *str = (GString *)args[4];
+
+  g_string_append_printf(str, "%s\n", stats_counter_get_name(ctr));
+  return TRUE;
+}
+
+// FIXME: this must be mocked to _ctl_format_get_sum of stats-query-commands.c instead of duplicating the code
+static gboolean
+_test_format_str_get_sum(gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  GString *result = (GString *) args[0];
+  gint64 *sum = (gint64 *) args[1];
+
+  g_string_printf(result, "%" G_GINT64_FORMAT "\n", *sum);
   return TRUE;
 }
 
@@ -172,30 +233,6 @@ _test_format_log_msg_get_sum(gpointer user_data)
   log_msg_set_value_by_name(msg, name, value, -1);
 
   g_free(value);
-
-  return TRUE;
-}
-
-static gboolean
-_test_format_str_get_sum(gpointer user_data)
-{
-  gpointer *args = (gpointer *) user_data;
-  GString *result = (GString *) args[0];
-  gint *sum = (gint *) args[1];
-
-  g_string_printf(result, "%d", *sum);
-
-  return TRUE;
-}
-
-static gboolean
-_test_format_list(gpointer user_data)
-{
-  gpointer *args = (gpointer *) user_data;
-  StatsCounterItem *ctr = (StatsCounterItem *) args[0];
-  GString *str = (GString *) args[1];
-  g_string_append_printf(str, "%s\n", stats_counter_get_name(ctr));
-
   return TRUE;
 }
 
@@ -231,7 +268,7 @@ ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_l
   const gchar *actual;
   LogMessage *msg = log_msg_new_empty();
 
-  stats_query_get(test_cases->pattern, _test_format_log_msg_get, (gpointer)msg);
+  stats_query_get(test_cases->pattern, _test_format_log_msg_get, "kv", (gpointer)msg);
   actual = log_msg_get_value_by_name(msg, test_cases->pattern, NULL);
   cr_assert_str_eq(actual, test_cases->expected,
                    "Counter: '%s'; expected number: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, actual);
@@ -240,36 +277,94 @@ ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_l
 }
 
 
-ParameterizedTestParameters(stats_query, test_stats_query_get_str_out)
+ParameterizedTestParameters(stats_query, test_stats_query_get_kv_str_out)
 {
   static QueryTestCase test_cases[] =
   {
-    {"center.*.*", "center.guba.polo.frozen.suppressed: 12\n"},
-    {"cent*", "center.guba.polo.frozen.suppressed: 12\n"},
-    {"src.pipe.guba.gumi.disz.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
-    {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
-    {"src.pipe.guba.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
-    {"src.pipe.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
-    {"dst.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
-    {"dst.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
-    {"dst.*.*.*.*", "dst.tcp.guba.labda.received.dropped: 0\n"},
+    {"center.*.*", "center.guba.polo.frozen.suppressed=12\n"},
+    {"cent*", "center.guba.polo.frozen.suppressed=12\n"},
+    {"src.pipe.guba.gumi.disz.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed=0\n"},
+    {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed=0\n"},
+    {"src.pipe.guba.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed=0\n"},
+    {"src.pipe.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed=0\n"},
+    {"dst.*.*", "dst.tcp.guba.labda.received.dropped=0\n"},
+    {"dst.*.*.*", "dst.tcp.guba.labda.received.dropped=0\n"},
+    {"dst.*.*.*.*", "dst.tcp.guba.labda.received.dropped=0\n"},
     {"src.java.*.*", ""},
     {"src.ja*.*.*", ""},
-    {"global.id.instance.name", "global.id.instance.name: 0\n"},
+    {"global.id.instance.name", "global.id.instance.name=0\n"},
   };
 
   return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
 }
 
-ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_str_out)
+ParameterizedTestParameters(stats_query, test_stats_query_get_prometheus_str_out)
+{
+  static QueryTestCase test_cases[] =
+  {
+    {"center.*.*", "syslogng_center_suppressed{id=\"guba.polo\",stat_instance=\"frozen\"} 12\n"},
+    {"cent*", "syslogng_center_suppressed{id=\"guba.polo\",stat_instance=\"frozen\"} 12\n"},
+    {"src.pipe.guba.gumi.disz.*.*", "syslogng_src_pipe_suppressed{id=\"guba.gumi.disz\",stat_instance=\"frozen\"} 0\n"},
+    {"src.pipe.guba.gumi.*.*", "syslogng_src_pipe_suppressed{id=\"guba.gumi.disz\",stat_instance=\"frozen\"} 0\n"},
+    {"src.pipe.guba.*.*", "syslogng_src_pipe_suppressed{id=\"guba.gumi.disz\",stat_instance=\"frozen\"} 0\n"},
+    {"src.pipe.*.*", "syslogng_src_pipe_suppressed{id=\"guba.gumi.disz\",stat_instance=\"frozen\"} 0\n"},
+    {"dst.*.*", "syslogng_dst_tcp_dropped{id=\"guba.labda\",stat_instance=\"received\"} 0\n"},
+    {"dst.*.*.*", "syslogng_dst_tcp_dropped{id=\"guba.labda\",stat_instance=\"received\"} 0\n"},
+    {"dst.*.*.*.*", "syslogng_dst_tcp_dropped{id=\"guba.labda\",stat_instance=\"received\"} 0\n"},
+    {"src.java.*.*", ""},
+    {"src.ja*.*.*", ""},
+    {"global.id.instance.name", "syslogng_global_id_name 0\n"},
+  };
+
+  return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTestParameters(stats_query, test_stats_query_get_csv_str_out)
+{
+  static QueryTestCase test_cases[] =
+  {
+    {"center.*.*", "center;guba.polo;frozen;a;suppressed;12\n"},
+    {"cent*", "center;guba.polo;frozen;a;suppressed;12\n"},
+    {"src.pipe.guba.gumi.disz.*.*", "src.pipe;guba.gumi.disz;frozen;a;suppressed;0\n"},
+    {"src.pipe.guba.gumi.*.*", "src.pipe;guba.gumi.disz;frozen;a;suppressed;0\n"},
+    {"src.pipe.guba.*.*", "src.pipe;guba.gumi.disz;frozen;a;suppressed;0\n"},
+    {"src.pipe.*.*", "src.pipe;guba.gumi.disz;frozen;a;suppressed;0\n"},
+    {"dst.*.*", "dst.tcp;guba.labda;received;a;dropped;0\n"},
+    {"dst.*.*.*", "dst.tcp;guba.labda;received;a;dropped;0\n"},
+    {"dst.*.*.*.*", "dst.tcp;guba.labda;received;a;dropped;0\n"},
+    {"src.java.*.*", ""},
+    {"src.ja*.*.*", ""},
+    {"global.id.instance.name", "global;id;instance;a;name;0\n"},
+  };
+
+  return cr_make_param_array(QueryTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+void run_test_case(QueryTestCase *test_cases, const char *format)
 {
   GString *result = g_string_new("");
 
-  stats_query_get(test_cases->pattern, _test_format_str_get, (gpointer)result);
+  stats_query_get(test_cases->pattern, _test_format_str_get, format, (gpointer)result);
   cr_assert_str_eq(result->str, test_cases->expected,
-                   "Pattern: '%s'; expected key and value: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, result->str);
+                   "Pattern: '%s'; expected key and value: '%s';, got: '%s';",
+                   test_cases->pattern, test_cases->expected, result->str);
 
   g_string_free(result, TRUE);
+}
+
+ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_kv_str_out)
+{
+  run_test_case(test_cases, "kv");
+}
+
+ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_prometheus_str_out)
+{
+  run_test_case(test_cases, "prometheus");
+}
+
+ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_csv_str_out)
+{
+  run_test_case(test_cases, "csv");
 }
 
 ParameterizedTestParameters(stats_query, test_stats_query_get_sum_log_msg_out)
@@ -300,13 +395,13 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_sum_str_out)
 {
   static QueryTestCase test_cases[] =
   {
-    {"*", "12"},
-    {"center.*.*", "12"},
-    {"cent*", "12"},
-    {"src.pipe.guba.gumi.disz.*.*", "0"},
-    {"*.tcp.guba.*.*", "0"},
-    {"*.guba.*i.*.*", "0"},
-    {"*.guba.gum?.*.*", "0"},
+    {"*", "12\n"},
+    {"center.*.*", "12\n"},
+    {"cent*", "12\n"},
+    {"src.pipe.guba.gumi.disz.*.*", "0\n"},
+    {"*.tcp.guba.*.*", "0\n"},
+    {"*.guba.*i.*.*", "0\n"},
+    {"*.guba.gum?.*.*", "0\n"},
     {"src.ja*.*.*", ""},
   };
 

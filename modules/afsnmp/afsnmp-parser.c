@@ -51,12 +51,18 @@ static CfgLexerKeyword afsnmp_keywords[] =
   { NULL }
 };
 
+static void
+log_pipe_unref_wrapper(gpointer instance)
+{
+  log_pipe_unref((LogPipe *) instance);
+}
+
 CfgParser afsnmp_parser =
 {
   .name = "afsnmp",
   .keywords = afsnmp_keywords,
   .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afsnmp_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
+  .cleanup = log_pipe_unref_wrapper,
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(afsnmp_, AFSNMP_, void **)

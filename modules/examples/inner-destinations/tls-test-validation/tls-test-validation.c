@@ -52,13 +52,12 @@ _slot_append_test_identity(TlsTestValidationPlugin *self, AFSocketTLSCertificate
 static gboolean
 _attach(LogDriverPlugin *s, LogDriver *driver)
 {
-  g_assert(s->signal_connector == NULL);
-  s->signal_connector = signal_slot_connector_ref(driver->super.signal_slot_connector);
+  SignalSlotConnector *ssc = driver->signal_slot_connector;
 
   msg_debug("TlsTestValidationPlugin::attach()",
-            evt_tag_printf("SignalSlotConnector", "%p", s->signal_connector));
+            evt_tag_printf("SignalSlotConnector", "%p", ssc));
 
-  CONNECT(s->signal_connector, signal_afsocket_tls_certificate_validation, _slot_append_test_identity, s);
+  CONNECT(ssc, signal_afsocket_tls_certificate_validation, _slot_append_test_identity, s);
 
   return TRUE;
 }
@@ -66,13 +65,12 @@ _attach(LogDriverPlugin *s, LogDriver *driver)
 static void
 _detach(LogDriverPlugin *s, LogDriver *driver)
 {
+  SignalSlotConnector *ssc = driver->signal_slot_connector;
+
   msg_debug("TlsTestValidationPlugin::detach()",
-            evt_tag_printf("SignalSlotConnector", "%p", s->signal_connector));
+            evt_tag_printf("SignalSlotConnector", "%p", ssc));
 
-  DISCONNECT(s->signal_connector, signal_afsocket_tls_certificate_validation, _slot_append_test_identity, s);
-
-  signal_slot_connector_unref(s->signal_connector);
-  s->signal_connector = NULL;
+  DISCONNECT(ssc, signal_afsocket_tls_certificate_validation, _slot_append_test_identity, s);
 }
 
 static void

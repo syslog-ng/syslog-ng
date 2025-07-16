@@ -1,6 +1,6 @@
 ---
-name: Bug report
-about: Use this template for reporting a bug.
+name: syslog-ng application bug report
+about: Use this template for reporting a bug in the syslog-ng application.
 title: ''
 labels: bug
 assignees: ''

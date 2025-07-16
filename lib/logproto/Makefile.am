@@ -11,7 +11,9 @@ logprotoinclude_HEADERS = \
 	lib/logproto/logproto-framed-server.h	\
 	lib/logproto/logproto-text-client.h  \
 	lib/logproto/logproto-text-server.h	\
-	lib/logproto/logproto-multiline-server.h \
+	lib/logproto/logproto-auto-server.h	\
+	lib/logproto/logproto-http-server.h \
+	lib/logproto/logproto-http-scraper-responder-server.h \
 	lib/logproto/logproto-record-server.h \
 	lib/logproto/logproto-builtins.h	\
 	lib/logproto/logproto.h
@@ -25,7 +27,9 @@ logproto_sources = \
 	lib/logproto/logproto-framed-server.c	\
 	lib/logproto/logproto-text-client.c  \
 	lib/logproto/logproto-text-server.c	\
-	lib/logproto/logproto-multiline-server.c \
+	lib/logproto/logproto-auto-server.c	\
+	lib/logproto/logproto-http-server.c \
+	lib/logproto/logproto-http-scraper-responder-server.c \
 	lib/logproto/logproto-record-server.c \
 	lib/logproto/logproto-builtins.c
 

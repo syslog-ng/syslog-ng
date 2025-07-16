@@ -26,19 +26,22 @@
 
 #include "syslog-ng.h"
 
+#define AUTF8_UNSAFE_QUOTE      0x01
+#define AUTF8_UNSAFE_APOSTROPHE 0x02
+
 void append_unsafe_utf8_as_escaped_binary(GString *escaped_string, const gchar *str,
-                                          gssize str_len, const gchar *unsafe_chars);
+                                          gssize str_len, guint32 unsafe_flags);
 gchar *convert_unsafe_utf8_to_escaped_binary(const gchar *str, gssize str_len,
-                                             const gchar *unsafe_chars);
+                                             guint32 unsafe_flags);
 
 void append_unsafe_utf8_as_escaped_text(GString *escaped_string, const gchar *str,
-                                        gssize str_len, const gchar *unsafe_chars);
+                                        gssize str_len, guint32 unsafe_flags);
 gchar *convert_unsafe_utf8_to_escaped_text(const gchar *str, gssize str_len,
-                                           const gchar *unsafe_chars);
+                                           guint32 unsafe_flags);
 
 
 void append_unsafe_utf8_as_escaped(GString *escaped_output, const gchar *raw,
-                                   gssize raw_len, const gchar *unsafe_chars,
+                                   gssize raw_len, guint32 unsafe_flags,
                                    const gchar *control_format,
                                    const gchar *invalid_format);
 
@@ -58,7 +61,7 @@ optimized_sanitize_utf8_to_escaped_binary(const guchar *data, gint length, gsize
   sanitized_message.len = 0;
   sanitized_message.allocated_len = out_size;
 
-  append_unsafe_utf8_as_escaped_binary(&sanitized_message, (const gchar *) data, length, NULL);
+  append_unsafe_utf8_as_escaped_binary(&sanitized_message, (const gchar *) data, length, 0);
 
   /* MUST NEVER BE REALLOCATED */
   g_assert(sanitized_message.str == out);

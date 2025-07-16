@@ -40,7 +40,11 @@ class ProcessExecutor(object):
         executable_command = prepare_executable_command(command)
         stdout, stderr = prepare_std_outputs(stdout_path, stderr_path)
         logger.info("Following process will be started:\n{}\n".format(printable_command))
-        self.process = psutil.Popen(
-            executable_command, stdout=stdout.open(mode="a"), stderr=stderr.open(mode="a"),
-        )
+        try:
+            self.process = psutil.Popen(
+                executable_command, stdout=stdout.open(mode="a"), stderr=stderr.open(mode="a"),
+            )
+        except (OSError, psutil.Error):
+            stdout.close()
+            stderr.close()
         return self.process
