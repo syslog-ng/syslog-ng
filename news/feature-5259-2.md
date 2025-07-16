@@ -1,1 +1,0 @@
-`multi-line-mode()`: Added a new mutiline detection mode `empty-line-separated` that, as its name suggests, reads and treats all messages as one till it receives an empty line (which contains only a `\r`, `\n` or `\r\n` sequence).
