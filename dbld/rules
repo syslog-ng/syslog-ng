@@ -12,10 +12,14 @@ BUILDER_IMAGES=	\
 	debian-bookworm-arm64	\
 	debian-sid	\
 	debian-testing	\
+	opensuse-tumbleweed	\
 	ubuntu-focal	\
 	ubuntu-jammy \
 	ubuntu-noble \
 	ubuntu-noble-arm64	\
+	rhel-8 \
+	rhel-9 \
+	rocky-8 \
 	kira	\
 	tarball
 
@@ -60,7 +64,7 @@ CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=3 --prefix=/instal
 DBLD_RULES=$(MAKE) --no-print-directory -f $(DBLD_DIR)/rules
 
 DOCKER_INTERACTIVE=$(shell if tty -s; then echo "-ti"; else echo "-i"; fi)
-DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm ${DOCKER_INTERACTIVE} ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
+DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --privileged --rm ${DOCKER_INTERACTIVE} ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
 
 -include $(if $(RULES_CONF),$(RULES_CONF),$(DBLD_DIR)/rules.conf)
 

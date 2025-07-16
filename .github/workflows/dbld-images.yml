@@ -33,22 +33,26 @@ jobs:
     strategy:
       matrix:
         image:
-          - almalinux-8
-          - almalinux-9
-          - centos-stream9
-          - centos-stream10
-          - fedora-latest
-          - fedora-rawhide # - rawhide is always a problem turning it off now
-          - debian-bullseye
-          - debian-bookworm
-          - debian-sid
-          - debian-testing
-          - ubuntu-focal
-          - ubuntu-jammy
-          - ubuntu-noble
-          - devshell
-          - kira
-          - tarball
+          # - almalinux-8
+          # - almalinux-9
+          # - centos-stream9
+          # - centos-stream10
+          # - fedora-latest
+          # - fedora-rawhide
+          # - debian-bullseye
+          # - debian-bookworm
+          # - debian-sid
+          # - debian-testing
+          - opensuse-tumbleweed
+          # - ubuntu-focal
+          # - ubuntu-jammy
+          # - ubuntu-noble
+          # - rhel-8
+          # - rhel-9
+          - rocky-9
+          # - devshell
+          # - kira
+          # - tarball
         arch:
           - amd64
         platform:
@@ -57,13 +61,13 @@ jobs:
           - ubuntu-22.04-arm
         exclude:
           - platform: ubuntu-22.04-arm
-        include:
-          - image: debian-bookworm
-            platform: ubuntu-22.04-arm
-            arch: arm64
-          - image: devshell
-            platform: ubuntu-22.04-arm
-            arch: arm64
+        # include:
+        #   - image: debian-bookworm
+        #     platform: ubuntu-22.04-arm
+        #     arch: arm64
+        #   - image: devshell
+        #     platform: ubuntu-22.04-arm
+        #     arch: arm64
       fail-fast: false
 
     steps:

@@ -1,0 +1,27 @@
+FROM opensuse/tumbleweed:latest
+LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
+ENV OS_DISTRIBUTION=opensuse
+ENV OS_DISTRIBUTION_CODE_NAME=tumbleweed
+
+ARG ARG_IMAGE_PLATFORM
+ARG COMMIT
+ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
+LABEL COMMIT=${COMMIT}
+
+COPY images/entrypoint.sh /
+COPY . /dbld/
+
+RUN /dbld/builddeps update_packages
+RUN /dbld/builddeps workaround_rpm_repos
+RUN /dbld/builddeps install_dbld_dependencies
+RUN /dbld/builddeps add_copr_repo
+RUN /dbld/builddeps install_zypper_packages
+RUN /dbld/builddeps install_rpm_build_deps
+
+RUN /dbld/builddeps install_gradle
+# RUN /dbld/builddeps install_bison_from_source
+
+VOLUME /source
+VOLUME /build
+
+ENTRYPOINT ["/entrypoint.sh"]
