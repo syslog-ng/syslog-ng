@@ -48,7 +48,6 @@
 #include "msg-stats.h"
 #include "timeutils/cache.h"
 #include "multi-line/multi-line-factory.h"
-#include "filterx/filterx-globals.h"
 #include "transport/transport-globals.h"
 
 #include <iv.h>
@@ -243,7 +242,6 @@ app_startup(void)
   msg_stats_init();
   timeutils_global_init();
   multi_line_global_init();
-  filterx_global_init();
   log_transport_global_init();
 }
 
@@ -273,7 +271,6 @@ app_shutdown(void)
   run_application_hook(AH_SHUTDOWN);
 
   log_transport_global_deinit();
-  filterx_global_deinit();
   multi_line_global_deinit();
   main_loop_thread_resource_deinit();
   secret_storage_deinit();

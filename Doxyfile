@@ -1108,7 +1108,6 @@ RECURSIVE              = YES
 
 EXCLUDE                = build \
                          autom4te.cache \
-                         lib/filterx \
                          lib/ivykis \
                          modules/java-modules \
                          modules/cloud-auth/jwt-cpp \

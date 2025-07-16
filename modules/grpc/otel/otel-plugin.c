@@ -24,7 +24,6 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
-#include "filterx/object-otel.h"
 #include "otel-logmsg-handles.h"
 #include "protos/apphook.h"
 
@@ -58,42 +57,11 @@ static Plugin otel_plugins[] =
     .name = "syslog_ng_otlp",
     .parser = &otel_parser,
   },
-  {
-    .type = LL_CONTEXT_FILTERX_ENUM,
-    .name = "otel",
-    .construct = grpc_otel_filterx_enum_construct,
-  },
-  {
-    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
-    .name = "otel_logrecord",
-    .construct = grpc_otel_filterx_logrecord_contruct_new,
-  },
-  {
-    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
-    .name = "otel_resource",
-    .construct = grpc_otel_filterx_resource_construct_new,
-  },
-  {
-    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
-    .name = "otel_scope",
-    .construct = grpc_otel_filterx_scope_construct_new,
-  },
-  {
-    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
-    .name = "otel_kvlist",
-    .construct = grpc_otel_filterx_kvlist_construct_new,
-  },
-  {
-    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
-    .name = "otel_array",
-    .construct = grpc_otel_filterx_array_construct_new,
-  },
 };
 
 gboolean
 otel_module_init(PluginContext *context, CfgArgs *args)
 {
-  otel_filterx_objects_global_init();
   plugin_register(context, otel_plugins, G_N_ELEMENTS(otel_plugins));
   grpc_register_global_initializers();
   otel_logmsg_handles_global_init();

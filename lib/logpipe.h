@@ -27,7 +27,6 @@
 
 #include "syslog-ng.h"
 #include "logmsg/logmsg.h"
-#include "filterx/filterx-eval.h"
 #include "cfg.h"
 #include "atomic.h"
 #include "messages.h"
@@ -76,9 +75,6 @@
 
 /* node created directly by the user */
 #define PIF_CONFIG_RELATED    0x0100
-
-/* sync filterx state and message in right before calling queue() */
-#define PIF_SYNC_FILTERX      0x0200
 
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 
@@ -224,7 +220,6 @@ struct _LogPathOptions
 
   gboolean *matched;
   const LogPathOptions *lpo_parent_junction;
-  FilterXEvalContext *filterx_context;
 };
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL, NULL }

@@ -14,12 +14,10 @@ add_subdirectory(sources/random-choice-generator)
 add_subdirectory(inner-destinations/http-test-slots)
 add_subdirectory(inner-destinations/tls-test-validation)
 add_subdirectory(destinations/example_destination)
-add_subdirectory(filterx/example-filterx-func)
 
 target_link_libraries(examples PRIVATE msg-generator)
 target_link_libraries(examples PRIVATE threaded-random-generator)
 target_link_libraries(examples PRIVATE threaded-diskq-source)
-target_link_libraries(examples PRIVATE example_filterx_func)
 
 if(ENABLE_CPP)
   target_link_libraries(examples PRIVATE random-choice-generator)
