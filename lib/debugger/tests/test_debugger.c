@@ -48,4 +48,3 @@ Test(debugger, test_debugger)
   Debugger *debugger = debugger_new(main_loop, configuration);
   debugger_free(debugger);
 }
-

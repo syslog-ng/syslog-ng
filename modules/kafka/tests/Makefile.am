@@ -8,7 +8,7 @@ modules_kafka_tests_TESTS			= \
 check_PROGRAMS					+= ${modules_kafka_tests_TESTS}
 
 modules_kafka_tests_test_kafka_props_SOURCES = 	\
-	modules/kafka/tests/test_kafka-props.c
+	modules/kafka/tests/test_kafka_props.c
 
 modules_kafka_tests_test_kafka_config_SOURCES = \
 	modules/kafka/tests/test_kafka_config.c
