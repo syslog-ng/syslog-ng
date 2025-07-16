@@ -3,7 +3,78 @@
 
 ## Highlights
 
-<Fill this block manually from the blocks below>
+  * `stats-exporter`: Added two new sources, `stats-exporter()` and `stats-exporter-dont-log()`, which directly serve the output of `syslog-ng-ctl stats` and `syslog-ng-ctl query` to a http  scraper. The only difference is that `stats-exporter-dont-log()` suppresses log messages from incoming scraper requests, ensuring no messages appear in the log path. Meanwhile, `stats-exporter()` logs unparsed messages, storing incoming scraper HTTP requests in the `MSG` field.
+
+    Example usage for a Prometheus Scraper which logs the HTTP request of the scraper to /var/log/scraper.log:
+
+    ``` config
+    @version: 4.9
+    @include "scl.conf"
+
+    source s_prometheus_stat {
+        stats-exporter(
+            ip("0.0.0.0")
+            port(8080)
+            stat-type("query")
+            stat-query("*")
+            scrape-freq-limit(30)
+            single-instance(yes)
+        );
+    };
+
+    log {
+        source(s_prometheus_stat);
+        destination { file(/var/log/scraper.log); };
+    };
+    ```
+
+    Example usage for a generic HTTP Scraper which sends e.g. the `GET /stats HTTP/1.1` HTTP request to get statistics of syslog-ng, do not want to log or further process the HTTP requests in the log pipe, and needs the response in CSV format:
+
+    ``` config
+    @version: 4.9
+    @include "scl.conf"
+
+    source s_scraper_stat {
+        stats-exporter-dont-log(
+            ip("0.0.0.0")
+            port(8080)
+            stat-type("stats")
+            stat-format("csv")
+            scrape-pattern("GET /stats*")
+            scrape-freq-limit(30)
+            single-instance(yes)
+        );
+    };
+
+    log {
+        source(s_scraper_stat);
+    };
+    ```
+
+    Note: A destination is not required for this to work; the `stats-exporter()` source will respond to the scraper regardless of whether a destination is present in the log path.
+
+    Available options:
+
+    `stat-type(string)` - `query` or `stats`, just like for the `syslog-ng-ctl` command line tool, see there for the details
+    `stat-query(string)` - the query regex string that can be used to filter the output of a `query` type request
+    `stat-format(string)` - the output format of the given stats request, like the `-m` option of the `syslog-ng-ctl` command line tool
+    `scrape-pattern(string)` – the pattern used to match the HTTP header of incoming scraping requests. A stat response will be generated and sent only if the header matches the pattern string
+    `scrape-freq-limit(non-negative-int)` - limits the frequency of repeated scraper requests to the specified number of seconds. Any repeated request within this period will be ignored. A value of 0 means no limit
+    `single-instance(yes/no)` - if set to `yes` only one scraper connection and request will be allowed at once
+    ([#5259](https://github.com/syslog-ng/syslog-ng/pull/5259))
+
+  * `syslog()` source driver: add support for RFC6587 style auto-detection of
+    octet-count based framing to avoid confusion that stems from the sender
+    using a different protocol to the server.  This behaviour can be enabled
+    by using `transport(auto)` option for the `syslog()` source.
+    ([#5322](https://github.com/syslog-ng/syslog-ng/pull/5322))
+
+  * `wildcard-file`: Added inotify-based regular file change detection using the existing inotify-based directory monitor.
+
+    This improves efficiency on OSes like Linux, where only polling was available before, significantly reducing CPU usage while enhancing change detection accuracy.
+
+    To enable this feature, inotify kernel support is required, along with `monitor-method()` set to `inotify` or `auto`, and `follow-freq()` set to 0.
+    ([#5315](https://github.com/syslog-ng/syslog-ng/pull/5315))
 
 ## Features
 
@@ -113,7 +184,7 @@
   * `s3`: Added two new options
 
     * `content-type()`: users now can change the content type of the objects uploaded by syslog-ng.
-    * `use_checksum()`: This option allows the users to change the default checksum settings for 
+    * `use_checksum()`: This option allows the users to change the default checksum settings for
     S3 compatible solutions that don't support checksums. Requires botocore 1.36 or above. Acceptable values are
     `when_supported` (default) and `when_required`.
 
@@ -131,66 +202,6 @@
     ```
     ([#5286](https://github.com/syslog-ng/syslog-ng/pull/5286))
 
-  * `stats-exporter`: Added two new sources, `stats-exporter()` and `stats-exporter-dont-log()`, which directly serve the output of `syslog-ng-ctl stats` and `syslog-ng-ctl query` to a http  scraper. The only difference is that `stats-exporter-dont-log()` suppresses log messages from incoming scraper requests, ensuring no messages appear in the log path. Meanwhile, `stats-exporter()` logs unparsed messages, storing incoming scraper HTTP requests in the `MSG` field.
-
-    Example usage for a Prometheus Scraper which logs the HTTP request of the scraper to /var/log/scraper.log:
-
-    ``` config
-    @version: 4.9
-    @include "scl.conf"
-
-    source s_prometheus_stat {
-        stats-exporter(
-            ip("0.0.0.0")
-            port(8080)
-            stat-type("query")
-            stat-query("*")
-            scrape-freq-limit(30)
-            single-instance(yes)
-        );
-    };
-
-    log {
-        source(s_prometheus_stat);
-        destination { file(/var/log/scraper.log); };
-    };
-    ```
-
-    Example usage for a generic HTTP Scraper which sends e.g. the `GET /stats HTTP/1.1` HTTP request to get statistics of syslog-ng, do not want to log or further process the HTTP requests in the log pipe, and needs the response in CSV format:
-
-    ``` config
-    @version: 4.9
-    @include "scl.conf"
-
-    source s_scraper_stat {
-        stats-exporter-dont-log(
-            ip("0.0.0.0")
-            port(8080)
-            stat-type("stats")
-            stat-format("csv")
-            scrape-pattern("GET /stats*")
-            scrape-freq-limit(30)
-            single-instance(yes)
-        );
-    };
-
-    log {
-        source(s_scraper_stat);
-    };
-    ```
-
-    Note: A destination is not required for this to work; the `stats-exporter()` source will respond to the scraper regardless of whether a destination is present in the log path.
-
-    Available options:
-
-    `stat-type(string)` - `query` or `stats`, just like for the `syslog-ng-ctl` command line tool, see there for the details
-    `stat-query(string)` - the query regex string that can be used to filter the output of a `query` type request
-    `stat-format(string)` - the output format of the given stats request, like the `-m` option of the `syslog-ng-ctl` command line tool
-    `scrape-pattern(string)` – the pattern used to match the HTTP header of incoming scraping requests. A stat response will be generated and sent only if the header matches the pattern string
-    `scrape-freq-limit(non-negative-int)` - limits the frequency of repeated scraper requests to the specified number of seconds. Any repeated request within this period will be ignored. A value of 0 means no limit
-    `single-instance(yes/no)` - if set to `yes` only one scraper connection and request will be allowed at once
-    ([#5259](https://github.com/syslog-ng/syslog-ng/pull/5259))
-
   * `loki()`: Added `batch-bytes()` and `compression()` options.
     ([#5174](https://github.com/syslog-ng/syslog-ng/pull/5174))
 
@@ -202,72 +213,6 @@
     - `csv` - comma separated values e.g. `center;;queued;a;processed;0`
     - `prometheus` - the prometheus scraper ready format e.g. `syslogng_center_processed{stat_instance="queued"} 0`
     ([#5248](https://github.com/syslog-ng/syslog-ng/pull/5248))
-
-  * `ivykis`: Fixed and merged the in development phase `io_uring` based polling method solution to [our ivykis fork](https://github.com/balabit/ivykis).
-
-    This is am experimental integration and not selected by default, you must activate it directly either using the `IV_EXCLUDE_POLL_METHOD` or `IV_SELECT_POLL_METHOD` as described [here](https://syslog-ng.github.io/admin-guide/060_Sources/020_File/001_File_following).
-    ([#5312](https://github.com/syslog-ng/syslog-ng/pull/5312))
-
-  * gRPC based destinations: Added `response-action()` option
-
-    With this option, it is possible to fine tune how syslog-ng
-    behaves in case of different gRPC results.
-
-    Supported by the following destination drivers:
-      * `opentelemetry()`
-      * `loki()`
-      * `bigquery()`
-      * `clickhouse()`
-      * `google-pubsub-grpc()`
-
-    Supported gRPC results:
-      * ok
-      * unavailable
-      * cancelled
-      * deadline-exceeded
-      * aborted
-      * out-of-range
-      * data-loss
-      * unknown
-      * invalid-argument
-      * not-found
-      * already-exists
-      * permission-denied
-      * unauthenticated
-      * failed-precondition
-      * unimplemented
-      * internal
-      * resource-exhausted
-
-    Supported actions:
-      * disconnect
-      * drop
-      * retry
-      * success
-
-    Usage:
-    ```
-    google-pubsub-grpc(
-      project("my-project")
-      topic("my-topic")
-      response-action(
-        not-found => disconnect
-        unavailable => drop
-      )
-    );
-    ```
-    ([#561](https://github.com/syslog-ng/syslog-ng/pull/561))
-
-  * `ivykis`: We have switched to [our own fork](https://github.com/balabit/ivykis) of ivykis as the source for builds when using syslog-ng’s internal ivykis option (`--with-ivykis=internal` in autotools or `-DIVYKIS_SOURCE=internal` in CMake).
-
-    We recommend switching to this internal version, as it includes new features not available in the [original version](https://github.com/buytenh/ivykis) and likely never will be.
-    ([#5307](https://github.com/syslog-ng/syslog-ng/pull/5307))
-
-  * `syslog()` source driver: add support for RFC6587 style auto-detection of
-    octet-count based framing to avoid confusion that stems from the sender
-    using a different protocol to the server.  This behaviour can be enabled
-    by using `transport(auto)` option for the `syslog()` source.
-    ([#5322](https://github.com/syslog-ng/syslog-ng/pull/5322))
 
   * `network()`, `syslog()` sources: add `$PEERIP` and `$PEERPORT` macros
 
@@ -302,7 +247,6 @@
     Include at least one alphabetical character.
     If a `program` name fails validation, it will be considered part of the log message.
 
-    
     Example:
 
     ```
@@ -399,11 +343,15 @@
     The default service endpoint can be changed with the `service_endpoint()` option.
     ([#5266](https://github.com/syslog-ng/syslog-ng/pull/5266))
 
-  * `syslog()` source driver: add support for RFC6587 style auto-detection of
-    octet-count based framing to avoid confusion that stems from the sender
-    using a different protocol to the server.  This behaviour can be enabled
-    by using `transport(auto)` option for the `syslog()` source.
-    ([#5302](https://github.com/syslog-ng/syslog-ng/pull/5302))
+  * `ivykis`: We have switched to [our own fork](https://github.com/balabit/ivykis) of ivykis as the source for builds when using syslog-ng’s internal ivykis option (`--with-ivykis=internal` in autotools or `-DIVYKIS_SOURCE=internal` in CMake).
+
+    We recommend switching to this internal version, as it includes new features not available in the [original version](https://github.com/buytenh/ivykis) and likely never will be.
+    ([#5307](https://github.com/syslog-ng/syslog-ng/pull/5307))
+
+  * `ivykis`: Fixed and merged the in development phase `io_uring` based polling method solution to [our ivykis fork](https://github.com/balabit/ivykis).
+
+    This is am experimental integration and not selected by default, you must activate it directly either using the `IV_EXCLUDE_POLL_METHOD` or `IV_SELECT_POLL_METHOD` as described [here](https://syslog-ng.github.io/admin-guide/060_Sources/020_File/001_File_following).
+    ([#5312](https://github.com/syslog-ng/syslog-ng/pull/5312))
 
   * `file()`, `wildcard-file()`: Added `follow-method()` option.
 
@@ -416,16 +364,8 @@
     The `system` value will use system poll methods (via ivykis) like `port-timer` `port` `dev_poll` `epoll-timerfd` `epoll` `kqueue` `ppoll` `poll` and `uring`. For more information about how to control the system polling methods used, see [How content changes are followed in file() and wildcard-file() sources](https://syslog-ng.github.io/admin-guide/060_Sources/020_File/001_File_following).
     ([#5338](https://github.com/syslog-ng/syslog-ng/pull/5338))
 
-  * `wildcard-file`: Added inotify-based regular file change detection using the existing inotify-based directory monitor.
-
-    This improves efficiency on OSes like Linux, where only polling was available before, significantly reducing CPU usage while enhancing change detection accuracy.
-
-    To enable this feature, inotify kernel support is required, along with `monitor-method()` set to `inotify` or `auto`, and `follow-freq()` set to 0.
-    ([#5315](https://github.com/syslog-ng/syslog-ng/pull/5315))
-
   * `opentelemetry()`, `loki()` destination: Add support for templated `header()` values
     ([#5184](https://github.com/syslog-ng/syslog-ng/pull/5184))
-
 
 ## Bugfixes
 
@@ -462,7 +402,6 @@
   * `network()`, `syslog()` destinations: handle async TLS messages (KeyUpdate, etc.)
     ([#5390](https://github.com/syslog-ng/syslog-ng/pull/5390))
 
-
 ## Notes to developers
 
   * editorconfig: configure supported editors for the project's style
@@ -483,7 +422,6 @@
     - `java-http` - the C based [http()](https://syslog-ng.github.io/admin-guide/070_Destinations/081_http/README) destination can be used.
     ([#5366](https://github.com/syslog-ng/syslog-ng/pull/5366))
 
-
 ## Credits
 
 syslog-ng is developed as a community project, and as such it relies
@@ -496,6 +434,6 @@ of syslog-ng, contribute.
 We would like to thank the following people for their contribution:
 
 Alex Becker, Attila Szakacs, Balazs Scheidler, Bálint Horváth,
-David Mandelberg, Eli Schwartz, Hofi, Kovacs, Gergo Ferenc,
-Kovács Gergő Ferenc, László Várady, Peter Czanik (CzP), Petr Vaganov,
+David Mandelberg, Eli Schwartz, Hofi, Kovács Gergő Ferenc,
+László Várady, Peter Czanik (CzP), Petr Vaganov,
 Shiraz, Szilard Parrag, Tamas Pal, Tamás Kosztyu, shifter
