@@ -11,11 +11,12 @@ jobs:
     steps:
       - name: Check branch
         run: |
-          if  echo ${GITHUB_HEAD_REF} | grep -Eq '^advisory.*' || echo ${GITHUB_HEAD_REF} | grep -Eq '.*hotfix.*' || echo ${GITHUB_HEAD_REF} | grep -Eq '.*release.*'; then
+          echo GITHUB_HEAD_REF=${GITHUB_HEAD_REF}
+          if  echo ${GITHUB_HEAD_REF} | grep -Eq '^advisory.*' || echo ${GITHUB_HEAD_REF} | grep -Eq '.*hotfix.*' || echo ${GITHUB_HEAD_REF} | grep -Eq '.*release.*' || echo ${GITHUB_HEAD_REF} | grep -Eq '^version.*'; then
             exit 0
           fi
-          if [[ ${GITHUB_HEAD_REF} != develop ]];
+          if [[ ${GITHUB_HEAD_REF} != develop ]] || [[ ${GITHUB_HEAD_REF} != master ]];
           then
-            echo "Error: Pull request to 'master' must come from 'develop'"
+            echo "Error: Pull request to 'master' must come from 'develop' or 'master'"
             exit 1
           fi
