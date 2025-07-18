@@ -15,7 +15,6 @@ set(LIBTEST_HEADERS
     stopwatch.h
     cr_template.h
     grab-logging.h
-    filterx-lib.h
 )
 
 set(LIBTEST_SOURCES
@@ -32,7 +31,6 @@ set(LIBTEST_SOURCES
     stopwatch.c
     cr_template.c
     grab-logging.c
-    filterx-lib.c
 )
 
 add_library(libtest STATIC ${LIBTEST_SOURCES})

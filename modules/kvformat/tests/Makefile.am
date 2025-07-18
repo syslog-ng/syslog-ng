@@ -1,9 +1,7 @@
 modules_kvformat_tests_TESTS		= \
 	modules/kvformat/tests/test_format_welf	\
 	modules/kvformat/tests/test_linux_audit_scanner	\
-	modules/kvformat/tests/test_kv_parser \
-	modules/kvformat/tests/test_filterx_func_parse_kv	\
-	modules/kvformat/tests/test_filterx_func_format_kv
+	modules/kvformat/tests/test_kv_parser
 
 check_PROGRAMS				+= ${modules_kvformat_tests_TESTS}
 
@@ -28,17 +26,3 @@ modules_kvformat_tests_test_linux_audit_scanner_LDADD	= $(TEST_LDADD)
 modules_kvformat_tests_test_linux_audit_scanner_LDFLAGS	= \
 	-dlpreopen $(top_builddir)/modules/kvformat/libkvformat.la
 EXTRA_modules_kvformat_tests_test_linux_audit_scanner_DEPENDENCIES = $(top_builddir)/modules/kvformat/libkvformat.la
-
-modules_kvformat_tests_test_filterx_func_parse_kv_CFLAGS	= $(TEST_CFLAGS) -I$(top_srcdir)/modules/kvformat
-modules_kvformat_tests_test_filterx_func_parse_kv_LDADD	= $(TEST_LDADD)
-modules_kvformat_tests_test_filterx_func_parse_kv_LDFLAGS	= \
-	$(PREOPEN_SYSLOGFORMAT)		  \
-	-dlpreopen $(top_builddir)/modules/kvformat/libkvformat.la
-modules_kvformat_tests_test_filterx_func_parse_kv_DEPENDENCIES = $(top_builddir)/modules/kvformat/libkvformat.la
-
-modules_kvformat_tests_test_filterx_func_format_kv_CFLAGS	= $(TEST_CFLAGS) -I$(top_srcdir)/modules/kvformat
-modules_kvformat_tests_test_filterx_func_format_kv_LDADD	= $(TEST_LDADD)
-modules_kvformat_tests_test_filterx_func_format_kv_LDFLAGS	= \
-	$(PREOPEN_SYSLOGFORMAT)		  \
-	-dlpreopen $(top_builddir)/modules/kvformat/libkvformat.la
-modules_kvformat_tests_test_filterx_func_format_kv_DEPENDENCIES = $(top_builddir)/modules/kvformat/libkvformat.la

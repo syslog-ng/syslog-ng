@@ -20,10 +20,4 @@ if (NOT APPLE AND NOT ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     INCLUDES ${OTEL_PROTO_BUILDDIR}
     DEPENDS otel-cpp)
 
-  add_unit_test (
-    CRITERION
-    TARGET test_otel_filterx
-    SOURCES test-otel-filterx.cpp
-    INCLUDES ${OTEL_PROTO_BUILDDIR}
-    DEPENDS otel-cpp otel_filterx_logrecord_cpp)
 endif ()
