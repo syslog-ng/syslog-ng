@@ -1193,7 +1193,8 @@ log_writer_update_message_stats(LogWriter *self, const LogMessage *msg, gsize ms
 }
 
 static gboolean
-log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gboolean *write_error)
+log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gsize *msg_len,
+                         gboolean *write_error)
 {
   gboolean consumed = FALSE;
 
@@ -1210,10 +1211,10 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
                 evt_tag_printf("message", "%s", self->line_buffer->str));
     }
 
-  gsize msg_len = 0;
+  *msg_len = 0;
   if (self->line_buffer->len)
     {
-      msg_len = self->line_buffer->len;
+      *msg_len = self->line_buffer->len;
       LogProtoStatus status = log_proto_client_post(self->proto, msg, (guchar *)self->line_buffer->str,
                                                     self->line_buffer->len,
                                                     &consumed);
@@ -1252,8 +1253,8 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
       if ((self->options->options & LWO_SEQNUM_ALL) || (msg->flags & LF_LOCAL))
         step_sequence_number(&self->seq_num);
 
-      log_writer_update_message_stats(self, msg, msg_len);
-      stats_byte_counter_add(&self->metrics.written_bytes, msg_len);
+      log_writer_update_message_stats(self, msg, *msg_len);
+      stats_byte_counter_add(&self->metrics.written_bytes, *msg_len);
       log_msg_unref(msg);
       msg_set_context(NULL);
       log_msg_refcache_stop();
@@ -1298,6 +1299,45 @@ log_writer_process_handshake(LogWriter *self)
   return LPS_SUCCESS;
 }
 
+
+/*
+ * This function is intended to be called by the current logwriter worker thread.
+ * As the writer thread is the only one currently working with proto, we can set it without lock.
+ *
+ * It is also not necessary to register or start watches, as this happens in _work_finished.
+ * In contrast to log_writer_reopen this function takes immediate effect and does not deadlock
+ * when called within the writer thread.
+ *
+ * Other threads should call log_writer_reopen, as there could be an ongoing write operation!
+ *
+ * The log_pipe_notify call creates a new LogProtoClient, and the log_writer is updated.
+ */
+static void
+log_writer_logrotate(LogWriter *self, gsize buf_len, gboolean *write_error)
+{
+  LogProtoClient *proto = NULL;
+
+  /* Signal AFFileDestWriter to check for logrotation */
+  gpointer args[] = { &proto, (gpointer *) buf_len };
+  log_pipe_notify(self->control, NC_LOGROTATE, args);
+
+  if (proto)
+    {
+      // reopening was successful
+      // flush remaining messages to 'old' log file
+      LogProtoStatus status = log_writer_flush_finalize(self);
+      if (!(status == LPS_SUCCESS || status == LPS_PARTIAL))
+        {
+          *write_error = TRUE;
+          return;
+        }
+
+      // update proto-client
+      log_writer_free_proto(self);
+      log_writer_set_proto(self, proto);
+    }
+}
+
 /*
  * @flush_mode specifies how hard LogWriter is trying to send messages to
  * the actual destination:
@@ -1331,9 +1371,10 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       if (!msg)
         break;
 
+      gsize msg_len = 0;
       ScratchBuffersMarker mark;
       scratch_buffers_mark(&mark);
-      if (!log_writer_write_message(self, msg, &path_options, &write_error))
+      if (!log_writer_write_message(self, msg, &path_options, &msg_len, &write_error))
         {
           scratch_buffers_reclaim_marked(mark);
           break;
@@ -1341,7 +1382,18 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       scratch_buffers_reclaim_marked(mark);
 
       if (!write_error)
-        stats_counter_inc(self->metrics.written_messages);
+        {
+          stats_counter_inc(self->metrics.written_messages);
+
+          // TODO: need to know if logrotation is pending and flush before potential error!
+          log_writer_logrotate(self, msg_len, &write_error);
+
+          // if there was an error during reopening quit
+          if (!self->proto)
+            {
+              return LPS_ERROR;
+            }
+        }
     }
 
   if (write_error)
@@ -1820,6 +1872,7 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
       g_mutex_unlock(&self->pending_proto_lock);
     }
 }
+
 
 static void
 _set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuilder *kb)

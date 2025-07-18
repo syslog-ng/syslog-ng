@@ -42,6 +42,7 @@
 #define NC_FILE_DELETED     7
 #define NC_FILE_MODIFIED    8
 #define NC_AGAIN            9
+#define NC_LOGROTATE        10
 
 /* notify result mask values */
 #define NR_OK          0x0000
