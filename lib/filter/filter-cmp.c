@@ -267,6 +267,8 @@ _compare_mode_to_string(gint compare_mode)
     return "string";
   else if (compare_mode & FCMP_NUM_BASED)
     return "numeric";
+  else if (compare_mode & FCMP_TYPE_AND_VALUE_BASED)
+    return "type-aware-value";
   g_assert_not_reached();
 }
 
