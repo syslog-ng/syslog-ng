@@ -206,7 +206,7 @@ Test(control_cmds, test_stats)
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);
   stats_unlock();
 
-  _run_command("STATS", &response);
+  _run_command("STATS CSV", &response);
 
   stats_result = g_strsplit(response, "\n", 2);
   cr_assert_str_eq(stats_result[0], "SourceName;SourceId;SourceInstance;State;Type;Number",
@@ -229,7 +229,7 @@ Test(control_cmds, test_reset_stats)
   _run_command("RESET_STATS", &response);
   cr_assert(first_line_eq(response, "OK The statistics of syslog-ng have been reset to 0."), "Bad reply");
 
-  _run_command("STATS", &response);
+  _run_command("STATS CSV", &response);
   cr_assert_str_eq(response,
                    "SourceName;SourceId;SourceInstance;State;Type;Number\ncenter;id;received;a;processed;0\n.\n",
                    "Bad reply");
