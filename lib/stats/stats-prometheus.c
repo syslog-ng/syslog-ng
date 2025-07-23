@@ -294,11 +294,12 @@ stats_format_prometheus(StatsCluster *sc, gint type, StatsCounterItem *counter, 
   StatsPrometheusRecordFunc process_record = (StatsPrometheusRecordFunc) args[0];
   gpointer process_record_arg = args[1];
   gboolean with_legacy = GPOINTER_TO_INT(args[2]);
+  gboolean without_orphaned = GPOINTER_TO_INT(args[3]);
 
   if (!sc->key.name && !with_legacy)
     return;
 
-  if (stats_cluster_is_orphaned(sc))
+  if (without_orphaned && stats_cluster_is_orphaned(sc))
     return;
 
   ScratchBuffersMarker marker;
@@ -314,9 +315,9 @@ stats_format_prometheus(StatsCluster *sc, gint type, StatsCounterItem *counter, 
 
 void
 stats_generate_prometheus(StatsPrometheusRecordFunc process_record, gpointer user_data, gboolean with_legacy,
-                          gboolean *cancelled)
+                          gboolean without_orphaned, gboolean *cancelled)
 {
-  gpointer format_prometheus_args[] = {process_record, user_data, GINT_TO_POINTER(with_legacy)};
+  gpointer format_prometheus_args[] = {process_record, user_data, GINT_TO_POINTER(with_legacy), GINT_TO_POINTER(without_orphaned)};
   stats_lock();
   stats_foreach_counter(stats_format_prometheus, format_prometheus_args, cancelled);
   stats_unlock();
