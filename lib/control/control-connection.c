@@ -29,6 +29,8 @@
 #include "secret-storage/secret-storage.h"
 #include "messages.h"
 
+#define MAX_INPUT_BUFFER_SIZE 128
+
 static void
 _g_string_destroy(gpointer user_data)
 {
@@ -192,9 +194,6 @@ control_connection_io_input(void *s)
 {
   ControlConnection *self = (ControlConnection *) s;
   GString *command = NULL;
-  gchar *nl;
-  gint rc;
-  gint orig_len;
 
   if (self->input_buffer->len > MAX_CONTROL_LINE_LENGTH)
     {
@@ -204,11 +203,11 @@ control_connection_io_input(void *s)
       return;
     }
 
-  orig_len = self->input_buffer->len;
+  gint orig_len = self->input_buffer->len;
 
   /* NOTE: plus one for the terminating NUL */
-  g_string_set_size(self->input_buffer, self->input_buffer->len + 128 + 1);
-  rc = self->read(self, self->input_buffer->str + orig_len, 128);
+  g_string_set_size(self->input_buffer, self->input_buffer->len + MAX_INPUT_BUFFER_SIZE + 1);
+  gint rc = self->read(self, self->input_buffer->str + orig_len, MAX_INPUT_BUFFER_SIZE);
   if (rc < 0)
     {
       if (errno != EAGAIN)
@@ -233,15 +232,15 @@ control_connection_io_input(void *s)
     }
 
   /* here we have finished reading the input, check if there's a newline somewhere */
-  nl = strchr(self->input_buffer->str, '\n');
+  gchar *nl = strchr(self->input_buffer->str, '\n');
   if (nl)
     {
-      command = g_string_sized_new(128);
-      /* command doesn't contain NL */
-      g_string_assign_len(command, self->input_buffer->str, nl - self->input_buffer->str);
-      secret_storage_wipe(self->input_buffer->str, nl - self->input_buffer->str);
-      /* strip NL */
-      /*g_string_erase(self->input_buffer, 0, command->len + 1);*/
+      command = g_string_sized_new(MAX_INPUT_BUFFER_SIZE);
+      gint nl_pos = nl - self->input_buffer->str;
+      /* command doesn't contain NL, strip it */
+      g_string_assign_len(command, self->input_buffer->str, nl_pos);
+      /* cleanup the input buffer */
+      secret_storage_wipe(self->input_buffer->str, nl_pos);
       g_string_truncate(self->input_buffer, 0);
     }
   else
@@ -279,7 +278,7 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->server = server;
-  self->input_buffer = g_string_sized_new(128);
+  self->input_buffer = g_string_sized_new(MAX_INPUT_BUFFER_SIZE + 1);
   self->handle_input = control_connection_io_input;
   self->handle_output = control_connection_io_output;
   self->response_batches = g_queue_new();
