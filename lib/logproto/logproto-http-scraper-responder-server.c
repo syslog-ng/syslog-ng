@@ -72,16 +72,18 @@ _compose_response_body(LogProtoHTTPServer *s)
     {
       stats = g_string_new(NULL);
       gpointer args[] = {self, &stats};
-      gboolean with_legacy = TRUE;
+      gboolean with_legacy = self->options->stats_with_legacy;
+      gboolean without_orphaned = self->options->stats_without_orphaned;
 
       msg_trace("Generating stats", evt_tag_str("stat-format", stat_format),
-                evt_tag_int("with-legacy", with_legacy));
+                evt_tag_int("with-legacy", with_legacy),
+                evt_tag_int("without-orphaned", without_orphaned));
       if (strcmp(stat_format, "prometheus") == 0)
-        stats_generate_prometheus(_generate_batched_response, args, with_legacy, &cancelled);
+        stats_generate_prometheus(_generate_batched_response, args, with_legacy, without_orphaned, &cancelled);
       else
         {
           gboolean csv = (strcmp(stat_format, "csv") == 0);
-          stats_generate_csv_or_kv(_generate_batched_response, args, csv, FALSE, &cancelled);
+          stats_generate_csv_or_kv(_generate_batched_response, args, csv, FALSE, without_orphaned, &cancelled);
         }
     }
   else
@@ -328,4 +330,22 @@ log_proto_http_scraper_responder_options_set_stat_format(LogProtoServerOptionsSt
       return TRUE;
     }
   return FALSE;
+}
+
+void
+log_proto_http_scraper_responder_options_set_stats_without_orpaned(LogProtoServerOptionsStorage *options_storage,
+    gboolean value)
+{
+  LogProtoHTTPScraperResponderOptions *options = &((LogProtoHTTPScraperResponderOptionsStorage *)options_storage)->super;
+
+  options->stats_without_orphaned = value;
+}
+
+void
+log_proto_http_scraper_responder_options_set_stats_with_legacy(LogProtoServerOptionsStorage *options_storage,
+    gboolean value)
+{
+  LogProtoHTTPScraperResponderOptions *options = &((LogProtoHTTPScraperResponderOptionsStorage *)options_storage)->super;
+
+  options->stats_with_legacy = value;
 }

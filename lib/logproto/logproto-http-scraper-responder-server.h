@@ -40,6 +40,8 @@ typedef struct _LogProtoHTTPScraperResponderOptions
   gchar *stat_query;
   gchar *stat_format;
   gboolean single_instance;
+  gboolean stats_without_orphaned;
+  gboolean stats_with_legacy;
 
 } LogProtoHTTPScraperResponderOptions;
 
@@ -85,6 +87,12 @@ void log_proto_http_scraper_responder_options_set_stat_query(
 gboolean log_proto_http_scraper_responder_options_set_stat_format(
   LogProtoServerOptionsStorage *options,
   const gchar *value);
+void log_proto_http_scraper_responder_options_set_stats_without_orpaned(
+  LogProtoServerOptionsStorage *options_storage,
+  gboolean value);
+void log_proto_http_scraper_responder_options_set_stats_with_legacy(
+  LogProtoServerOptionsStorage *options_storage,
+  gboolean value);
 
 LogProtoServer *log_proto_http_scraper_responder_server_new(
   LogTransport *transport,

@@ -152,6 +152,8 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_STAT_TYPE
 %token KW_STAT_QUERY
 %token KW_STAT_FORMAT
+%token KW_STATS_WITHOUT_ORPHANED
+%token KW_STATS_WITH_LEGACY
 
 %token KW_IP_TTL
 %token KW_SO_BROADCAST
@@ -490,6 +492,8 @@ stats_option
 	: KW_STAT_TYPE '(' string ')' { CHECK_ERROR(log_proto_http_scraper_responder_options_set_stat_type(last_proto_server_options, $3), @3, "Invalid prometheus scraper stat type: %s", $3); free($3); }
 	| KW_STAT_QUERY '(' string ')' { log_proto_http_scraper_responder_options_set_stat_query(last_proto_server_options, $3); free($3); }
 	| KW_STAT_FORMAT '(' string ')' { CHECK_ERROR(log_proto_http_scraper_responder_options_set_stat_format(last_proto_server_options, $3), @3, "Invalid prometheus scraper stat format: %s", $3); free($3); }
+	| KW_STATS_WITHOUT_ORPHANED '(' yesno ')' { log_proto_http_scraper_responder_options_set_stats_without_orpaned(last_proto_server_options, $3); }
+	| KW_STATS_WITH_LEGACY '(' yesno ')' { log_proto_http_scraper_responder_options_set_stats_with_legacy(last_proto_server_options, $3); }
 	;
 
 stats_options
