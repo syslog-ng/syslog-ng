@@ -97,6 +97,10 @@ stats_format_csv_or_kv(StatsCluster *sc, gint type, StatsCounterItem *counter, g
   StatsCSVRecordFunc process_record = (StatsCSVRecordFunc) args[0];
   gpointer process_record_arg = args[1];
   gboolean csv = GPOINTER_TO_INT(args[2]);
+  gboolean without_orphaned = GPOINTER_TO_INT(args[3]);
+
+  if (without_orphaned && stats_cluster_is_orphaned(sc))
+    return;
 
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
@@ -119,7 +123,7 @@ stats_format_csv_or_kv(StatsCluster *sc, gint type, StatsCounterItem *counter, g
 
 void
 stats_generate_csv_or_kv(StatsCSVRecordFunc process_record, gpointer user_data, gboolean csv, gboolean with_header,
-                         gboolean *cancelled)
+                         gboolean without_orphaned, gboolean *cancelled)
 {
   if (with_header && csv)
     {
@@ -130,7 +134,7 @@ stats_generate_csv_or_kv(StatsCSVRecordFunc process_record, gpointer user_data, 
       process_record(header->str, user_data);
       g_string_free(header, TRUE);
     }
-  gpointer format_args[] = {process_record, user_data, GINT_TO_POINTER(csv)};
+  gpointer format_args[] = {process_record, user_data, GINT_TO_POINTER(csv), GINT_TO_POINTER(without_orphaned)};
   stats_lock();
   stats_foreach_legacy_counter(stats_format_csv_or_kv, format_args, cancelled);
   stats_unlock();
