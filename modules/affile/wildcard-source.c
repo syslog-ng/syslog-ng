@@ -401,7 +401,8 @@ _deinit(LogPipe *s)
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
 
   g_pattern_spec_free(self->compiled_pattern);
-  g_pattern_spec_free(self->compiled_exclude);
+  if (self->compiled_exclude)
+    g_pattern_spec_free(self->compiled_exclude);
   g_hash_table_foreach(self->file_readers, _deinit_reader, NULL);
   g_hash_table_remove_all(self->directory_monitors);
   return TRUE;
