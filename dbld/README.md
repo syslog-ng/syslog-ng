@@ -42,7 +42,7 @@ $ make
 You can also build a DEB using:
 
 ```bash
-$ dbld/rules deb-ubuntu-focal
+$ dbld/rules deb-ubuntu-jammy
 ```
 
 You can find the resulting debs in `$HOME/syslog-ng/dbld/build`.

@@ -33,34 +33,60 @@ jobs:
     strategy:
       matrix:
         image:
+          # dbld docker images only
           - almalinux-8
           - almalinux-9
           - centos-stream9
           - centos-stream10
           - fedora-latest
-          - fedora-rawhide # - rawhide is always a problem turning it off now
-          - debian-bullseye
-          - debian-bookworm
-          - debian-sid
-          - debian-testing
+          - fedora-rawhide
+          - opensuse-tumbleweed
           - ubuntu-focal
-          - ubuntu-jammy
-          - ubuntu-noble
           - devshell
           - kira
           - tarball
+          # dbld docker image + binary packages
+          - debian-bullseye
+          - debian-sid
+          - debian-testing
+          - ubuntu-jammy
+          - ubuntu-noble
+          - ubuntu-plucky
+          - rocky-9
+          # TODO: we need these too with binary packages as well, but no rhel licence yet to use the official repositiories
+          # hacking around now using almalinux docker base images
+          - rhel-8
+          - rhel-9
+          # dbld docker image + binary packages + docker binary
+          - debian-bookworm
         arch:
           - amd64
+        # this is the build platform we use to build the images
+        # FIXME: temporary because sudo doesn't work in RedHat and descendants on an ubuntu-24.04 hosts (ubuntu-latest)
+        # workaround can be to add --privileged to DOCKER_SHELL in dbld/rules
         platform:
-          # FIXME: temporary because sudo doesn't work in RedHat and descendants on an ubuntu-24.04 hosts (ubuntu-latest)
           - ubuntu-22.04
           - ubuntu-22.04-arm
         exclude:
+          # we need only arm builder for the 2 output bellow
           - platform: ubuntu-22.04-arm
         include:
+          # bookworm docker image with binary syslog-ng installation is available for arm64 too
+          # so provide a devshell image for arm64 as well
           - image: debian-bookworm
             platform: ubuntu-22.04-arm
             arch: arm64
+          # noble docker image with binary syslog-ng installation is available for arm64 too
+          # so provide a devshell image for arm64 as well
+          - image: ubuntu-noble
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          # plucky docker image with binary syslog-ng installation is available for arm64 too
+          # so provide a devshell image for arm64 as well
+          - image: ubuntu-plucky
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          # devshell docker image for arm64 (devshell is bookworm based)
           - image: devshell
             platform: ubuntu-22.04-arm
             arch: arm64
@@ -113,3 +139,15 @@ jobs:
         if: env.UPLOAD_IMAGES_INTERNAL == 'true'
         run: |
           dbld/rules push-image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX}
+
+      # FIXME: this one is soemthong not final, exists in public peview, so the gh api command might have changed
+      #        the rights set to internal currently manually from the UI
+      # - name: Hide the internal images
+      #   if: env.UPLOAD_IMAGES_INTERNAL == 'true' && startsWith(matrix.image, 'rhel-')
+      #   env:
+      #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     gh api \
+      #           --method PATCH \
+      #           "/orgs/syslog-ng/packages/container/dbld-${{ matrix.image }}${CONTAINER_NAME_SUFFIX}/visibility" \
+      #           -f visibility=internal

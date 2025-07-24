@@ -33,14 +33,24 @@ jobs:
     with:
       source-tarball-artifact-name: source-tarball
       dbld-image-mode: cache
+      # upper block for   dbld docker images only
+      # mid block for     dbld docker + binary packages
+      # lower block for   dbld docker + binary packages + docker binary
       distros: '[
         "almalinux-8",
         "almalinux-9",
         "centos-stream9",
         "centos-stream10",
-        "debian-bookworm",
-        "debian-testing",
         "fedora-rawhide",
         "fedora-latest",
-        "ubuntu-noble"
+        "ubuntu-focal",
+
+        "debian-bullseye",
+        "debian-sid",
+        "debian-testing",
+        "ubuntu-jammy",
+        "ubuntu-noble",
+        "ubuntu-plucky",
+
+        "debian-bookworm",
         ]'
