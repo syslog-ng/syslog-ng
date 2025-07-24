@@ -15,18 +15,28 @@ jobs:
     strategy:
       matrix:
         distro:
+          # Keep synced with the distros default in the create-packages.yml workflow.
+          # See there for more details.
+          #
+          # upper block for   dbld docker + binary packages
+          # lower block for   dbld docker + binary packages + docker binary
           - "debian:bullseye"
-          - "debian:bookworm"
-          - "debian:testing"
           - "debian:sid"
-          - "ubuntu:focal"
+          - "debian:testing"
           - "ubuntu:jammy"
           - "ubuntu:noble"
+          - "ubuntu:plucky"
+          # FIXME: these require authentication now and are not apt-get installable
+          # - "rhel-8"
+          # - "rhel-9"
+
+          - "debian:bookworm"
         upgrade-from:
           - "debian-official"
           - "syslog-ng-last"
       fail-fast: false
     runs-on: ubuntu-latest
+    # TODO: add arm64 versions too
     container: ${{ matrix.distro }}
     steps:
       - name: Install prerequisites for adding 3rd party repository

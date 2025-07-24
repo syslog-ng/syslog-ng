@@ -38,7 +38,11 @@ debian-sid			python3,nojava
 ubuntu-focal		python3,nocriterion,nomqtt,nogrpc,notzdatalegacy
 ubuntu-jammy		python3,notzdatalegacy
 ubuntu-noble		python3,notzdatalegacy
+ubuntu-plucky		python3,notzdatalegacy
 
 fedora				python3
 almalinux			python3
 centos				python3
+rhel				  python3
+rocky				  python3,sql
+opensuse  		python3,sql
