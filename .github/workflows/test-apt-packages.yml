@@ -19,9 +19,11 @@ jobs:
           - "debian:bookworm"
           - "debian:testing"
           - "debian:sid"
+
           - "ubuntu:focal"
           - "ubuntu:jammy"
           - "ubuntu:noble"
+          - "ubuntu:plucky"
         upgrade-from:
           - "debian-official"
           - "syslog-ng-last"

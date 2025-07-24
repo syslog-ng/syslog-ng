@@ -40,6 +40,7 @@ EXTRA_DIST += \
 	dbld/images/ubuntu-focal.dockerfile \
 	dbld/images/ubuntu-jammy.dockerfile \
 	dbld/images/ubuntu-noble.dockerfile \
+	dbld/images/ubuntu-plucky.dockerfile \
 	dbld/images/kira.dockerfile \
 	dbld/images/tarball.dockerfile \
 	dbld/images/hooks/build \
