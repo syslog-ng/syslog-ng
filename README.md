@@ -172,10 +172,11 @@ syslog-ng packages are released for the following distribution versions:
 
 | Distro version | sources.list component name | Arch |
 |---|---|---|
+| Ubuntu 25.04 | ubuntu-plucky | x86-64 |
+| Ubuntu 25.04 | ubuntu-plucky-arm64 | arm64 |
 | Ubuntu 24.04 | ubuntu-noble | x86-64 |
 | Ubuntu 24.04 | ubuntu-noble-arm64 | arm64 |
 | Ubuntu 22.04 | ubuntu-jammy | x86-64 |
-| Ubuntu 20.04 | ubuntu-focal | x86-64 |
 | Debian 12 | debian-bookworm | x86-64 |
 | Debian 12 | debian-bookworm-arm64 | arm64 |
 | Debian 11 | debian-bullseye | x86-64 |
@@ -190,7 +191,7 @@ syslog-ng packages are released for the following distribution versions:
     wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo apt-key add -
     ```
 
-2. Add the repository containing the latest build of syslog-ng to your APT sources.  
+2. Add the repository containing the latest build of syslog-ng to your APT sources.
    For example if you are running Ubuntu 24.04, you would use `ubuntu-noble`, see chart above:
 
     ``` shell
