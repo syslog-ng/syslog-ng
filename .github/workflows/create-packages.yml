@@ -18,26 +18,28 @@ on:
         required: false
         type: string
         default:
-          # Curently only the bellow packages are needed
-          #     - dbld images used by this package builder are already run and published their results, scheduled, prior this one runs
-          #     - the draft, and based on that the stable, releases are published only from this images (to AZURE)
-          #     - from this packager we do have a single published docker image, the bookworm one Tagged as Nighlty
-          # These are also built and published by the dbld-images builder, but not used now in the above steps at all
+          # Curently only the bellow packages are needed when invoked from (nightly|draft|stable)-release.yml, NOT from the packages.yml workflow (that will provide its own set in the distros parameter)
+          #
+          # These are also built when distros is set from outside when invoked via the packages.yml workflow, but not used for docker or binary packages publishing, when invoked from the (nightly|draft|stable)-release.yml workflows
           #   "almalinux-8",
           #   "almalinux-9",
           #   "centos-stream9",
           #   "centos-stream10",
           #   "fedora-latest",
           #   "fedora-rawhide"
+          #   "ubuntu-focal",
           #
+          # upper block for   dbld docker + binary packages
+          # lower block for   dbld docker + binary packages + docker binary
           '[
-            "debian-testing",
             "debian-bullseye",
-            "debian-bookworm",
             "debian-sid",
-            "ubuntu-focal",
+            "debian-testing",
             "ubuntu-jammy",
             "ubuntu-noble",
+            "ubuntu-plucky",
+
+            "debian-bookworm",
           ]'
 
 jobs:
@@ -65,6 +67,11 @@ jobs:
             arch: arm64
             arch-suffix: '-arm64'
             runner-arch-suffix: '-arm'
+          - distro: ubuntu-plucky
+            arch: arm64
+            arch-suffix: '-arm64'
+            runner-arch-suffix: '-arm'
+
       fail-fast: false
 
     steps:
