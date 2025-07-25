@@ -54,7 +54,4 @@ set_target_properties(otel PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib
 
 target_compile_options (otel-cpp PRIVATE -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)
 
-add_subdirectory(filterx)
-target_link_libraries(otel PRIVATE otel_filterx_logrecord_cpp)
-
 add_test_subdirectory(tests)
