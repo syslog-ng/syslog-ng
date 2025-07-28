@@ -46,9 +46,9 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
-#define main_loop_worker_id __tls_deref(main_loop_worker_id)
-#define batch_callbacks    __tls_deref(batch_callbacks)
-#define main_loop_worker_type __tls_deref(main_loop_worker_type)
+#define main_loop_worker_id __slng_tls_deref(main_loop_worker_id)
+#define batch_callbacks    __slng_tls_deref(batch_callbacks)
+#define main_loop_worker_type __slng_tls_deref(main_loop_worker_type)
 
 GQueue sync_call_actions = G_QUEUE_INIT;
 
