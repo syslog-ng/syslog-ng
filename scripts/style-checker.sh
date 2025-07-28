@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #############################################################################
 # Copyright (c) 2016 Balabit
 #
@@ -26,19 +26,21 @@ action="$1"
 root_dir="$2"
 exclude_dir="$3"
 
-function setup_root_dir
+export LC_ALL=C
+
+setup_root_dir()
 {
-    if [ "$root_dir" == "" ]; then
+    if [ "$root_dir" = "" ]; then
         root_dir="$(pwd)"
     fi
 }
 
-function astyle_c_check
+astyle_c_check()
 {
     astyle --options="$root_dir/.astylerc" --exclude="$exclude_dir" --exclude="modules/cloud-auth/jwt-cpp" --dry-run "$root_dir/*.h" "$root_dir/*.c" "$root_dir/*.hpp" "$root_dir/*.cpp" | grep "Formatted" | tee badly-formatted-files.list | wc -l | while read badly_formatted_c_files
     do
         echo "Number of badly formatted files: $badly_formatted_c_files"
-        if [ "$badly_formatted_c_files" == "0" ]; then
+        if [ "$badly_formatted_c_files" = "0" ]; then
             exit 0
         else
             cat badly-formatted-files.list
@@ -47,13 +49,13 @@ function astyle_c_check
     done
 }
 
-function astyle_c_format
+astyle_c_format()
 {
     astyle --options="$root_dir/.astylerc" --exclude="$exclude_dir" --exclude="modules/cloud-auth/jwt-cpp" "$root_dir/*.h" "$root_dir/*.c" "$root_dir/*.cpp" "$root_dir/*.hpp" | grep "Formatted"
     exit 0
 }
 
-function print_help
+print_help()
 {
     echo
     echo "Format C source files to comply with coding standards of syslog-ng"
@@ -68,16 +70,16 @@ function print_help
     echo "  EXCLUDE_DIR  Path for the build directory (excluded from style-check)  (default: '')"
 }
 
-function run_checker
+run_checker()
 {
     setup_root_dir
-    if [ "$action" == "check" ]; then
+    if [ "$action" = "check" ]; then
         echo "Checking C and C++ source files"
         astyle_c_check
-    elif [ "$action" == "format" ]; then
+    elif [ "$action" = "format" ]; then
         echo "Formatting C and C++ source files"
         astyle_c_format
-    elif [ "$action" == "help" ]; then
+    elif [ "$action" = "help" ]; then
         print_help
     else
         echo "ERROR: Unknown command"
