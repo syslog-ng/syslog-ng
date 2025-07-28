@@ -30,6 +30,7 @@
 #include "cfg.h"
 
 #include <stdlib.h>
+#include "compat/string.h"
 
 
 MsgFormatOptions parse_options;
@@ -41,15 +42,14 @@ stardate_assert(const gchar *msg_str, const int precision, const gchar *expected
   LogMessage *logmsg = msg_format_parse(&parse_options, (const guchar *) msg_str, strlen(msg_str));
 
   char *template_command;
-  int ret_val;
   if (precision == -1)
-    ret_val = asprintf(&template_command, "$(stardate $UNIXTIME)");
+    template_command = g_strdup_printf("$(stardate $UNIXTIME)");
   else
-    ret_val = asprintf(&template_command, "$(stardate --digits %d $UNIXTIME)", precision);
+    template_command = g_strdup_printf("$(stardate --digits %d $UNIXTIME)", precision);
 
-  cr_assert(ret_val != -1, "Memory allocation failed in asprintf.");
+  cr_assert(template_command != NULL, "Memory allocation failed in asprintf.");
   assert_template_format_msg(template_command, expected, logmsg);
-  free(template_command);
+  g_free(template_command);
 
   log_msg_unref(logmsg);
 }
