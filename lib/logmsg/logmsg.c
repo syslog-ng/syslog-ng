@@ -141,12 +141,12 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
-#define logmsg_current              __tls_deref(logmsg_current)
-#define logmsg_cached_refs          __tls_deref(logmsg_cached_refs)
-#define logmsg_cached_acks          __tls_deref(logmsg_cached_acks)
-#define logmsg_cached_ack_needed    __tls_deref(logmsg_cached_ack_needed)
-#define logmsg_cached_abort         __tls_deref(logmsg_cached_abort)
-#define logmsg_cached_suspend       __tls_deref(logmsg_cached_suspend)
+#define logmsg_current              __slng_tls_deref(logmsg_current)
+#define logmsg_cached_refs          __slng_tls_deref(logmsg_cached_refs)
+#define logmsg_cached_acks          __slng_tls_deref(logmsg_cached_acks)
+#define logmsg_cached_ack_needed    __slng_tls_deref(logmsg_cached_ack_needed)
+#define logmsg_cached_abort         __slng_tls_deref(logmsg_cached_abort)
+#define logmsg_cached_suspend       __slng_tls_deref(logmsg_cached_suspend)
 
 #define LOGMSG_REFCACHE_SUSPEND_SHIFT                 31 /* number of bits to shift to get the SUSPEND flag */
 #define LOGMSG_REFCACHE_SUSPEND_MASK          0x80000000 /* bit mask to extract the SUSPEND flag */

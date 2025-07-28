@@ -76,11 +76,11 @@ TLS_BLOCK_END;
 /* this indicates that a test program is faking the current time */
 static gboolean faking_time;
 
-#define current_realtime     __tls_deref(current_realtime)
-#define invalidate_time_task __tls_deref(invalidate_time_task)
-#define local_gencounter     __tls_deref(local_gencounter)
-#define cache                __tls_deref(cache)
-#define state                __tls_deref(state)
+#define current_realtime     __slng_tls_deref(current_realtime)
+#define invalidate_time_task __slng_tls_deref(invalidate_time_task)
+#define local_gencounter     __slng_tls_deref(local_gencounter)
+#define cache                __slng_tls_deref(cache)
+#define state                __slng_tls_deref(state)
 
 static struct
 {
