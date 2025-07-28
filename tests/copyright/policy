@@ -84,6 +84,8 @@ lib/compat/cpp-(start|end).\h$
 lib/compat/curl.\h$
 lib/compat/getline.\c$
 lib/compat/json.\h$
+lib/filter/filter-blank\.[ch]$
+lib/filter/tests/test_filter_blank\.c$
 lib/healthcheck
 lib/healthcheck/tests
 lib/file-monitor\.[ch]
