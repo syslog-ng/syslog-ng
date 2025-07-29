@@ -184,9 +184,12 @@ if (HAVE_O_LARGEFILE)
   set(SYSLOG_NG_HAVE_O_LARGEFILE 1)
 endif()
 
-check_c_source_compiles("
-#include <pthread.h>
-__thread int a; int main() { a=0; }" SYSLOG_NG_HAVE_THREAD_KEYWORD)
+if (NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "AIX")
+    # This won't compile on AIX, unless linked with -lpthread, but AIX still has pthread
+    check_c_source_compiles("
+    #include <pthread.h>
+    __thread int a; int main() { a=0; }" SYSLOG_NG_HAVE_THREAD_KEYWORD)
+endif ()
 
 
 check_symbol_exists(strtoll stdlib.h SYSLOG_NG_HAVE_STRTOLL)
