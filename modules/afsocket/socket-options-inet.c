@@ -160,18 +160,18 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
             }
           if (dir & AFSOCKET_DIR_SEND)
             {
-              if (self->ip_ttl)
-                setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &self->ip_ttl, sizeof(self->ip_ttl));
+              if (self->ip_ttl_val)
+                setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &self->ip_ttl_val, sizeof(self->ip_ttl_val));
             }
 
         }
       else
         {
-          if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
-            setsockopt(fd, SOL_IP, IP_TTL, &self->ip_ttl, sizeof(self->ip_ttl));
+          if (self->ip_ttl_val && (dir & AFSOCKET_DIR_SEND))
+            setsockopt(fd, SOL_IP, IP_TTL, &self->ip_ttl_val, sizeof(self->ip_ttl_val));
         }
-      if (self->ip_tos && (dir & AFSOCKET_DIR_SEND))
-        setsockopt(fd, SOL_IP, IP_TOS, &self->ip_tos, sizeof(self->ip_tos));
+      if (self->ip_tos_val && (dir & AFSOCKET_DIR_SEND))
+        setsockopt(fd, SOL_IP, IP_TOS, &self->ip_tos_val, sizeof(self->ip_tos_val));
 
       if (self->ip_freebind && (dir & AFSOCKET_DIR_RECV))
         {
@@ -202,14 +202,14 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
             }
           if (dir & AFSOCKET_DIR_SEND)
             {
-              if (self->ip_ttl)
-                setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
+              if (self->ip_ttl_val)
+                setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &self->ip_ttl_val, sizeof(self->ip_ttl_val));
             }
         }
       else
         {
-          if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
-            setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
+          if (self->ip_ttl_val && (dir & AFSOCKET_DIR_SEND))
+            setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &self->ip_ttl_val, sizeof(self->ip_ttl_val));
         }
 
       if (self->ip_freebind && (dir & AFSOCKET_DIR_RECV))
