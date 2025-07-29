@@ -872,12 +872,30 @@ dnl ***************************************************************************
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_STRUCT_TM
 
-AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whether you have tm_gmtoff field in struct tm]),,[
+dnl ***************************************************************************
+dnl AIX has issues detecting struct tm.tm_gmtoff
+dnl ***************************************************************************
+AC_CACHE_CHECK([for struct tm.tm_gmtoff], [ac_cv_have_struct_tm_tm_gmtoff], [
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #if TM_IN_SYS_TIME
-#include <sys/time.h>
+#  include <sys/time.h>
 #else
-#include <time.h>
-#endif])
+#  include <time.h>
+#endif
+]], [[
+struct tm t;
+return t.tm_gmtoff;
+]])],
+  [ac_cv_have_struct_tm_tm_gmtoff=yes],
+  [ac_cv_have_struct_tm_tm_gmtoff=no])])
+
+if test "x$ac_cv_have_struct_tm_tm_gmtoff" = xyes; then
+  AC_DEFINE([HAVE_STRUCT_TM_TM_GMTOFF], [1],
+            [Define to 1 if struct tm has tm_gmtoff])
+else
+  AC_DEFINE([HAVE_STRUCT_TM_TM_GMTOFF], [0],
+            [Define to 0 if struct tm has no tm_gmtoff])
+fi
 
 AC_CHECK_MEMBER(struct msghdr.msg_control,AC_DEFINE(HAVE_CTRLBUF_IN_MSGHDR,1,[Whether you have msg_control field in msghdr in socket.h]),,[
 #include <sys/socket.h>

@@ -71,7 +71,7 @@ struct _WallClockTime
    * check.  At least on Linux/FreeBSD they were introduced the same time.
    * Some platforms may lack tm_zone, even though they have tm_gmtoff */
 
-#ifndef SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
+#if ! SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
   long wct_gmtoff;
   const char *wct_zone;
 #else
@@ -81,7 +81,7 @@ struct _WallClockTime
   int wct_usec;
 };
 
-#ifdef SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
+#if SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
 
 #define WALL_CLOCK_TIME_INIT \
   {                                     \
