@@ -872,12 +872,26 @@ dnl ***************************************************************************
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_STRUCT_TM
 
-AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whether you have tm_gmtoff field in struct tm]),,[
+
+AC_CANONICAL_HOST
+case $host_os in
+aix*)
+    AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,0,[Whether you have tm_gmtoff field in struct tm]),,[
 #if TM_IN_SYS_TIME
 #include <sys/time.h>
 #else
 #include <time.h>
 #endif])
+    ;;
+*)
+    AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whether you have tm_gmtoff field in struct tm]),,[
+#if TM_IN_SYS_TIME
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif])
+    ;;
+esac
 
 AC_CHECK_MEMBER(struct msghdr.msg_control,AC_DEFINE(HAVE_CTRLBUF_IN_MSGHDR,1,[Whether you have msg_control field in msghdr in socket.h]),,[
 #include <sys/socket.h>
