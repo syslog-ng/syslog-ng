@@ -1003,11 +1003,29 @@ AC_CHECK_FUNCS(strdup		\
 	strcasestr		\
 	memrchr			\
 	localtime_r		\
-	getprotobynumber_r	\
 	gmtime_r		\
 	strnlen			\
 	getline			\
 	strtok_r)
+
+dnl ***************************************************************************
+dnl AIX has issues detecting getprotobynumber_r
+dnl ***************************************************************************
+AC_LANG_PUSH([C])
+AC_MSG_CHECKING([for getprotobynumber_r])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([#include <netdb.h>],
+                   [struct protoent result;
+                    struct protoent *res = 0;
+                    char buf[1024];
+                    getprotobynumber_r(6, &result, buf, sizeof(buf), &res);
+                    return 0;])],
+  [AC_DEFINE([HAVE_GETPROTOBYNUMBER_R], [1], [Define if getprotobynumber_r exists])
+   AC_MSG_RESULT([yes])],
+  [AC_DEFINE([HAVE_GETPROTOBYNUMBER_R], [0], [Define if getprotobynumber_r exists])
+   AC_MSG_RESULT([no])])
+AC_LANG_POP([C])
+
 old_LIBS=$LIBS
 LIBS=$BASE_LIBS
 AC_CHECK_FUNCS(clock_gettime)

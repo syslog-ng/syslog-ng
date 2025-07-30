@@ -200,7 +200,6 @@ check_symbol_exists(getutent utmp.h SYSLOG_NG_HAVE_GETUTENT)
 check_symbol_exists(getutxent utmpx.h SYSLOG_NG_HAVE_GETUTXENT)
 check_symbol_exists(getaddrinfo "netdb.h;sys/socket.h;sys/types.h" SYSLOG_NG_HAVE_GETADDRINFO)
 check_symbol_exists(getnameinfo "netdb.h;sys/socket.h" SYSLOG_NG_HAVE_GETNAMEINFO)
-check_symbol_exists(getprotobynumber_r "netdb.h" SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R)
 check_symbol_exists(clock_gettime "time.h" SYSLOG_NG_HAVE_CLOCK_GETTIME)
 check_symbol_exists(gmtime_r "time.h" SYSLOG_NG_HAVE_GMTIME_R)
 check_symbol_exists(localtime_r "time.h" SYSLOG_NG_HAVE_LOCALTIME_R)
@@ -224,6 +223,18 @@ check_struct_has_member("struct utmpx" "ut_type" "utmpx.h" UTMPX_HAS_UT_TYPE LAN
 check_struct_has_member("struct utmp" "ut_type" "utmp.h" UTMP_HAS_UT_TYPE LANGUAGE C)
 check_struct_has_member("struct utmpx" "ut_user" "utmpx.h" UTMPX_HAS_UT_USER LANGUAGE C)
 check_struct_has_member("struct utmp" "ut_user" "utmp.h" UTMP_HAS_UT_USER LANGUAGE C)
+
+# AIX has issues detecting getprotobynumber_r
+check_c_source_compiles("
+#include <netdb.h>
+int main(void) {
+    struct protoent result;
+    struct protoent *res = 0;
+    char buf[1024];
+    getprotobynumber_r(6, &result, buf, sizeof(buf), &res);
+    return 0;
+}
+" SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R)
 
 # AIX has issues detecting struct tm.tm_gmtoff
 check_c_source_compiles("
