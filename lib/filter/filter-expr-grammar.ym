@@ -39,6 +39,7 @@
 #include "filter/filter-call.h"
 #include "filter/filter-re.h"
 #include "filter/filter-pri.h"
+#include "filter/filter-blank.h"
 #include "messages.h"
 #include "template/templates.h"
 #include "syslog-ng.h"
@@ -111,6 +112,7 @@ _translate_number_literals(CfgLexer *lexer, gint compare_mode, LogTemplate *expr
 
 %token KW_PROGRAM
 %token KW_IN_LIST
+%token KW_BLANK
 
 %type	<node> filter_expr
 %type	<node> filter_simple_expr
@@ -186,6 +188,7 @@ filter_simple_expr
             free($3);
             free($6);
           }
+	| KW_BLANK '(' string ')' { $$ = filter_blank_new($3); }
 	| filter_re
 	| filter_comparison
 	| filter_plugin
