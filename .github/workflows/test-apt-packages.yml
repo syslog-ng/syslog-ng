@@ -17,6 +17,7 @@ jobs:
         distro:
           - "debian:bullseye"
           - "debian:bookworm"
+          - "debian:trixie"
           - "debian:testing"
           - "debian:sid"
           - "ubuntu:focal"

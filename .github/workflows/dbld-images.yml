@@ -41,6 +41,7 @@ jobs:
           - fedora-rawhide # - rawhide is always a problem turning it off now
           - debian-bullseye
           - debian-bookworm
+          - debian-trixie
           - debian-sid
           - debian-testing
           - ubuntu-focal

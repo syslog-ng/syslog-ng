@@ -10,6 +10,7 @@ BUILDER_IMAGES=	\
 	debian-bullseye	\
 	debian-bookworm	\
 	debian-bookworm-arm64	\
+	debian-trixie	\
 	debian-sid	\
 	debian-testing	\
 	ubuntu-focal	\

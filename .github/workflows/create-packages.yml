@@ -34,6 +34,7 @@ on:
             "debian-testing",
             "debian-bullseye",
             "debian-bookworm",
+            "debian-trixie",
             "debian-sid",
             "ubuntu-focal",
             "ubuntu-jammy",
