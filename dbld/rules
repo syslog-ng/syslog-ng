@@ -221,9 +221,9 @@ shell-%: setup
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-kira: image-ubuntu-focal
-image-devshell: image-debian-bookworm
-image-devshell-arm64: image-debian-bookworm-arm64
-image-tarball: image-debian-bookworm
+image-devshell: image-debian-trixie
+image-devshell-arm64: image-debian-trixie-arm64
+image-tarball: image-debian-trixie
 image-%:
 # NOTE: This dockerfile name magic eliminates usage of separate dockerfiles for each image type
 #			  I do not like it either, but it is a necessary evil to avoid code duplication or introduction of
