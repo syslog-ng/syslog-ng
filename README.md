@@ -177,6 +177,7 @@ syslog-ng packages are released for the following distribution versions:
 | Ubuntu 22.04    | ubuntu-jammy                | x86-64 |
 | Ubuntu 20.04    | ubuntu-focal                | x86-64 |
 | Debian 13       | debian-trixie               | x86-64 |
+| Debian 13       | debian-trixie-arm64         | arm64  |
 | Debian 12       | debian-bookworm             | x86-64 |
 | Debian 12       | debian-bookworm-arm64       | arm64  |
 | Debian 11       | debian-bullseye             | x86-64 |

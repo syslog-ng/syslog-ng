@@ -11,6 +11,7 @@ BUILDER_IMAGES=	\
 	debian-bookworm	\
 	debian-bookworm-arm64	\
 	debian-trixie	\
+	debian-trixie-arm64	\
 	debian-sid	\
 	debian-testing	\
 	ubuntu-focal	\

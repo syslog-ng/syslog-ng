@@ -62,6 +62,10 @@ jobs:
             arch: arm64
             arch-suffix: '-arm64'
             runner-arch-suffix: '-arm'
+          - distro: debian-trixie
+            arch: arm64
+            arch-suffix: '-arm64'
+            runner-arch-suffix: '-arm'
           - distro: ubuntu-noble
             arch: arm64
             arch-suffix: '-arm64'

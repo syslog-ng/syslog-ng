@@ -62,6 +62,9 @@ jobs:
           - image: debian-bookworm
             platform: ubuntu-22.04-arm
             arch: arm64
+          - image: debian-trixie
+            platform: ubuntu-22.04-arm
+            arch: arm64
           - image: devshell
             platform: ubuntu-22.04-arm
             arch: arm64

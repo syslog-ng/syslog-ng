@@ -42,6 +42,8 @@ jobs:
         include:
           - distro: debian-bookworm-arm64
             arch: arm64
+          - distro: debian-trixie-arm64
+            arch: arm64
           - distro: ubuntu-noble-arm64
             arch: arm64
       fail-fast: false
