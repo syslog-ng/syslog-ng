@@ -49,10 +49,12 @@ jobs:
           brew bundle --force --file=contrib/Brewfile
 
           OS_NAME=$([[ ${{ matrix.version }} -eq 13 ]] && echo "Ventura" || echo "Sonoma")
-          MACPORTS_PKG_NAME=MacPorts-2.10.1-${{ matrix.version }}-${OS_NAME}.pkg
-          MACPORTS_URL=https://github.com/macports/macports-base/releases/download/v2.10.1/${MACPORTS_PKG_NAME}
+          MACPORTS_VERSION=2.10.1
+          MACPORTS_PKG_NAME=MacPorts-${MACPORTS_VERSION}-${{ matrix.version }}-${OS_NAME}.pkg
+          MACPORTS_URL=https://github.com/macports/macports-base/releases/download/v${MACPORTS_VERSION}/${MACPORTS_PKG_NAME}
           wget ${MACPORTS_URL}
           sudo installer -pkg ./${MACPORTS_PKG_NAME} -target /
+          sudo /opt/local/bin/port -v selfupdate
           sudo /opt/local/bin/port install libesmtp
 
       - name: Set ENV variables
