@@ -33,9 +33,19 @@ jobs:
     with:
       source-tarball-artifact-name: source-tarball
       dbld-image-mode: cache
+      # This workflow runs on every PR and push, and the goal is to pre-test all the possible distros
+      # we might want to create a package for ever (ideally it can be any supported distro we have in the dbld images),
+      # so it is a good idea to sync this with the dbld/rules file BUILDER_IMAGES.
+      #
+      # NOTE: runnig always on all distros is time and resource consuming, so it can be considered to run only on
+      #       distros that are really produced a final package for (actually the mid and lower blocks in the distros list).
+      #
       # upper block for   dbld docker images only
       # mid block for     dbld docker + binary packages
       # lower block for   dbld docker + binary packages + docker binary
+      #
+      # FIXME: broken targets currently
+      #   "opensuse-tumbleweed",
       distros: '[
         "almalinux-8",
         "almalinux-9",
@@ -52,6 +62,9 @@ jobs:
         "ubuntu-jammy",
         "ubuntu-noble",
         "ubuntu-plucky",
+        "rhel-8",
+        "rhel-9",
+        "rocky-9",
 
         "debian-trixie",
         ]'
