@@ -31,6 +31,7 @@ EXTRA_DIST += \
 	dbld/images/opensuse.prepare.sh \
 	dbld/images/almalinux-8.dockerfile \
 	dbld/images/almalinux-9.dockerfile \
+	dbld/images/almalinux-10.dockerfile \
 	dbld/images/centos-stream9.dockerfile \
 	dbld/images/centos-stream10.dockerfile \
 	dbld/images/devshell.dockerfile \
@@ -48,6 +49,7 @@ EXTRA_DIST += \
 	dbld/images/ubuntu-plucky.dockerfile \
 	dbld/images/rhel-8.dockerfile \
 	dbld/images/rhel-9.dockerfile \
+	dbld/images/rhel-10.dockerfile \
 	dbld/images/rocky-9.dockerfile \
 	dbld/images/kira.dockerfile \
 	dbld/images/tarball.dockerfile \

@@ -37,6 +37,7 @@ jobs:
           # dbld docker images only
           - almalinux-8
           - almalinux-9
+          - almalinux-10
           - centos-stream9
           - centos-stream10
           - fedora-latest
@@ -57,6 +58,7 @@ jobs:
           - rocky-9
           - rhel-8
           - rhel-9
+          - rhel-10
           # dbld docker image + binary packages + docker binary
           - debian-trixie
         arch:
@@ -88,6 +90,9 @@ jobs:
             platform: ubuntu-22.04-arm
             arch: arm64
           - image: rhel-9
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: rhel-10
             platform: ubuntu-22.04-arm
             arch: arm64
           # devshell docker image for arm64 (devshell must be debian stable based)

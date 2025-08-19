@@ -30,6 +30,7 @@ jobs:
           # FIXME: these require authentication now and are not apt-get installable
           # - "rhel-8"
           # - "rhel-9"
+          # - "rhel-10"
 
           - "debian:trixie"
         upgrade-from:

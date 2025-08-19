@@ -3,6 +3,7 @@
 BUILDER_IMAGES=	\
 	almalinux-8	\
 	almalinux-9	\
+	almalinux-10	\
 	centos-stream9  \
 	centos-stream10  \
 	fedora-latest	\
@@ -25,6 +26,8 @@ BUILDER_IMAGES=	\
 	rhel-8-arm64 \
 	rhel-9 \
 	rhel-9-arm64 \
+	rhel-10 \
+	rhel-10-arm64 \
 	rocky-9 \
 	kira	\
 	tarball
