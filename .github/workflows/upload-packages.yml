@@ -56,14 +56,22 @@ jobs:
             arch: arm64
           - distro: ubuntu-jammy
             arch: arm64
+        # add suffix mapping rules via include
+        include:
+          - arch: arm64
+            arch-suffix: '-arm64'
+            runner-arch-suffix: '-arm'
+          - arch: amd64
+            arch-suffix: ''
+            runner-arch-suffix: ''
       fail-fast: false
 
     steps:
       - name: Download package artifact
         uses: actions/download-artifact@v4
         with:
-          name: package-${{ matrix.distro }}
-          path: package
+          name: package-${{ matrix.distro }}${{ matrix.arch-suffix }}
+          path: package${{ matrix.arch-suffix }}
 
       - name: Calculate Azure path
         run: |
@@ -83,5 +91,5 @@ jobs:
             az storage blob upload-batch \
               --sas-token '${{ secrets.azure-sas-token }}' \
               --account-name 'syslogngose' \
-              --source 'package' \
+              --source 'package${{ matrix.arch-suffix }}' \
               --destination '${{ env.AZURE_PATH }}'

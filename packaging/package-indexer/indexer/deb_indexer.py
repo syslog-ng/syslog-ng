@@ -63,6 +63,9 @@ class DebIndexer(Indexer):
 
     def __move_files_from_incoming_to_indexed(self, incoming_dir: Path, indexed_dir: Path) -> None:
         for file in filter(lambda path: path.is_file(), incoming_dir.rglob("*")):
+            # Only handle deb files. Ignore everything else
+            if not file.name.endswith(".deb"):
+                continue
             relative_path = file.relative_to(incoming_dir)
             platform = relative_path.parent
             file_name = relative_path.name
