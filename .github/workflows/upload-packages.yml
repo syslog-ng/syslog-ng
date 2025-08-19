@@ -18,6 +18,7 @@ on:
           # lower block for   dbld docker + binary packages + docker binary
           '[
             "debian-bullseye",
+            "debian-bookworm",
             "debian-sid",
             "debian-testing",
             "ubuntu-jammy",
@@ -26,7 +27,7 @@ on:
             "rhel-8",
             "rhel-9",
 
-            "debian-bookworm",
+            "debian-trixie",
           ]'
     secrets:
       azure-sas-token:

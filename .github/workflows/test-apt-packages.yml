@@ -21,6 +21,7 @@ jobs:
           # upper block for   dbld docker + binary packages
           # lower block for   dbld docker + binary packages + docker binary
           - "debian:bullseye"
+          - "debian:bookworm"
           - "debian:sid"
           - "debian:testing"
           - "ubuntu:jammy"
@@ -30,7 +31,7 @@ jobs:
           # - "rhel-8"
           # - "rhel-9"
 
-          - "debian:bookworm"
+          - "debian:trixie"
         upgrade-from:
           - "debian-official"
           - "syslog-ng-last"
