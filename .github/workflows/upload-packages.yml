@@ -26,6 +26,7 @@ on:
             "ubuntu-plucky",
             "rhel-8",
             "rhel-9",
+            "rhel-10",
 
             "debian-trixie",
           ]'
