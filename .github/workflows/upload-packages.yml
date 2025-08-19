@@ -35,7 +35,7 @@ on:
 
 jobs:
   upload-packages:
-    name: ${{ matrix.distro }}
+    name: ${{ matrix.distro }}-${{ matrix.arch }}
 
     runs-on: ubuntu-latest
 
@@ -44,14 +44,15 @@ jobs:
     strategy:
       matrix:
         distro: ${{ fromJson(inputs.distros) }}
-        arch:
-          - amd64
-        include:
-          - distro: debian-bookworm-arm64
+        arch: [amd64, arm64]
+        exclude:
+          - distro: debian-bullseye
             arch: arm64
-          - distro: ubuntu-noble-arm64
+          - distro: debian-sid
             arch: arm64
-          - distro: ubuntu-plucky-arm64
+          - distro: debian-testing
+            arch: arm64
+          - distro: ubuntu-jammy
             arch: arm64
       fail-fast: false
 
