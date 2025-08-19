@@ -36,10 +36,30 @@ jobs:
         upgrade-from:
           - "debian-official"
           - "syslog-ng-last"
+        arch: [amd64, arm64]
+        # This for a matching runner architecture
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            arch-suffix: ''
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            arch-suffix: '-arm64'
+        exclude:
+          - distro: debian:bullseye
+            arch: arm64
+          - distro: debian:sid
+            arch: arm64
+          - distro: debian:testing
+            arch: arm64
+          - distro: ubuntu:jammy
+            arch: arm64
       fail-fast: false
-    runs-on: ubuntu-latest
-    # TODO: add arm64 versions too
-    container: ${{ matrix.distro }}
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: ${{ matrix.distro }}
+      options: --platform=linux/${{ matrix.arch }}
+    name: ${{ matrix.distro }}, ${{ matrix.arch }}, ${{ matrix.upgrade-from }}
     steps:
       - name: Install prerequisites for adding 3rd party repository
         run: |
@@ -54,7 +74,7 @@ jobs:
       - name: Add OSE repository
         run: |
           wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${{ inputs.pkg-type }} $(echo ${{ matrix.distro }} | sed 's/:/-/g')" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
+          echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${{ inputs.pkg-type }} $(echo ${{ matrix.distro }}${{ matrix.arch-suffix }} | sed 's/:/-/g')" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
           apt-get update -qq
 
       - name: Install the last but one syslog-ng OSE package
