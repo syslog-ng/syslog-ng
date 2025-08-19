@@ -47,6 +47,7 @@ jobs:
           - tarball
           # dbld docker image + binary packages
           - debian-bullseye
+          - debian-bookworm
           - debian-sid
           - debian-testing
           - ubuntu-jammy
@@ -56,7 +57,7 @@ jobs:
           - rhel-8
           - rhel-9
           # dbld docker image + binary packages + docker binary
-          - debian-bookworm
+          - debian-trixie
         arch:
           - amd64
         # this is the build platform we use to build the images
@@ -73,6 +74,9 @@ jobs:
           - image: debian-bookworm
             platform: ubuntu-22.04-arm
             arch: arm64
+          - image: debian-trixie
+            platform: ubuntu-22.04-arm
+            arch: arm64
           - image: ubuntu-noble
             platform: ubuntu-22.04-arm
             arch: arm64
@@ -85,7 +89,7 @@ jobs:
           - image: rhel-9
             platform: ubuntu-22.04-arm
             arch: arm64
-          # devshell docker image for arm64 (devshell is bookworm based)
+          # devshell docker image for arm64 (devshell must be debian stable based)
           - image: devshell
             platform: ubuntu-22.04-arm
             arch: arm64

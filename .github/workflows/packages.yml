@@ -46,11 +46,12 @@ jobs:
         "ubuntu-focal",
 
         "debian-bullseye",
+        "debian-bookworm",
         "debian-sid",
         "debian-testing",
         "ubuntu-jammy",
         "ubuntu-noble",
         "ubuntu-plucky",
 
-        "debian-bookworm",
+        "debian-trixie",
         ]'
