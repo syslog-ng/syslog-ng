@@ -28,6 +28,7 @@ on:
 
 jobs:
   build:
+    name: build (${{ matrix.image }}-${{ matrix.arch }})
     runs-on: ${{ matrix.platform }}
 
     strategy:
