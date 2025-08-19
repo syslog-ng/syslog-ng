@@ -53,8 +53,6 @@ jobs:
           - ubuntu-noble
           - ubuntu-plucky
           - rocky-9
-          # TODO: we need these too with binary packages as well, but no rhel licence yet to use the official repositiories
-          # hacking around now using almalinux docker base images
           - rhel-8
           - rhel-9
           # dbld docker image + binary packages + docker binary
@@ -68,22 +66,23 @@ jobs:
           - ubuntu-22.04
           - ubuntu-22.04-arm
         exclude:
-          # we need only arm builder for the 2 output bellow
+          # we need only arm builder for the outputs bellow
           - platform: ubuntu-22.04-arm
         include:
-          # bookworm docker image with binary syslog-ng installation is available for arm64 too
-          # so provide a devshell image for arm64 as well
+          # arm64 docker images with binary syslog-ng installation
           - image: debian-bookworm
             platform: ubuntu-22.04-arm
             arch: arm64
-          # noble docker image with binary syslog-ng installation is available for arm64 too
-          # so provide a devshell image for arm64 as well
           - image: ubuntu-noble
             platform: ubuntu-22.04-arm
             arch: arm64
-          # plucky docker image with binary syslog-ng installation is available for arm64 too
-          # so provide a devshell image for arm64 as well
           - image: ubuntu-plucky
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: rhel-8
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: rhel-9
             platform: ubuntu-22.04-arm
             arch: arm64
           # devshell docker image for arm64 (devshell is bookworm based)

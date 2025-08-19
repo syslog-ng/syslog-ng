@@ -56,26 +56,24 @@ jobs:
     strategy:
       matrix:
         distro: ${{ fromJson(inputs.distros) }}
-        arch:
-          - amd64
-        arch-suffix:
-          - ''
-        runner-arch-suffix:
-          - ''
+        arch: [amd64, arm64]
+        exclude:
+          - distro: debian-bullseye
+            arch: arm64
+          - distro: debian-sid
+            arch: arm64
+          - distro: debian-testing
+            arch: arm64
+          - distro: ubuntu-jammy
+            arch: arm64
+        # add suffix mapping rules via include
         include:
-          - distro: debian-bookworm
-            arch: arm64
+          - arch: arm64
             arch-suffix: '-arm64'
             runner-arch-suffix: '-arm'
-          - distro: ubuntu-noble
-            arch: arm64
-            arch-suffix: '-arm64'
-            runner-arch-suffix: '-arm'
-          - distro: ubuntu-plucky
-            arch: arm64
-            arch-suffix: '-arm64'
-            runner-arch-suffix: '-arm'
-
+          - arch: amd64
+            arch-suffix: ''
+            runner-arch-suffix: ''
       fail-fast: false
 
     steps:
