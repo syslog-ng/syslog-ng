@@ -22,7 +22,7 @@
 
 import logging
 from pathlib import Path
-from subprocess import run
+from subprocess import run, STDOUT
 from typing import Dict, List, TextIO, Optional
 
 logger = logging.getLogger("utils")
@@ -43,6 +43,7 @@ def execute_command(
         command,
         input=bytes(input, "utf-8") if input is not None else None,
         stdout=stdout,
+        stderr=STDOUT,
         cwd=dir,
         env=env,
     ).returncode
