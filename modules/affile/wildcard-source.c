@@ -225,6 +225,7 @@ _handler_directory_deleted(WildcardSourceDriver *self, const DirectoryMonitorEve
     }
 }
 
+#if SYSLOG_NG_HAVE_INOTIFY
 static void
 _handler_file_modified(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 {
@@ -233,6 +234,7 @@ _handler_file_modified(WildcardSourceDriver *self, const DirectoryMonitorEvent *
   if (reader)
     log_pipe_notify(&reader->super.super, NC_FILE_MODIFIED, NULL);
 }
+#endif
 
 static void
 _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_data)
@@ -257,10 +259,12 @@ _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_
     {
       _handler_directory_deleted(self, event);
     }
+#if SYSLOG_NG_HAVE_INOTIFY
   else if (event->event_type == FILE_MODIFIED)
     {
       _handler_file_modified(self, event);
     }
+#endif
 }
 
 
