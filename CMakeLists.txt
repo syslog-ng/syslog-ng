@@ -273,7 +273,7 @@ endif()
 
 
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
-set (IVYKIS_SOURCE "internal")
+set (IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path)")
 external_or_find_package(IVYKIS REQUIRED)
 set(IVYKIS_LIBRARIES ${IVYKIS_LIBRARY} CACHE STRING "IVYKIS libraries path")
 if((NOT IVYKIS_INTERNAL) AND(IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
