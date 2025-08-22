@@ -95,12 +95,11 @@ consecutive_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
   ConsecutiveAckTracker *self = (ConsecutiveAckTracker *)s;
   LogSource *source = self->super.source;
 
-  g_assert(self->pending_ack_record != NULL);
-
   log_pipe_ref((LogPipe *)source);
 
   consecutive_ack_tracker_lock(s);
   {
+    g_assert(self->pending_ack_record != NULL);
     _ack_records_track_msg(self, msg);
   }
   consecutive_ack_tracker_unlock(s);
@@ -178,13 +177,11 @@ static Bookmark *
 consecutive_ack_tracker_request_bookmark(AckTracker *s)
 {
   ConsecutiveAckTracker *self = (ConsecutiveAckTracker *)s;
+  Bookmark *bookmark = NULL;
 
+  consecutive_ack_tracker_lock(s);
   if (!self->pending_ack_record)
-    {
-      consecutive_ack_tracker_lock(s);
-      self->pending_ack_record = consecutive_ack_record_container_request_pending(self->ack_records);
-      consecutive_ack_tracker_unlock(s);
-    }
+    self->pending_ack_record = consecutive_ack_record_container_request_pending(self->ack_records);
 
   if (self->pending_ack_record)
     {
@@ -192,10 +189,11 @@ consecutive_ack_tracker_request_bookmark(AckTracker *s)
 
       self->pending_ack_record->super.tracker = (AckTracker *)self;
 
-      return &(self->pending_ack_record->super.bookmark);
+      bookmark = &(self->pending_ack_record->super.bookmark);
     }
+  consecutive_ack_tracker_unlock(s);
 
-  return NULL;
+  return bookmark;
 }
 
 static void
