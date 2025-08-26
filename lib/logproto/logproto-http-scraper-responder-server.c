@@ -34,6 +34,7 @@
 static LogProtoHTTPScraperResponder *single_instance;
 static time_t last_scrape_request_time;
 
+// FIXME: cleanup mutex on program exit
 static inline GMutex *
 _mutex(void)
 {
@@ -143,6 +144,8 @@ _log_proto_http_scraper_responder_server_free(LogProtoServer *s)
   LogProtoHTTPScraperResponder *self = (LogProtoHTTPScraperResponder *)s;
   if (self->options->single_instance)
     single_instance = NULL;
+  // The base LogProtoHTTPServer has no overridden free_fn, so we call its base LogProtoTextServer free directly
+  log_proto_text_server_free(s);
   g_mutex_unlock(_mutex());
 }
 
@@ -229,6 +232,8 @@ log_proto_http_scraper_responder_options_destroy(LogProtoServerOptionsStorage *o
   LogProtoHTTPScraperResponderOptions *options = &((LogProtoHTTPScraperResponderOptionsStorage *)options_storage)->super;
 
   log_proto_http_server_options_destroy(options_storage);
+  g_free(options->scraper_request_hdr_pattern);
+  options->scraper_request_hdr_pattern = NULL;
   g_free(options->stat_query);
   options->stat_query = NULL;
   g_free(options->stat_format);
