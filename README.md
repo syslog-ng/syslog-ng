@@ -190,7 +190,7 @@ syslog-ng packages are released for the following distribution versions:
     wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo apt-key add -
     ```
 
-2. Add the repository containing the latest build of syslog-ng to your APT sources.  
+2. Add the repository containing the latest build of syslog-ng to your APT sources.
    For example if you are running Ubuntu 24.04, you would use `ubuntu-noble`, see chart above:
 
     ``` shell
@@ -252,7 +252,14 @@ official [third party page][3rd-party].
 
 ## Installation from Docker image
 
-Binaries are also available as a Docker image. To find out more, check out the blog post, [Your central log server in Docker](https://syslog-ng.com/blog/central-log-server-docker/).
+Binaries are also available as a [Docker image](https://hub.docker.com/r/balabit/syslog-ng). You can get:
+- the latest official release with
+
+  `docker pull balabit/syslog-ng:latest`
+
+- the latest developer nigthly build with
+
+  `docker pull balabit/syslog-ng:nightly`
 
 ## Documentation
 
