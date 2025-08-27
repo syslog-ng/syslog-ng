@@ -49,7 +49,8 @@ IVYKIS_MIN_VERSION="0.36.1"
 IVYKIS_UPDATED_VERSION="0.39"
 JSON_C_MIN_VERSION="0.13"
 PCRE2_MIN_VERSION="10.0"
-LMC_MIN_VERSION="1.0.0"
+LMC_1_MIN_VERSION="1.0.0"
+LMC_MIN_VERSION="2.0.0"
 LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.6.0"
 LIBBPF_MIN_VERSION="1.0.1"
@@ -283,7 +284,7 @@ AC_ARG_ENABLE(gcov,
     , enable_gcov="no")
 
 AC_ARG_ENABLE(mongodb,
-    AS_HELP_STRING([--enable-mongodb], [Enable mongodb destination (default: auto)]),
+    AS_HELP_STRING([--enable-mongodb], [Enable support for mongodb destination (default: auto)]),
     , enable_mongodb="auto")
 
 AC_ARG_WITH(jsonc,
@@ -438,6 +439,7 @@ AC_ARG_ENABLE(all-modules,
 if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
 
+   # TODO: atomate collection of modules somehow
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
             redis systemd geoip2 riemann ipv6 smtp native python python_modules java java_modules \
             http afsnmp kafka mqtt grpc"
@@ -1397,20 +1399,36 @@ dnl ***************************************************************************
 dnl mongo-c-driver headers/libraries
 dnl ***************************************************************************
 
-PKG_CHECK_MODULES(LIBMONGO, libmongoc-1.0 >= $LMC_MIN_VERSION, with_mongoc="yes", with_mongoc="no")
+# Try libmongoc-1.0 first
+PKG_CHECK_MODULES(LIBMONGO,
+    libmongoc-1.0 >= $LMC_1_MIN_VERSION,
+    [with_mongoc=yes; mongo_version_str="v1"; MONGOC_HEADER="<mongoc.h>"],
+    [   # Try mongoc2 (libmongoc-2.0) if 1.0 not found
+        PKG_CHECK_MODULES(LIBMONGO,
+            mongoc2 >= $LMC_MIN_VERSION,
+            [
+            AC_DEFINE([HAVE_MONGOC_V2], [1], [Define if using MongoDB C Driver v2.x])
+            with_mongoc=yes
+            mongo_version_str="v2"
+            MONGOC_HEADER="<mongoc/mongoc.h>"
+            ],
+            [with_mongoc=no]
+        )
+    ]
+)
 
 if test "x$with_mongoc" = "xno" && test "x$enable_mongodb" = "xyes"; then
-   AC_MSG_ERROR([Could not find mongo-c-driver, and MongoDB support was explicitly enabled.])
+    AC_MSG_ERROR([Could not find mongo-c-driver, and MongoDB support was explicitly enabled.])
 fi
 
 if test "x$with_mongoc" = "xyes"; then
-CPPFLAGS_SAVE="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS $LIBMONGO_CFLAGS"
+    CPPFLAGS_SAVE="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $LIBMONGO_CFLAGS"
 
-AC_CHECK_DECLS([mongoc_uri_set_option_as_int32], [], [], [[#include <mongoc.h>]])
-AC_CHECK_DECLS([MONGOC_URI_SERVERSELECTIONTIMEOUTMS], [], [], [[#include <mongoc.h>]])
+    AC_CHECK_DECLS([mongoc_uri_set_option_as_int32], [], [], [[#include $MONGOC_HEADER]])
+    AC_CHECK_DECLS([MONGOC_URI_SERVERSELECTIONTIMEOUTMS], [], [], [[#include $MONGOC_HEADER]])
 
-CPPFLAGS="$CPPFLAGS_SAVE"
+    CPPFLAGS="$CPPFLAGS_SAVE"
 fi
 
 dnl ***************************************************************************
@@ -1420,7 +1438,7 @@ dnl ***************************************************************************
 PKG_CHECK_MODULES(LIBUNWIND, libunwind >= 1.6.2, enable_libunwind="yes", enable_libunwind="no")
 
 if test "$enable_stackdump" = "yes" && test "$enable_libunwind" = "no"; then
-       AC_MSG_ERROR([Could not find libunwind, and stackdump support was explicitly enabled.])
+    AC_MSG_ERROR([Could not find libunwind, and stackdump support was explicitly enabled.])
 fi
 
 dnl ***************************************************************************
@@ -2476,7 +2494,7 @@ echo "  Darwin OSL support (module) : ${enable_darwin_osl:=no}"
 echo "  OpenBSD syslog (module)     : ${enable_openbsd_system_source:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
-echo "  MongoDB destination (module): ${enable_mongodb:=no}"
+echo "  MongoDB destination (module): ${enable_mongodb:=no} (${mongo_version_str})"
 echo "  JSON support (module)       : ${enable_json:=no}"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
 echo "  HTTP support (module)       : ${enable_http:=no}"
