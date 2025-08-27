@@ -25,6 +25,7 @@ jobs:
       fail-fast: false
 
     runs-on: macOS-${{ matrix.version }}
+    name: macOS${{ matrix.version }}-${{ matrix.version == '14' && 'arm64' || 'amd64' }}, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
 
     steps:
       - name: Checkout syslog-ng source
@@ -106,8 +107,7 @@ jobs:
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
           "
-          # TODO: remove mongo-c-driver@1 once v2 support is added
-          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/mongo-c-driver@1/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${MACPORTS_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${MACPORTS_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
           PATH="${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/sbin:${PYTHONUSERBASE}/bin:${MACPORTS_PREFIX}/bin:${MACPORTS_PREFIX}/sbin:${PATH}"
 
           gh_export HOMEBREW_PREFIX MACPORTS_PREFIX SYSLOG_NG_INSTALL_DIR PYTHONUSERBASE CC CXX PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS CXXFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
