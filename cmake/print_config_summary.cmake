@@ -29,6 +29,7 @@ set(ResetFG "${Esc}[39m")
 
 set(_maxHeaderLen 43)
 set(_maxSummaryLineLen 36)
+set(_orig_maxSummaryLineLen "${_maxSummaryLineLen}")
 
 option(SUMMARY_LEVEL "Detail level of the cmake options summary information (0,1 or 2)" 0)
 
@@ -91,30 +92,45 @@ function(_get_feature_list _result_list _variableNames _exceptNames)
 endfunction()
 
 function(_print_summary_line _variableName _variableValue _maxVarNameLen)
-  set(_spaceTabbedVariableName "${_variableName}")
+  # Check if variable name starts with ENABLE_ and corresponding _VERSION_STR exists
+  set(_extraString "")
+  string(REGEX MATCH "^ENABLE_.*" _var_match "${_variableName}")
+  if(_var_match)
+    set(_versionVar "${_variableName}_INFO_STR")
+    if(DEFINED ${_versionVar})
+      set(_extraString " (${${_versionVar}})")
+    endif()
+  endif()
 
+  set(_spaceTabbedVariableName "${_variableName}")
   _space_tabbed_string("${_variableName}" ${_maxVarNameLen} _spaceTabbedVariableName)
 
   string(TOUPPER "${_variableValue}" _upperValue)
 
   if(_upperValue STREQUAL "ON" OR _upperValue STREQUAL "TRUE")
-    message("${_spaceTabbedVariableName}${Green}On${ResetFG}")
+    message("${_spaceTabbedVariableName}${Green}On${Blue}${_extraString}${ResetFG}")
   elseif(_upperValue STREQUAL "OFF" OR _upperValue STREQUAL "FALSE")
-    message("${_spaceTabbedVariableName}${Red}Off${ResetFG}")
+    message("${_spaceTabbedVariableName}${Red}Off${Blue}${_extraString}${ResetFG}")
   else()
     message("${_spaceTabbedVariableName}${Blue}${_variableValue}${ResetFG}")
   endif()
 endfunction()
 
 function(_print_separator _header)
+  if(ARGN)
+    set(_total_Len ${ARGN})
+  else()
+    set(_total_Len ${_maxHeaderLen})
+  endif()
+
   string(LENGTH "${_header}" _headerLen)
   if(_headerLen LESS_EQUAL 0)
-    string(REPEAT "-" ${_maxHeaderLen} _header)
+    string(REPEAT "-" ${_total_Len} _header)
   else()
-    math(EXPR _headerSeparatorLen "(${_maxHeaderLen} - ${_headerLen} - 2) / 2")
+    math(EXPR _headerSeparatorLen "(${_total_Len} - ${_headerLen} - 2) / 2")
     math(EXPR _total_len "((${_headerSeparatorLen} * 2) + ${_headerLen} + 2)")
     set(_padding "")
-    if(_total_len LESS ${_maxHeaderLen})
+    if(_total_len LESS ${_total_Len})
       set(_padding "-")
     endif()
     string(REPEAT "-" ${_headerSeparatorLen} _headerSeparator)
@@ -190,11 +206,18 @@ function(print_config_summary)
     _print_full("${_variableNames}")
   else()
     if(SUMMARY_VERBOSE OR SUMMARY_LEVEL EQUAL 1)
-      _print_separator("")
-
+      set(_maxSummaryLineLen 46)
+      _print_separator("" ${_maxSummaryLineLen})
       list(APPEND _libraryOptions ".*(_FOUND)$" ".*(_LIBRARY|_LIBRARIES|_LIBRARY_OPTS)$" ".*(INCLUDE_DIR|INCLUDEDIR|INCLUDE_DIRS|INCLUDE_OPTS)$")
       list(APPEND _libraryExcludeOptions "^(CMAKE_|_).*")
       _print_options("${_variableNames}" "${_libraryOptions}" "${_libraryExcludeOptions}")
+
+      set(_maxSummaryLineLen 56)
+      _print_separator("" ${_maxSummaryLineLen})
+      list(APPEND _syslogngOptions "^SYSLOG_NG_HAVE_.*")
+      _print_options("${_variableNames}" "${_syslogngOptions}" "")
+
+      set(_maxSummaryLineLen "${_orig_maxSummaryLineLen}")
     endif()
   endif()
 
@@ -221,10 +244,11 @@ function(print_config_summary)
   list(APPEND _testingOptions "BUILD_TESTING")
   _print_options("${_variableNames}" "${_testingOptions}")
 
-  # No man pages support et in the cmake builds
+  # No man pages support yet in the cmake builds
   # _print_separator ("Man pages")
   # list (APPEND _manPages "ENABLE_MANPAGES" "ENABLE_MANPAGES_INSTALL")
   # _print_options ("${_variableNames}" "${_manPages}")
+
   _get_matching_options(_evaluatedFeaturesOptions "${_variableNames}" "^SYSLOG_NG_ENABLE_")
 
   _print_separator("Features")
@@ -234,9 +258,11 @@ function(print_config_summary)
   _print_options("${_featuresOptions}" "")
 
   if(SUMMARY_FULL OR SUMMARY_VERBOSE OR SUMMARY_LEVEL GREATER_EQUAL 1)
-    _print_separator("Evaluated features")
+    set(_maxSummaryLineLen 42)
+    _print_separator("Evaluated features" ${_maxSummaryLineLen})
     list(APPEND _evaluatedFeaturesOptions "SYSLOG_NG_SYSTEMD_JOURNAL_MODE")
     _print_options("${_evaluatedFeaturesOptions}" "")
+    set(_maxSummaryLineLen "${_orig_maxSummaryLineLen}")
   endif()
 
   _print_separator("Sub-modules")
@@ -245,7 +271,7 @@ function(print_config_summary)
 
   _print_separator("Modules")
   list(APPEND _modulesOptions "^ENABLE_")
-  list(APPEND _modulesExcludeOptions "${_compilationOptions}" "${_featuresOptions}")
+  list(APPEND _modulesExcludeOptions "${_compilationOptions}" "${_featuresOptions}" "^ENABLE_.*_INFO_STR$" )
   _print_options("${_variableNames}" "${_modulesOptions}" "${_modulesExcludeOptions}")
 
   _print_separator("")

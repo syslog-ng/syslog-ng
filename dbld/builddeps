@@ -260,18 +260,6 @@ function install_bison_from_source {
     make && make install
 }
 
-function install_mongoc1_from_source {
-    MONGOC_VERSION=1.30.4
-    pushd /tmp
-    download_target https://github.com/mongodb/mongo-c-driver/releases/download/${MONGOC_VERSION}/mongo-c-driver-${MONGOC_VERSION}.tar.gz /tmp/mongoc-${MONGOC_VERSION}.tar.gz
-    tar xvfz /tmp/mongoc-${MONGOC_VERSION}.tar.gz
-    cd ./mongo-c-driver-${MONGOC_VERSION}
-    mkdir cmake-build && cd cmake-build
-    cmake .. -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF -DENABLE_STATIC=OFF -DENABLE_BSON=ON -DENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/usr/local
-    make -j$(nproc)
-    make install
-    popd
-}
 
 # DO NOT REMOVE!
 "$@"

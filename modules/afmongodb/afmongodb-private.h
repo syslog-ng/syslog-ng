@@ -24,7 +24,11 @@
 #define AFMONGODB_PRIVATE_H_
 
 #include "syslog-ng.h"
-#include "mongoc.h"
+#ifdef SYSLOG_NG_HAVE_MONGOC_V2
+# include "mongoc/mongoc.h"
+#else
+# include "mongoc.h"
+#endif
 #include "logthrdest/logthrdestdrv.h"
 #include "template/templates.h"
 #include "value-pairs/value-pairs.h"
