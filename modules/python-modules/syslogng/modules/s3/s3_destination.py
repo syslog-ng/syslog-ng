@@ -371,6 +371,8 @@ class S3Destination(LogDestination):
                     with self.__indices_lock:
                         last_index = self.__indices.pop(s3_object.object_key)
                         self.__indices[s3_object.object_key] = last_index
+        if not self.s3_object_ready_queue.queue.empty():
+            self.__session_handler.trigger_upload()
 
         self.__start_flush_poll_timer()
 
