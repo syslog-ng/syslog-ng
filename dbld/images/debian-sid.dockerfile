@@ -20,10 +20,6 @@ RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_debian_build_deps
 
-# mongoc 1.0 is not available on sid anymore, v2 is the default, its other dependencies prevent it from being installed
-# from older repositories either, so we need to build it from source
-RUN /dbld/builddeps install_mongoc1_from_source
-
 VOLUME /source
 VOLUME /build
 

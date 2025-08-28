@@ -23,7 +23,6 @@ EXTRA_DIST += \
 	dbld/images/yum-builddep.sha1 \
 	dbld/images/almalinux.prepare.sh \
 	dbld/images/debian.prepare.sh \
-	dbld/images/debian-sid.prepare.sh \
 	dbld/images/ubuntu.prepare.sh \
 	dbld/images/centos.prepare.sh \
 	dbld/images/fedora.prepare.sh \
