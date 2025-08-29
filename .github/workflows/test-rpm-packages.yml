@@ -1,0 +1,150 @@
+# Please note that the syslog-ng git repository is not available in this workflow.
+# It means that certain convenience/helper functions are not available (e.g. gh_output).
+# This is intentional as syslog-ng will be acquired from the APT repository.
+
+name: Run smoke tests on RPM packages
+on:
+  workflow_call:
+    inputs:
+      pkg-type:
+        required: true
+        type: string
+
+jobs:
+  TestPackagesWith:
+    strategy:
+      matrix:
+        distro:
+          # Keep synced with the distros default in the create-packages.yml workflow.
+          # See there for more details.
+          #
+          # upper block for   dbld docker + binary packages
+          # lower block for   dbld docker + binary packages + docker binary
+          #
+          # NOTE: Commented out variants are DEB based distros, so they are tested in the test-apt-packages.yml workflow
+          #
+          # - "debian:bullseye"
+          # - "debian:bookworm"
+          # - "debian:sid"
+          # - "debian:testing"
+          # - "ubuntu:jammy"
+          # - "ubuntu:noble"
+          # - "ubuntu:plucky"
+          - name: "rhel-8"
+            ubi: "8"
+          - name: "rhel-9"
+            ubi: "9"
+          - name: "rhel-10"
+            ubi: "10"
+
+          # - "debian:trixie"
+        upgrade-from:
+          - "rhel-official"
+          - "syslog-ng-last"
+        arch: [amd64, arm64]
+        # This for a matching runner architecture
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            arch-suffix: ''
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            arch-suffix: '-arm64'
+      fail-fast: false
+
+    runs-on: ${{ matrix.runner }}
+
+    container:
+      image: registry.access.redhat.com/ubi${{ matrix.distro.ubi }}/ubi:latest
+      options: --platform=linux/${{ matrix.arch }}
+    name: ${{ matrix.distro.name }}, ${{ matrix.arch }}, ${{ matrix.upgrade-from }}
+
+    steps:
+      # FIXME: This one is needed because we do not have a RHEL based runner with proper license yet
+      - name: Install prerequisites for installing syslog-ng
+        run: |
+          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${{ matrix.distro.ubi }}.noarch.rpm
+          dnf makecache
+          dnf install -y ivykis
+
+      - name: Install the RHEL official syslog-ng OSE package
+        if: matrix.upgrade-from == 'rhel-official'
+        run: |
+          dnf install -y syslog-ng
+
+      - name: Add our OSE repository
+        run: |
+          curl -o /etc/yum.repos.d/syslog-ng-ose-${{ inputs.pkg-type }}.repo https://ose-repo.syslog-ng.com/yum/syslog-ng-ose-${{ inputs.pkg-type }}.repo
+          dnf makecache
+
+      - name: Install the last but one syslog-ng OSE package
+        if: matrix.upgrade-from == 'syslog-ng-last'
+        run: |
+          version=$(dnf --showduplicates list syslog-ng \
+            | awk '/syslog-ng/ {print $2}' \
+            | sort -V \
+            | tail -n 2 \
+            | head -n 1)
+
+          echo "Installing syslog-ng-$version"
+          dnf install -y syslog-ng-$version
+
+      - name: Upgrade to the latest syslog-ng OSE package
+        run: |
+          dnf install -y syslog-ng
+
+      - name: Get syslog-ng revision
+        id: syslog_ng_revision
+        run: |
+          SYSLOG_OUTPUT=$(syslog-ng -V)
+          echo "$SYSLOG_OUTPUT"
+
+          REVISION=$(echo "$SYSLOG_OUTPUT" | grep Revision | awk '{print $2}')
+          if [ -z "$REVISION" ]; then
+            echo "Revision empty, falling back to Installer-Version"
+            REVISION=$(echo "$SYSLOG_OUTPUT" | grep "Installer-Version" | awk '{print $2}')
+          fi
+
+          echo "REVISION=$REVISION" >> $GITHUB_OUTPUT
+
+      - name: Check revision
+        run: |
+          REV="${{ steps.syslog_ng_revision.outputs.REVISION }}"
+          echo "REV=$REV"
+
+          if [ "${{ inputs.pkg-type }}" = "nightly" ]; then
+            # FIXME: It seems somehow the Revision: string is empty in the RPM package version of syslog-ng
+            # Try primary nightly pattern
+            if ! echo "$REV" | egrep -q "^[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}(\.[0-9]{1,3}\.[a-z0-9]{8})?-snapshot\+[0-9]{8}T[0-9]{6}$"; then
+              echo "Primary nightly pattern did not match, trying fallback pattern..."
+              # FIXME: This comes then from Installer-Version: that can be like 4.9.0.67.g6d20c20
+              if ! echo "$REV" | egrep -q "^[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.*"; then
+                echo "No valid nightly revision found!" >&2
+                exit 1
+              fi
+            fi
+          elif [ "${{ inputs.pkg-type }}" = "stable" ]; then
+            if ! echo "$REV" | egrep -q "^[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}-[0-9]{1,2}$"; then
+              echo "No valid stable revision found!" >&2
+              exit 1
+            fi
+          fi
+
+      - name: Check if installed package version matches with install revision
+        run: |
+          echo "Installed revision value: ${{ steps.syslog_ng_revision.outputs.REVISION }}"
+
+          # List all installed syslog-ng packages
+          rpm -qa | grep syslog-ng
+
+          # Check if any installed syslog-ng package matches the expected revision
+          rpm -qa --qf '%{NAME}\t%{VERSION}-%{RELEASE}\n' | grep syslog-ng | while read pkg ; do
+            echo "Checking: $pkg"
+            echo "$pkg" | grep ${{ steps.syslog_ng_revision.outputs.REVISION }}
+          done
+
+      - name: Check if syslog-ng can start with default config
+        run: |
+          nohup syslog-ng -Fe &
+          sleep 5
+          syslog-ng-ctl stop

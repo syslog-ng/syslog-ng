@@ -1,5 +1,4 @@
-name: Trigger tests for APT packages
-
+name: Trigger tests for DEB and RPM packages
 
 on:
   workflow_dispatch:
@@ -11,9 +10,13 @@ on:
           - nightly
           - stable
 
-
 jobs:
-  test-packages:
-    uses: ./.github/workflows/test-apt-packages.yml
+  test-deb-packages:
+    uses: ./.github/workflows/test-deb-packages.yml
+    with:
+      pkg-type: ${{ github.event.inputs.pkg-type }}
+
+  test-rpm-packages:
+    uses: ./.github/workflows/test-rpm-packages.yml
     with:
       pkg-type: ${{ github.event.inputs.pkg-type }}
