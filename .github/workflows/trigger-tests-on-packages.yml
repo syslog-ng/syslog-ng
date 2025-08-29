@@ -1,4 +1,6 @@
 name: Trigger tests for DEB and RPM packages
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:

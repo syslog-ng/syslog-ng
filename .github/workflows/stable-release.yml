@@ -3,6 +3,10 @@
 # This is intentional as syslog-ng will be acquired from the tarball.
 
 name: Stable release
+permissions:
+  contents: read
+  packages: write
+  security-events: write
 
 on:
   workflow_dispatch:

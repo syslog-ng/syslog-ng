@@ -1,7 +1,11 @@
 name: Packages (PR / push)
+permissions:
+  contents: read
+  packages: write
 
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
 

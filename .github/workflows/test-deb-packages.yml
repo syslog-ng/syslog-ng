@@ -3,6 +3,9 @@
 # This is intentional as syslog-ng will be acquired from the APT repository.
 
 name: Run smoke tests on DEB packages
+permissions:
+  contents: read
+
 on:
   workflow_call:
     inputs:
