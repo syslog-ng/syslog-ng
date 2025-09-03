@@ -245,13 +245,19 @@ affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
 
   if (logrotate_is_enabled(logrotate_options) && logrotate_is_required(logrotate_options, self->cached_filesize))
     {
-      LogRotateStatus status = logrotate_do_rotate(logrotate_options, filename);
-
-      if (status != LR_SUCCESS)
+      // rotate only if there has not been an unfinished rotation before
+      if (!logrotate_is_pending(logrotate_options))
         {
-          msg_error("Error while rotating log files", evt_tag_str("filename", self->filename));
-          return FALSE;
+          LogRotateStatus status = logrotate_do_rotate(logrotate_options, filename);
+
+          if (status != LR_SUCCESS)
+            {
+              msg_error("Error while rotating log files", evt_tag_str("filename", self->filename));
+              return FALSE;
+            }
         }
+
+      logrotate_options->pending = TRUE;
 
       // The reference pointed to by p is only updated if the reopen was successful,
       // e.g. open_result == FILE_OPENER_RESULT_SUCCESS
@@ -261,6 +267,7 @@ affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
           /* best case --> continue with opened file */
           msg_info("Reopened log file after logrotate",
                    evt_tag_str("filename", self->filename));
+          logrotate_options->pending = FALSE;
         }
       else
         {
@@ -270,12 +277,14 @@ affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
               msg_info("Trying again to re-open file after logrotate", evt_tag_str("filename", self->filename));
               gpointer result = main_loop_call((MainLoopTaskFunc) affile_dw_reopen, (gpointer) self, TRUE);
               gboolean success = GPOINTER_TO_INT(result);
+              logrotate_options->pending = !success;
               return success;
             }
           else
             {
               /* FILE_OPENER_RESULT_PERMANENT_ERROR */
-              msg_error("Error when reopening log file after logrotate", evt_tag_str("filename", self->filename));
+              msg_error("Error when reopening log file after logrotate. Logrotate is now temporarily disabled.",
+                        evt_tag_str("filename", self->filename));
               return FALSE;
             }
         }
