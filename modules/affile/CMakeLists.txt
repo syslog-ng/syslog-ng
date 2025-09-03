@@ -23,6 +23,7 @@ set(AFFILE_SOURCES
   "wildcard-source.h"
   "wildcard-file-reader.h"
   "file-list.h"
+  "logrotate.h"
   "affile-dest.c"
   "affile-parser.c"
   "affile-plugin.c"
@@ -48,6 +49,7 @@ set(AFFILE_SOURCES
   "wildcard-source.c"
   "wildcard-file-reader.c"
   "file-list.c"
+  "logrotate.c"
 )
 
 if(SYSLOG_NG_HAVE_INOTIFY)
