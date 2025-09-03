@@ -1193,7 +1193,8 @@ log_writer_update_message_stats(LogWriter *self, const LogMessage *msg, gsize ms
 }
 
 static gboolean
-log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gboolean *write_error)
+log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gsize *msg_len,
+                         gboolean *write_error)
 {
   gboolean consumed = FALSE;
 
@@ -1210,10 +1211,10 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
                 evt_tag_printf("message", "%s", self->line_buffer->str));
     }
 
-  gsize msg_len = 0;
+  *msg_len = 0;
   if (self->line_buffer->len)
     {
-      msg_len = self->line_buffer->len;
+      *msg_len = self->line_buffer->len;
       LogProtoStatus status = log_proto_client_post(self->proto, msg, (guchar *)self->line_buffer->str,
                                                     self->line_buffer->len,
                                                     &consumed);
@@ -1252,8 +1253,8 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
       if ((self->options->options & LWO_SEQNUM_ALL) || (msg->flags & LF_LOCAL))
         step_sequence_number(&self->seq_num);
 
-      log_writer_update_message_stats(self, msg, msg_len);
-      stats_byte_counter_add(&self->metrics.written_bytes, msg_len);
+      log_writer_update_message_stats(self, msg, *msg_len);
+      stats_byte_counter_add(&self->metrics.written_bytes, *msg_len);
       log_msg_unref(msg);
       msg_set_context(NULL);
       log_msg_refcache_stop();
@@ -1331,9 +1332,10 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       if (!msg)
         break;
 
+      gsize msg_len = 0;
       ScratchBuffersMarker mark;
       scratch_buffers_mark(&mark);
-      if (!log_writer_write_message(self, msg, &path_options, &write_error))
+      if (!log_writer_write_message(self, msg, &path_options, &msg_len, &write_error))
         {
           scratch_buffers_reclaim_marked(mark);
           break;
