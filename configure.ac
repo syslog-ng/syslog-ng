@@ -400,13 +400,13 @@ AC_ARG_WITH(python3-home,
 AC_ARG_WITH(pylint,
     AS_HELP_STRING([--with-pylint=ABSOLUTE_PATH], [Specify pylint location]))
 
-AC_ARG_WITH(docbook,
-    AS_HELP_STRING([--with-docbook=FILE], [Compiling manpages using docbook in the specified path, if not set, it will be searched on the system, or online version will be used from http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl]),
-    , with_docbook="auto")
+AC_ARG_WITH(manpages,
+    AS_HELP_STRING([--with-manpages=[local|remote]], [Use the local or remote manpages for installation, if remote set, it will download the latest manpages from the online documentation https://syslog-ng.github.io/admin-guide/190_The_syslog-ng_manual_pages/README (default: local)]),
+    , with_manpages="local")
 
 AC_ARG_ENABLE(manpages,
     AS_HELP_STRING([--enable-manpages], [Enable generation of manpages (default: no)]),
-    , [enable_manpages="no"; XSL_STYLESHEET=""])
+    , enable_manpages="no")
 
 AC_ARG_ENABLE(manpages-install,
     AS_HELP_STRING([--enable-manpages-install], [Enable installation of manpages (default: auto)]),
@@ -1854,23 +1854,15 @@ if test "x$enable_python_modules" = "xauto"; then
 fi
 
 dnl ***************************************************************************
-dnl docbook
+dnl manpages
 dnl ***************************************************************************
 
-if test "x$enable_manpages" != "xno"; then
-    if test "x$with_docbook" = "xauto"; then
-        XSL_STYLESHEET=`find /usr/share/{xml,sgml} -path '*/manpages/docbook.xsl' 2>/dev/null | head -n 1`
-        if test -z "$XSL_STYLESHEET"; then
-            XSL_STYLESHEET="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"
-        fi
-    else
-        XSL_STYLESHEET=$with_docbook
-    fi
+if test "x$enable_manpages_install" = "xyes" -a "x$enable_manpages" = "xno"; then
+        AC_MSG_ERROR([Manpage generation is disabled whilst installation is requested, please enable manpage generation first. (--enable-manpages)])
 fi
 
 if test "x$enable_manpages_install" = "xauto"; then
-    dnl do we have the generated manpages (part of the tarball but not in git)
-    if test -f doc/man/syslog-ng.8 -o "x$enable_manpages" = "xyes"; then
+    if test "x$enable_manpages" = "xyes"; then
         enable_manpages_install=yes
     else
         enable_manpages_install=no
@@ -2351,6 +2343,7 @@ AM_CONDITIONAL(ENABLE_JAVA_MODULES, [test "$enable_java_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_AFSNMP, [test "$enable_afsnmp" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 AM_CONDITIONAL(ENABLE_MANPAGES_INSTALL, [test "$enable_manpages_install" != "no"])
+AM_CONDITIONAL(MANPAGES_REMOTE, [test "x$with_manpages" = "xremote"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
@@ -2419,7 +2412,7 @@ AC_SUBST(JSON_DEPENDENCY)
 AC_SUBST(IVYKIS_SUBDIRS)
 AC_SUBST(RESOLV_LIBS)
 AC_SUBST(LIBBPF_INCLUDE)
-
+AC_SUBST(with_manpages)
 AC_SUBST(CURRDATE)
 AC_SUBST(RELEASE_TAG)
 AC_SUBST(SNAPSHOT_VERSION)
@@ -2428,7 +2421,6 @@ AC_SUBST(with_ivykis)
 AC_SUBST(INTERNAL_IVYKIS_CFLAGS)
 AC_SUBST(LIBSYSTEMD_JOURNAL_CFLAGS)
 AC_SUBST(LIBSYSTEMD_JOURNAL_LIBS)
-AC_SUBST(XSL_STYLESHEET)
 
 AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
 AX_VALGRIND_CHECK
@@ -2485,8 +2477,11 @@ echo "  systemd-journal support     : ${with_systemd_journal:=no}"
 echo "  JSON support                : $with_jsonc"
 echo "  stackdump support           : ${enable_stackdump:=no}"
 echo " Build options:"
-echo "  Generate manual pages       : ${enable_manpages:=no}"
+echo "  Enable manual pages         : ${enable_manpages:=no}"
 echo "  Install manual pages        : ${enable_manpages_install:=no}"
+if test "x$enable_manpages" = "xyes" -o "x$enable_manpages_install" = "xyes"; then
+echo "  Using manual pages          : ${with_manpages}"
+fi
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
