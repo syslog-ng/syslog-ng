@@ -1,0 +1,110 @@
+.TH persist\-tool 1 "03 September 2025" 4.9.0 "The persist\-tool manual page"
+.SH NAME
+.PP
+persist\-tool \-\-\- {{ site.product.short_name }} configuration file
+.SH Synopsis
+.PP
+persist\-tool [command] [options]
+.SH Description
+.PP
+This manual page is only an abstract.
+.PP
+The persist\-tool application is a utility that can be used to dump the content of the persist file, and manipulate its content.
+.PP
+[](/assets/images/caution.png)
+\fBCAUTION:\fP Persist\-tool is a special tool for syslog\-ng experts. Do use the tool unless you know exactly what you are doing. Misconfiguring it will result in irrecoverable damage to the persist file, without any warning.
+.PP
+Limitations:
+* The persist\-state functions can be used only with \fB\fCSLP4\fR or newer persist files. Older persist files are not supported.
+* Wildcard characters are not supported in file and directory names.
+.SH The dump command
+.PP
+dump [options] [persist_file]
+.PP
+Use the \fB\fCdump\fR command to print the current content of the persist file in JSON format to the console.
+.PP
+The \fB\fCdump\fR command has the following options:
+* \fB\fC\-\-help\fR or \fB\fC\-?\fR
+.PP
+.RS
+.nf
+Display a brief help message.
+.fi
+.RE
+.SS Example: persist\-tool dump
+.PP
+.RS
+.nf
+persist\-tool dump /opt/syslog\-ng/var/syslog\-ng.persist
+.fi
+.RE
+.PP
+A valid output is the following:
+.PP
+.RS
+.nf
+run_id = { "value": "00 00 00 00 0C 00 00 00 " }
+host_id = { "value": "00 00 00 00 5F 49 2F 01 " }
+.fi
+.RE
+.SH The add command
+.PP
+add [options] [input_file] 
+.PP
+Use the \fB\fCadd\fR command to add or modify a specified state\-entry in the persist file. The state\-entry should be in the same format as the \fB\fCdump\fR command displays it. If the given state\-entry already exists, it will be updated. Otherwise, a new value will be added. If the given persist state is invalid, it will be skipped.
+.PP
+To use the \fB\fCadd\fR command: use \fB\fCpersist\-tool dump\fR to print the content of the current persist file, and redirect it to a file. Edit the content of this file. Use \fB\fCpersist\-tool\fR add with this file to modify the persist.
+.PP
+The \fB\fCadd\fR command has the following options:
+* \fB\fC\-\-help\fR or \fB\fC\-?\fR
+.PP
+.RS
+.nf
+Display a brief help message.
+.fi
+.RE
+.RS
+.IP \(bu 2
+\fB\fC\-\-output\-dir=<directory>\fR or \fB\fC\-o\fR
+.PP
+Required parameter. The directory where the persist file is located at. The name of the persist file stored in this directory must be syslog\-ng.persist.
+.IP \(bu 2
+\fB\fC\-\-persist\-name=<filename>\fR or \fB\fC\-p\fR
+.PP
+Optional parameter. The name of the persist file to generate. Default value: syslog\-ng.persist.
+.RE
+.SS Example: add dump_persist
+.PP
+.RS
+.nf
+/opt/syslog\-ng/bin/persist\-tool add dump_persist \-o .
+.fi
+.RE
+.PP
+A valid output is the following:
+.PP
+.RS
+.nf
+log_reader_curpos(Application)      OK
+affile_sd_curpos(/var/aaa.txt)        OK
+.fi
+.RE
+.PP
+An invalid output is the following:
+.PP
+.RS
+.nf
+log_reader_curpos(Application)      OK
+wrong
+FAILED (error: Invalid entry syntax)
+affile_sd_curpos(/var/aaa.txt)        OK
+.fi
+.RE
+.SH Files
+.PP
+/opt/syslog\-ng/bin/persist\-tool
+.SH See also
+.PP
+The syslog\-ng.conf manual page
+.PP
+The syslog\-ng OSE manual page 

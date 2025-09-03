@@ -1,0 +1,76 @@
+.TH slogverify 1 "03 September 2025" 4.9.0 "The slogverify manual page"
+.SH NAME
+.PP
+slogverify \-\-\- Verifies cryptographically secured logs.
+.SH Synopsis
+.PP
+.RS
+.nf
+slogverify [options] [arguments]
+.fi
+.RE
+.SH Description
+.PP
+The slogverify utility is used to verify the integrity of cryptographically secured logs and to decrypt log entries produced in a syslog\-ng OSE secure logging environment.
+.RS
+.IP \(bu 2
+Normal mode:
+\fB\fCslogverify \-k <host key file> \-m <input MAC file> <input file> <output file> [buffers]\fR
+.IP \(bu 2
+Iterative mode:
+\fB\fCslogverify \-i \-p <previous host key> \-r <previous MAC> \-m <current MAC> <input file> <output file> [buffers]\fR
+.RE
+.SH Arguments
+.RS
+.IP \(bu 2
+input file
+.PP
+An encrypted log file from the syslog\-ng OSE secure logging environment that is verified.
+.IP \(bu 2
+output file
+.PP
+The file that contains the plain text log entries after decryption and verification.
+.IP \(bu 2
+buffers
+.PP
+Optional number of input buffers. The number of buffers can be used for performance adjustments in case the log file to be verified is very large and cannot be processed at once. It is a positive number of log entries that can be held in memory during verification. The minimum number if 10 and the maximum number is 4294967295. If this argument is not supplied the default of 1000 is used.
+.RE
+.SH Options
+.RS
+.IP \(bu 2
+\fB\fC\-\-iterative\fR or \fB\fC\-i\fR
+.PP
+Iterative mode. This is useful in case the log files are periodically copied from the system on which they where generated to central collector. As log rotation, i.e. overwriting log files in order to preserve space cannot be done in a secure logging environment, the iterative mode can be used instead. This works as follows: If a certain storage limit is reached the log file together with the host key and the MAC file is copied to new destination and the old file is deleted. The verification is then performed in iterations, i.e. separately for each file that was retrieved from the log host. For this to work, it is important to always retrieve the corresponding host key and MAC files. The process can be automated, for example by calling slogverify in iterative mode from a script.
+.IP \(bu 2
+\fB\fC\-\-key\-file\fR or \fB\fC\-k\fR
+.PP
+The initial host key (\fB\fCk0\fR). This option is used in normal mode only.
+.IP \(bu 2
+\fB\fC\-\-mac\-file\fR or \fB\fC\-m\fR
+.PP
+The current MAC file used.
+.IP \(bu 2
+\fB\fC\-\-prev\-key\-file\fR or \fB\fC\-p\fR
+.PP
+The host key corresponding to the previous log file. This option can be used in iterative mode only. In theory, this can be initial host key (\fB\fCk0\fR) but using this key might generate warnings, as the gap between the first log entry ever (log entry 0) and the first log entry of the current log file might be large.
+.IP \(bu 2
+\fB\fC\-\-prev\-mac\-file\fR or \fB\fC\-r\fR
+.PP
+The MAC file from the previous log file. This option can only be used in iterative mode.
+.IP \(bu 2
+\fB\fC\-\-help\fR or \fB\fC\-h\fR
+.PP
+Display a help message.
+.RE
+.SH Files
+.PP
+\fB\fC/usr/bin/slogverify\fR
+.PP
+\fB\fC/etc/syslog\-ng.conf\fR
+.SH Additional Information
+.RS
+.IP \(bu 2
+The syslog\-ng.conf manual page
+.IP \(bu 2
+The secure\-logging manual page 
+.RE

@@ -1,0 +1,76 @@
+.TH slogkey 1 "03 September 2025" 4.9.0 "The slogkey manual page"
+.SH NAME
+.PP
+slogkey \-\-\- Manages the cryptographic keys for use with the {{ site.product.short_name }} secure logging environment.
+.SH Synopsis
+.PP
+.RS
+.nf
+slogkey [options] [arguments]
+.fi
+.RE
+.SH Description
+.PP
+The \fB\fCslogkey\fR utility is used to manage cryptographic keys for use with the secure logging module of syslog\-ng OSE. Use this utility to create a master key, derive a host key to be used by a secure logging configuration and to display the current sequence counter of a key. The options determine the operating mode and are mutually exclusive.
+.SH Arguments
+.PP
+The arguments depend on the operating mode.
+.RS
+.IP \(bu 2
+Master key generation
+.PP
+Call sequence: slogkey \fB\fC\-\-master\-ḱey <filename>\fR
+.PP
+\fB\fC<filename>\fR: The name of the file to which the master key is written.
+.IP \(bu 2
+Host key derivation
+.PP
+Call sequence: \fB\fCslogkey \-\-derive\-key <master key file> <host MAC address> <host serial number> <host key file>\fR
+.RS
+.IP \(bu 2
+\fB\fC<master key file>\fR: The master key from which the host key is derived.
+.IP \(bu 2
+\fB\fC<host MAC address>\fR: The MAC address of the host on which the key is used. Instead of the MAC address, any other string that uniquely identifies a host can be supplied, for example the company inventory number.
+.IP \(bu 2
+\fB\fC<host serial number>\fR: The serial number of the host on which the key is used. Instead of the serial number, any other string that uniquely identifies a host can be supplied, for example, the company inventory number.
+.IP \(bu 2
+\fB\fC<host key file>\fR: The name of the file to which the host key is written.
+.RE
+.RE
+.IP
+\fBNOTE:\fP The newly created host key has its counter set to \fB\fC0\fR indicating that it represents the initial host key  \fB\fCk0)\fR\&. This host key must be kept secret and not be disclosed to third parties. It is required to successfully decrypt and verify log archives processed by the secure logging environment. As each log entry is encrypted with its own key, a new host key is created after successful processing of a log entry and replaces the previous key. Therefore, the initial host key needs to be stored in a safe place before starting the secure logging environment, as it is deleted from the log host after processing of the first log entry.
+.RS
+.IP \(bu 2
+Sequence counter display
+.RE
+.SH Options
+.RS
+.IP \(bu 2
+\fB\fC\-\-master\-key\fR or \fB\fC\-m\fR
+.PP
+Generates a mew master key. \fB\fC<filename>\fR is the name of the file storing the newly generated master key.
+.IP \(bu 2
+\fB\fC\-\-derive\-key\fR or \fB\fC\-d\fR
+.PP
+Derive a host key using a previously generated master key.
+.IP \(bu 2
+\fB\fC\-\-counter\fR or \fB\fC\-c\fR
+.PP
+Display the current log sequence counter of a key.
+.IP \(bu 2
+\fB\fC\-\-help\fR or \fB\fC\-h\fR
+.PP
+Display a help message.
+.RE
+.SH Files
+.PP
+\fB\fC/usr/bin/slogkey\fR
+.PP
+\fB\fC/etc/syslog\-ng.conf\fR
+.SH Additional Information
+.RS
+.IP \(bu 2
+The syslog\-ng.conf manual page
+.IP \(bu 2
+The secure\-logging manual page 
+.RE
