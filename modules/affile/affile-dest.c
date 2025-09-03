@@ -95,6 +95,7 @@ struct _AFFileDestWriter
   GMutex lock;
   AFFileDestDriver *owner;
   gchar *filename;
+  gsize cached_filesize;
   LogWriter *writer;
   time_t last_msg_stamp;
   time_t last_open_stamp;
@@ -163,8 +164,28 @@ _dw_reopen(AFFileDestWriter *self, LogProtoClient **p)
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 
       LogProtoClient *proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
-                                              &self->owner->writer_options.proto_options);
-      *p = proto;
+                                                              &self->owner->writer_options.proto_options);
+
+      // get current filesize
+      if (fstat(fd, &st) == 0)
+        {
+          // in this case the reopen and fstat succeeded
+          self->cached_filesize = st.st_size;
+          *p = proto;
+        }
+      else
+        {
+          msg_error("Error reading file size after opening file",
+                    evt_tag_str("filename", self->filename),
+                    evt_tag_errno("errno", errno));
+          // treating as opening error
+          open_result = FILE_OPENER_RESULT_ERROR_TRANSIENT;
+
+          if (proto)
+            {
+              log_proto_client_free(proto);
+            }
+        }
     }
   else if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
     {
