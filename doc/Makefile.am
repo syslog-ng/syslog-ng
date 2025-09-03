@@ -24,6 +24,7 @@ EXTRA_DIST	+=  \
 		doc/security/bof-2002-09-27.txt \
 		doc/security/dos-2000-11-22.txt \
 		doc/xsd/examples/patterndb-1.xml \
+		doc/CMakeLists.txt \
 		$(xsd_DATA)
 
 manpages	= \

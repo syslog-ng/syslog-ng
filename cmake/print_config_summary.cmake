@@ -111,6 +111,8 @@ function(_print_summary_line _variableName _variableValue _maxVarNameLen)
     message("${_spaceTabbedVariableName}${Green}On${Blue}${_extraString}${ResetFG}")
   elseif(_upperValue STREQUAL "OFF" OR _upperValue STREQUAL "FALSE")
     message("${_spaceTabbedVariableName}${Red}Off${Blue}${_extraString}${ResetFG}")
+  elseif(_upperValue STREQUAL "AUTO")
+    message("${_spaceTabbedVariableName}${Blue}Auto${ResetFG}")
   else()
     message("${_spaceTabbedVariableName}${Blue}${_variableValue}${ResetFG}")
   endif()
@@ -244,10 +246,9 @@ function(print_config_summary)
   list(APPEND _testingOptions "BUILD_TESTING")
   _print_options("${_variableNames}" "${_testingOptions}")
 
-  # No man pages support yet in the cmake builds
-  # _print_separator ("Man pages")
-  # list (APPEND _manPages "ENABLE_MANPAGES" "ENABLE_MANPAGES_INSTALL")
-  # _print_options ("${_variableNames}" "${_manPages}")
+  _print_separator ("Man pages")
+  list (APPEND _manPages "ENABLE_MANPAGES" "ENABLE_MANPAGES_INSTALL" "WITH_MANPAGES")
+  _print_options ("${_variableNames}" "${_manPages}")
 
   _get_matching_options(_evaluatedFeaturesOptions "${_variableNames}" "^SYSLOG_NG_ENABLE_")
 
@@ -271,7 +272,7 @@ function(print_config_summary)
 
   _print_separator("Modules")
   list(APPEND _modulesOptions "^ENABLE_")
-  list(APPEND _modulesExcludeOptions "${_compilationOptions}" "${_featuresOptions}" "^ENABLE_.*_INFO_STR$" )
+  list(APPEND _modulesExcludeOptions "${_compilationOptions}" "${_featuresOptions}" "^ENABLE_.*_INFO_STR$" "^ENABLE_MANPAGES_*")
   _print_options("${_variableNames}" "${_modulesOptions}" "${_modulesExcludeOptions}")
 
   _print_separator("")
