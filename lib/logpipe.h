@@ -45,7 +45,8 @@
 
 /* notify result mask values */
 #define NR_OK          0x0000
-#define NR_STOP_ON_EOF 0x0001
+#define NR_ERROR       0x0001
+#define NR_STOP_ON_EOF 0x0002
 
 /* indicates that the LogPipe was initialized */
 #define PIF_INITIALIZED       0x0001
