@@ -221,6 +221,69 @@ affile_dw_reopen(AFFileDestWriter *self)
   return TRUE;
 }
 
+/*
+ * This function checks if logrotation should be performed based on the current
+ * logrotate_options and the filename stored with the AFFileDestWriter object.
+ * The current file size is calculated based on the last cached filesize and the
+ * the buffer size of the last few writes to the log file.
+ * After rotation the current logfile is reopened and the new LogProtoClient
+ * is returned trough the user_data pointer argument.
+ * In case reopening the log file failed in the first attempt a second try is scheduled
+ * but this time as main loop call.
+ */
+static gboolean
+affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  LogProtoClient **p = (LogProtoClient **) args[0];
+  const gsize buf_len = (gsize) args[1];
+
+  LogRotateOptions *logrotate_options = &(self->owner->logrotate_options);
+  const gchar *filename = self->filename;
+
+  self->cached_filesize += buf_len;
+
+  if (logrotate_is_enabled(logrotate_options) && logrotate_is_required(logrotate_options, self->cached_filesize))
+    {
+      LogRotateStatus status = logrotate_do_rotate(logrotate_options, filename);
+
+      if (status != LR_SUCCESS)
+        {
+          msg_error("Error while rotating log files", evt_tag_str("filename", self->filename));
+          return FALSE;
+        }
+
+      // The reference pointed to by p is only updated if the reopen was successful,
+      // e.g. open_result == FILE_OPENER_RESULT_SUCCESS
+      FileOpenerResult open_result = _dw_reopen(self, p);
+      if (open_result == FILE_OPENER_RESULT_SUCCESS)
+        {
+          /* best case --> continue with opened file */
+          msg_info("Reopened log file after logrotate",
+                   evt_tag_str("filename", self->filename));
+        }
+      else
+        {
+          if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
+            {
+              /* try again to reopen */
+              msg_info("Trying again to re-open file after logrotate", evt_tag_str("filename", self->filename));
+              gpointer result = main_loop_call((MainLoopTaskFunc) affile_dw_reopen, (gpointer) self, TRUE);
+              gboolean success = GPOINTER_TO_INT(result);
+              return success;
+            }
+          else
+            {
+              /* FILE_OPENER_RESULT_PERMANENT_ERROR */
+              msg_error("Error when reopening log file after logrotate", evt_tag_str("filename", self->filename));
+              return FALSE;
+            }
+        }
+    }
+
+  return TRUE;
+}
+
 static void
 _init_stats_key_builders(AFFileDestWriter *self, StatsClusterKeyBuilder **writer_sck_builder,
                          StatsClusterKeyBuilder **driver_sck_builder, StatsClusterKeyBuilder **queue_sck_builder)
@@ -414,6 +477,15 @@ affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
     case NC_CLOSE:
       affile_dw_reap(self);
       break;
+    case NC_LOGROTATE:
+    {
+      gboolean success = affile_dw_logrotate(self, user_data);
+      if (!success)
+        {
+          return NR_ERROR;
+        }
+      break;
+    }
     default:
       break;
     }
