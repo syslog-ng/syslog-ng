@@ -1,0 +1,269 @@
+.TH loggen 1 "03 September 2025" 4.9.0 "The loggen manual page"
+.SH NAME
+.PP
+loggen \-\-\- Generate syslog messages at a specified rate
+.SH Synopsis
+.PP
+loggen [options]
+.PP
+target [port]
+.SH Description
+.PP
+\fBNOTE:\fP The loggen application is distributed with the syslog\-ng OSE
+system logging application, and is usually part of the syslog\-ng OSE
+package. The latest version of the syslog\-ng OSE application is
+available at the syslog\-ng OSE page.
+.PP
+This manual page is only an abstract.
+.PP
+The loggen application is a tool to test and stress\-test your syslog
+server and the connection to the server. It can send syslog messages to
+the server at a specified rate using a number of connection types and
+protocols, including TCP, UDP, and unix domain sockets. The messages can
+be generated automatically (repeating the PADDstring over and over), or
+read from a file or the standard input.
+.PP
+When loggen finishes sending the messages, it displays the following
+statistics:
+.RS
+.IP \(bu 2
+average rate: The average rate of the sent messages in
+messages/second.
+.IP \(bu 2
+count: The total number of messages sent.
+.IP \(bu 2
+time: The time required to send the messages in seconds.
+.IP \(bu 2
+average message size: The average size of the sent messages in
+bytes.
+.IP \(bu 2
+bandwidth: The average bandwidth used for sending the messages in
+kilobytes/second.
+.RE
+.SH Options
+.RS
+.IP \(bu 2
+\-\-active\-connections <number\-of\-connections>
+.PP
+Number of connections loggen will use to send messages to the
+destination. This option is usable only when using TCP or TLS
+connections to the destination. Default value: 1
+.PP
+The loggen utility waits until every connection is established
+before starting to send messages. See also the \-\-idle\-connections
+option.
+.IP \(bu 2
+\-\-csv or \-C
+.PP
+Send the statistics of the sent messages to stdout as CSV. This can
+be used for plotting the message rate.
+.IP \(bu 2
+\-\-dgram or \-D
+.PP
+Use datagram socket (UDP or unix\-dgram) to send the messages to the
+target. Requires the \-\-inet option as well.
+.IP \(bu 2
+dont\-parse or \-d
+.PP
+Do not parse the lines read from the input files, send them as
+received.
+.IP \(bu 2
+\-\-help or \-h
+.PP
+Display a brief help message.
+.IP \(bu 2
+\-\-idle\-connection <number\-of\-connections>
+.PP
+Number of idle connections loggen will establish to the destination.
+Note that loggen will not send any messages on idle connections, but
+the connection is kept open using keep\-alive messages. This option
+is usable only when using TCP or TLS connections to the destination.
+See also the \-\-active\-connections option. Default value: 0
+.IP \(bu 2
+\-\-inet or \-i
+.PP
+Use the TCP (by default) or UDP (when used together with the
+\-\-dgram option) protocol to send the messages to the target.
+.IP \(bu 2
+\-\-interval <seconds> or \-I <seconds>
+.PP
+The number of seconds loggen will run. Default value: 10
+.PP
+NOTE: When \-\-interval and \-\-number are used together, loggen will
+send messages until the period set in \-\-interval expires or the
+amount of messages set in \-\-number is reached, whichever happens
+first.
+.IP \(bu 2
+\-\-ipv6 or \-6
+.PP
+Specify the destination using its IPv6 address. Note that the
+destination must have a real IPv6 address.
+.IP \(bu 2
+\-\-loop\-reading or \-l
+.PP
+Read the file specified in \-\-read\-file option in loop: loggen will
+start reading from the beginning of the file when it reaches the end
+of the file.
+.IP \(bu 2
+\-\-number <number\-of\-messages> or \-n <number\-of\-messages>
+.PP
+Number of messages to generate.
+.PP
+NOTE: When \-\-interval and \-\-number are used together, loggen will
+send messages until the period set in \-\-interval expires or the
+amount of messages set in \-\-number is reached, whichever happens
+first.
+.IP \(bu 2
+\-\-no\-framing or \-F
+.PP
+Do not use the framing of the IETF\-syslog protocol style, even if
+the \-\-syslog\-proto option is set.
+.IP \(bu 2
+\-\-quiet or \-Q
+.PP
+Display statistics only when loggen is finished. If not set, the
+statistics are displayed every second.
+.IP \(bu 2
+\-\-permanent or \-T
+.PP
+Keep sending logs indefinitely, without time limit.
+.IP \(bu 2
+\-\-rate <message/second> or \-r <message/second>
+.PP
+The number of messages generated per second for every active
+connection. Default value: 1000
+.PP
+If you want to change the message rate while loggen is running, send
+SIGUSR1 to double the message rate, or SIGUSR2 to halve it:
+.PP
+kill \-USR1 <loggen\-pid>kill \-USR2 <loggen\-pid>
+.IP \(bu 2
+\-\-read\-file <filename> or \-R <filename>
+.PP
+Read the messages from a file and send them to the target. See also
+the \-\-skip\-tokens option.
+.PP
+Specify \- as the input file to read messages from the standard input
+(stdio). Note that when reading messages from the standard input,
+loggen can only use a single thread. The \-R \-parameters must be
+placed at end of command, like: loggen 127.0.0.1 1061 \-\-read\-file \-
+.IP \(bu 2
+\-\-sdata <data\-to\-send> or \-p <data\-to\-send>
+.PP
+Send the argument of the \-\-sdata option as the \fB\fCSDATA\fR part of
+IETF\-syslog (RFC\-5424 formatted) messages. Use it together with the
+\-\-syslog\-proto option. For example: \fB\-\-sdata \[rs]"[test
+name=\[rs]\[rs]"value\[rs]\[rs]"]\fP
+.IP \(bu 2
+\-\-size <message\-size> or \-s <message\-size>
+.PP
+The size of a syslog message in bytes. Default value: 256. Minimum
+value: 127 bytes, maximum value: 8192 bytes.
+.IP \(bu 2
+\-\-skip\-tokens <number>
+.PP
+Skip the specified number of space\-separated tokens (words) at the
+beginning of every line. For example, if the messages in the file
+look like foo bar message, \-\-skip\-tokens 2 skips the foo bar part
+of the line, and sends only the message part. Works only when used
+together with the \-\-read\-file parameter. Default value: 0
+.IP \(bu 2
+\-\-stream or \-S
+.PP
+Use a stream socket (TCP or unix\-stream) to send the messages to the
+target.
+.IP \(bu 2
+\-\-syslog\-proto or \-P
+.PP
+Use the new IETF\-syslog message format. By
+default, loggen uses the legacy BSD\-syslog message format.
+See also the \-\-no\-framing option.
+.IP \(bu 2
+\-\-unix </path/to/socket> or \-x </path/to/socket>
+.PP
+Use a UNIX domain socket to send the messages to the target.
+.IP \(bu 2
+\-\-use\-ssl or \-U
+.PP
+Use an SSL\-encrypted channel to send the messages to the target.
+Note that it is not possible to check the certificate of the target,
+or to perform mutual authentication.
+.IP \(bu 2
+\-\-version or \-V
+.PP
+Display version number of syslog\-ng.
+.RE
+.SS Examples
+.PP
+The following command generates 100 messages per second for ten minutes,
+and sends them to port 2010 of the localhost via TCP. Each message is
+300 bytes long.
+.PP
+.RS
+.nf
+loggen \-\-size 300 \-\-rate 100 \-\-interval 600 127.0.0.1 2010
+.fi
+.RE
+.PP
+The following command is similar to the one above, but uses the UDP
+protocol.
+.PP
+.RS
+.nf
+loggen \-\-inet \-\-dgram \-\-size 300 \-\-rate 100 \-\-interval 600 127.0.0.1 2010
+.fi
+.RE
+.PP
+Send a single message on TCP6 to the ::1 IPv6 address, port 1061:
+.PP
+.RS
+.nf
+loggen \-\-ipv6 \-\-number 1 ::1 1061
+.fi
+.RE
+.PP
+Send a single message on UDP6 to the ::1 IPv6 address, port 1061:
+.PP
+.RS
+.nf
+loggen \-\-ipv6 \-\-dgram \-\-number 1 ::1 1061
+.fi
+.RE
+.PP
+Send a single message using a unix domain\-socket:
+.PP
+.RS
+.nf
+loggen \-\-unix \-\-stream \-\-number 1 </path/to/socket>
+.fi
+.RE
+.PP
+Read messages from the standard input (stdio) and send them to the
+localhost:
+.PP
+.RS
+.nf
+loggen 127.0.0.1 1061 \-\-read\-file \-
+.fi
+.RE
+.SH Files
+.PP
+/opt/syslog\-ng/bin/loggen
+.PP
+\fBNOTE:\fP
+If you experience any problems or need help with syslog\-ng OSE, see the \fIsyslog\-ng OSE Administration Guide\fP[1], or visit the \fIsyslog\-ng OSE mailing list\fP[2].
+For news and notifications about syslog\-ng OSE, visit the \fIsyslog\-ng OSE blogs\fP[3].
+.SH AUTHOR
+.PP
+This manual page was generated from the \fIsyslog\-ng OSE Administration Guide\fP[1], which was written by several contributors to whom we'd like to extend our sincere thanks.
+.SH COPYRIGHT
+.SH NOTES
+.PP
+[1] \fB\fCsyslog\-ng OSE Administration Guide\fR
+    \[la]https://syslog-ng.github.io/admin-guide/README\[ra]
+.PP
+[2] \fB\fCsyslog\-ng OSE mailing list\fR
+    \[la]https://lists.balabit.hu/mailman/listinfo/syslog-ng\[ra]
+.PP
+[3] \fB\fCsyslog\-ng OSE blogs\fR
+    \[la]https://syslog-ng.com/blog/\[ra]

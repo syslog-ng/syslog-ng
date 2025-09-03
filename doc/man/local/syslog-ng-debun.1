@@ -1,0 +1,238 @@
+.TH syslog\-ng\-debun 1 "03 September 2025" 4.9.0 "The syslog\-ng\-debun manual page"
+.SH NAME
+.PP
+syslog\-ng\-debun \-\-\- syslog\-ng DEBUg buNdle generator
+.SH Synopsis
+.PP
+syslog\-ng\-debun [options]
+.SH Description
+.PP
+\fBNOTE:\fP The syslog\-ng\-debun application is distributed with the syslog\-ng OSE
+system logging application, and is usually part of the syslog\-ng OSE
+package. The latest version of the syslog\-ng OSE application is
+available at the syslog\-ng OSE page.
+.PP
+This manual page is only an abstract.
+.PP
+The syslog\-ng\-debun tool collects and saves information about your
+syslog\-ng OSE installation, making troubleshooting easier, especially if
+you ask help about your syslog\-ng OSE related problem.
+.SH General Options
+.RS
+.IP \(bu 2
+\-r
+.PP
+Run syslog\-ng\-debun. Using this option is required to actually
+execute the data collection with syslog\-ng\-debun. It is needed to
+prevent accidentally running syslog\-ng\-debun.
+.IP \(bu 2
+\-h
+.PP
+Display the help page.
+.IP \(bu 2
+\-l
+.PP
+Do not collect privacy\-sensitive data, for example, process tree,
+fstab, and so on. If you use with \-d, then the following parameters
+will be used for debug mode:\-Fev
+.IP \(bu 2
+\-R <directory>
+.PP
+The directory where syslog\-ng PE is installed instead of
+/opt/syslog\-ng.
+.IP \(bu 2
+\-W <directory>
+.PP
+Set the working directory, where the debug bundle will be saved.
+Default value: /tmp. The name of the created file is
+syslog.debun.${host}.${date}.${3\-random\-characters\-or\-pid}.tgz
+.RE
+.SH Debug mode options
+.RS
+.IP \(bu 2
+\-d
+.PP
+Start syslog\-ng OSE in debug mode, using the \-Fedv \-\-enable\-core
+options.
+.PP
+[](/assets/images/caution.png) \fBCAUTION:\fP
+Using this option under high message load may increase disk I/O
+during the debug, and the resulting debug bundle can be huge. To exit debug
+mode, press Enter.
+.IP \(bu 2
+\-D <options>
+.PP
+Start syslog\-ng OSE in debug mode, using the specified command\-line
+options. To exit debug mode, press Enter.
+.IP \(bu 2
+\-t <seconds>
+.PP
+Run syslog\-ng OSE in noninteractive debug mode for <seconds>, and
+automatically exit debug mode after the specified number of seconds.
+.IP \(bu 2
+\-w <seconds>
+.PP
+Wait <seconds> seconds before starting debug mode.
+.RE
+.SH System call tracing
+.RS
+.IP \(bu 2
+\-s
+.PP
+Enable syscall tracing (strace \-f or truss \-f). Note that using \-s
+itself does not enable debug mode, only traces the system calls of
+an already running syslog\-ng OSE process. To trace system calls in
+debug mode, use both the \-s and \-d options.
+.RE
+.SH Packet capture options
+.PP
+Capturing packets requires a packet capture tool on the host. The
+syslog\-ng\-debun tool attempts to use tcpdump on most platforms, except for
+Solaris, where it uses snoop.
+.RS
+.IP \(bu 2
+\-i <interface>
+.PP
+Capture packets only on the specified interface, for example, eth0.
+.IP \(bu 2
+\-p
+.PP
+Capture incoming packets using the following filter: port 514 or
+port 601 or port 53
+.IP \(bu 2
+\-P <options>
+.PP
+Capture incoming packets using the specified filter.
+.IP \(bu 2
+\-t <seconds>
+.PP
+Run syslog\-ng OSE in noninteractive debug mode for <seconds>, and
+automatically exit debug mode after the specified number of seconds.
+.RE
+.SS Examples
+.PP
+.RS
+.nf
+syslog\-ng\-debun \-r
+.fi
+.RE
+.PP
+Create a simple debug bundle, collecting information about your
+environment, for example, list packages containing the word: syslog, ldd
+of your syslog\-binary, and so on.
+.PP
+.RS
+.nf
+syslog\-ng\-debun \-r \-l
+.fi
+.RE
+.PP
+Similar to syslog\-ng\-debun \-r, but without privacy\-sensitive
+information. For example, the following is NOT collected: fstab, df
+output, mount info, ip / network interface configuration, DNS resolv
+info, and process tree.
+.PP
+.RS
+.nf
+syslog\-ng\-debun \-r \-d
+.fi
+.RE
+.PP
+Similar to syslog\-ng\-debun \-r, but it also stops syslog\-ng OSE, then
+restarts it in debug mode (\-Fedv \-\-enable\-core). To stop debug mode,
+press Enter. The output of the debug mode collected into a separate
+file, and also added to the debug bundle.
+.PP
+.RS
+.nf
+syslog\-ng\-debun \-r \-s
+.fi
+.RE
+.PP
+Trace the system calls (using strace or truss) of an already running
+syslog\-ng OSE process.
+.PP
+.RS
+.nf
+syslog\-ng\-debun \-r \-d \-s
+.fi
+.RE
+.PP
+Restart syslog\-ng OSE in debug mode, and also trace the system calls
+(using strace or truss) of the syslog\-ng OSE process.
+.PP
+.RS
+.nf
+syslog\-ng\-debun \-r \-p
+.fi
+.RE
+.PP
+Run packet capture (pcap) with the filter: port 514 or port 601 or port
+53 Also waits for pressing Enter, like debug mode.
+.PP
+.RS
+.nf
+syslog\-ng\-debun \-r \-p \-t 10
+.fi
+.RE
+.PP
+Noninteractive debug mode: Similar to syslog\-ng\-debun \-r \-p, but
+automatically exit after 10 seconds.
+.PP
+.RS
+.nf
+syslog\-ng\-debun \-r \-P "host 1.2.3.4"  \-D "\-Fev \-\-enable\-core"
+.fi
+.RE
+.PP
+Change the packet\-capturing filter from the default to host 1.2.3.4.
+Also change debugging parameters from the default to \-Fev
+\-\-enable\-core. Since a timeout (\-t) is not given, waits for pressing
+Enter.
+.PP
+.RS
+.nf
+syslog\-ng\-debun \-r \-p \-d \-w 5 \-t 10
+.fi
+.RE
+.PP
+Collect pcap and debug mode output following this scenario:
+.RS
+.IP \(bu 2
+Start packet capture with default parameters (\-p)
+.IP \(bu 2
+Wait 5 seconds (\-w 5)
+.IP \(bu 2
+Stop syslog\-ng
+.IP \(bu 2
+Start syslog\-ng OSE in debug mode with default parameters (\-d)
+.IP \(bu 2
+Wait 10 seconds (\-t 10)
+.IP \(bu 2
+Stop syslog\-ng OSE debuging
+.IP \(bu 2
+Start syslog\-ng OSE
+.IP \(bu 2
+Stop packet capturing
+.RE
+.SH Files
+.PP
+/opt/syslog\-ng/bin/loggen
+.PP
+\fBNOTE:\fP
+If you experience any problems or need help with syslog\-ng OSE, see the \fIsyslog\-ng OSE Administration Guide\fP[1], or visit the \fIsyslog\-ng OSE mailing list\fP[2].
+For news and notifications about syslog\-ng OSE, visit the \fIsyslog\-ng OSE blogs\fP[3].
+.SH AUTHOR
+.PP
+This manual page was generated from the \fIsyslog\-ng OSE Administration Guide\fP[1], which was written by several contributors to whom we'd like to extend our sincere thanks.
+.SH COPYRIGHT
+.SH NOTES
+.PP
+[1] \fB\fCsyslog\-ng OSE Administration Guide\fR
+    \[la]https://syslog-ng.github.io/admin-guide/README\[ra]
+.PP
+[2] \fB\fCsyslog\-ng OSE mailing list\fR
+    \[la]https://lists.balabit.hu/mailman/listinfo/syslog-ng\[ra]
+.PP
+[3] \fB\fCsyslog\-ng OSE blogs\fR
+    \[la]https://syslog-ng.com/blog/\[ra]
