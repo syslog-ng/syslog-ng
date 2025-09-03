@@ -132,12 +132,11 @@ affile_dw_reap(AFFileDestWriter *self)
   g_mutex_unlock(&owner->lock);
 }
 
-static gboolean
-affile_dw_reopen(AFFileDestWriter *self)
+static FileOpenerResult
+_dw_reopen(AFFileDestWriter *self, LogProtoClient **p)
 {
   int fd;
   struct stat st;
-  LogProtoClient *proto = NULL;
 
   msg_verbose("Initializing destination file writer",
               evt_tag_str("template", self->owner->filename_template->template_str),
@@ -163,21 +162,40 @@ affile_dw_reopen(AFFileDestWriter *self)
 
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 
-      proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
+      LogProtoClient *proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
                                               &self->owner->writer_options.proto_options);
+      *p = proto;
     }
-  else if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
-    {
-      return FALSE;
-    }
-  else
+  else if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
     {
       msg_error("Error opening file for writing",
                 evt_tag_str("filename", self->filename),
                 evt_tag_error(EVT_TAG_OSERROR));
     }
 
+  return open_result;
+}
+
+static gboolean
+affile_dw_reopen(AFFileDestWriter *self)
+{
+  LogProtoClient *proto = NULL;
+  FileOpenerResult open_result = _dw_reopen(self, &proto);
+
+  if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
+    {
+      // no need to call log_proto_client_free(proto), as
+      // _dw_reopen only sets proto if the reopen was successful
+      msg_error("Error when reopening log file", evt_tag_str("filename", self->filename));
+      return FALSE;
+    }
+
   log_writer_reopen(self->writer, proto);
+
+  if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
+    {
+      return FALSE;
+    }
 
   return TRUE;
 }
