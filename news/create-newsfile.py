@@ -90,6 +90,17 @@ def create_version():
     next_version = get_next_version()
     return '{}\n{}\n\n'.format(next_version, len(next_version) * '=')
 
+def create_products_block():
+    return 'syslog-ng provides [RPM](https://github.com/syslog-ng/syslog-ng#rhel) ' \
+           'and [DEB](https://github.com/syslog-ng/syslog-ng#debianubuntu) package ' \
+           'repositories for Ubuntu, Debian, and RHEL, for both amd64 and arm64 architectures.\n' \
+           '\n' \
+           'We also provide ready-to-test binaries in [Docker containers](https://hub.docker.com/r/balabit/syslog-ng/tags) ' \
+           'based on the current stable Debian image.\n' \
+           '\n' \
+           'For more details, visit our [Documentation Center](https://syslog-ng.github.io/)\n' \
+           '\n'
+
 def create_highlights_block():
     return '## Highlights\n' \
            '\n' \
@@ -145,6 +156,7 @@ def cleanup():
 
 def create_news_content():
     news = create_version()
+    news += create_products_block()
     news += create_highlights_block()
     news += create_standard_blocks()
     news += create_credits_block()
