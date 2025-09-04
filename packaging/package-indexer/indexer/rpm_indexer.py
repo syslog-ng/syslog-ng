@@ -119,7 +119,7 @@ class RPMIndexer(Indexer):
             signer.sendline(self.__gpg_key_passphrase)
             i = signer.expect(["Pass phrase is good", "Pass phrase check failed"])
             if i == 1:
-                signerror = "password check failed"
+                signerror = "Pass phrase check failed"
         except pexpect.EOF:
             signerror = "EOF read while running RPM signing tool."
         except pexpect.TIMEOUT:

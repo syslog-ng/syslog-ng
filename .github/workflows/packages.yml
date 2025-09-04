@@ -58,6 +58,7 @@ jobs:
         "centos-stream10",
         "fedora-rawhide",
         "fedora-latest",
+        "rocky-9",
         "ubuntu-focal",
 
         "debian-bullseye",
@@ -69,7 +70,6 @@ jobs:
         "ubuntu-plucky",
         "rhel-8",
         "rhel-9",
-        "rocky-9",
         "rhel-10",
 
         "debian-trixie",

@@ -45,6 +45,7 @@ jobs:
           - fedora-latest
           - fedora-rawhide
           - opensuse-tumbleweed
+          - rocky-9
           - ubuntu-focal
           - devshell
           - kira
@@ -57,7 +58,6 @@ jobs:
           - ubuntu-jammy
           - ubuntu-noble
           - ubuntu-plucky
-          - rocky-9
           - rhel-8
           - rhel-9
           - rhel-10
@@ -95,6 +95,9 @@ jobs:
             platform: ubuntu-22.04-arm
             arch: arm64
           - image: rhel-10
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: rocky-9
             platform: ubuntu-22.04-arm
             arch: arm64
           # devshell docker image for arm64 (devshell must be debian stable based)
@@ -151,7 +154,7 @@ jobs:
         run: |
           dbld/rules push-image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX}
 
-      # FIXME: this one is soemthong not final, exists in public peview, so the gh api command might have changed
+      # FIXME: this one is something not final, exists in public preview, so the gh api command might have changed?!
       #        the rights set to internal currently manually from the UI
       # - name: Hide the internal images
       #   if: env.UPLOAD_IMAGES_INTERNAL == 'true' && startsWith(matrix.image, 'rhel-')

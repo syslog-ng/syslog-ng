@@ -1,4 +1,3 @@
-# NOTE: arm64 image is not in the :latest tag, so using the 9 tag instead.
 FROM rockylinux/rockylinux:9
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
