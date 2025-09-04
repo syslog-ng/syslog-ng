@@ -27,7 +27,7 @@ from pathlib import Path
 from sys import stdin
 from typing import List
 
-from indexer import Indexer, NightlyDebIndexer, StableDebIndexer
+from indexer import Indexer, NightlyDebIndexer, StableDebIndexer, NightlyRPMIndexer, StableRPMIndexer
 from config import Config
 
 
@@ -124,6 +124,7 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
 
     gpg_key_path = Path(cfg.get_gpg_key_path())
     gpg_key_passphrase = stdin.read() if args["gpg_key_passphrase_from_stdin"] else None
+    gpg_key_name = cfg.get_gpg_key_name()
 
     indexers: List[Indexer] = []
 
@@ -138,6 +139,17 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
                 gpg_key_passphrase=gpg_key_passphrase,
             )
         )
+        indexers.append(
+            NightlyRPMIndexer(
+                incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
+                indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
+                cdn=cdn,
+                run_id=args["run_id"],
+                gpg_key_path=gpg_key_path,
+                gpg_key_passphrase=gpg_key_passphrase,
+                gpg_key_name=gpg_key_name,
+            )
+        )
     elif suite == "stable":
         indexers.append(
             StableDebIndexer(
@@ -147,6 +159,17 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
                 run_id=args["run_id"],
                 gpg_key_path=gpg_key_path,
                 gpg_key_passphrase=gpg_key_passphrase,
+            )
+        )
+        indexers.append(
+            StableRPMIndexer(
+                incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
+                indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
+                cdn=cdn,
+                run_id=args["run_id"],
+                gpg_key_path=gpg_key_path,
+                gpg_key_passphrase=gpg_key_passphrase,
+                gpg_key_name=gpg_key_name,
             )
         )
     else:

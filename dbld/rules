@@ -3,6 +3,7 @@
 BUILDER_IMAGES=	\
 	almalinux-8	\
 	almalinux-9	\
+	almalinux-10	\
 	centos-stream9  \
 	centos-stream10  \
 	fedora-latest	\
@@ -10,12 +11,24 @@ BUILDER_IMAGES=	\
 	debian-bullseye	\
 	debian-bookworm	\
 	debian-bookworm-arm64	\
+	debian-trixie \
+	debian-trixie-arm64 \
 	debian-sid	\
 	debian-testing	\
+	opensuse-tumbleweed	\
 	ubuntu-focal	\
 	ubuntu-jammy \
 	ubuntu-noble \
 	ubuntu-noble-arm64	\
+	ubuntu-plucky	\
+	ubuntu-plucky-arm64	\
+	rhel-8 \
+	rhel-8-arm64 \
+	rhel-9 \
+	rhel-9-arm64 \
+	rhel-10 \
+	rhel-10-arm64 \
+	rocky-9 \
 	kira	\
 	tarball
 
@@ -219,9 +232,10 @@ shell-%: setup
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-kira: image-ubuntu-focal
-image-devshell: image-debian-bookworm
-image-devshell-arm64: image-debian-bookworm-arm64
-image-tarball: image-debian-bookworm
+# devshell is a special case, it is based on the debian stable image
+image-devshell: image-debian-trixie
+image-devshell-arm64: image-debian-trixie-arm64
+image-tarball: image-debian-trixie
 image-%:
 # NOTE: This dockerfile name magic eliminates usage of separate dockerfiles for each image type
 #			  I do not like it either, but it is a necessary evil to avoid code duplication or introduction of

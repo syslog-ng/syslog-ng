@@ -15,9 +15,22 @@ function create_user() {
     useradd $USER_NAME --uid=$USER_ID --gid=$GROUP_ID &>/dev/null || \
         useradd dockerguest --uid=$USER_ID --gid=$GROUP_ID &>/dev/null || \
         echo "Failed to add user $USER_NAME/$USER_ID in docker entrypoint-debian.sh";
-    usermod -a -G sudo $USER_NAME || usermod -a -G wheel $USER_NAME
-    sed -i -e '/^%sudo\s\+ALL=/s,ALL$,NOPASSWD: ALL,' /etc/sudoers
-    sed -i -e '/^%wheel\s\+ALL=/s,ALL$,NOPASSWD: ALL,' /etc/sudoers
+    if getent group sudo >/dev/null 2>&1; then
+        usermod -a -G sudo "$USER_NAME"
+    else
+        echo "No sudo group on this system, trying wheel!";
+        if getent group wheel >/dev/null 2>&1; then
+            usermod -a -G wheel "$USER_NAME"
+        else
+            echo "No sudo or wheel group found, configuring sudoers directly"
+            echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER_NAME
+            chmod 440 /etc/sudoers.d/$USER_NAME
+        fi
+    fi
+    if [ -f /etc/sudoers ]; then
+        sed -i -e '/^%sudo\s\+ALL=/s,ALL$,NOPASSWD: ALL,' /etc/sudoers
+        sed -i -e '/^%wheel\s\+ALL=/s,ALL$,NOPASSWD: ALL,' /etc/sudoers
+    fi
     mkdir -p /home/$USER_NAME
     chown $USER_NAME:$GROUP_ID /home/$USER_NAME
 }

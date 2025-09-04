@@ -20,13 +20,11 @@
 #
 #############################################################################
 
-import bz2
-import gzip
-import lzma
 import re
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import List, Optional
+import pexpect
+import sys
 
 from cdn import CDN
 from remote_storage_synchronizer import RemoteStorageSynchronizer
@@ -38,7 +36,16 @@ from . import utils
 CURRENT_DIR = Path(__file__).parent.resolve()
 
 
-class DebIndexer(Indexer):
+class RPMIndexer(Indexer):
+    __rpm_gpg_sign_extra_args = " --pinentry-mode loopback --homedir %s "
+
+    __rpmdefines = {
+        "_signature": "gpg",
+        "_gpgbin": "/usr/bin/gpg",
+    }
+
+    __rpmargs: List[str] = []
+
     def __init__(
         self,
         incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
@@ -46,31 +53,46 @@ class DebIndexer(Indexer):
         incoming_sub_dir: Path,
         dist_dir: Path,
         cdn: CDN,
-        apt_conf_file_path: Path,
         gpg_key_path: Path,
         gpg_key_passphrase: Optional[str],
+        gpg_key_name: Optional[str],
     ) -> None:
-        self.__apt_conf_file_path = apt_conf_file_path
-        self.__gpg_key_path = gpg_key_path.expanduser()
-        self.__gpg_key_passphrase = gpg_key_passphrase
         super().__init__(
             incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
             incoming_sub_dir=incoming_sub_dir,
-            indexed_sub_dir=Path("apt", "dists", dist_dir),
+            indexed_sub_dir=Path("yum", dist_dir),
             cdn=cdn,
         )
+        self.__gpg_key_path = gpg_key_path.expanduser()
+        self.__gpg_key_passphrase = gpg_key_passphrase
+        self.__gpg_key_name = gpg_key_name
+        if gpg_key_name is None:
+            self.__gpg_key_name = "syslog-ng@lists.balabit.hu"
 
-    def __move_files_from_incoming_to_indexed(self, incoming_dir: Path, indexed_dir: Path) -> None:
+        self.__gpg_home = Path.joinpath(Path.home(), ".gnupg")
+        self.__gpg_home.mkdir(mode=0o700, exist_ok=True)
+
+        self.__rpmdefines["_gpg_name"] = str(self.__gpg_key_name)
+        self.__rpmdefines["__gpg_path"] = str(self.__gpg_home)
+        self.__rpmdefines["_gpg_sign_cmd_extra_args"] = self.__rpm_gpg_sign_extra_args % str(self.__gpg_home)
+        self.__add_gpg_key_to_chain(str(self.__gpg_home))
+
+        self.__rpmargs = list(map(lambda x: "--define=%s %s" % (x, self.__rpmdefines[x]), self.__rpmdefines.keys()))
+
+    def __move_files_from_incoming_to_indexed(self, incoming_dir: Path, indexed_dir: Path) -> List[Path]:
+        new_files = []
         for file in filter(lambda path: path.is_file(), incoming_dir.rglob("*")):
-            # Only handle deb files. Ignore everything else
-            if not file.name.endswith(".deb"):
+            if not file.name.endswith(".rpm"):
                 continue
             relative_path = file.relative_to(incoming_dir)
             platform = relative_path.parent
             file_name = relative_path.name
             # I do not like this either, but this is the only way to determine the arch currently.
-            binary_dir = "binary-arm64" if platform.name.endswith("arm64") else "binary-amd64"
+            binary_dir = "aarch64" if platform.name.endswith("arm64") else "x86_64"
+
+            if platform.name.endswith("-arm64"):
+                platform = Path(platform.name.rstrip("-arm64"))
 
             new_path = Path(indexed_dir, platform, binary_dir, file_name)
 
@@ -78,57 +100,55 @@ class DebIndexer(Indexer):
 
             new_path.parent.mkdir(parents=True, exist_ok=True)
             utils.move_file_without_overwrite(file, new_path)
+            new_files.append(new_path)
+        return new_files
+
+    def __sign_rpm_file(self, filepath: Path) -> None:
+        signerror = ""
+        args = self.__rpmargs + [
+            "--addsign",
+            str(filepath),
+        ]
+        self._log_info("Signing RPM file %s" % filepath)
+        self._log_info("Command: %s" % args)
+        signer = pexpect.spawn("/usr/bin/rpmsign", args, encoding="utf-8")
+        signer.logfile_read = sys.stderr
+        signer.logfile_send = sys.stderr
+        try:
+            signer.expect(["Enter pass phrase:", "Enter passphrase:"])
+            signer.sendline(self.__gpg_key_passphrase)
+            i = signer.expect(["Pass phrase is good", "Pass phrase check failed"])
+            if i == 1:
+                signerror = "Pass phrase check failed"
+        except pexpect.EOF:
+            signerror = "EOF read while running RPM signing tool."
+        except pexpect.TIMEOUT:
+            signerror = "RPM signing tool timed out."
+
+        signout = "".join(signer.readlines())
+        if signer.isalive():
+            signer.wait()
+        ret = signer.exitstatus
+        # it's not a fault if GPG agent cached the unlocked key, and no passphrase have been asked ...
+        if ret == 0 and signerror == "EOF read while running RPM signing tool.":
+            return
+        if ret != 0 or signerror != "":
+            self._log_info(
+                "Failed to sign RPM file `%s`. \nCause: %s\nRPM's output was: %s\n" % (filepath, signerror, signout)
+            )
+            raise
 
     def _prepare_indexed_dir(self, incoming_dir: Path, indexed_dir: Path) -> None:
-        self.__move_files_from_incoming_to_indexed(incoming_dir, indexed_dir)
-
-    def __create_packages_files(self, indexed_dir: Path) -> None:
-        base_command = ["apt-ftparchive", "packages"]
-        # Need to exec the commands in the `apt` dir.
-        # APT wants to have the `Filename` field in the `Packages` file to start with `dists`.
-        dir = indexed_dir.parents[1]
-
-        for binary_dir in ["binary-amd64", "binary-arm64"]:
-            for pkg_dir in list(indexed_dir.rglob(binary_dir)):
-                relative_pkg_dir = pkg_dir.relative_to(dir)
-                command = base_command + [str(relative_pkg_dir)]
-
-                packages_file_path = Path(pkg_dir, "Packages")
-                with packages_file_path.open("w") as packages_file:
-                    self._log_info("Creating `Packages` file.", packages_file_path=str(packages_file_path))
-                    utils.execute_command(command, dir=dir, stdout=packages_file)
-
-                packages_gz_file_path = Path(pkg_dir, "Packages.gz")
-                with packages_gz_file_path.open("wb") as packages_gz_file:
-                    gz_compressed_data = gzip.compress(packages_file_path.read_bytes())
-                    packages_gz_file.write(gz_compressed_data)
-
-                packages_xz_file_path = Path(pkg_dir, "Packages.xz")
-                with packages_xz_file_path.open("wb") as packages_xz_file:
-                    xz_compressed_data = lzma.compress(packages_file_path.read_bytes(), lzma.FORMAT_XZ)
-                    packages_xz_file.write(xz_compressed_data)
-
-                packages_bz2_file_path = Path(pkg_dir, "Packages.bz2")
-                with packages_bz2_file_path.open("wb") as packages_bz2_file:
-                    bz2_compressed_data = bz2.compress(packages_file_path.read_bytes())
-                    packages_bz2_file.write(bz2_compressed_data)
-
-    def __create_release_file(self, indexed_dir: Path) -> None:
-        command = ["apt-ftparchive", "release", "."]
-
-        release_file_path = Path(indexed_dir, "Release")
-        with release_file_path.open("w") as release_file:
-            self._log_info("Creating `Release` file.", release_file_path=str(release_file_path))
-            utils.execute_command(
-                command,
-                dir=indexed_dir,
-                stdout=release_file,
-                env={"APT_CONFIG": str(self.__apt_conf_file_path)},
-            )
+        new_files = self.__move_files_from_incoming_to_indexed(incoming_dir, indexed_dir)
+        for new_file in new_files:
+            self.__sign_rpm_file(new_file)
 
     def _index_pkgs(self, indexed_dir: Path) -> None:
-        self.__create_packages_files(indexed_dir)
-        self.__create_release_file(indexed_dir)
+        for binary_dir in ["x86_64", "aarch64"]:
+            for pkg_dir in list(indexed_dir.rglob(binary_dir)):
+                command = ["createrepo_c", str(pkg_dir)]
+                self._log_info("Creating YUM repo at %s" % pkg_dir)
+                utils.execute_command(command)
 
     @staticmethod
     def __add_gpg_security_params(command: list) -> list:
@@ -156,10 +176,11 @@ class DebIndexer(Indexer):
         ] + command[1:]
 
     def __add_gpg_key_to_chain(self, gnupghome: str) -> None:
+
         command = ["gpg", "--import", str(self.__gpg_key_path)]
         command = self.__add_gpg_security_params(command)
         command = self.__add_gpg_passphrase_params_if_needed(command)
-        env = {"GNUPGHOME": gnupghome}
+        env = {"GNUPGHOME": str(gnupghome)}
 
         self._log_info("Adding GPG key to chain.", gpg_key_path=str(self.__gpg_key_path))
         utils.execute_command(command, env=env, input=self.__gpg_key_passphrase)
@@ -190,46 +211,12 @@ class DebIndexer(Indexer):
         )
         utils.execute_command(command, env=env, input=self.__gpg_key_passphrase)
 
-    def __create_inrelease_file(self, release_file_path: Path, gnupghome: str) -> None:
-        inrelease_file_path = Path(release_file_path.parent, "InRelease")
-        command = [
-            "gpg",
-            "--output",
-            str(inrelease_file_path),
-            "--armor",
-            "--sign",
-            "--clearsign",
-            str(release_file_path),
-        ]
-        command = self.__add_gpg_security_params(command)
-        command = self.__add_gpg_passphrase_params_if_needed(command)
-        env = {"GNUPGHOME": gnupghome}
-
-        if inrelease_file_path.exists():
-            self._log_info("Removing old `InRelease` file.", inrelease_file_path=str(inrelease_file_path))
-            inrelease_file_path.unlink()
-
-        self._log_info(
-            "Creating `InRelease` file.",
-            release_file_path=str(release_file_path),
-            inrelease_file_path=str(inrelease_file_path),
-        )
-        utils.execute_command(command, env=env, input=self.__gpg_key_passphrase)
-
     def _sign_pkgs(self, indexed_dir: Path) -> None:
-        gnupghome = TemporaryDirectory(dir=CURRENT_DIR)
-        release_file_path = Path(indexed_dir, "Release")
-
-        try:
-            self.__add_gpg_key_to_chain(gnupghome.name)
-            self.__create_release_gpg_file(release_file_path, gnupghome.name)
-            self.__create_inrelease_file(release_file_path, gnupghome.name)
-        finally:
-            self._log_info("Cleaning up `GNUPGHOME` directory.", gnupghome=gnupghome.name)
-            gnupghome.cleanup()
+        #
+        pass
 
 
-class StableDebIndexer(DebIndexer):
+class StableRPMIndexer(RPMIndexer):
     def __init__(
         self,
         incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
@@ -238,6 +225,7 @@ class StableDebIndexer(DebIndexer):
         cdn: CDN,
         gpg_key_path: Path,
         gpg_key_passphrase: Optional[str],
+        gpg_key_name: Optional[str],
     ) -> None:
         super().__init__(
             incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
@@ -245,13 +233,13 @@ class StableDebIndexer(DebIndexer):
             incoming_sub_dir=Path("stable", run_id),
             dist_dir=Path("stable"),
             cdn=cdn,
-            apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "stable.conf"),
             gpg_key_path=gpg_key_path,
             gpg_key_passphrase=gpg_key_passphrase,
+            gpg_key_name=gpg_key_name,
         )
 
 
-class NightlyDebIndexer(DebIndexer):
+class NightlyRPMIndexer(RPMIndexer):
     PKGS_TO_KEEP = 10
 
     def __init__(
@@ -262,6 +250,7 @@ class NightlyDebIndexer(DebIndexer):
         run_id: str,
         gpg_key_path: Path,
         gpg_key_passphrase: Optional[str],
+        gpg_key_name: Optional[str],
     ) -> None:
         super().__init__(
             incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
@@ -269,27 +258,27 @@ class NightlyDebIndexer(DebIndexer):
             incoming_sub_dir=Path("nightly", run_id),
             dist_dir=Path("nightly"),
             cdn=cdn,
-            apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "nightly.conf"),
             gpg_key_path=gpg_key_path,
             gpg_key_passphrase=gpg_key_passphrase,
+            gpg_key_name=gpg_key_name,
         )
 
-    def __get_pkg_timestamps_in_dir(self, dir: Path) -> List[str]:
+    def __get_pkg_timestamps_in_dir(self, directory: Path) -> List[str]:
         timestamp_regexp = re.compile(r"\+([^_]+)_")
         pkg_timestamps: List[str] = []
 
-        for deb_file in dir.rglob("syslog-ng-core*.deb"):
-            pkg_timestamp = timestamp_regexp.findall(deb_file.name)[0]
+        for rpm_file in directory.rglob("syslog-ng-core*.rpm"):
+            pkg_timestamp = timestamp_regexp.findall(rpm_file.name)[0]
             pkg_timestamps.append(pkg_timestamp)
         pkg_timestamps.sort()
 
         return pkg_timestamps
 
-    def __remove_pkgs_with_timestamp(self, dir: Path, timestamps_to_remove: List[str]) -> None:
+    def __remove_pkgs_with_timestamp(self, directory: Path, timestamps_to_remove: List[str]) -> None:
         for timestamp in timestamps_to_remove:
-            for deb_file in dir.rglob("*{}*.deb".format(timestamp)):
-                self._log_info("Removing old nightly package.", path=str(deb_file.resolve()))
-                deb_file.unlink()
+            for rpm_file in directory.rglob("*{}*.rpm".format(timestamp)):
+                self._log_info("Removing old nightly package.", path=str(rpm_file.resolve()))
+                rpm_file.unlink()
 
     def __remove_old_pkgs(self, indexed_dir: Path) -> None:
         platform_dirs = list(filter(lambda path: path.is_dir(), indexed_dir.glob("*")))
@@ -297,10 +286,10 @@ class NightlyDebIndexer(DebIndexer):
         for platform_dir in platform_dirs:
             pkg_timestamps = self.__get_pkg_timestamps_in_dir(platform_dir)
 
-            if len(pkg_timestamps) <= NightlyDebIndexer.PKGS_TO_KEEP:
+            if len(pkg_timestamps) <= NightlyRPMIndexer.PKGS_TO_KEEP:
                 continue
 
-            timestamps_to_remove = pkg_timestamps[: -NightlyDebIndexer.PKGS_TO_KEEP]
+            timestamps_to_remove = pkg_timestamps[: -NightlyRPMIndexer.PKGS_TO_KEEP]
             self.__remove_pkgs_with_timestamp(platform_dir, timestamps_to_remove)
 
     def _prepare_indexed_dir(self, incoming_dir: Path, indexed_dir: Path) -> None:

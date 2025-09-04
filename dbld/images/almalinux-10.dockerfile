@@ -1,26 +1,24 @@
-FROM ubuntu:focal
+FROM almalinux:10
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
-ARG JENKINS_URL
 
 LABEL maintainer="kira.syslogng@gmail.com"
 LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 LABEL COMMIT=${COMMIT}
 
-ENV OS_DISTRIBUTION=ubuntu
-ENV OS_DISTRIBUTION_CODE_NAME=focal
+ENV OS_DISTRIBUTION=almalinux
+ENV OS_DISTRIBUTION_CODE_NAME=10
 ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
-ENV DEBIAN_FRONTEND=noninteractive
-ENV DEBCONF_NONINTERACTIVE_SEEN=true
-ENV LANG C.UTF-8
 
 COPY images/entrypoint.sh /
 COPY . /dbld/
 
 RUN /dbld/builddeps update_packages
 RUN /dbld/builddeps install_dbld_dependencies
-RUN /dbld/builddeps install_apt_packages
-RUN /dbld/builddeps install_debian_build_deps
+RUN /dbld/builddeps add_epel_repo
+RUN /dbld/builddeps add_copr_repo
+RUN /dbld/builddeps install_yum_packages
+RUN /dbld/builddeps install_rpm_build_deps
 
 RUN /dbld/builddeps install_criterion
 # bison is too old, at least version 3.7.6 is required

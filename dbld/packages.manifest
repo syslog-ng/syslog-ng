@@ -2,26 +2,27 @@
 # packages required to build the docker image
 ##################################################
 
-gnupg                           [centos, almalinux, fedora]
+gnupg                           [centos, almalinux, fedora, opensuse, rhel, rocky]
 
 # download various stuff over https
-wget                            [centos, almalinux, fedora, debian, ubuntu]
-ca-certificates       	        [centos, almalinux, fedora, debian, ubuntu]
+wget                            [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+ca-certificates       	        [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 
 # cmake, c++ modules, criterion compilation
-cmake                           [centos, almalinux, fedora, debian, ubuntu]
-gcc-c++                         [centos, almalinux, fedora]
+cmake                           [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+gcc-c++                         [centos, almalinux, fedora, opensuse, rhel, rocky]
 
 # to unpack gradle binary package (zip file)
-unzip                           [centos, almalinux, fedora, debian, ubuntu]
+unzip                           [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 
 # I dont know why this is needed.
-bzip2                           [centos, almalinux, fedora, debian, ubuntu]
+bzip2                           [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 
 # Basic interactive tools
-less                            [centos, almalinux, fedora, debian, ubuntu]
-vim                             [centos, almalinux, fedora, debian, ubuntu]
-sudo                            [centos, almalinux, fedora, debian, ubuntu]
+gawk                            [opensuse, rhel, rocky]
+less                            [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+vim                             [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+sudo                            [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 
 #############################################################################
 # Essential build tools not explicitly referenced from
@@ -34,11 +35,13 @@ dh-autoreconf                   [debian, ubuntu]
 dh-exec                         [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
 equivs                          [debian, ubuntu]
-gperf                           [fedora]
+gmake                           [opensuse]
+gperf                           [fedora, opensuse, rocky]
 libdistro-info-perl             [debian, ubuntu]
-make                            [centos, almalinux, fedora]
-rpm-build                       [centos, almalinux, fedora]
-which                           [fedora]
+libtool                         [opensuse, rhel, rocky]
+make                            [centos, almalinux, fedora, rhel, rocky]
+rpm-build                       [centos, almalinux, fedora, opensuse, rhel, rocky]
+which                           [fedora, opensuse, rhel, rocky]
 
 #############################################################################
 # eBPF related tools
@@ -53,20 +56,21 @@ bpftool                         [devshell, tarball]
 
 # docbook to generate man pages
 docbook-xsl                     [devshell, tarball]
-docbook-style-xsl               [fedora]
+docbook-style-xsl               [fedora, rocky]
+docbook-xsl-stylesheets         [opensuse]
 
 #############################################################################
 # Build environment dependencies that are not strictly required by syslog-ng
 # but are needed by our dbld functionality.
 #############################################################################
-git                             [centos, almalinux, fedora, debian, ubuntu]
-ccache                          [centos, almalinux, fedora, debian, ubuntu]
+git                             [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+ccache                          [centos, almalinux, fedora, debian, opensuse, ubuntu]
 
 #############################################################################
 # packages to run successful autogen.sh
 #
 # NOTE: the versions installed may or may not be enough to regenerate
-# configure scripts, especially on older distros).  We only guarantee that
+# configure scripts, especially on older distros.  We only guarantee that
 # autogen.sh successfully runs within TARBALL_IMAGE (debian-bookworm at this
 # point).  All the other platforms are best-effort.
 #
@@ -75,9 +79,9 @@ ccache                          [centos, almalinux, fedora, debian, ubuntu]
 # lines, so we don't need to list them here.
 #############################################################################
 
-autoconf                        [centos, almalinux, fedora]
-autoconf-archive                [centos, fedora]
-automake                        [centos, almalinux, fedora]
+autoconf                        [centos, almalinux, fedora, opensuse, rhel, rocky]
+autoconf-archive                [centos, fedora, opensuse, rhel, rocky]
+automake                        [centos, almalinux, fedora, opensuse, rhel, rocky]
 
 #############################################################################
 # syslog-ng core dependencies
@@ -92,8 +96,8 @@ automake                        [centos, almalinux, fedora]
 # We are now using the same version for both.
 
 python3-dev                     [debian-sid, ubuntu-focal, devshell]
-python3-devel                   [fedora]
-python3-pip                     [debian, ubuntu]
+python3-devel                   [fedora, opensuse, rhel, rocky]
+python3-pip                     [debian, ubuntu, opensuse, rhel, rocky]
 python3-venv                    [debian, ubuntu, devshell]
 
 # libmongoc and libbson packages on various platforms
@@ -115,7 +119,8 @@ libmongoc-dev                   [debian]
 
 # Our ivykis fork has uring support, let's use it in the devshell and the
 # packages we provide
-liburing-dev                    [debian, ubuntu-jammy, ubuntu-noble, devshell]
+liburing-dev                    [debian, ubuntu-jammy, ubuntu-noble, ubuntu-plucky, devshell]
+liburing-devel                  [opensuse, rhel, rocky]
 
 #############################################################################
 # Tools required to run @kira-syslogng, our testbot.
