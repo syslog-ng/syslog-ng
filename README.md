@@ -318,7 +318,14 @@ official [third party page][3rd-party].
 
 ## Installation from Docker image
 
-Binaries are also available as a Docker image. To find out more, check out the blog post, [Your central log server in Docker](https://syslog-ng.com/blog/central-log-server-docker/).
+Binaries are also available as a [Docker image](https://hub.docker.com/r/balabit/syslog-ng). You can get:
+- the latest official release with
+
+  `docker pull balabit/syslog-ng:latest`
+
+- the latest developer nigthly build with
+
+  `docker pull balabit/syslog-ng:nightly`
 
 ## Documentation
 
