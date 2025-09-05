@@ -38,6 +38,7 @@
 #include "apphook.h"
 #include "timeutils/cache.h"
 #include "timeutils/misc.h"
+#include "logrotate.h"
 
 #include <iv.h>
 #include <sys/types.h>
@@ -94,6 +95,7 @@ struct _AFFileDestWriter
   GMutex lock;
   AFFileDestDriver *owner;
   gchar *filename;
+  gsize cached_filesize;
   LogWriter *writer;
   time_t last_msg_stamp;
   time_t last_open_stamp;
@@ -131,12 +133,11 @@ affile_dw_reap(AFFileDestWriter *self)
   g_mutex_unlock(&owner->lock);
 }
 
-static gboolean
-affile_dw_reopen(AFFileDestWriter *self)
+static FileOpenerResult
+_dw_reopen(AFFileDestWriter *self, LogProtoClient **p)
 {
   int fd;
   struct stat st;
-  LogProtoClient *proto = NULL;
 
   msg_verbose("Initializing destination file writer",
               evt_tag_str("template", self->owner->filename_template->template_str),
@@ -162,21 +163,132 @@ affile_dw_reopen(AFFileDestWriter *self)
 
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 
-      proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
-                                              &self->owner->writer_options.proto_options);
+      LogProtoClient *proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
+                                                              &self->owner->writer_options.proto_options);
+
+      // get current filesize
+      if (fstat(fd, &st) == 0)
+        {
+          // in this case the reopen and fstat succeeded
+          self->cached_filesize = st.st_size;
+          *p = proto;
+        }
+      else
+        {
+          msg_error("Error reading file size after opening file",
+                    evt_tag_str("filename", self->filename),
+                    evt_tag_errno("errno", errno));
+          // treating as opening error
+          open_result = FILE_OPENER_RESULT_ERROR_TRANSIENT;
+
+          if (proto)
+            {
+              log_proto_client_free(proto);
+            }
+        }
     }
-  else if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
-    {
-      return FALSE;
-    }
-  else
+  else if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
     {
       msg_error("Error opening file for writing",
                 evt_tag_str("filename", self->filename),
                 evt_tag_error(EVT_TAG_OSERROR));
     }
 
+  return open_result;
+}
+
+static gboolean
+affile_dw_reopen(AFFileDestWriter *self)
+{
+  LogProtoClient *proto = NULL;
+  FileOpenerResult open_result = _dw_reopen(self, &proto);
+
+  if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
+    {
+      // no need to call log_proto_client_free(proto), as
+      // _dw_reopen only sets proto if the reopen was successful
+      msg_error("Error when reopening log file", evt_tag_str("filename", self->filename));
+      return FALSE;
+    }
+
   log_writer_reopen(self->writer, proto);
+
+  if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
+    {
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+/*
+ * This function checks if logrotation should be performed based on the current
+ * logrotate_options and the filename stored with the AFFileDestWriter object.
+ * The current file size is calculated based on the last cached filesize and the
+ * the buffer size of the last few writes to the log file.
+ * After rotation the current logfile is reopened and the new LogProtoClient
+ * is returned trough the user_data pointer argument.
+ * In case reopening the log file failed in the first attempt a second try is scheduled
+ * but this time as main loop call.
+ */
+static gboolean
+affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  LogProtoClient **p = (LogProtoClient **) args[0];
+  const gsize buf_len = (gsize) args[1];
+
+  LogRotateOptions *logrotate_options = &(self->owner->logrotate_options);
+  const gchar *filename = self->filename;
+
+  self->cached_filesize += buf_len;
+
+  if (logrotate_is_enabled(logrotate_options) && logrotate_is_required(logrotate_options, self->cached_filesize))
+    {
+      // rotate only if there has not been an unfinished rotation before
+      if (!logrotate_is_pending(logrotate_options))
+        {
+          LogRotateStatus status = logrotate_do_rotate(logrotate_options, filename);
+
+          if (status != LR_SUCCESS)
+            {
+              msg_error("Error while rotating log files", evt_tag_str("filename", self->filename));
+              return FALSE;
+            }
+        }
+
+      logrotate_options->pending = TRUE;
+
+      // The reference pointed to by p is only updated if the reopen was successful,
+      // e.g. open_result == FILE_OPENER_RESULT_SUCCESS
+      FileOpenerResult open_result = _dw_reopen(self, p);
+      if (open_result == FILE_OPENER_RESULT_SUCCESS)
+        {
+          /* best case --> continue with opened file */
+          msg_info("Reopened log file after logrotate",
+                   evt_tag_str("filename", self->filename));
+          logrotate_options->pending = FALSE;
+        }
+      else
+        {
+          if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
+            {
+              /* try again to reopen */
+              msg_info("Trying again to re-open file after logrotate", evt_tag_str("filename", self->filename));
+              gpointer result = main_loop_call((MainLoopTaskFunc) affile_dw_reopen, (gpointer) self, TRUE);
+              gboolean success = GPOINTER_TO_INT(result);
+              logrotate_options->pending = !success;
+              return success;
+            }
+          else
+            {
+              /* FILE_OPENER_RESULT_PERMANENT_ERROR */
+              msg_error("Error when reopening log file after logrotate. Logrotate is now temporarily disabled.",
+                        evt_tag_str("filename", self->filename));
+              return FALSE;
+            }
+        }
+    }
 
   return TRUE;
 }
@@ -374,6 +486,15 @@ affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
     case NC_CLOSE:
       affile_dw_reap(self);
       break;
+    case NC_LOGROTATE:
+    {
+      gboolean success = affile_dw_logrotate(self, user_data);
+      if (!success)
+        {
+          return NR_ERROR;
+        }
+      break;
+    }
     default:
       break;
     }
@@ -508,6 +629,28 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
   log_pipe_deinit(&dw->super);
   log_dest_driver_release_queue(&self->super, queue);
   log_pipe_unref(&dw->super);
+}
+
+void
+affile_dd_set_logrotate_enable(LogDriver *s, gboolean use_logrotate)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  self->logrotate_options.enable = use_logrotate;
+}
+
+void affile_dd_set_logrotate_rotations(LogDriver *s, gint max_rotations)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  self->logrotate_options.max_rotations = max_rotations;
+}
+
+void affile_dd_set_logrotate_size(LogDriver *s, gint size)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  self->logrotate_options.size = size;
 }
 
 
@@ -836,6 +979,7 @@ affile_dd_new_instance(LogTemplate *filename_template, GlobalConfig *cfg)
   self->super.super.super.generate_persist_name = affile_dd_format_persist_name;
   self->filename_template = filename_template;
   log_writer_options_defaults(&self->writer_options);
+  logrotate_options_defaults(&self->logrotate_options);
   self->writer_options.mark_mode = MM_NONE;
   self->writer_options.stats_level = STATS_LEVEL1;
   self->writer_flags = LW_FORMAT_FILE;
