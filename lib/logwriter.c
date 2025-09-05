@@ -1309,9 +1309,8 @@ log_writer_process_handshake(LogWriter *self)
 static LogProtoStatus
 log_writer_logrotate(LogWriter *self, gsize buf_len, gboolean *write_error)
 {
-  LogProtoClient *proto = NULL;
-
   /* Signal AFFileDestWriter to check for logrotation */
+  LogProtoClient *proto = NULL;
   gpointer args[] = { &proto, (gpointer *) buf_len };
   gint result = log_pipe_notify(self->control, NC_LOGROTATE, args);
 
@@ -1343,8 +1342,8 @@ log_writer_logrotate(LogWriter *self, gsize buf_len, gboolean *write_error)
     }
 
   // if proto has not been set in the log_pipe_notify call (i.e. proto == null)
-  // and no error code has been returned, the proto has been already set by
-  // affile_dw_reopen and it was successful
+  // and no error code has been returned, either no logrotate was setup/needed or
+  // the proto has been already set by affile_dw_reopen and it was successful
   // if proto has not been update return error
   return log_writer_opened(self)? LPS_SUCCESS : LPS_ERROR;
 }

@@ -197,7 +197,7 @@ _dw_reopen(AFFileDestWriter *self, LogProtoClient **p)
   return open_result;
 }
 
-static gboolean
+FileOpenerResult
 affile_dw_reopen(AFFileDestWriter *self)
 {
   LogProtoClient *proto = NULL;
@@ -208,17 +208,12 @@ affile_dw_reopen(AFFileDestWriter *self)
       // no need to call log_proto_client_free(proto), as
       // _dw_reopen only sets proto if the reopen was successful
       msg_error("Error when reopening log file", evt_tag_str("filename", self->filename));
-      return FALSE;
+      return open_result;
     }
 
   log_writer_reopen(self->writer, proto);
 
-  if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
-    {
-      return FALSE;
-    }
-
-  return TRUE;
+  return open_result;
 }
 
 /*
@@ -243,7 +238,7 @@ affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
 
   self->cached_filesize += buf_len;
 
-  if (logrotate_is_enabled(logrotate_options) && logrotate_is_required(logrotate_options, self->cached_filesize))
+  if (logrotate_is_required(logrotate_options, self->cached_filesize))
     {
       // rotate only if there has not been an unfinished rotation before
       if (!logrotate_is_pending(logrotate_options))
@@ -276,8 +271,8 @@ affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
               /* try again to reopen */
               msg_info("Trying again to re-open file after logrotate", evt_tag_str("filename", self->filename));
               gpointer result = main_loop_call((MainLoopTaskFunc) affile_dw_reopen, (gpointer) self, TRUE);
-              gboolean success = GPOINTER_TO_INT(result);
-              logrotate_options->pending = !success;
+              FileOpenerResult success = GPOINTER_TO_INT(result);
+              logrotate_options->pending = ((FileOpenerResult) success != FILE_OPENER_RESULT_SUCCESS);
               return success;
             }
           else
@@ -355,7 +350,9 @@ affile_dw_init(LogPipe *s)
 
   log_pipe_append(&self->super, (LogPipe *) self->writer);
 
-  if (!affile_dw_reopen(self))
+  // FILE_OPENER_RESULT_ERROR_TRANSIENT is not a failure, we just couldn't open the file now,
+  // but we will try again later
+  if (affile_dw_reopen(self) == FILE_OPENER_RESULT_ERROR_PERMANENT)
     {
       log_pipe_deinit((LogPipe *) self->writer);
       log_writer_set_queue(self->writer, NULL);
@@ -488,11 +485,9 @@ affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
       break;
     case NC_LOGROTATE:
     {
-      gboolean success = affile_dw_logrotate(self, user_data);
-      if (!success)
-        {
+      if (logrotate_is_enabled(&(self->owner->logrotate_options)))
+        if (FALSE == affile_dw_logrotate(self, user_data))
           return NR_ERROR;
-        }
       break;
     }
     default:
