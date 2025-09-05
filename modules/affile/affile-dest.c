@@ -238,7 +238,7 @@ affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
 
   self->cached_filesize += buf_len;
 
-  if (logrotate_is_enabled(logrotate_options) && logrotate_is_required(logrotate_options, self->cached_filesize))
+  if (logrotate_is_required(logrotate_options, self->cached_filesize))
     {
       // rotate only if there has not been an unfinished rotation before
       if (!logrotate_is_pending(logrotate_options))
@@ -485,11 +485,9 @@ affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
       break;
     case NC_LOGROTATE:
     {
-      gboolean success = affile_dw_logrotate(self, user_data);
-      if (!success)
-        {
+      if (logrotate_is_enabled(&(self->owner->logrotate_options)))
+        if (FALSE == affile_dw_logrotate(self, user_data))
           return NR_ERROR;
-        }
       break;
     }
     default:
