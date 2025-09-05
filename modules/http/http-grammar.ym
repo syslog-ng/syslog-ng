@@ -71,6 +71,7 @@ HttpResponseHandler last_response_handler;
 %token KW_USE_SYSTEM_CERT_STORE
 %token KW_SSL_VERSION
 %token KW_PEER_VERIFY
+%token KW_SEND_MSG_DATA_IN_HEADER
 %token KW_TIMEOUT
 %token KW_OCSP_STAPLING_VERIFY
 %token KW_TLS
@@ -206,6 +207,7 @@ http_tls_option
           }
       }
     | KW_PEER_VERIFY '(' yesno ')'            { http_dd_set_peer_verify(last_driver, $3); }
+    | KW_SEND_MSG_DATA_IN_HEADER '(' yesno ')' { http_dd_set_send_message_data_in_header(last_driver, $3); }
     | KW_OCSP_STAPLING_VERIFY '(' yesno ')'
       {
         CHECK_ERROR(http_dd_set_ocsp_stapling_verify(last_driver, $3), @3,

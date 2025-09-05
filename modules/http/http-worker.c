@@ -959,13 +959,15 @@ static LogThreadedResult
 _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   gsize orig_msg_len = self->request_body->len;
   _add_message_to_batch(self, msg);
   gsize diff_msg_len = self->request_body->len - orig_msg_len;
-  log_threaded_dest_driver_insert_msg_length_stats(self->super.owner, diff_msg_len);
+  log_threaded_dest_driver_insert_msg_length_stats((LogThreadedDestDriver *) owner, diff_msg_len);
 
-  _add_msg_specific_headers(self, msg);
+  if (owner->send_message_data_in_header)
+    _add_msg_specific_headers(self, msg);
 
   self->msg_for_templated_url = log_msg_ref(msg);
 
