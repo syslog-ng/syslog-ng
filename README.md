@@ -189,36 +189,49 @@ syslog-ng packages are released for the following distribution versions:
 
 #### Adding the APT repository
 
-1. Download and install the release signing key:
+1. Download and store the release signing key:
 
     ``` shell
     wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo apt-key add -
     ```
 
-2. Add the repository containing the latest build of syslog-ng to your APT sources.
-   For example if you are running Ubuntu 24.04, you would use `ubuntu-noble`, see chart above:
+   with newer apt (like on Debian 13 - Trixie)
 
     ``` shell
-    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-noble" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
+    wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo gpg --dearmor -o /etc/apt/keyrings/syslog-ng-ose.gpg
+    ```
+
+2. Add the repository containing the latest stable build of syslog-ng to your APT sources.
+   For example if you are running Debian 13 on ARM64, you would use `debian-trixie-arm64` (see chart above)
+   NOTE: For X86-64 you do not have to use any postfix, so, for Debian 13 on X86-64, you should simply use `debian-trixie`.
+
+    ``` shell
+    deb [signed-by=/etc/apt/keyrings/syslog-ng-ose.gpg] https://ose-repo.syslog-ng.com/apt/ stable <os>-<codename>[-<architecture>]
+    ```
+
+   on newer OSes (like on Debian 13 - Trixie)
+
+    ``` shell
+    echo "deb [signed-by=/etc/apt/keyrings/syslog-ng-ose.gpg] https://ose-repo.syslog-ng.com/apt/ stable <os>-<codename>[-<architecture>]" | sudo tee /etc/apt/sources.list.d/syslog-ng-ose.list > /dev/null
     ```
 
 3. Update your repositories with
 
-   ```` shell
+   ``` shell
    sudo apt update
-   ````
+   ```
 
 4. Now install syslog-ng:
 
-   ```` shell
+   ``` shell
    sudo apt install syslog-ng
-   ````
+   ```
 
 #### Nightly builds
 
 Nightly packages are built and released from the git `develop` branch everyday.
 
-Use `nightly` instead of `stable` in step 2 to use the nightly APT repository. E.g.:
+Use `nightly` instead of `stable` in step 2 to use the nightly APT repository. e.g.:
 
 ``` shell
 echo "deb https://ose-repo.syslog-ng.com/apt/ nightly ubuntu-noble" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
