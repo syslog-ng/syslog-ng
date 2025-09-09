@@ -210,7 +210,7 @@ function(print_config_summary)
     if(SUMMARY_VERBOSE OR SUMMARY_LEVEL EQUAL 1)
       set(_maxSummaryLineLen 46)
       _print_separator("" ${_maxSummaryLineLen})
-      list(APPEND _libraryOptions ".*(_FOUND)$" ".*(_LIBRARY|_LIBRARIES|_LIBRARY_OPTS)$" ".*(INCLUDE_DIR|INCLUDEDIR|INCLUDE_DIRS|INCLUDE_OPTS)$")
+      list(APPEND _libraryOptions ".*(_FOUND)$" ".*(_LIBRARY|_LIBRARIES|_LIBRARY_OPTS)$" ".*(INCLUDE_DIR|INCLUDEDIR|INCLUDE_DIRS|INCLUDE_OPTS)$" ".*(_CFLAGS|_CFLAGS_OTHER)$")
       list(APPEND _libraryExcludeOptions "^(CMAKE_|_).*")
       _print_options("${_variableNames}" "${_libraryOptions}" "${_libraryExcludeOptions}")
 
