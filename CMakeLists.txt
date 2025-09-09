@@ -52,18 +52,26 @@ if(ENABLE_OBJC)
   set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
 endif()
 
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+# FIXME: This does not handle multiple sub-modules, must be made recursive and smarter later
+#        Also it should be moved to a separate file
+#        We have only one such module now (ivykis), so it is not a big problem currently
+if("${IVYKIS_SOURCE}" STREQUAL "internal" OR "${IVYKIS_SOURCE}}" STREQUAL "auto")
+  find_package(Git QUIET)
+
+  if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     option(GIT_SUBMODULE "Checkout submodules during build" ON)
+
     if(GIT_SUBMODULE)
-        message(STATUS "Submodule update")
-        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
-        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-            message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-        endif()
+      message(STATUS "Submodule update")
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE GIT_SUBMOD_RESULT)
+
+      if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+        message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+      endif()
     endif()
+  endif()
 endif()
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/tests/valgrind/unit-test-leak.supp")
@@ -559,8 +567,8 @@ set(PKG_CONFIG_MODULEDIR ${SYSLOG_NG_PATH_MODULEDIR})
 set(PKG_CONFIG_CONFIG_INCLUDEDIR ${SYSLOG_NG_PATH_CONFIG_INCLUDEDIR})
 set(PKG_CONFIG_SCLDIR ${SYSLOG_NG_PATH_SCLDIR})
 set(PKG_CONFIG_IVYKIS ${IVYKIS_INCLUDE_DIRS})
-set(PKG_CONFIG_PACKAGE_VERSION ${SYSLOG_NG_VERSION})
 set(PKG_CONFIG_INTERNAL_IVYKIS_CFLAGS ${IVYKIS_INCLUDE_DIRS})
+set(PKG_CONFIG_PACKAGE_VERSION ${SYSLOG_NG_VERSION})
 set(libdir "\${libdir}")
 set(includedir "\${includedir}")
 
