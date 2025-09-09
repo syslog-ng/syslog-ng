@@ -31,24 +31,31 @@ function(external_or_find_package LIB_NAME)
 
     set_property(CACHE ${LIB_NAME}_SOURCE PROPERTY STRINGS internal system auto)
 
-    include(External${LIB_NAME} OPTIONAL RESULT_VARIABLE EXT_${LIB_NAME}_PATH)
-
-    if (NOT EXISTS ${EXT_${LIB_NAME}_PATH})
+    # Do not rely simply on the result of the External{LIB_NAME}.cmake (e.g. the presence of the source).
+    # If the user explicitly selected the system version, then do not build the internal one.
+    # FIXME: Add handling of the "/path_to/ivykis_source" option as well, like we have in autotools.
+    if (NOT "${${LIB_NAME}_SOURCE}" STREQUAL "internal" AND NOT "${${LIB_NAME}_SOURCE}" STREQUAL "auto")
         set(${LIB_NAME}_INTERNAL FALSE)
+    else()
+        include(External${LIB_NAME} OPTIONAL RESULT_VARIABLE EXT_${LIB_NAME}_PATH)
+
+        if(NOT EXT_${LIB_NAME}_PATH OR NOT EXISTS "${EXT_${LIB_NAME}_PATH}")
+            set(${LIB_NAME}_INTERNAL FALSE)
+        endif()
     endif()
 
     if (${LIB_NAME}_INTERNAL)
        set_target_properties(${LIB_NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
     endif()
 
-    if  (${${LIB_NAME}_INTERNAL} AND ("internal" STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE} ))
+    if (${${LIB_NAME}_INTERNAL} AND ("internal" STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE} ))
 
         message(STATUS "Found ${LIB_NAME}: internal")
         set(${LIB_NAME}_FOUND TRUE PARENT_SCOPE)
         set(${LIB_NAME}_INCLUDE_DIR "${${LIB_NAME}_INTERNAL_INCLUDE_DIR}" CACHE STRING "${LIB_NAME} include path")
         set(${LIB_NAME}_LIBRARY "${${LIB_NAME}_INTERNAL_LIBRARY}" CACHE STRING "${LIB_NAME} library path")
 
-    elseif ("system"   STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE})
+    elseif ("system" STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE})
       if (${EXTERNAL_OR_FIND_PACKAGE_REQUIRED})
           find_package(${LIB_NAME} REQUIRED)
       else()
