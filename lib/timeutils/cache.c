@@ -114,7 +114,7 @@ static GMutex localtime_lock;
 long
 get_local_timezone_ofs(time_t when)
 {
-#ifdef SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
+#if SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
   struct tm ltm;
 
   cached_localtime(&when, &ltm);
@@ -145,7 +145,7 @@ get_local_timezone_ofs(time_t when)
 static glong
 _get_system_tzofs(void)
 {
-#ifdef SYSLOG_NG_HAVE_TIMEZONE
+#if SYSLOG_NG_HAVE_TIMEZONE
   /* global variable */
   return (glong) timezone;
 #elif defined SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF

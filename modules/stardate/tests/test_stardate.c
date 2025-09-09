@@ -47,7 +47,7 @@ stardate_assert(const gchar *msg_str, const int precision, const gchar *expected
   else
     template_command = g_strdup_printf("$(stardate --digits %d $UNIXTIME)", precision);
 
-  cr_assert(template_command != NULL, "Memory allocation failed in asprintf.");
+  cr_assert(template_command != NULL, "Memory allocation failed in g_strdup_printf.");
   assert_template_format_msg(template_command, expected, logmsg);
   g_free(template_command);
 
