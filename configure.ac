@@ -812,6 +812,10 @@ AC_CHECK_HEADERS(strings.h	\
 	utmp.h			\
 	utmpx.h)
 AC_CHECK_HEADERS(tcpd.h)
+AC_CHECK_HEADER(malloc.h)
+AS_IF([test "x$ac_cv_header_malloc_h" = "xyes"],
+      [AC_DEFINE([HAVE_MALLOC_H], [1], [Define if malloc.h presented])],
+      [AC_DEFINE([HAVE_MALLOC_H], [0], [Define if malloc.h presented])])
 
 AC_CHECK_TYPES([struct ucred, struct cmsgcred], [], [], [#define _GNU_SOURCE 1
 #define _DEFAULT_SOURCE 1
