@@ -9,6 +9,7 @@ on:
 jobs:
   general:
     runs-on: ${{ matrix.platform }}
+    name: general (${{ matrix.build-tool }}-${{ matrix.cc }}${{ matrix.image_arch_suffix != '' && matrix.image_arch_suffix || '-X86-64' }})
     container:
       image: ghcr.io/syslog-ng/dbld-devshell${{ matrix.image_arch_suffix }}:latest
       options: --privileged --ulimit core=-1
@@ -83,14 +84,14 @@ jobs:
         if: matrix.build-tool == 'autotools'
         run: ./autogen.sh
 
-      - name: configure
+      - name: autotools configure
         if: matrix.build-tool == 'autotools'
         run: |
           mkdir build
           cd build
           ../configure ${CONFIGURE_FLAGS}
 
-      - name: cmake
+      - name: cmake configure
         if: matrix.build-tool == 'cmake'
         run: |
           mkdir build
