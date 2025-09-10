@@ -805,13 +805,18 @@ AC_CHECK_HEADERS(strings.h	\
 	getopt.h		\
 	stropts.h		\
 	sys/strlog.h		\
-	door.h			\
 	sys/capability.h	\
 	sys/prctl.h		\
 	linux/sock_diag.h	\
 	utmp.h			\
 	utmpx.h)
 AC_CHECK_HEADERS(tcpd.h)
+
+AC_CHECK_HEADER(door.h)
+AS_IF([test "x$ac_cv_header_door_h" = "xyes"],
+      [AC_DEFINE([HAVE_DOOR_H], [1], [Define if door.h presented])],
+      [AC_DEFINE([HAVE_DOOR_H], [0], [Define if door.h presented])])
+
 AC_CHECK_HEADER(malloc.h)
 AS_IF([test "x$ac_cv_header_malloc_h" = "xyes"],
       [AC_DEFINE([HAVE_MALLOC_H], [1], [Define if malloc.h presented])],
