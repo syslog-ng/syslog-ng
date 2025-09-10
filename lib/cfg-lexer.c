@@ -606,6 +606,9 @@ __glob_pattern_p (const char *pattern)
         if (open)
           return 1;
         break;
+
+      default:
+        break;
       }
 
   return 0;
