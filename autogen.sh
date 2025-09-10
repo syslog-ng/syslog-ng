@@ -104,7 +104,7 @@ autoheader
 automake --foreign --add-missing --copy
 autoconf
 
-if grep AX_PREFIX_CONFIG_H configure > /dev/null; then
+if grep -v '^\s*#' configure | grep AX_PREFIX_CONFIG_H > /dev/null; then
 	cat <<EOF
 
 You need autoconf-archive http://savannah.gnu.org/projects/autoconf-archive/
