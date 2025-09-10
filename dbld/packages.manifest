@@ -80,7 +80,7 @@ ccache                          [centos, almalinux, fedora, debian, opensuse, ub
 #############################################################################
 
 autoconf                        [centos, almalinux, fedora, opensuse, rhel, rocky]
-autoconf-archive                [centos, fedora, opensuse, rhel, rocky]
+autoconf-archive                [centos, fedora, opensuse, rhel, rocky, ubuntu, devshell]
 automake                        [centos, almalinux, fedora, opensuse, rhel, rocky]
 
 #############################################################################
