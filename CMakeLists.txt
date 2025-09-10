@@ -55,7 +55,7 @@ endif()
 # FIXME: This does not handle multiple sub-modules, must be made recursive and smarter later
 #        Also it should be moved to a separate file
 #        We have only one such module now (ivykis), so it is not a big problem currently
-if("${IVYKIS_SOURCE}" STREQUAL "internal" OR "${IVYKIS_SOURCE}}" STREQUAL "auto")
+if("${IVYKIS_SOURCE}" STREQUAL "internal" OR "${IVYKIS_SOURCE}}" STREQUAL "auto" OR "${IVYKIS_SOURCE}}" STREQUAL "AUTO")
   find_package(Git QUIET)
 
   if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
@@ -282,10 +282,10 @@ endif()
 
 
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
-set (IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path)")
+set (IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path/AUTO)")
 external_or_find_package(IVYKIS REQUIRED)
 set(IVYKIS_LIBRARIES ${IVYKIS_LIBRARY} CACHE STRING "IVYKIS libraries path")
-if((NOT IVYKIS_INTERNAL) AND(IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
+if((NOT IVYKIS_INTERNAL) AND (IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
   set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 0)
 elseif(IVYKIS_INTERNAL)
   # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
@@ -347,7 +347,7 @@ check_function_exists(kqueue SYSLOG_NG_HAVE_KQUEUE)
 
 set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
 
-if ("${PYTHON_VERSION}" STREQUAL "AUTO")
+if("${PYTHON_VERSION}" STREQUAL "AUTO" OR "${PYTHON_VERSION}" STREQUAL "auto")
   find_package(PythonInterp EXACT 3)
   find_package(PythonLibs EXACT 3)
 else ()
@@ -366,11 +366,12 @@ pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 option (ENABLE_TCP_WRAPPER "Enable TCP wrapper support" ${WRAP_FOUND})
 set (SYSLOG_NG_ENABLE_TCP_WRAPPER ${ENABLE_TCP_WRAPPER})
 
-set(ENABLE_SPOOF_SOURCE "auto" CACHE STRING "Enable spoof source support: ON, OFF, AUTO")
+set(ENABLE_SPOOF_SOURCE "AUTO" CACHE STRING "Enable spoof source support: ON, OFF, AUTO")
 set_property(CACHE ENABLE_SPOOF_SOURCE PROPERTY STRINGS AUTO ON OFF)
 message(STATUS "Checking Spoof source support")
-# find_package(LIBNET) already set LIBNET_FOUND, LIBNET_LIBRARIES, LIBNET_CFLAGS
-if(ENABLE_SPOOF_SOURCE STREQUAL "AUTO")
+
+# find_package(LIBNET) already set LIBNET_FOUND
+if(ENABLE_SPOOF_SOURCE STREQUAL "AUTO" OR ENABLE_SPOOF_SOURCE STREQUAL "auto")
   if(LIBNET_FOUND)
     set(SYSLOG_NG_ENABLE_SPOOF_SOURCE ON)
     message(STATUS "  Spoof source support: enabled (AUTO, found libnet)")

@@ -22,19 +22,30 @@
 #
 #############################################################################
 
+# -----------------------------------------------------------------------------
+# NOTE: The usage of the name external in the file names and the internal 
+#       variables are confusing here, as this tries to discover the internal
+#       version of the given lib.
+#       For legacy reasons I've kept it as it is.
+#       First time I've tried to replace all the external words I found strange
+#       cmake errors that led me to think the word external is a requirements
+#       somwhere, but probably it was my fault only.
+# TODO: Retry the renaming to internal everywhere
+# -----------------------------------------------------------------------------
+
 include(CMakeParseArguments)
 
 function(external_or_find_package LIB_NAME)
     cmake_parse_arguments(EXTERNAL_OR_FIND_PACKAGE "REQUIRED" "" "" ${ARGN})
 
-    set(${LIB_NAME}_SOURCE "auto" CACHE STRING "${LIB_NAME} library source")
+    set(${LIB_NAME}_SOURCE "AUTO" CACHE STRING "${LIB_NAME} library source")
 
-    set_property(CACHE ${LIB_NAME}_SOURCE PROPERTY STRINGS internal system auto)
+    set_property(CACHE ${LIB_NAME}_SOURCE PROPERTY STRINGS internal system auto AUTO)
 
     # Do not rely simply on the result of the External{LIB_NAME}.cmake (e.g. the presence of the source).
     # If the user explicitly selected the system version, then do not build the internal one.
-    # FIXME: Add handling of the "/path_to/ivykis_source" option as well, like we have in autotools.
-    if (NOT "${${LIB_NAME}_SOURCE}" STREQUAL "internal" AND NOT "${${LIB_NAME}_SOURCE}" STREQUAL "auto")
+    # FIXME: Add handling of the "/path_to/lib_source" option as well, like we have in autotools.
+    if (NOT "${${LIB_NAME}_SOURCE}" STREQUAL "internal" AND NOT "${${LIB_NAME}_SOURCE}" STREQUAL "auto" AND NOT "${${LIB_NAME}_SOURCE}" STREQUAL "AUTO")
         set(${LIB_NAME}_INTERNAL FALSE)
     else()
         include(External${LIB_NAME} OPTIONAL RESULT_VARIABLE EXT_${LIB_NAME}_PATH)
@@ -48,14 +59,14 @@ function(external_or_find_package LIB_NAME)
        set_target_properties(${LIB_NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
     endif()
 
-    if (${${LIB_NAME}_INTERNAL} AND ("internal" STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE} ))
+    if (${${LIB_NAME}_INTERNAL} AND("internal" STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE} OR "AUTO" STREQUAL ${${LIB_NAME}_SOURCE}))
 
         message(STATUS "Found ${LIB_NAME}: internal")
         set(${LIB_NAME}_FOUND TRUE PARENT_SCOPE)
         set(${LIB_NAME}_INCLUDE_DIR "${${LIB_NAME}_INTERNAL_INCLUDE_DIR}" CACHE STRING "${LIB_NAME} include path")
         set(${LIB_NAME}_LIBRARY "${${LIB_NAME}_INTERNAL_LIBRARY}" CACHE STRING "${LIB_NAME} library path")
 
-    elseif ("system" STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE})
+    elseif ("system" STREQUAL ${${LIB_NAME}_SOURCE} OR "auto" STREQUAL ${${LIB_NAME}_SOURCE} OR "AUTO" STREQUAL ${${LIB_NAME}_SOURCE})
       if (${EXTERNAL_OR_FIND_PACKAGE_REQUIRED})
           find_package(${LIB_NAME} REQUIRED)
       else()
