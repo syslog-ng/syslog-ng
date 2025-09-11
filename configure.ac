@@ -860,6 +860,32 @@ AS_IF([test "x$ac_cv_header_malloc_h" = "xyes"],
       [AC_DEFINE([HAVE_MALLOC_H], [1], [Define if malloc.h presented])],
       [AC_DEFINE([HAVE_MALLOC_H], [0], [Define if malloc.h presented])])
 
+dnl ***************************************************************************
+dnl AIX has these, but cannot be linked and used, not supported anymore
+dnl ***************************************************************************
+AC_CACHE_CHECK([for sys/strlog.h and log_ctl struct], [ac_cv_header_sys_strlog_h], [
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+    #include <sys/strlog.h>
+  ]], [[
+    struct strbuf b;
+    struct log_ctl lc;
+    lc.mid = 0;
+    return 0;
+  ]])],
+  [ac_cv_header_sys_strlog_h=yes],
+  [ac_cv_header_sys_strlog_h=no])
+])
+AC_CACHE_CHECK([for stropts.h and I_PUSH], [ac_cv_header_stropts_h], [
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+    #include <stropts.h>
+  ]], [[
+    int x = I_PUSH;
+    return x;
+  ]])],
+  [ac_cv_header_stropts_h=yes],
+  [ac_cv_header_stropts_h=no])
+])
+
 AC_CHECK_TYPES([struct ucred, struct cmsgcred], [], [], [#define _GNU_SOURCE 1
 #define _DEFAULT_SOURCE 1
 #include <sys/types.h>
