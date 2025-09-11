@@ -50,7 +50,7 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
-#define hostname_buffer  __tls_deref(hostname_buffer)
+#define hostname_buffer  __slng_tls_deref(hostname_buffer)
 
 static void
 normalize_hostname(gchar *result, gsize result_size, const gchar *hostname)

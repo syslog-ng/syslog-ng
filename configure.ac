@@ -860,6 +860,32 @@ AS_IF([test "x$ac_cv_header_malloc_h" = "xyes"],
       [AC_DEFINE([HAVE_MALLOC_H], [1], [Define if malloc.h presented])],
       [AC_DEFINE([HAVE_MALLOC_H], [0], [Define if malloc.h presented])])
 
+dnl ***************************************************************************
+dnl AIX has these, but cannot be linked and used, not supported anymore
+dnl ***************************************************************************
+AC_CACHE_CHECK([for sys/strlog.h and log_ctl struct], [ac_cv_header_sys_strlog_h], [
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+    #include <sys/strlog.h>
+  ]], [[
+    struct strbuf b;
+    struct log_ctl lc;
+    lc.mid = 0;
+    return 0;
+  ]])],
+  [ac_cv_header_sys_strlog_h=yes],
+  [ac_cv_header_sys_strlog_h=no])
+])
+AC_CACHE_CHECK([for stropts.h and I_PUSH], [ac_cv_header_stropts_h], [
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+    #include <stropts.h>
+  ]], [[
+    int x = I_PUSH;
+    return x;
+  ]])],
+  [ac_cv_header_stropts_h=yes],
+  [ac_cv_header_stropts_h=no])
+])
+
 AC_CHECK_TYPES([struct ucred, struct cmsgcred], [], [], [#define _GNU_SOURCE 1
 #define _DEFAULT_SOURCE 1
 #include <sys/types.h>
@@ -872,12 +898,30 @@ dnl ***************************************************************************
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_STRUCT_TM
 
-AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whether you have tm_gmtoff field in struct tm]),,[
+dnl ***************************************************************************
+dnl AIX has issues detecting struct tm.tm_gmtoff
+dnl ***************************************************************************
+AC_CACHE_CHECK([for struct tm.tm_gmtoff], [ac_cv_have_struct_tm_tm_gmtoff], [
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #if TM_IN_SYS_TIME
-#include <sys/time.h>
+#  include <sys/time.h>
 #else
-#include <time.h>
-#endif])
+#  include <time.h>
+#endif
+]], [[
+struct tm t;
+return t.tm_gmtoff;
+]])],
+  [ac_cv_have_struct_tm_tm_gmtoff=yes],
+  [ac_cv_have_struct_tm_tm_gmtoff=no])])
+
+if test "x$ac_cv_have_struct_tm_tm_gmtoff" = xyes; then
+  AC_DEFINE([HAVE_STRUCT_TM_TM_GMTOFF], [1],
+            [Define to 1 if struct tm has tm_gmtoff])
+else
+  AC_DEFINE([HAVE_STRUCT_TM_TM_GMTOFF], [0],
+            [Define to 0 if struct tm has no tm_gmtoff])
+fi
 
 AC_CHECK_MEMBER(struct msghdr.msg_control,AC_DEFINE(HAVE_CTRLBUF_IN_MSGHDR,1,[Whether you have msg_control field in msghdr in socket.h]),,[
 #include <sys/socket.h>
@@ -985,11 +1029,29 @@ AC_CHECK_FUNCS(strdup		\
 	strcasestr		\
 	memrchr			\
 	localtime_r		\
-	getprotobynumber_r	\
 	gmtime_r		\
 	strnlen			\
 	getline			\
 	strtok_r)
+
+dnl ***************************************************************************
+dnl AIX has issues detecting getprotobynumber_r
+dnl ***************************************************************************
+AC_LANG_PUSH([C])
+AC_MSG_CHECKING([for getprotobynumber_r])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([#include <netdb.h>],
+                   [struct protoent result;
+                    struct protoent *res = 0;
+                    char buf[1024];
+                    getprotobynumber_r(6, &result, buf, sizeof(buf), &res);
+                    return 0;])],
+  [AC_DEFINE([HAVE_GETPROTOBYNUMBER_R], [1], [Define if getprotobynumber_r exists])
+   AC_MSG_RESULT([yes])],
+  [AC_DEFINE([HAVE_GETPROTOBYNUMBER_R], [0], [Define if getprotobynumber_r exists])
+   AC_MSG_RESULT([no])])
+AC_LANG_POP([C])
+
 old_LIBS=$LIBS
 LIBS=$BASE_LIBS
 AC_CHECK_FUNCS(clock_gettime)

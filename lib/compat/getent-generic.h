@@ -26,7 +26,7 @@
 
 #include "compat/compat.h"
 
-#ifndef SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R
+#if ! SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R
 
 #include <sys/types.h>
 #include <grp.h>

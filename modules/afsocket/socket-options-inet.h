@@ -29,8 +29,8 @@ typedef struct _SocketOptionsInet
 {
   SocketOptions super;
   /* user settings */
-  gint ip_ttl;
-  gint ip_tos;
+  gint ip_ttl_val;
+  gint ip_tos_val;
   gboolean ip_freebind;
   gint tcp_keepalive_time;
   gint tcp_keepalive_intvl;

@@ -1041,8 +1041,8 @@ unix_socket_option
 
 inet_socket_option
 	: socket_option
-	| KW_IP_TTL '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_ttl = $3; }
-	| KW_IP_TOS '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_tos = $3; }
+	| KW_IP_TTL '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_ttl_val = $3; }
+	| KW_IP_TOS '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_tos_val = $3; }
 	| KW_IP_FREEBIND '(' yesno ')'              { ((SocketOptionsInet *) last_sock_options)->ip_freebind = $3; }
 	| KW_INTERFACE '(' string ')'		    { socket_options_inet_set_interface_name((SocketOptionsInet *) last_sock_options, $3); free($3); }
 	| KW_TCP_KEEPALIVE_TIME '(' nonnegative_integer ')'
