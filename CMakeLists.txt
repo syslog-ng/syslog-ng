@@ -52,18 +52,26 @@ if(ENABLE_OBJC)
   set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
 endif()
 
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+# FIXME: This does not handle multiple sub-modules, must be made recursive and smarter later
+#        Also it should be moved to a separate file
+#        We have only one such module now (ivykis), so it is not a big problem currently
+if("${IVYKIS_SOURCE}" STREQUAL "internal" OR "${IVYKIS_SOURCE}}" STREQUAL "auto" OR "${IVYKIS_SOURCE}}" STREQUAL "AUTO")
+  find_package(Git QUIET)
+
+  if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     option(GIT_SUBMODULE "Checkout submodules during build" ON)
+
     if(GIT_SUBMODULE)
-        message(STATUS "Submodule update")
-        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
-        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-            message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-        endif()
+      message(STATUS "Submodule update")
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE GIT_SUBMOD_RESULT)
+
+      if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+        message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+      endif()
     endif()
+  endif()
 endif()
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/tests/valgrind/unit-test-leak.supp")
@@ -210,6 +218,7 @@ check_include_files(utmp.h SYSLOG_NG_HAVE_UTMP_H)
 check_include_files(utmpx.h SYSLOG_NG_HAVE_UTMPX_H)
 check_include_files(dlfcn.h SYSLOG_NG_HAVE_DLFCN_H)
 check_include_files(getopt.h SYSLOG_NG_HAVE_GETOPT_H)
+check_include_files(door.h SYSLOG_NG_HAVE_DOOR_H)
 
 check_struct_has_member("struct utmpx" "ut_type" "utmpx.h" UTMPX_HAS_UT_TYPE LANGUAGE C)
 check_struct_has_member("struct utmp" "ut_type" "utmp.h" UTMP_HAS_UT_TYPE LANGUAGE C)
@@ -273,10 +282,10 @@ endif()
 
 
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
-set (IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path)")
+set (IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path/AUTO)")
 external_or_find_package(IVYKIS REQUIRED)
 set(IVYKIS_LIBRARIES ${IVYKIS_LIBRARY} CACHE STRING "IVYKIS libraries path")
-if((NOT IVYKIS_INTERNAL) AND(IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
+if((NOT IVYKIS_INTERNAL) AND (IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
   set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 0)
 elseif(IVYKIS_INTERNAL)
   # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
@@ -290,11 +299,11 @@ external_or_find_package(JSONC REQUIRED)
 
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
-find_package(LIBNET REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(WRAP)
 find_package(Inotify)
 find_package(LIBCAP)
+find_package(LIBNET)
 
 find_package(systemd)
 pkg_search_module(SYSTEMD_WITH_NAMESPACE libsystemd>=245)
@@ -338,7 +347,7 @@ check_function_exists(kqueue SYSLOG_NG_HAVE_KQUEUE)
 
 set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
 
-if ("${PYTHON_VERSION}" STREQUAL "AUTO")
+if("${PYTHON_VERSION}" STREQUAL "AUTO" OR "${PYTHON_VERSION}" STREQUAL "auto")
   find_package(PythonInterp EXACT 3)
   find_package(PythonLibs EXACT 3)
 else ()
@@ -357,8 +366,31 @@ pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 option (ENABLE_TCP_WRAPPER "Enable TCP wrapper support" ${WRAP_FOUND})
 set (SYSLOG_NG_ENABLE_TCP_WRAPPER ${ENABLE_TCP_WRAPPER})
 
-option (ENABLE_SPOOF_SOURCE "Enable spoof source support" ${LIBNET_FOUND})
-set (SYSLOG_NG_ENABLE_SPOOF_SOURCE ${LIBNET_FOUND})
+set(ENABLE_SPOOF_SOURCE "AUTO" CACHE STRING "Enable spoof source support: ON, OFF, AUTO")
+set_property(CACHE ENABLE_SPOOF_SOURCE PROPERTY STRINGS AUTO ON OFF)
+message(STATUS "Checking Spoof source support")
+
+# find_package(LIBNET) already set LIBNET_FOUND
+if(ENABLE_SPOOF_SOURCE STREQUAL "AUTO" OR ENABLE_SPOOF_SOURCE STREQUAL "auto")
+  if(LIBNET_FOUND)
+    set(SYSLOG_NG_ENABLE_SPOOF_SOURCE ON)
+    message(STATUS "  Spoof source support: enabled (AUTO, found libnet)")
+  else()
+    set(SYSLOG_NG_ENABLE_SPOOF_SOURCE OFF)
+    message(STATUS "  Spoof source support: disabled (AUTO, libnet not found)")
+  endif()
+elseif(ENABLE_SPOOF_SOURCE STREQUAL "ON")
+  if(NOT LIBNET_FOUND)
+    message(FATAL_ERROR "Could not find libnet, and spoof source support was explicitly enabled.")
+  endif()
+  set(SYSLOG_NG_ENABLE_SPOOF_SOURCE ON)
+  message(STATUS "  Spoof source support: enabled (forced ON)")
+elseif(ENABLE_SPOOF_SOURCE STREQUAL "OFF")
+  set(SYSLOG_NG_ENABLE_SPOOF_SOURCE OFF)
+  message(STATUS "  Spoof source support: disabled (forced OFF)")
+else()
+  message(FATAL_ERROR "Invalid value (${ENABLE_SPOOF_SOURCE}) for ENABLE_SPOOF_SOURCE (must be ON, OFF, or AUTO)")
+endif()
 
 if(ENABLE_LINUX_CAPS AND NOT PC_LIBCAP_FOUND)
   message(FATAL_ERROR "ENABLE_LINUX_CAPS is defined, but the POSIX capabilities library could not be found.")
@@ -559,8 +591,8 @@ set(PKG_CONFIG_MODULEDIR ${SYSLOG_NG_PATH_MODULEDIR})
 set(PKG_CONFIG_CONFIG_INCLUDEDIR ${SYSLOG_NG_PATH_CONFIG_INCLUDEDIR})
 set(PKG_CONFIG_SCLDIR ${SYSLOG_NG_PATH_SCLDIR})
 set(PKG_CONFIG_IVYKIS ${IVYKIS_INCLUDE_DIRS})
-set(PKG_CONFIG_PACKAGE_VERSION ${SYSLOG_NG_VERSION})
 set(PKG_CONFIG_INTERNAL_IVYKIS_CFLAGS ${IVYKIS_INCLUDE_DIRS})
+set(PKG_CONFIG_PACKAGE_VERSION ${SYSLOG_NG_VERSION})
 set(libdir "\${libdir}")
 set(includedir "\${includedir}")
 

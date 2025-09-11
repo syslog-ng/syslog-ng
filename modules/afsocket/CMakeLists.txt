@@ -52,12 +52,14 @@ add_module(
   INCLUDES ${ZLIB_INCLUDE_DIRS}
            ${WRAP_INCLUDE_DIRS}
            ${Libsystemd_INCLUDE_DIRS}
+           ${LIBNET_INCLUDE_DIRS}
   DEPENDS ${WRAP_LIBRARIES}
           ${ZLIB_LIBRARIES}
           OpenSSL::SSL
           OpenSSL::Crypto
           libnet
           ${Libsystemd_LIBRARIES}
+          ${LIBNET_LIBRARIES}
   SOURCES ${AFSOCKET_SOURCES}
 )
 

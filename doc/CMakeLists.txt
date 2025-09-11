@@ -3,19 +3,21 @@ set(ENABLE_MANPAGES_INSTALL "AUTO" CACHE STRING "Enable installation of manpages
 set(WITH_MANPAGES "local" CACHE STRING "Manpages mode: local or remote")
 set_property(CACHE WITH_MANPAGES PROPERTY STRINGS local remote)
 
-if(NOT ENABLE_MANPAGES AND ENABLE_MANPAGES_INSTALL STREQUAL "ON")
+if(NOT ENABLE_MANPAGES AND "${ENABLE_MANPAGES_INSTALL}" STREQUAL "ON")
     message(FATAL_ERROR
         "Manpage generation is disabled whilst installation is requested. "
         "Please enable manpage generation first (ENABLE_MANPAGES=ON)."
     )
 endif()
 
-if(ENABLE_MANPAGES AND ENABLE_MANPAGES_INSTALL STREQUAL "AUTO")
-    set(MANPAGES_INSTALL_NEEDED ON)
-elseif(ENABLE_MANPAGES_INSTALL)
-    set(MANPAGES_INSTALL_NEEDED ON)
+if("${ENABLE_MANPAGES_INSTALL}" STREQUAL "AUTO" OR "${ENABLE_MANPAGES_INSTALL}" STREQUAL "auto")
+    if(ENABLE_MANPAGES)
+        set(SYSLOG_NG_ENABLE_MANPAGES_INSTALL "ON" CACHE STRING "Enable installation of manpages" FORCE)
+    else()
+        set(SYSLOG_NG_ENABLE_MANPAGES_INSTALL "OFF" CACHE STRING "Enable installation of manpages" FORCE)
+    endif()
 else()
-    set(MANPAGES_INSTALL_NEEDED OFF)
+    set(SYSLOG_NG_ENABLE_MANPAGES_INSTALL "${ENABLE_MANPAGES_INSTALL}" CACHE STRING "Enable installation of manpages" FORCE)
 endif()
 
 set(XSD_FILES
@@ -97,17 +99,19 @@ if(ENABLE_MANPAGES)
         )
     endforeach()
 
-    # 4) Install manpages (only if MANPAGES_INSTALL_NEEDED)
-    foreach(m ${MANPAGES})
-        # get the section number from the filename: foo.1 -> 1
-        get_filename_component(_name ${m} NAME) # foo.1
-        string(REGEX MATCH "\\.([1-9])$" _section ${_name})
+    # 4) Install manpages (only if needed)
+    if("${SYSLOG_NG_ENABLE_MANPAGES_INSTALL}" STREQUAL "ON")
+        foreach(m ${MANPAGES})
+            # get the section number from the filename: foo.1 -> 1
+            get_filename_component(_name ${m} NAME) # foo.1
+            string(REGEX MATCH "\\.([1-9])$" _section ${_name})
 
-        if(NOT _section)
-            message(FATAL_ERROR "Cannot determine man section for ${m}")
-        endif()
+            if(NOT _section)
+                message(FATAL_ERROR "Cannot determine man section for ${m}")
+            endif()
 
-        set(_dest "share/man/man${CMAKE_MATCH_1}")
-        install(FILES "${MAN_BUILD_DIR}/${_name}" DESTINATION "${_dest}")
-    endforeach()
+            set(_dest "share/man/man${CMAKE_MATCH_1}")
+            install(FILES "${MAN_BUILD_DIR}/${_name}" DESTINATION "${_dest}")
+        endforeach()
+    endif()
 endif()

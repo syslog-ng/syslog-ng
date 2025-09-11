@@ -799,19 +799,66 @@ dnl Miscellanneous headers
 dnl ***************************************************************************
 
 AC_HEADER_STDC
-AC_CHECK_HEADER(dmalloc.h)
-AC_CHECK_HEADER(dlfcn.h)
-AC_CHECK_HEADERS(strings.h	\
-	getopt.h		\
-	stropts.h		\
-	sys/strlog.h		\
-	door.h			\
-	sys/capability.h	\
-	sys/prctl.h		\
-	linux/sock_diag.h	\
-	utmp.h			\
-	utmpx.h)
+#
+# NOTE: This one is tricky
+#       Take care: always use AC_CHECK_HEADERS, not AC_CHECK_HEADER (see the last missing few).
+#       The first one will propagate the cached result to AX_PREFIX_CONFIG_H, while the latter
+#       does not.
+#       So, if AC_CHECK_HEADER is used, then an additional AC_DEFINE might be required, for example:
+#            AC_CHECK_HEADER(dlfcn.h)
+#            AS_IF([test "x$ac_cv_header_dlfcn_h" = "xyes"],
+#                [AC_DEFINE([HAVE_DLFCN_H], [1], [Define if dlfcn.h is present])],
+#                [AC_DEFINE([HAVE_DLFCN_H], [0], [Define if dlfcn.h is present])])
+#       This is necessary because we do not use the standard config.h. Instead, we use:
+#            AC_CONFIG_HEADERS(config.h)
+#            AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
+#       This will not generate config.h, but will generate syslog-ng-config.h, and
+#       will add the SYSLOG_NG_ prefix to all HAVE_XXX macro names. However, in this case,
+#       only the macro names with explicit AC_DEFINE pairs are processed.
+#
+#       Even though using AC_CHECK_HEADER is a bit of an overhead, I prefer it because it ensures
+#       that the produced HAVE_XXX macro is ALWAYS defined. This avoids constructs (which we
+#       unfortunately have throughout the code now) like:
+#           #ifdef HAVE_XXX
+#       producing a false result in the background.
+#       It would be much better to always use explicitly AC_DEFINE-ed macro names, and:
+#           - use SYSLOG_NG_HAVE_XXX, never the plain HAVE_XXX checks (though some still remain)
+#           - use #if SYSLOG_NG_HAVE_XXX instead of #ifdef SYSLOG_NG_HAVE_XXX (which will always
+#             fail if not defined)
+#
+AC_CHECK_HEADERS(dmalloc.h)
+AC_CHECK_HEADERS(linux/sock_diag.h)
 AC_CHECK_HEADERS(tcpd.h)
+AC_CHECK_HEADERS(strings.h)
+AC_CHECK_HEADERS(stropts.h)
+AC_CHECK_HEADERS(sys/capability.h)
+AC_CHECK_HEADERS(sys/strlog.h)
+AC_CHECK_HEADERS(utmp.h)
+AC_CHECK_HEADERS(utmpx.h)
+#
+# As desribed above, starting to use the better format
+# (for some forgotten or already problematic cases)
+# TODO: replace all the header checks like this
+#
+AC_CHECK_HEADER(dlfcn.h)
+AS_IF([test "x$ac_cv_header_dlfcn_h" = "xyes"],
+      [AC_DEFINE([HAVE_DLFCN_H], [1], [Define if dlfcn.h presented])],
+      [AC_DEFINE([HAVE_DLFCN_H], [0], [Define if dlfcn.h presented])])
+
+AC_CHECK_HEADER(getopt.h)
+AS_IF([test "x$ac_cv_header_getopt_h" = "xyes"],
+      [AC_DEFINE([HAVE_GETOPT_H], [1], [Define if getopt.h presented])],
+      [AC_DEFINE([HAVE_GETOPT_H], [0], [Define if getopt.h presented])])
+
+AC_CHECK_HEADER(door.h)
+AS_IF([test "x$ac_cv_header_door_h" = "xyes"],
+      [AC_DEFINE([HAVE_DOOR_H], [1], [Define if door.h presented])],
+      [AC_DEFINE([HAVE_DOOR_H], [0], [Define if door.h presented])])
+
+AC_CHECK_HEADER(malloc.h)
+AS_IF([test "x$ac_cv_header_malloc_h" = "xyes"],
+      [AC_DEFINE([HAVE_MALLOC_H], [1], [Define if malloc.h presented])],
+      [AC_DEFINE([HAVE_MALLOC_H], [0], [Define if malloc.h presented])])
 
 AC_CHECK_TYPES([struct ucred, struct cmsgcred], [], [], [#define _GNU_SOURCE 1
 #define _DEFAULT_SOURCE 1
@@ -894,9 +941,9 @@ AC_CACHE_CHECK(for modern utmp,
 ],
 [
 #ifdef HAVE_UTMPX_H
-        struct utmpx ut;
+struct utmpx ut;
 #else
-        struct utmp ut;
+struct utmp ut;
 #endif
   return sizeof(ut.ut_type) & sizeof(ut.ut_user);
 ],
