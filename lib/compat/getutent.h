@@ -29,13 +29,13 @@
 #include <inttypes.h>
 #include <time.h>
 
-#ifdef SYSLOG_NG_HAVE_UTMPX_H
+#if SYSLOG_NG_HAVE_UTMPX_H
 #include <utmpx.h>
 #else
 #include <utmp.h>
 #endif
 
-#if !defined(SYSLOG_NG_HAVE_GETUTENT) && !defined(SYSLOG_NG_HAVE_GETUTXENT)
+#if ! SYSLOG_NG_HAVE_GETUTENT && ! SYSLOG_NG_HAVE_GETUTXENT
 struct utmp *getutent(void);
 void endutent(void);
 #endif

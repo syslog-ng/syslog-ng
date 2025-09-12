@@ -125,16 +125,15 @@ add_definitions(-D_GNU_SOURCE=1)
 add_definitions(-D_LARGEFILE64_SOURCE=1)
 add_definitions(-D__APPLE_USE_RFC_3542)
 
-
 include(CheckSockaddrStorage)
 if (HAVE_STRUCT_SOCKADDR_STORAGE)
   set(SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE 1)
-else()
-  set(SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE 0)
 endif()
 
 include(CheckCreds)
-set(SYSLOG_NG_HAVE_STRUCT_UCRED (HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED))
+if (HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED)
+  set(SYSLOG_NG_HAVE_STRUCT_UCRED 1)
+endif()
 check_struct_member ("struct msghdr" "msg_control" "sys/types.h;sys/socket.h" SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
 
 include(CheckIPv6)
@@ -284,7 +283,6 @@ check_symbol_exists(g_canonicalize_filename "glib.h" SYSLOG_NG_HAVE_G_CANONICALI
 # Best of both worlds: we set to 2.68 if we have that version, so we
 # get clang to compile our code, otherwise we set it to 2.32.
 if (PC_GLIB_VERSION VERSION_GREATER_EQUAL "2.68")
-
   set_target_properties(GLib::GLib PROPERTIES
         INTERFACE_COMPILE_DEFINITIONS "GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_68")
 
@@ -300,7 +298,6 @@ if (RabbitMQ_FOUND)
   check_include_file("rabbitmq-c/tcp_socket.h" SYSLOG_NG_HAVE_RABBITMQ_C_TCP_SOCKET_H)
   check_symbol_exists(amqp_ssl_socket_set_verify_peer "amqp.h;amqp_ssl_socket.h" SYSLOG_NG_HAVE_AMQP_SSL_SOCKET_SET_VERIFY_PEER)
 endif()
-
 
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
 set (IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path/AUTO)")
@@ -348,8 +345,6 @@ if (ENABLE_JOURNALD)
     if (SYSTEMD_WITH_NAMESPACE_LIBRARIES STREQUAL "systemd")
        set(SYSLOG_NG_HAVE_JOURNAL_NAMESPACES 1)
        message(STATUS "Have journal namespaces")
-    else()
-       set(SYSLOG_NG_HAVE_JOURNAL_NAMESPACES 0)
     endif()
     set(SYSLOG_NG_SYSTEMD_JOURNAL_MODE SYSLOG_NG_JOURNALD_SYSTEM)
   elseif (WITH_SYSTEMD_JOURNAL STREQUAL "wrapper")
@@ -363,7 +358,11 @@ set (SYSLOG_NG_ENABLE_SYSTEMD ${ENABLE_SYSTEMD})
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
+
+if (Inotify_FOUND)
+  set(SYSLOG_NG_HAVE_INOTIFY 1)
+endif()
+
 check_function_exists(kqueue SYSLOG_NG_HAVE_KQUEUE)
 
 set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
@@ -386,6 +385,23 @@ pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 
 option (ENABLE_TCP_WRAPPER "Enable TCP wrapper support" ${WRAP_FOUND})
 set (SYSLOG_NG_ENABLE_TCP_WRAPPER ${ENABLE_TCP_WRAPPER})
+
+# Trying to mimic the autotools HP-Unix broken prad detection
+if(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
+  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    add_compile_definitions(_HPUX_SOURCE)
+    add_compile_options(-U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lcl")
+    set(SYSLOG_NG_HAVE_BROKEN_PREAD 1)
+    message(WARNING "NOTE: on HP-UX with gcc, you might need to edit sys/socket.h manually or you'll get compilation errors")
+  endif()
+endif()
+
+# Also, mimic the autotools option, let the user specify a timezone directory
+set(TIMEZONE_DIR "" CACHE PATH "Use path as the directory to get the timezone files")
+if(TIMEZONE_DIR)
+  set(PATH_TIMEZONEDIR "${TIMEZONE_DIR}")
+endif()
 
 set(ENABLE_SPOOF_SOURCE "AUTO" CACHE STRING "Enable spoof source support: ON, OFF, AUTO")
 set_property(CACHE ENABLE_SPOOF_SOURCE PROPERTY STRINGS AUTO ON OFF)
@@ -473,7 +489,6 @@ if (BUILD_TESTING)
 endif()
 
 include(add_tests)
-
 if (BUILD_TESTING)
   if (NOT CRITERION_FOUND)
     message(FATAL_ERROR "BUILD_TESTING is enabled (by default, or explicitely) without criterion detected! You can turn off testing via the -DBUILD_TESTING=OFF cmake option.")

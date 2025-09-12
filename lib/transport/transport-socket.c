@@ -123,7 +123,7 @@ _setup_fd(LogTransportSocket *self, gint fd)
 #endif
 }
 
-#if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
+#if SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
 
 static void
 _parse_cmsg_to_aux(LogTransportSocket *self, struct msghdr *msg, LogTransportAuxData *aux)
@@ -168,7 +168,7 @@ log_transport_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, Lo
   struct msghdr msg;
   struct iovec iov[1];
   struct sockaddr_storage ss;
-#if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
+#if SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
   gchar ctlbuf[256];
   msg.msg_control = ctlbuf;
   msg.msg_controllen = sizeof(ctlbuf);

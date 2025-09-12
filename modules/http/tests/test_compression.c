@@ -20,7 +20,9 @@
  *
  */
 
-#ifdef SYSLOG_NG_HAVE_ZLIB
+#include <syslog-ng-config.h>
+
+#if SYSLOG_NG_HAVE_ZLIB
 
 #include <criterion/criterion.h>
 #include <criterion/redirect.h>

@@ -26,6 +26,7 @@ include (CheckTypeSize)
 set (CMAKE_EXTRA_INCLUDE_FILES sys/socket.h netinet/in.h)
 set (CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE=1)
 check_type_size ("struct sockaddr_in6" STRUCT_SOCKADDR_IN6)
+# These are used to set SYSLOG_NG_ENABLE_IPV6 only, do not need to set SYSLOG_NG_HAVE_IPV6
 if (HAVE_STRUCT_SOCKADDR_IN6)
     set(HAVE_IPV6 1 CACHE INTERNAL 1)
 else()

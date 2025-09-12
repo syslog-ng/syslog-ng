@@ -27,11 +27,11 @@
  *
  *   https://github.com/NetBSD/src/blob/trunk/lib/libc/string/strcasestr.c
  *
- *	$NetBSD: strcasestr.c,v 1.3 2005/11/29 03:12:00 christos Exp $	*/
+ *  $NetBSD: strcasestr.c,v 1.3 2005/11/29 03:12:00 christos Exp $  */
 
 /*-
  * Copyright (c) 1990, 1993
- *	The Regents of the University of California.  All rights reserved.
+ *  The Regents of the University of California.  All rights reserved.
  *
  * This code is derived from software contributed to Berkeley by
  * Chris Torek.
@@ -63,7 +63,7 @@
 
 #include "compat/string.h"
 
-#ifndef SYSLOG_NG_HAVE_STRCASESTR
+#if ! SYSLOG_NG_HAVE_STRCASESTR
 
 #include <ctype.h>
 #include <string.h>
@@ -76,21 +76,26 @@
 char *
 strcasestr(const char *s, const char *find)
 {
-	char c, sc;
-	size_t len;
+  char c, sc;
+  size_t len;
 
-	if ((c = *find++) != 0) {
-		c = tolower((unsigned char)c);
-		len = strlen(find);
-		do {
-			do {
-				if ((sc = *s++) == 0)
-					return (NULL);
-			} while ((char)tolower((unsigned char)sc) != c);
-		} while (strncasecmp(s, find, len) != 0);
-		s--;
-	}
-	return (char *) s;
+  if ((c = *find++) != 0)
+    {
+      c = tolower((unsigned char)c);
+      len = strlen(find);
+      do
+        {
+          do
+            {
+              if ((sc = *s++) == 0)
+                return (NULL);
+            }
+          while ((char)tolower((unsigned char)sc) != c);
+        }
+      while (strncasecmp(s, find, len) != 0);
+      s--;
+    }
+  return (char *) s;
 }
 
 #endif

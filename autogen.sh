@@ -83,6 +83,8 @@ autogen_submodules()
 	done
 }
 
+echo "***************************************"
+echo " $0 start"
 if [ -z "$skip_submodules" ]; then
 	autogen_submodules
 fi
@@ -114,3 +116,6 @@ apt-get install autoconf-archive
 EOF
 	exit 1
 fi
+
+echo " $0 end"
+echo "***************************************"

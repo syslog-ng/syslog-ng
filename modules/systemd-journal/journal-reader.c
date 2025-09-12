@@ -781,7 +781,7 @@ _init(LogPipe *s)
 {
   JournalReader *self = (JournalReader *)s;
 
-#ifndef SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+#if ! SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
   if (journal_reader_initialized)
     {
       msg_error("The configuration must not contain more than one systemd-journal() source");
@@ -823,7 +823,7 @@ _init(LogPipe *s)
     }
 
   self->immediate_check = TRUE;
-#ifndef SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+#if ! SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
   journal_reader_initialized = TRUE;
 #endif
   _update_watches(self);

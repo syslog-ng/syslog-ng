@@ -28,7 +28,7 @@
 
 #include <syslog-ng-config.h>
 
-#ifndef SYSLOG_NG_HAVE_THREAD_KEYWORD
+#if ! SYSLOG_NG_HAVE_THREAD_KEYWORD
 
 #include <stdlib.h>
 #include <pthread.h>

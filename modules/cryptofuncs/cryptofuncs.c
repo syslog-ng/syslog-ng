@@ -62,7 +62,7 @@ typedef struct _TFHashState
 static gboolean
 tf_hash_md4_is_available(void)
 {
-#ifdef SYSLOG_NG_HAVE_DECL_DIGEST_MD4
+#if SYSLOG_NG_HAVE_DECL_DIGEST_MD4
   msg_warning_once("WARNING: MD4 hash template function is deprecated and will be removed in future versions");
   return TRUE;
 #else

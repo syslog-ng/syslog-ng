@@ -345,7 +345,7 @@ cached_localtime(time_t *when, struct tm *tm)
     }
   else
     {
-#ifdef SYSLOG_NG_HAVE_LOCALTIME_R
+#if SYSLOG_NG_HAVE_LOCALTIME_R
       localtime_r(when, tm);
 #else
       struct tm *ltm;
@@ -373,7 +373,7 @@ cached_gmtime(time_t *when, struct tm *tm)
     }
   else
     {
-#ifdef SYSLOG_NG_HAVE_GMTIME_R
+#if SYSLOG_NG_HAVE_GMTIME_R
       gmtime_r(when, tm);
 #else
       struct tm *ltm;
