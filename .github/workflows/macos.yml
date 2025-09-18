@@ -16,6 +16,7 @@ jobs:
         version: [13, 14]
         build-tool: [ autotools, cmake ]
         compiler: [ {cpp: clang++, c: clang}, {cpp: g++, c: gcc} ]
+        macports-version: [2.10.1]
         exclude:
           - version: 14
             compiler: {cpp: clang++, c: clang}
@@ -44,19 +45,45 @@ jobs:
         run : |
           find /usr/local/bin/ -lname "*Python.framework*" -delete
 
+      - name: Cache Homebrew bottles
+        uses: actions/cache@v3
+        with:
+          path: /Users/runner/Library/Caches/Homebrew
+          key: ${{ runner.os }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-${{ runner.arch }}-
+
+      - name: Cache MacPorts
+        uses: actions/cache@v3
+        with:
+          path: |
+            /opt/local
+            /opt/local/var/macports
+          key: ${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}
+          restore-keys: |
+            ${{ runner.os }}-macports-${{ runner.arch }}-
+
       - name: Install dependencies
         run: |
-          brew update --auto-update
+          if [ "${{ runner.arch }}" = "ARM64" ]; then
+            brew update --auto-update
+          else
+            export HOMEBREW_NO_AUTO_UPDATE=1
+            export HOMEBREW_NO_INSTALL_CLEANUP=1
+          fi
           brew bundle --force --file=contrib/Brewfile
 
-          OS_NAME=$([[ ${{ matrix.version }} -eq 13 ]] && echo "Ventura" || echo "Sonoma")
-          MACPORTS_VERSION=2.10.1
-          MACPORTS_PKG_NAME=MacPorts-${MACPORTS_VERSION}-${{ matrix.version }}-${OS_NAME}.pkg
-          MACPORTS_URL=https://github.com/macports/macports-base/releases/download/v${MACPORTS_VERSION}/${MACPORTS_PKG_NAME}
-          wget ${MACPORTS_URL}
-          sudo installer -pkg ./${MACPORTS_PKG_NAME} -target /
-          sudo /opt/local/bin/port -v selfupdate
-          sudo /opt/local/bin/port install libesmtp
+          # Cached MacPorts version is not presented
+          if [ ! -d /opt/local ]; then
+            OS_NAME=$([[ ${{ matrix.version }} -eq 13 ]] && echo "Ventura" || echo "Sonoma")
+            MACPORTS_VERSION=${{ matrix.macports-version }}
+            MACPORTS_PKG_NAME=MacPorts-${MACPORTS_VERSION}-${{ matrix.version }}-${OS_NAME}.pkg
+            MACPORTS_URL=https://github.com/macports/macports-base/releases/download/v${MACPORTS_VERSION}/${MACPORTS_PKG_NAME}
+            wget ${MACPORTS_URL}
+            sudo installer -pkg ./${MACPORTS_PKG_NAME} -target /
+            sudo /opt/local/bin/port -v selfupdate
+            sudo /opt/local/bin/port install libesmtp
+          fi
 
       - name: Set ENV variables
         env:
