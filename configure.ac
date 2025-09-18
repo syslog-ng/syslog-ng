@@ -470,6 +470,171 @@ patheval()
 }
 
 dnl ***************************************************************************
+dnl Helper macros
+dnl
+dnl FIXME: Moving these to separate m4 files (e.g. m4/safe_c_check.m4) fails during configure
+dnl             ../configure: line 29338: SAFE_C_CHECK_END: command not found
+dnl
+dnl ============================================================
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE - if needed
+dnl Save compiler/linker flags
+dnl ============================================================
+m4_define([SAFE_C_CHECK_BEGIN], [dnl
+   CFLAGS_SAVE="$CFLAGS"
+   CPPFLAGS_SAVE="$CPPFLAGS"
+   LIBS_SAVE="$LIBS"
+   LDFLAGS_SAVE="$LDFLAGS"
+   AC_LANG_PUSH([C])
+])dnl
+
+dnl ============================================================
+dnl Restore compiler/linker flags
+dnl ============================================================
+m4_define([SAFE_C_CHECK_END], [dnl
+  AC_LANG_POP([C])
+  CFLAGS="$CFLAGS_SAVE"
+  CPPFLAGS="$CPPFLAGS_SAVE"
+  LIBS="$LIBS_SAVE"
+  LDFLAGS="$LDFLAGS_SAVE"
+])dnl
+
+dnl ============================================================
+dnl Generic HAVE checker to have a one step AC_CHECK_XXX check and
+dnl AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
+dnl functionalyty
+dnl Usage CHECK_AND_DEFINE([checker_func], [target_to_check], [HAVE_XXX_name_override])
+dnl     $1 = checker func [AC_CHECK_HEADERS or AC_CHECK_FUNCS] (mandatory)
+dnl     $2 = target (header/func to check, mandatory)
+dnl     $3 = override macro name (optional)
+dnl ============================================================
+AC_DEFUN([CHECK_AND_DEFINE],
+[
+    AC_MSG_NOTICE([Checking $target_kind $2 $3])
+
+    dnl Figure out what we are checking
+    m4_case([$1],
+        [AC_CHECK_HEADERS], [target_kind="header"; cachevar=ac_cv_header_[]AS_TR_SH([$2])],
+        [AC_CHECK_FUNCS],   [target_kind="function"; cachevar=ac_cv_func_[]AS_TR_SH([$2])],
+        [m4_fatal([Unsupported checker macro $1 passed to CHECK_AND_DEFINE])])
+
+    $1([$2])
+
+    dnl Safely copy the cached result into shell var "cacheval"
+    AS_VAR_COPY([cacheval], [$cachevar])
+    AC_MSG_NOTICE([ -> cache var: $cachevar = $cacheval])
+
+    m4_ifval([$3],
+        [
+            dnl override define name provided
+            AC_MSG_NOTICE([ -> define (override): $3])
+            AS_IF([test "x$cacheval" = "xyes"],
+                [AC_DEFINE([$3], [1], [Define if $2 is present])],
+                [AC_DEFINE([$3], [0], [Define if $2 is present])])
+        ],
+        [
+            dnl default define name
+            AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]))
+            AS_IF([test "x$cacheval" = "xyes"],
+                [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [1], [Define if $2 is present])],
+                [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [0], [Define if $2 is present])])
+        ])
+])
+
+dnl
+dnl NOTE: This one is crazy
+dnl       Take care: Never use AC_CHECK_HEADER or AC_CHECK_HEADERS alone.
+dnl       The first one will NOT propagate the cached results to AX_PREFIX_CONFIG_H at all,
+dnl       while the latter does, but defines it in the produced config.h only if its value is 1.
+dnl       Otherwise, it just leaves a comment like:
+dnl            /* Define to 1 if you have the <door.h> header file. */
+dnl            /* #undef HAVE_DOOR_H */
+dnl
+dnl       So, if for any reason AC_CHECK_HEADER must be used, then an additional AC_DEFINE is required,
+dnl       for example:
+dnl            AC_CHECK_HEADER(dlfcn.h)
+dnl            AS_IF([test "x$ac_cv_header_dlfcn_h" = "xyes"],
+dnl                [AC_DEFINE([HAVE_DLFCN_H], [1], [Define if dlfcn.h is present])],
+dnl                [AC_DEFINE([HAVE_DLFCN_H], [0], [Define if dlfcn.h is present])])
+dnl
+dnl       This is necessary because we do not use the standard config.h. Instead, we use:
+dnl            AC_CONFIG_HEADERS(config.h)
+dnl            AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
+dnl       The latter adds the SYSLOG_NG_ prefix to all HAVE_XXX macro names. However,
+dnl       in this case, only the macro names with explicit AC_DEFINE pairs are processed.
+dnl
+dnl       In CMake builds, the middle steps are missing: there is no config.h produced.
+dnl       As mentioned above, we use syslog-ng-config.h, which is the only one we have
+dnl       in those builds.
+dnl
+dnl       So, to build consistently with both build systems:
+dnl           - use AC_CHECK_HEADERS, not AC_CHECK_HEADER, for values that should go into
+dnl             syslog-ng-config.h and can be used in any source file
+dnl           - add AC_DEFINE for BOTH cases of the required HAVE_XXX macro names
+dnl           - use syslog-ng-config.h, never config.h directly (especially since we have
+dnl             other config.h files that could cause additional confusion)
+dnl           - DO NOT use HAVE_XXX, always use the SYSLOG_NG_HAVE_XXX variants
+dnl           - use only cmakedefine01 (YES/NO) SYSLOG_NG_HAVE_XXX defines for boolean switches
+dnl             in syslog-ng-config.h.in, never the plain cmakedefine version
+dnl           - use #if SYSLOG_NG_HAVE_XXX instead of #ifdef SYSLOG_NG_HAVE_XXX
+dnl             (as the latter will always fail if not defined correctly somewhere)
+dnl
+dnl       These rules will guarantee proper switch defines in both the Autotools and CMake builds.
+dnl
+dnl ============================================================
+dnl DO NOT USE AC_CHECK_HEADERS or AC_CHECK_HEADER alone if not needed
+dnl
+dnl Use: CHECK_HEADER_AND_DEFINE or CHECK_HEADERS_AND_DEFINE imstead
+dnl ============================================================
+dnl
+dnl One step AC_CHECK_HEADERS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
+dnl for the given header
+dnl Usage CHECK_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
+dnl ============================================================
+AC_DEFUN([CHECK_HEADER_AND_DEFINE],
+[
+    CHECK_AND_DEFINE([AC_CHECK_HEADERS], [$1], [$2])
+])
+
+dnl ============================================================
+dnl Calls CHECK_HEADER_AND_DEFINE for each header
+dnl Usage CHECK_HEADERS_AND_DEFINE([header1 header2 …])
+dnl ============================================================
+dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
+AC_DEFUN([CHECK_HEADERS_AND_DEFINE],
+[
+    m4_foreach([_hdr], m4_split([$1]), [
+        CHECK_HEADER_AND_DEFINE(m4_normalize(_hdr))
+    ])
+])
+
+dnl NOTE: Same is true here like above described for CHECK_HEADER_AND_DEFINE
+dnl ============================================================
+dnl DO NOT USE AC_CHECK_FUNCS or AC_CHECK_FUNC alone if not needed
+dnl
+dnl Use: CHECK_FUNC_AND_DEFINE or CHECK_FUNCS_AND_DEFINE imstead
+dnl ============================================================
+dnl One step AC_CHECK_FUNCS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
+dnl for the given func
+dnl Usage CHECK_FUNC_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
+dnl ============================================================
+AC_DEFUN([CHECK_FUNC_AND_DEFINE],
+[
+    CHECK_AND_DEFINE([AC_CHECK_FUNCS], [$1], [$2])
+])
+
+dnl ============================================================
+dnl Calls CHECK_FUNC_AND_DEFINE for each function
+dnl Usage CHECK_FUNCS_AND_DEFINE([function1 function2 …])
+dnl ============================================================
+dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
+AC_DEFUN([CHECK_FUNCS_AND_DEFINE],
+[
+    m4_foreach([_func], m4_split([$1]), [
+        CHECK_FUNC_AND_DEFINE(m4_normalize(_func))
+    ])
+])
+
+dnl ***************************************************************************
 dnl Checks for programs.
 
 # Do not mix the used compilers or you might have to deal with further libtool issues
@@ -489,6 +654,7 @@ AM_PROG_CC_C_O
 if test "x$ac_cv_prog_cc_c99" = "xno"; then
 	AC_MSG_ERROR([C99 standard compliant C compiler required. Try GCC 3.x or later.])
 fi
+
 # Turned out that even the latest gcc has no proper support of the required ObjC version
 # Once gcc was able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
 AC_PROG_OBJC([$OBJC clang])
@@ -507,11 +673,7 @@ fi
 if test "${PYTHON}" = ":"; then
        AC_MSG_WARN([Python interpreter is missing.])
 fi
-
 AM_CONDITIONAL([HAVE_PYTHON_INTERPRETER], [test "$PYTHON" != :])
-
-dnl ***************************************************************************
-dnl C++
 
 # This one is useful for checking the available compilers
 # AC_MSG_RESULT(gcc = $(which gcc) - g++ = $(which g++) - clang = $(which clang))
@@ -600,14 +762,16 @@ else
   fi;
 fi
 
-old_LDFLAGS="$LDFLAGS"
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 LDFLAGS="$LDFLAGS $no_pie_ldflags"
 
 AC_LINK_IFELSE([AC_LANG_SOURCE([int main(void) {return 0;}])],
-	[no_pie_option_available=yes],
-	[no_pie_option_available=no])
+    [no_pie_option_available=yes],
+    [no_pie_option_available=no])
 
-LDFLAGS="$old_LDFLAGS"
+SAFE_C_CHECK_END
 
 if test "$no_pie_option_available" = "yes"; then
   NO_PIE_LDFLAG="$no_pie_ldflags"
@@ -616,7 +780,6 @@ AC_SUBST([NO_PIE_LDFLAG])
 
 dnl ***************************************************************************
 dnl Set up CFLAGS
-
 
 dnl The rest of CFLAGS. We produce
 dnl -g/-O2/-pg/-fprofile-arcs/-ftest-coverage combinations, the rest is
@@ -673,7 +836,7 @@ AC_SUBST(TEST_NO_INSTALL_FLAG)
 
 AC_SYS_LARGEFILE
 
-# FIXME: skip tests on unsupported platforms/architectures...
+AC_DEFINE(HAVE_BROKEN_PREAD, 0, [define if your platform has a broken pread/pwrite (e.g. HP-UX)])
 case "$ostype" in
 	HP-UX)
 		if $CC -v 2>&1 | grep gcc > /dev/null; then
@@ -688,29 +851,30 @@ case "$ostype" in
 			CFLAGS="${CFLAGS} -D_LARGE_FILES=1"
 		fi
 
-                # NOTE: The -brtl option to the linker must be set before calling the
-                # configure script, as otherwise the generated libtool will behave
-                # differently. We need the runtime linker during execution (hence the
-                # -brtl) to load external modules. Also, please note that with -brtl the
-                # linker behaves similarly to what is expected on other UNIX systems,
-                # without it, it refuses to link an .so in if there's no reference from
-                # the main program, even if there is a proper -llibname option.
+        # NOTE: The -brtl option to the linker must be set before calling the
+        # configure script, as otherwise the generated libtool will behave
+        # differently. We need the runtime linker during execution (hence the
+        # -brtl) to load external modules. Also, please note that with -brtl the
+        # linker behaves similarly to what is expected on other UNIX systems,
+        # without it, it refuses to link an .so in if there's no reference from
+        # the main program, even if there is a proper -llibname option.
 		LDFLAGS="$LDFLAGS -Wl,-brtl"
 		MODULE_LDFLAGS="-avoid-version -module"
 		;;
 	Darwin)
 		MODULE_LDFLAGS="-avoid-version -dylib"
-                TEST_NO_INSTALL_FLAG="-no-fast-install"
-                # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking solution
-                if test "x$enable_tests" = "xyes"; then
-		        LDFLAGS="$LDFLAGS -Wl,-flat_namespace"
-                fi
-                # NOTE: This is now seems to be an Apple/Xcode "only" issue, but probably much better a clang one, so later we might want to add this globally
-                # XCode15 new linker has some issues (e.g. https://developer.apple.com/forums/thread/737707)
-                # switch back to classic linking till not fixed (https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking)
-                if test "x$enable_force_classic_linking" = "xyes"; then
-                        LDFLAGS="$LDFLAGS -Wl,-ld_classic"
-                fi
+        TEST_NO_INSTALL_FLAG="-no-fast-install"
+        # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking solution
+        if test "x$enable_tests" = "xyes"; then
+            LDFLAGS="$LDFLAGS -Wl,-flat_namespace"
+        fi
+        # NOTE: This is now seems to be an Apple/Xcode "only" issue, but probably much better a clang one, so later we might want to add this globally
+        # XCode15 new linker has some issues (e.g. https://developer.apple.com/forums/thread/737707)
+        # Let the user switch back to classic linking if needed (https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking)
+        if test "x$enable_force_classic_linking" = "xyes"; then
+            LDFLAGS="$LDFLAGS -Wl,-ld_classic"
+        fi
+        # Expose the modern, RFC 3542 IPv6 socket API instead of the deprecated RFC 2292 one
 		CFLAGS="$CFLAGS -D__APPLE_USE_RFC_3542"
     ;;
 	OSF1)
@@ -799,66 +963,22 @@ dnl Miscellanneous headers
 dnl ***************************************************************************
 
 AC_HEADER_STDC
-#
-# NOTE: This one is tricky
-#       Take care: always use AC_CHECK_HEADERS, not AC_CHECK_HEADER (see the last missing few).
-#       The first one will propagate the cached result to AX_PREFIX_CONFIG_H, while the latter
-#       does not.
-#       So, if AC_CHECK_HEADER is used, then an additional AC_DEFINE might be required, for example:
-#            AC_CHECK_HEADER(dlfcn.h)
-#            AS_IF([test "x$ac_cv_header_dlfcn_h" = "xyes"],
-#                [AC_DEFINE([HAVE_DLFCN_H], [1], [Define if dlfcn.h is present])],
-#                [AC_DEFINE([HAVE_DLFCN_H], [0], [Define if dlfcn.h is present])])
-#       This is necessary because we do not use the standard config.h. Instead, we use:
-#            AC_CONFIG_HEADERS(config.h)
-#            AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
-#       This will not generate config.h, but will generate syslog-ng-config.h, and
-#       will add the SYSLOG_NG_ prefix to all HAVE_XXX macro names. However, in this case,
-#       only the macro names with explicit AC_DEFINE pairs are processed.
-#
-#       Even though using AC_CHECK_HEADER is a bit of an overhead, I prefer it because it ensures
-#       that the produced HAVE_XXX macro is ALWAYS defined. This avoids constructs (which we
-#       unfortunately have throughout the code now) like:
-#           #ifdef HAVE_XXX
-#       producing a false result in the background.
-#       It would be much better to always use explicitly AC_DEFINE-ed macro names, and:
-#           - use SYSLOG_NG_HAVE_XXX, never the plain HAVE_XXX checks (though some still remain)
-#           - use #if SYSLOG_NG_HAVE_XXX instead of #ifdef SYSLOG_NG_HAVE_XXX (which will always
-#             fail if not defined)
-#
-AC_CHECK_HEADERS(dmalloc.h)
-AC_CHECK_HEADERS(linux/sock_diag.h)
-AC_CHECK_HEADERS(tcpd.h)
-AC_CHECK_HEADERS(strings.h)
-AC_CHECK_HEADERS(stropts.h)
-AC_CHECK_HEADERS(sys/capability.h)
-AC_CHECK_HEADERS(sys/strlog.h)
-AC_CHECK_HEADERS(utmp.h)
-AC_CHECK_HEADERS(utmpx.h)
-#
-# As desribed above, starting to use the better format
-# (for some forgotten or already problematic cases)
-# TODO: replace all the header checks like this
-#
-AC_CHECK_HEADER(dlfcn.h)
-AS_IF([test "x$ac_cv_header_dlfcn_h" = "xyes"],
-      [AC_DEFINE([HAVE_DLFCN_H], [1], [Define if dlfcn.h presented])],
-      [AC_DEFINE([HAVE_DLFCN_H], [0], [Define if dlfcn.h presented])])
 
-AC_CHECK_HEADER(getopt.h)
-AS_IF([test "x$ac_cv_header_getopt_h" = "xyes"],
-      [AC_DEFINE([HAVE_GETOPT_H], [1], [Define if getopt.h presented])],
-      [AC_DEFINE([HAVE_GETOPT_H], [0], [Define if getopt.h presented])])
-
-AC_CHECK_HEADER(door.h)
-AS_IF([test "x$ac_cv_header_door_h" = "xyes"],
-      [AC_DEFINE([HAVE_DOOR_H], [1], [Define if door.h presented])],
-      [AC_DEFINE([HAVE_DOOR_H], [0], [Define if door.h presented])])
-
-AC_CHECK_HEADER(malloc.h)
-AS_IF([test "x$ac_cv_header_malloc_h" = "xyes"],
-      [AC_DEFINE([HAVE_MALLOC_H], [1], [Define if malloc.h presented])],
-      [AC_DEFINE([HAVE_MALLOC_H], [0], [Define if malloc.h presented])])
+CHECK_HEADERS_AND_DEFINE([
+    dmalloc.h
+    linux/sock_diag.h
+    tcpd.h
+    strings.h
+    stropts.h
+    sys/capability.h
+    sys/strlog.h
+    utmp.h
+    utmpx.h
+    dlfcn.h
+    getopt.h
+    door.h
+    malloc.h
+])
 
 dnl ***************************************************************************
 dnl AIX has these, but cannot be linked and used, not supported anymore
@@ -886,10 +1006,53 @@ AC_CACHE_CHECK([for stropts.h and I_PUSH], [ac_cv_header_stropts_h], [
   [ac_cv_header_stropts_h=no])
 ])
 
-AC_CHECK_TYPES([struct ucred, struct cmsgcred], [], [], [#define _GNU_SOURCE 1
+dnl ***************************************************************************
+dnl AIX has issues detecting struct ucred with AC_CHECK_TYPES
+dnl ***************************************************************************
+AC_CACHE_CHECK([for struct ucred], [ac_cv_have_struct_ucred], [
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#define _GNU_SOURCE 1
 #define _DEFAULT_SOURCE 1
 #include <sys/types.h>
-#include <sys/socket.h>])
+#include <sys/socket.h>
+]], [[
+struct ucred cred;
+return sizeof(cred);
+]])],
+  [ac_cv_have_struct_ucred=yes],
+  [ac_cv_have_struct_ucred=no])])
+
+if test "x$ac_cv_have_struct_ucred" = xyes; then
+  AC_DEFINE([HAVE_STRUCT_UCRED], [1],
+            [Define to 1 if struct ucred is available])
+else
+  AC_DEFINE([HAVE_STRUCT_UCRED], [0],
+            [Define to 0 if struct ucred is not available])
+fi
+
+dnl ***************************************************************************
+dnl AIX has issues detecting struct ucred with AC_CHECK_TYPES
+dnl ***************************************************************************
+AC_CACHE_CHECK([for struct cmsgcred], [ac_cv_have_struct_cmsgcred], [
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#define _GNU_SOURCE 1
+#define _DEFAULT_SOURCE 1
+#include <sys/types.h>
+#include <sys/socket.h>
+]], [[
+struct cmsgcred cred;
+return sizeof(cred);
+]])],
+  [ac_cv_have_struct_cmsgcred=yes],
+  [ac_cv_have_struct_cmsgcred=no])])
+
+if test "x$ac_cv_have_struct_cmsgcred" = xyes; then
+  AC_DEFINE([HAVE_STRUCT_CMSGCRED], [1],
+            [Define to 1 if struct cmsgcred is available])
+else
+  AC_DEFINE([HAVE_STRUCT_CMSGCRED], [0],
+            [Define to 0 if struct cmsgcred is not available])
+fi
 
 dnl ***************************************************************************
 dnl Header checks
@@ -923,7 +1086,10 @@ else
             [Define to 0 if struct tm has no tm_gmtoff])
 fi
 
-AC_CHECK_MEMBER(struct msghdr.msg_control,AC_DEFINE(HAVE_CTRLBUF_IN_MSGHDR,1,[Whether you have msg_control field in msghdr in socket.h]),,[
+AC_CHECK_MEMBER(struct msghdr.msg_control,
+    AC_DEFINE(HAVE_CTRLBUF_IN_MSGHDR,1,[Whether you have msg_control field in msghdr in socket.h]),
+    AC_DEFINE(HAVE_CTRLBUF_IN_MSGHDR,0,[Whether you have msg_control field in msghdr in socket.h]),
+[
 #include <sys/socket.h>
 ])
 
@@ -935,19 +1101,24 @@ I_CONSLOG
 ],
   blb_cv_c_i_conslog=no, blb_cv_c_i_conslog=yes)])
 
-old_CPPFLAGS=$CPPFLAGS
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 CPPFLAGS="-D_GNU_SOURCE -D_DEFAULT_SOURCE"
 AC_CACHE_CHECK(for O_LARGEFILE, blb_cv_c_o_largefile,
-  [AC_EGREP_CPP(O_LARGEFILE,
-[
-#include <fcntl.h>
-O_LARGEFILE
-],
-  blb_cv_c_o_largefile=no, blb_cv_c_o_largefile=yes)])
-CPPFLAGS=$old_CPPFLAGS
+    [AC_EGREP_CPP(O_LARGEFILE,
+    [
+    #include <fcntl.h>
+    O_LARGEFILE
+    ],
+    blb_cv_c_o_largefile=no, blb_cv_c_o_largefile=yes)])
+
+SAFE_C_CHECK_END
 
 if test "x$blb_cv_c_o_largefile" = "xyes"; then
-        AC_DEFINE(HAVE_O_LARGEFILE, 1, [O_LARGEFILE is present])
+    AC_DEFINE(HAVE_O_LARGEFILE, 1, [O_LARGEFILE is present])
+else
+    AC_DEFINE(HAVE_O_LARGEFILE, 0, [O_LARGEFILE is present])
 fi
 
 AC_CACHE_CHECK(for struct sockaddr_storage, blb_cv_c_struct_sockaddr_storage,
@@ -955,6 +1126,8 @@ AC_CACHE_CHECK(for struct sockaddr_storage, blb_cv_c_struct_sockaddr_storage,
 
 if test "$blb_cv_c_struct_sockaddr_storage" = "yes"; then
 	AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE,[1],[struct sockaddr_storage is present on your system])
+else
+	AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE,[0],[struct sockaddr_storage is present on your system])
 fi
 
 AC_CACHE_CHECK(for struct sockaddr_in6, blb_cv_c_struct_sockaddr_in6,
@@ -972,6 +1145,8 @@ PR_SET_KEEPCAPS
 
 if test "x$blb_cv_keepcaps" = "xyes"; then
 	AC_DEFINE(HAVE_PR_SET_KEEPCAPS, 1, [have PR_SET_KEEPCAPS])
+else
+    AC_DEFINE(HAVE_PR_SET_KEEPCAPS, 0, [have PR_SET_KEEPCAPS])
 fi
 
 AC_CACHE_CHECK(for modern utmp,
@@ -996,6 +1171,8 @@ blb_cv_c_modern_utmp=no)])
 
 if test "x$blb_cv_c_modern_utmp" = "xyes"; then
 	AC_DEFINE(HAVE_MODERN_UTMP, 1, [have modern utmp/utmpx format])
+else
+	AC_DEFINE(HAVE_MODERN_UTMP, 0, [have modern utmp/utmpx format])
 fi
 
 AC_CHECK_DECLS(SO_MEMINFO,
@@ -1013,26 +1190,37 @@ AC_CHECK_FUNC(gethostbyname, [], AC_CHECK_LIB(nsl, gethostbyname, BASE_LIBS="$BA
 AC_CHECK_LIB(regex, regexec, REGEX_LIBS="-lregex")
 AC_CHECK_LIB(resolv, res_init, RESOLV_LIBS="-lresolv")
 
-AC_CHECK_FUNCS(strdup		\
-	strtol			\
-	strtoll			\
-	strtoimax		\
-	inet_aton		\
-	inet_ntoa		\
-	getaddrinfo		\
-	getnameinfo		\
-	getutent		\
-	getutxent		\
-	pread			\
-	pwrite			\
-	posix_fallocate		\
-	strcasestr		\
-	memrchr			\
-	localtime_r		\
-	gmtime_r		\
-	strnlen			\
-	getline			\
-	strtok_r)
+CHECK_FUNCS_AND_DEFINE([
+    kqueue
+    fmemopen
+    getutent
+    memrchr
+    posix_fallocate
+    strtoll
+    strtol
+    strtoimax
+    inet_aton
+    inet_ntoa
+    getaddrinfo
+    getnameinfo
+    getutxent
+    pread
+    pwrite
+    strcasestr
+    localtime_r
+    gmtime_r
+    strnlen
+    getline
+    strtok_r
+    inotify_init
+    getrandom
+])
+
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+LIBS=$BASE_LIBS
+CHECK_FUNC_AND_DEFINE([clock_gettime])
+SAFE_C_CHECK_END
 
 dnl ***************************************************************************
 dnl AIX has issues detecting getprotobynumber_r
@@ -1052,20 +1240,6 @@ AC_COMPILE_IFELSE(
    AC_MSG_RESULT([no])])
 AC_LANG_POP([C])
 
-old_LIBS=$LIBS
-LIBS=$BASE_LIBS
-AC_CHECK_FUNCS(clock_gettime)
-LIBS=$old_LIBS
-
-dnl ***************************************************************************
-dnl check inotify
-dnl ***************************************************************************
-AC_CHECK_FUNCS([inotify_init])
-
-dnl ***************************************************************************
-dnl check getrandom
-dnl ***************************************************************************
-AC_CHECK_FUNCS([getrandom])
 
 dnl ***************************************************************************
 dnl libevtlog headers/libraries (remove after relicensing libevtlog)
@@ -1086,12 +1260,14 @@ dnl ***************************************************************************
 dnl libwrap headers/libraries
 dnl ***************************************************************************
 
-old_LIBS=$LIBS
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 AC_CACHE_CHECK(for TCP wrapper library,
                 blb_cv_c_lwrap,
 
 for libwrap in "-lwrap" "/usr/local/lib/libwrap.a"; do
-        LIBS="$old_LIBS $libwrap"
+        LIBS="$LIBS_SAVE $libwrap"
 
         [AC_TRY_LINK(,
         [
@@ -1111,9 +1287,10 @@ int foo(void)
 done
 
 ])
-LIBS=$old_LIBS
-LIBWRAP_LIBS=$blb_cv_c_lwrap
 
+SAFE_C_CHECK_END
+
+LIBWRAP_LIBS=$blb_cv_c_lwrap
 if test "x$enable_tcp_wrapper" = "xauto"; then
 	AC_MSG_CHECKING(whether to enable TCP wrapper support)
         if test "x$ac_cv_header_tcpd_h" = "xyes" -a "x$blb_cv_c_lwrap" != "x"; then
@@ -1161,37 +1338,31 @@ dnl ***************************************************************************
 dnl GLib headers/libraries
 dnl ***************************************************************************
 
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 GLIB_ADDONS="gmodule-2.0 gthread-2.0"
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= $GLIB_MIN_VERSION $GLIB_ADDONS,,)
 
 if test "$linking_mode" != "dynamic"; then
-	# strip out -ldl & -lrt as it cannot be linked statically
-	GLIB_LIBS=`echo $GLIB_LIBS | tr ' ' '\n' | egrep -v "^(-ldld?)|(-lrt)$" | tr '\n' ' '`
+    # strip out -ldl & -lrt as it cannot be linked statically
+    GLIB_LIBS=`echo $GLIB_LIBS | tr ' ' '\n' | egrep -v "^(-ldld?)|(-lrt)$" | tr '\n' ' '`
 
-	old_LIBS=$LIBS
-	LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC $BASE_LIBS"
-	AC_CHECK_FUNC(g_hash_table_new, blb_cv_static_glib=yes, blb_cv_static_glib=no)
-	LIBS=$old_LIBS
+    LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC $BASE_LIBS"
+    AC_CHECK_FUNC(g_hash_table_new, blb_cv_static_glib=yes, blb_cv_static_glib=no)
+    LIBS=$LIBS_SAVE
 fi
 
-old_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="$GLIB_CFLAGS"
-old_LDFLAGS=$LDFLAGS
 LDFLAGS="$LDFLAGS $GLIB_LIBS"
-
-old_LIBS=$LIBS
 LIBS="$LIBS $GLIB_LIBS"
-AC_CHECK_FUNCS(g_list_copy_deep \
-  g_ptr_array_find_with_equal_func \
-  g_memdup2 \
-  g_canonicalize_filename)
-LIBS=$old_LIBS
+CHECK_FUNCS_AND_DEFINE([g_list_copy_deep g_ptr_array_find_with_equal_func g_memdup2 g_canonicalize_filename])
 
 if test "x$ac_cv_func_g_memdup2" = "xyes"; then
     dnl only set MIN_REQUIRED to 2.68 if we know that we are at least on that version.
-    dnl On CentOS7/SLES12 we don't have recent enough glib but with compat
-    dnl wrappers we can compile. Bad news is that if we don't set to 2.68 at least,
-    dnl we can't compile on new platforms with clang.
+    dnl On CentOS7/SLES12 we do not have recent enough glib but with compat
+    dnl wrappers we can compile. Bad news is that if we do not set to 2.68 at least,
+    dnl we can not compile on new platforms with clang.
 
     dnl Best of both worlds: we set to 2.68 if we have that version, so we
     dnl get clang to compile our code, otherwise we set it to 2.32.
@@ -1202,22 +1373,22 @@ else
 fi
 
 AC_CACHE_CHECK(sanity checking Glib headers,
-               blb_cv_glib_sane,
+blb_cv_glib_sane,
 [AC_TRY_RUN([
-#include <glib.h>
+    #include <glib.h>
 
-int main()
-{
-  if (sizeof(long) != GLIB_SIZEOF_LONG)
-    return 1;
-  return 0;
-}
+    int main()
+    {
+    if (sizeof(long) != GLIB_SIZEOF_LONG)
+        return 1;
+    return 0;
+    }
 ],
 blb_cv_glib_sane=yes,
 blb_cv_glib_sane=no,
 blb_cv_glib_sane=yes)])
-CPPFLAGS=$old_CPPFLAGS
-LDFLAGS=$old_LDFLAGS
+
+SAFE_C_CHECK_END
 
 if test "x$blb_cv_glib_sane" = "xno"; then
 	AC_MSG_ERROR([Glib headers inconsistent with current compiler setting. You might be using 32 bit Glib with a 64 bit compiler, check PKG_CONFIG_PATH])
@@ -1260,15 +1431,17 @@ dnl pcre headers/libraries
 dnl ***************************************************************************
 
 if test "x$linking_mode" = "xmixed"; then
+    # You can use the saved ones CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE if needed
+    SAFE_C_CHECK_BEGIN
 
-	# check if we have a pcre bundled in glib. In case glib is
-        # dynamic it doesn't matter as glib doesn't export those
-        # symbols.  But in case glib is static, linking it through
-        # glib and through libpcre would clash.
-        old_LIBS="$LIBS"
-        LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC $LIBS"
-        AC_CHECK_FUNC(pcre_compile2, AC_MSG_ERROR([You cannot use a GLib embedded PCRE in mixed linking mode]))
-        LIBS="$old_LIBS"
+    # check if we have a pcre bundled in glib. In case glib is
+    # dynamic it doesn't matter as glib doesn't export those
+    # symbols.  But in case glib is static, linking it through
+    # glib and through libpcre would clash.
+    LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC $LIBS"
+    AC_CHECK_FUNC(pcre_compile2, AC_MSG_ERROR([You cannot use a GLib embedded PCRE in mixed linking mode]))
+
+    SAFE_C_CHECK_END
 fi
 
 PKG_CHECK_MODULES(PCRE2, libpcre2-8 >= $PCRE2_MIN_VERSION,, PCRE2_LIBS="")
@@ -1281,28 +1454,28 @@ dnl ***************************************************************************
 dnl OpenSSL headers/libraries
 dnl ***************************************************************************
 
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 # openssl is needed for:
 #  * TLS support
-
 dnl check OpenSSL static linking
 PKG_CHECK_MODULES(OPENSSL,
-                  openssl >= $OPENSSL_MIN_VERSION,,
-                  AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
+                openssl >= $OPENSSL_MIN_VERSION,,
+                AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
 
 if test -n "$OPENSSL_LIBS" -a "$linking_mode" != "dynamic"; then
         dnl required for openssl, but only when linking statically
         AC_CHECK_LIB(z, inflate, ZLIB_LIBS="-lz")
 
-	dnl Remove -ldl as it cannot be linked statically on some platforms, it'll be present in DL_LIBS
-	OPENSSL_LIBS=`echo $OPENSSL_LIBS | tr ' ' '\n' | egrep -v "^-ldld?$" | tr '\n' ' '`
+    dnl Remove -ldl as it cannot be linked statically on some platforms, it will be present in DL_LIBS
+    OPENSSL_LIBS=`echo $OPENSSL_LIBS | tr ' ' '\n' | egrep -v "^-ldld?$" | tr '\n' ' '`
 
-	old_LIBS=$LIBS
-	LIBS="$LD_START_STATIC $OPENSSL_LIBS $ZLIB_LIBS $LD_END_STATIC $DL_LIBS"
-	AC_CHECK_FUNC(SSL_library_init, blb_cv_static_openssl=yes, blb_cv_static_openssl=no)
-	LIBS=$old_LIBS
+    LIBS="$LD_START_STATIC $OPENSSL_LIBS $ZLIB_LIBS $LD_END_STATIC $DL_LIBS"
+    AC_CHECK_FUNC(SSL_library_init, blb_cv_static_openssl=yes, blb_cv_static_openssl=no)
+    LIBS=$LIBS_SAVE
 fi
 
-CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $OPENSSL_CFLAGS"
 
 AC_CHECK_DECLS([SSL_CTX_get0_param],[], [], [[#include <openssl/ssl.h>]])
@@ -1321,7 +1494,7 @@ AC_CHECK_DECLS([SSL_add_file_cert_subjects_to_stack],[], [], [[#include <openssl
 AC_CHECK_DECLS([SSL_add_dir_cert_subjects_to_stack],[], [], [[#include <openssl/ssl.h>]])
 AC_CHECK_DECLS([SSL_CTX_set_min_proto_version],[], [], [[#include <openssl/ssl.h>]])
 
-CPPFLAGS="$CPPFLAGS_SAVE"
+SAFE_C_CHECK_END
 
 dnl
 dnl Right now, openssl is never linked statically as it is only used by the
@@ -1347,8 +1520,8 @@ if test -n "$LIBNET_CONFIG" -a -x "$LIBNET_CONFIG"; then
         LIBNET_CFLAGS="$LIBNET_CFLAGS `$LIBNET_CONFIG --cflags`"
         LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
         AC_MSG_RESULT(yes)
-dnl libnet-config does not provide the _DEFAULT_SOURCE define, that can cause warning during build
-dnl as upstream libnet-config does uses _DEFAULT_SOURCE this is just a fix till
+        # libnet-config does not provide the _DEFAULT_SOURCE define, that can cause warning during build
+        # as upstream libnet-config does uses _DEFAULT_SOURCE this is just a fix till
         LIBNET_CFLAGS="$LIBNET_CFLAGS -D_DEFAULT_SOURCE"
 
 else
@@ -1436,53 +1609,63 @@ dnl ***************************************************************************
 dnl ivykis headers/libraries
 dnl ***************************************************************************
 
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 IVYKIS_INTERNAL_SOURCE_EXISTS="test -f $srcdir/lib/ivykis/src/iv_main_posix.c"
 
 if $IVYKIS_INTERNAL_SOURCE_EXISTS; then
-	AC_CONFIG_SUBDIRS([lib/ivykis])
-	IVYKIS_SUBDIRS=lib/ivykis
+    AC_CONFIG_SUBDIRS([lib/ivykis])
+    IVYKIS_SUBDIRS=lib/ivykis
 fi
-
 
 INTERNAL_IVYKIS_CFLAGS=""
 if test "x$with_ivykis" = "xinternal"; then
-	if $IVYKIS_INTERNAL_SOURCE_EXISTS; then
-		# these can only be used in lib as it assumes
-		# the current directory just one below ivykis
+    if $IVYKIS_INTERNAL_SOURCE_EXISTS; then
+        # these can only be used in lib as it assumes
+        # the current directory just one below ivykis
 
-		IVYKIS_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
-		IVYKIS_CFLAGS="-isystem \$(top_srcdir)/lib/ivykis/src/include -isystem \$(top_builddir)/lib/ivykis/src/include"
-                INTERNAL_IVYKIS_CFLAGS="-isystem \${includedir}/syslog-ng/ivykis"
+        IVYKIS_CFLAGS="-isystem \$(top_srcdir)/lib/ivykis/src/include -isystem \$(top_builddir)/lib/ivykis/src/include"
+        IVYKIS_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
+        INTERNAL_IVYKIS_CFLAGS="-isystem \${includedir}/syslog-ng/ivykis"
 
-		IVYKIS_VERSION_UPDATED="yes"
+        IVYKIS_VERSION_UPDATED="yes"
 
-		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
-		IVYKIS_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
+        # LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
+        IVYKIS_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 
-                # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
-                AC_SEARCH_LIBS([io_uring_queue_init], [uring])
-		AC_DEFINE(HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION, 1)
-	else
-		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
-	fi
+        # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
+        AC_SEARCH_LIBS([io_uring_queue_init], [uring], [IO_URING_LIBS="-luring"])
+
+        # internal version surely has iv_work_pool_submit_continuation
+        AC_DEFINE(HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION, 1)
+    else
+        AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
+    fi
 else
-	with_ivykis="system"
-	PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION,,)
-	PKG_CHECK_MODULES(IVYKIS_VERSION_CHECK, ivykis >= $IVYKIS_UPDATED_VERSION, [IVYKIS_VERSION_UPDATED="yes"], [IVYKIS_VERSION_UPDATED="no"])
+    with_ivykis="system"
+    PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION,,)
+    PKG_CHECK_MODULES(IVYKIS_VERSION_CHECK, ivykis >= $IVYKIS_UPDATED_VERSION, [IVYKIS_VERSION_UPDATED="yes"], [IVYKIS_VERSION_UPDATED="no"])
 
-	# in case we're using a system installed ivykis, we can link against
-	# it even without libtool and without extra linker arguments (as
-	# we're linking dynamically)
+    # in case we're using a system installed ivykis, we can link against
+    # it even without libtool and without extra linker arguments (as
+    # we're linking dynamically)
 
-	IVYKIS_NO_LIBTOOL_LIBS="$IVYKIS_LIBS"
+    IVYKIS_NO_LIBTOOL_LIBS="$IVYKIS_LIBS"
 
-	dnl check if iv_work_pool_submit_continuation is available in the system ivykis
-	old_LIBS=$LIBS
-	LIBS="$LIBS $IVYKIS_LIBS"
-	AC_CHECK_FUNCS(iv_work_pool_submit_continuation, [], [AC_DEFINE(HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION, 0)])
-	LIBS=$old_LIBS
+    dnl check if iv_work_pool_submit_continuation is available in the system ivykis
+    LIBS="$LIBS $IVYKIS_LIBS"
+    AC_CHECK_FUNC(iv_work_pool_submit_continuation,
+                    [AC_DEFINE([HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION], [1], [Define if iv_work_pool_submit_continuation() exists])],
+                    [AC_DEFINE([HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION], [0], [Define if iv_work_pool_submit_continuation() exists])])
+    LIBS=$LIBS_SAVE
 fi
 
+SAFE_C_CHECK_END
+# Assing it after SAFE_C_CHECK_END only, as that will restore LIBS
+if test "x$IO_URING_LIBS" != "x"; then
+    LIBS="${LIBS} ${IO_URING_LIBS}"
+fi
 
 
 dnl ***************************************************************************
@@ -1508,10 +1691,18 @@ dnl ***************************************************************************
 dnl mongo-c-driver headers/libraries
 dnl ***************************************************************************
 
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 # Try libmongoc-1.0 first
 PKG_CHECK_MODULES(LIBMONGO,
     libmongoc-1.0 >= $LMC_1_MIN_VERSION,
-    [with_mongoc=yes; mongo_version_str="v1"; MONGOC_HEADER="<mongoc.h>"],
+    [
+        with_mongoc=yes
+        mongo_version_str="v1"
+        MONGOC_HEADER="<mongoc.h>"
+        AC_DEFINE([HAVE_MONGOC_V2], [0], [Define if using MongoDB C Driver v2.x])
+    ],
     [   # Try mongoc2 (libmongoc-2.0) if 1.0 not found
         PKG_CHECK_MODULES(LIBMONGO,
             mongoc2 >= $LMC_MIN_VERSION,
@@ -1521,7 +1712,10 @@ PKG_CHECK_MODULES(LIBMONGO,
             mongo_version_str="v2"
             MONGOC_HEADER="<mongoc/mongoc.h>"
             ],
-            [with_mongoc=no]
+            [
+            AC_DEFINE([HAVE_MONGOC_V2], [0], [Define if using MongoDB C Driver v2.x])
+            with_mongoc=no
+            ]
         )
     ]
 )
@@ -1531,18 +1725,20 @@ if test "x$with_mongoc" = "xno" && test "x$enable_mongodb" = "xyes"; then
 fi
 
 if test "x$with_mongoc" = "xyes"; then
-    CPPFLAGS_SAVE="$CPPFLAGS"
     CPPFLAGS="$CPPFLAGS $LIBMONGO_CFLAGS"
-
     AC_CHECK_DECLS([mongoc_uri_set_option_as_int32], [], [], [[#include $MONGOC_HEADER]])
     AC_CHECK_DECLS([MONGOC_URI_SERVERSELECTIONTIMEOUTMS], [], [], [[#include $MONGOC_HEADER]])
-
     CPPFLAGS="$CPPFLAGS_SAVE"
 fi
+
+SAFE_C_CHECK_END
 
 dnl ***************************************************************************
 dnl libunwind headers/libraries
 dnl ***************************************************************************
+
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
 
 PKG_CHECK_MODULES(LIBUNWIND, libunwind >= 1.6.2, enable_libunwind="yes", enable_libunwind="no")
 
@@ -1554,79 +1750,75 @@ dnl ***************************************************************************
 dnl libesmtp headers/libraries
 dnl ***************************************************************************
 if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
-	libesmtp="yes"
-	if test "x$with_libesmtp" != "xyes" && test "x$with_libesmtp" != "x"; then
-		CPPFLAGS_SAVE="$CPPFLAGS"
-		LDFLAGS_SAVE="$LDFLAGS"
-		CPPFLAGS="$CPPFLAGS -I$with_libesmtp/include"
-		LDFLAGS="$LDFLAGS -L$with_libesmtp/lib"
-		AC_CHECK_HEADER(libesmtp.h, [LIBESMTP_CFLAGS="-I$with_libesmtp/include"
-					     LIBESMTP_LIBS="-L$with_libesmtp/lib -lesmtp"], [libesmtp=no])
-		CPPFLAGS="$CPPFLAGS_SAVE"
-		LDFLAGS="$LDFLAGS_SAVE"
-	else
-		PKG_CHECK_MODULES(LIBESMTP, libesmtp-1.0, libesmtp="yes", libesmtp="no")
-		if test "x$libesmtp" = "xno"; then
-			AC_MSG_CHECKING(for libESMTP with libesmtp-config)
-			if libesmtp-config --version >/dev/null 2>&1; then
-				AC_MSG_RESULT(yes)
-				LIBESMTP_CFLAGS="`libesmtp-config --cflags`"
-				LIBESMTP_LIBS="`libesmtp-config --libs`"
-				libesmtp="yes"
-			else
-				AC_MSG_RESULT(no)
-				libesmtp=no
-			fi
+    libesmtp="yes"
+    if test "x$with_libesmtp" != "xyes" && test "x$with_libesmtp" != "x"; then
+        CPPFLAGS="$CPPFLAGS -I$with_libesmtp/include"
+        LDFLAGS="$LDFLAGS -L$with_libesmtp/lib"
+        AC_CHECK_HEADERS(libesmtp.h, [LIBESMTP_CFLAGS="-I$with_libesmtp/include"
+                        LIBESMTP_LIBS="-L$with_libesmtp/lib -lesmtp"], [libesmtp=no])
+        CPPFLAGS="$CPPFLAGS_SAVE"
+        LDFLAGS="$LDFLAGS_SAVE"
+    else
+        PKG_CHECK_MODULES(LIBESMTP, libesmtp-1.0, libesmtp="yes", libesmtp="no")
+        if test "x$libesmtp" = "xno"; then
+            AC_MSG_CHECKING(for libESMTP with libesmtp-config)
+            if libesmtp-config --version >/dev/null 2>&1; then
+                AC_MSG_RESULT(yes)
+                LIBESMTP_CFLAGS="`libesmtp-config --cflags`"
+                LIBESMTP_LIBS="`libesmtp-config --libs`"
+                libesmtp="yes"
+            else
+                AC_MSG_RESULT(no)
+                libesmtp=no
+            fi
                 fi
-	fi
-	if test "x$enable_smtp" = "xyes" && test "x$libesmtp" = "xno"; then
-		AC_MSG_ERROR(libESMTP not found)
-	fi
-	enable_smtp=$libesmtp
+    fi
+    if test "x$enable_smtp" = "xyes" && test "x$libesmtp" = "xno"; then
+        AC_MSG_ERROR(libESMTP not found)
+    fi
+    enable_smtp=$libesmtp
 fi
+
+SAFE_C_CHECK_END
 
 dnl ***************************************************************************
 dnl libmqtt headers/libraries
 dnl ***************************************************************************
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
 
 if test "x$enable_mqtt" = "xyes" || test "x$enable_mqtt" = "xauto"; then
-	if test "x$with_libpaho_mqtt" != "x"; then
-		CPPFLAGS_SAVE="$CPPFLAGS"
-		LDFLAGS_SAVE="$LDFLAGS"
-		CPPFLAGS="$CPPFLAGS -I$with_libpaho_mqtt/include"
-		LDFLAGS="$LDFLAGS -L$with_libpaho_mqtt -lpaho-mqtt3cs"
-		AC_CHECK_HEADER(MQTTClient.h, [LIBPAHO_MQTT_CFLAGS="-I$with_libpaho_mqtt/include"
-						LIBPAHO_MQTT_LIBS="-L$with_libpaho_mqtt/lib -lpaho-mqtt3cs"
-						libpaho_mqtt="yes"], [libpaho_mqtt=no])
+    if test "x$with_libpaho_mqtt" != "x"; then
+        CPPFLAGS="$CPPFLAGS -I$with_libpaho_mqtt/include"
+        LDFLAGS="$LDFLAGS -L$with_libpaho_mqtt -lpaho-mqtt3cs"
+        AC_CHECK_HEADERS(MQTTClient.h, [LIBPAHO_MQTT_CFLAGS="-I$with_libpaho_mqtt/include"
+                        LIBPAHO_MQTT_LIBS="-L$with_libpaho_mqtt/lib -lpaho-mqtt3cs"
+                        libpaho_mqtt="yes"], [libpaho_mqtt=no])
+        CPPFLAGS="$CPPFLAGS_SAVE"
+        LDFLAGS="$LDFLAGS_SAVE"
+    else
+        AC_CHECK_LIB(paho-mqtt3cs, MQTTClient_create, LIBPAHO_MQTT_LIBS="-lpaho-mqtt3cs"; libpaho_mqtt="yes", libpaho_mqtt="no")
+    fi
+    if test "x$enable_mqtt" = "xyes" && test "x$libpaho_mqtt" = "xno"; then
+        AC_MSG_ERROR(libPAHO_MQTT not found)
+    fi
 
-		CPPFLAGS="$CPPFLAGS_SAVE"
-		LDFLAGS="$LDFLAGS_SAVE"
-	else
-		AC_CHECK_LIB(paho-mqtt3cs, MQTTClient_create, LIBPAHO_MQTT_LIBS="-lpaho-mqtt3cs"; libpaho_mqtt="yes", libpaho_mqtt="no")
-	fi
-	if test "x$enable_mqtt" = "xyes" && test "x$libpaho_mqtt" = "xno"; then
-		AC_MSG_ERROR(libPAHO_MQTT not found)
-	fi
+    if test "x$libpaho_mqtt" = "xyes"; then
+        CPPFLAGS="$CPPFLAGS $LIBPAHO_MQTT_CFLAGS"
+        LDFLAGS="$LDFLAGS $LIBPAHO_MQTT_LIBS"
+        AC_CHECK_MEMBER([MQTTClient_connectOptions.httpProxy],
+                [have_paho_http_proxy=1],
+                [have_paho_http_proxy=0],
+                [[#include "MQTTClient.h"]])
+        CPPFLAGS="$CPPFLAGS_SAVE"
+        LDFLAGS="$LDFLAGS_SAVE"
 
-	if test "x$libpaho_mqtt" = "xyes"; then
-		CPPFLAGS_SAVE="$CPPFLAGS"
-		LDFLAGS_SAVE="$LDFLAGS"
-		CPPFLAGS="$CPPFLAGS $LIBPAHO_MQTT_CFLAGS"
-		LDFLAGS="$LDFLAGS $LIBPAHO_MQTT_LIBS"
-
-		AC_CHECK_MEMBER([MQTTClient_connectOptions.httpProxy],
-				[have_paho_http_proxy=1],
-				[have_paho_http_proxy=0],
-				[[#include "MQTTClient.h"]])
-
-		CPPFLAGS="$CPPFLAGS_SAVE"
-		LDFLAGS="$LDFLAGS_SAVE"
-
-		AC_DEFINE_UNQUOTED(HAVE_PAHO_HTTP_PROXY, $have_paho_http_proxy, [libpaho-mqtt supports MQTTClient_connectOptions::httpProxy])
-	fi
-
-	enable_mqtt=$libpaho_mqtt
+        AC_DEFINE_UNQUOTED(HAVE_PAHO_HTTP_PROXY, $have_paho_http_proxy, [libpaho-mqtt supports MQTTClient_connectOptions::httpProxy])
+    fi
+    enable_mqtt=$libpaho_mqtt
 fi
+
+SAFE_C_CHECK_END
 
 dnl ***************************************************************************
 dnl GRPC headers/libraries
@@ -1730,45 +1922,47 @@ fi
 dnl ***************************************************************************
 dnl libcurl headers/libraries
 dnl ***************************************************************************
-if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
-	libcurl="yes"
-	if test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "x"; then
-		CPPFLAGS_SAVE="$CPPFLAGS"
-		LDFLAGS_SAVE="$LDFLAGS"
-		CPPFLAGS="$CPPFLAGS -I$with_libcurl/include"
-		LDFLAGS="$LDFLAGS -L$with_libcurl/lib"
-		AC_CHECK_HEADER(curl/curl.h, [LIBCURL_CFLAGS="-I$with_libcurl/include"
-					     LIBCURL_LIBS="-L$with_libcurl/lib -lcurl"], [libcurl=no])
-		CPPFLAGS="$CPPFLAGS_SAVE"
-		LDFLAGS="$LDFLAGS_SAVE"
-	else
-		AC_MSG_CHECKING(for libcurl)
-		if curl-config --version >/dev/null 2>&1; then
-			AC_MSG_RESULT(yes)
-			LIBCURL_CFLAGS="`curl-config --cflags`"
-			LIBCURL_LIBS="`curl-config --libs`"
-		else
-			AC_MSG_RESULT(no)
-			libcurl=no
-		fi
-	fi
-	if test "x$enable_http" = "xyes" && test "x$libcurl" = "xno"; then
-		AC_MSG_ERROR(libcurl not found)
-	fi
-	enable_http=$libcurl
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
 
-        if test "$enable_http" = "yes"; then
-           old_CFLAGS=$CFLAGS
-           CFLAGS=$LIBCURL_CFLAGS
-           AC_CHECK_DECLS([CURL_SSLVERSION_TLSv1_0, CURL_SSLVERSION_TLSv1_1, CURL_SSLVERSION_TLSv1_2, CURL_SSLVERSION_TLSv1_3, CURLOPT_TLS13_CIPHERS, CURLOPT_SSL_VERIFYSTATUS, CURLOPT_REDIR_PROTOCOLS_STR, curl_url, CURLU_ALLOW_SPACE, CURLUE_BAD_SCHEME, CURLUE_BAD_HOSTNAME, CURLUE_BAD_PORT_NUMBER, CURLUE_BAD_USER, CURLUE_BAD_PASSWORD, CURLUE_MALFORMED_INPUT, CURLUE_LAST, CURLUPART_SCHEME, CURLUPART_HOST, CURLUPART_PORT, CURLUPART_USER, CURLUPART_PASSWORD, CURLUPART_URL],
-                          [], [],
-                          [[#include <curl/curl.h>]])
-           CFLAGS=$old_CFLAGS
-		   AC_CHECK_HEADER(zlib.h, AC_DEFINE(HAVE_ZLIB, , [Define if zlib is available]), AC_MSG_WARN([ZLIB not found.]))
+if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
+    libcurl="yes"
+    if test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "x"; then
+        CPPFLAGS="$CPPFLAGS -I$with_libcurl/include"
+        LDFLAGS="$LDFLAGS -L$with_libcurl/lib"
+        AC_CHECK_HEADER(curl/curl.h, [LIBCURL_CFLAGS="-I$with_libcurl/include"
+                        LIBCURL_LIBS="-L$with_libcurl/lib -lcurl"], [libcurl=no])
+        CPPFLAGS="$CPPFLAGS_SAVE"
+        LDFLAGS="$LDFLAGS_SAVE"
+    else
+        AC_MSG_CHECKING(for libcurl)
+        if curl-config --version >/dev/null 2>&1; then
+            AC_MSG_RESULT(yes)
+            LIBCURL_CFLAGS="`curl-config --cflags`"
+            LIBCURL_LIBS="`curl-config --libs`"
+        else
+            AC_MSG_RESULT(no)
+            libcurl=no
         fi
+    fi
+    if test "x$enable_http" = "xyes" && test "x$libcurl" = "xno"; then
+        AC_MSG_ERROR(libcurl not found)
+    fi
+    enable_http=$libcurl
+
+    if test "$enable_http" = "yes"; then
+        CFLAGS=$LIBCURL_CFLAGS
+        AC_CHECK_DECLS([CURL_SSLVERSION_TLSv1_0, CURL_SSLVERSION_TLSv1_1, CURL_SSLVERSION_TLSv1_2, CURL_SSLVERSION_TLSv1_3, CURLOPT_TLS13_CIPHERS, CURLOPT_SSL_VERIFYSTATUS, CURLOPT_REDIR_PROTOCOLS_STR, curl_url, CURLU_ALLOW_SPACE, CURLUE_BAD_SCHEME, CURLUE_BAD_HOSTNAME, CURLUE_BAD_PORT_NUMBER, CURLUE_BAD_USER, CURLUE_BAD_PASSWORD, CURLUE_MALFORMED_INPUT, CURLUE_LAST, CURLUPART_SCHEME, CURLUPART_HOST, CURLUPART_PORT, CURLUPART_USER, CURLUPART_PASSWORD, CURLUPART_URL],
+                        [], [],
+                        [[#include <curl/curl.h>]])
+        CFLAGS=$CFLAGS_SAVE
+    fi
 else
-	enable_http="no"
+    enable_http="no"
 fi
+CHECK_HEADER_AND_DEFINE([zlib.h], [HAVE_ZLIB])
+
+SAFE_C_CHECK_END
 
 dnl ***************************************************************************
 dnl Cloud Auth
@@ -1794,57 +1988,59 @@ if ! test "x$enable_cloud_auth" = "xno"; then
     enable_cloud_auth=yes
 fi
 
-
 dnl ***************************************************************************
 dnl libhiredis headers/libraries
 dnl ***************************************************************************
+
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 if test "x$enable_redis" != "xno" && test "x$with_redis" != "xno"; then
-       hiredis="yes"
-       if test "x$with_libhiredis" != "xyes" && test "x$with_libhiredis" != "x"; then
-               CFLAGS_SAVE="$CFLAGS"
-               LDFLAGS_SAVE="$LDFLAGS"
-               CFLAGS="$CFLAGS -I$with_libhiredis/include"
-               LDFLAGS="$LDFLAGS -L$with_libhiredis/lib"
-               AC_CHECK_HEADER(hiredis/hiredis.h, [HIREDIS_CFLAGS="-I$with_libhiredis/include"
-                                                   HIREDIS_LIBS="-L$with_libhiredis/lib -lhiredis"], [hiredis=no])
-               CFLAGS="$CFLAGS_SAVE"
-               LDFLAGS="$LDFLAGS_SAVE"
-       else
-               hiredis="yes"
-               PKG_CHECK_MODULES(HIREDIS, hiredis >= $HIREDIS_MIN_VERSION, ,
-                                 [AC_MSG_WARN([pkg-config was not able to find hiredis >= $HIREDIS_MIN_VERSION])
-				  PKG_CHECK_MODULES(HIREDIS, libhiredis >= $HIREDIS_MIN_VERSION,,
-				  [AC_MSG_WARN([pkg-config was not able to find libhiredis >= $HIREDIS_MIN_VERSION])
-				   hiredis=no])])
-       fi
+    hiredis="yes"
+    if test "x$with_libhiredis" != "xyes" && test "x$with_libhiredis" != "x"; then
+            CFLAGS="$CFLAGS -I$with_libhiredis/include"
+            LDFLAGS="$LDFLAGS -L$with_libhiredis/lib"
+            AC_CHECK_HEADER(hiredis/hiredis.h, [HIREDIS_CFLAGS="-I$with_libhiredis/include"
+                                                HIREDIS_LIBS="-L$with_libhiredis/lib -lhiredis"], [hiredis=no])
+            CFLAGS="$CFLAGS_SAVE"
+            LDFLAGS="$LDFLAGS_SAVE"
+    else
+            hiredis="yes"
+            PKG_CHECK_MODULES(HIREDIS, hiredis >= $HIREDIS_MIN_VERSION, ,
+                                [AC_MSG_WARN([pkg-config was not able to find hiredis >= $HIREDIS_MIN_VERSION])
+                PKG_CHECK_MODULES(HIREDIS, libhiredis >= $HIREDIS_MIN_VERSION,,
+                [AC_MSG_WARN([pkg-config was not able to find libhiredis >= $HIREDIS_MIN_VERSION])
+                hiredis=no])])
+    fi
 
-       if test "x$enable_redis" = "xyes" && test "x$hiredis" = "xno"; then
-               AC_MSG_ERROR(libHIREDIS not found)
-       fi
+    if test "x$enable_redis" = "xyes" && test "x$hiredis" = "xno"; then
+            AC_MSG_ERROR(libHIREDIS not found)
+    fi
 
-       enable_redis=$hiredis
+    enable_redis=$hiredis
 fi
+
+SAFE_C_CHECK_END
 
 dnl ***************************************************************************
 dnl rabbitmq-c headers/libraries
 dnl ***************************************************************************
 
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LIBRABBITMQ_MIN_VERSION, with_librabbitmq_client="yes", with_librabbitmq_client="no")
 
 if test "$enable_amqp" = "yes" && test "$with_librabbitmq_client" = "no"; then
-       AC_MSG_ERROR([Could not find librabbitmq-c, and AMQP support was explicitly enabled.])
+    AC_MSG_ERROR([Could not find librabbitmq-c, and AMQP support was explicitly enabled.])
 fi
 
-CFLAGS_SAVE="$CFLAGS"
 CFLAGS="$CFLAGS $LIBRABBITMQ_CFLAGS"
-old_LIBS=$LIBS
 LIBS=$LIBRABBITMQ_LIBS
+CHECK_HEADER_AND_DEFINE([rabbitmq-c/tcp_socket.h])
+CHECK_FUNC_AND_DEFINE([amqp_ssl_socket_set_verify_peer])
 
-AC_CHECK_FUNCS(amqp_ssl_socket_set_verify_peer)
-AC_CHECK_HEADERS(rabbitmq-c/tcp_socket.h)
-
-LIBS=$old_LIBS
-CFLAGS="$CFLAGS_SAVE"
+SAFE_C_CHECK_END
 
 dnl ***************************************************************************
 dnl rdkafka headers/libraries
@@ -1856,18 +2052,16 @@ if test "$enable_kafka" = "yes" && test "$with_librdkafka" = "no"; then
        AC_MSG_ERROR([Could not find librdkafka, and Kafka support was explicitly enabled.])
 fi
 
-dnl
 dnl Check if librdkafka has transactional api
 dnl
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
 
-old_LIBS=$LIBS
-old_CFLAGS=$CFLAGS
 LIBS=$LIBRDKAFKA_LIBS
 CFLAGS=$LIBRDKAFKA_CFLAGS
-AC_CHECK_FUNCS(rd_kafka_init_transactions)
-LIBS=$old_LIBS
-CFLAGS=$old_CFLAGS
+CHECK_FUNC_AND_DEFINE([rd_kafka_init_transactions])
 
+SAFE_C_CHECK_END
 
 if test "x$enable_native" = "xyes" -o "x$enable_native" = "xauto"; then
     AC_CONFIG_FILES([syslog-ng-native-connector.pc])
@@ -1876,27 +2070,32 @@ fi
 dnl ***************************************************************************
 dnl riemann-client headers/libraries
 dnl ***************************************************************************
+
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 if test "$enable_riemann" != "no"; then
- PKG_CHECK_MODULES(RIEMANN_CLIENT, riemann-client >= $LRC_MIN_VERSION,,riemann_found="no")
- if test "$riemann_found" = "no" && test "$enable_riemann" = "yes"; then
-   AC_MSG_ERROR([Dependency for Riemann not found!])
- fi
- if test "$riemann_found" = "no"; then
-   enable_riemann="no";
- else
-   enable_riemann="yes";
- fi
+    PKG_CHECK_MODULES(RIEMANN_CLIENT, riemann-client >= $LRC_MIN_VERSION,,riemann_found="no")
+    if test "$riemann_found" = "no" && test "$enable_riemann" = "yes"; then
+        AC_MSG_ERROR([Dependency for Riemann not found!])
+    fi
+    if test "$riemann_found" = "no"; then
+        enable_riemann="no";
+    else
+        enable_riemann="yes";
+    fi
 
- if test "$enable_riemann" = "yes"; then
-
-    old_CFLAGS=$CFLAGS
-    CFLAGS=`pkg-config --cflags riemann-client`
-    AC_CHECK_DECLS(RIEMANN_EVENT_FIELD_TIME_MICROS,
-                  AC_DEFINE(HAVE_RIEMANN_MICROSECONDS, 1, [Riemann microseconds support]),,
-                  [[#include <riemann/event.h>]])
-    CFLAGS=$old_CFLAGS
- fi
+    if test "$enable_riemann" = "yes"; then
+        CFLAGS=`pkg-config --cflags riemann-client`
+        AC_CHECK_DECLS(RIEMANN_EVENT_FIELD_TIME_MICROS,
+                    AC_DEFINE(HAVE_RIEMANN_MICROSECONDS, 1, [Riemann microseconds support]),
+                    AC_DEFINE(HAVE_RIEMANN_MICROSECONDS, 0, [Riemann microseconds support]),
+                    [[#include <riemann/event.h>]])
+        CFLAGS=$CFLAGS_SAVE
+    fi
 fi
+
+SAFE_C_CHECK_END
 
 dnl ***************************************************************************
 dnl libsystemd headers/libraries
@@ -2092,6 +2291,8 @@ AC_CHECK_DECLS([TCP_KEEPIDLE, TCP_KEEPINTVL, TCP_KEEPCNT], [], [],
 
 if test "x$ac_cv_have_decl_TCP_KEEPIDLE" = "xyes" -a "x$ac_cv_have_decl_TCP_KEEPINTVL" = "xyes" -a "x$ac_cv_have_decl_TCP_KEEPCNT" = "xyes"; then
         AC_DEFINE(HAVE_TCP_KEEPALIVE_TIMERS, 1, [TCP keepalive timers])
+else
+        AC_DEFINE(HAVE_TCP_KEEPALIVE_TIMERS, 0, [TCP keepalive timers])
 fi
 
 if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
@@ -2227,12 +2428,14 @@ fi
 dnl ***************************************************************************
 dnl check if we have timezone variable in <time.h>
 dnl ***************************************************************************
-AC_VAR_TIMEZONE_EXTERNALS
 
-dnl ***************************************************************************
-dnl check fmemopen
-dnl ***************************************************************************
-AC_CHECK_FUNCS([fmemopen])
+AC_VAR_TIMEZONE_EXTERNALS
+if test "x$ac_cv_func_timezone" = "xyes"; then
+    AC_DEFINE([HAVE_TIMEZONE], [1], [Define if timezone-related externals exist])
+else
+    AC_DEFINE([HAVE_TIMEZONE], [0], [Define if timezone-related externals exist])
+fi
+
 
 dnl ***************************************************************************
 dnl sanitizer
@@ -2381,10 +2584,10 @@ AC_DEFINE_UNQUOTED(PATH_SCLDIR, "$scldir", [SCL directory])
 AC_DEFINE_UNQUOTED(PATH_XSDDIR, "$xsddir", [XSD directory])
 AC_DEFINE_UNQUOTED(PATH_LIBEXECDIR, "$libexecdir", [libexec directory])
 if test -n "$timezonedir"; then
-        AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "$timezonedir", [timezone base directory])
+    AC_DEFINE_UNQUOTED(PATH_TIMEZONEDIR, "$timezonedir", [timezone base directory])
 fi
 if test -n "$env_ld_library_path"; then
-        AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
+    AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
 AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "$moduledir", [module installation directory])
 AC_DEFINE_UNQUOTED(PYTHON_MODULE_DIR, "$python_moduledir", [Python module installation directory])
@@ -2417,6 +2620,16 @@ AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal suppo
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
 AC_DEFINE_UNQUOTED(HAVE_KQUEUE, `enable_value $ac_cv_func_kqueue`, [Have kqueue])
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
+
+dnl WARNING
+dnl Same is true for AM_CONDITIONAL like for CHECK_HEADER_AND_DEFINE above
+dnl if you want to use in the compiled source also the SYSLOG_NG_HAVE_XXX pair of the resulting
+dnl HAVE_XXX defines you need both in config.h (for getting work #if SYSLOG_NG_HAVE_XXX)
+dnl So, do not simply use it, if you need to set a macro value that is used at compile time
+dnl use the AC_DEFINE method as well, as described above.
+dnl
+dnl This is used only in the Makefile.am yet
+AM_CONDITIONAL([HAVE_JAVAH], [test -n "$JAVAH_BIN"])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])

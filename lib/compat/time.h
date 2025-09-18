@@ -28,7 +28,7 @@
 #include "compat/compat.h"
 #include <time.h>
 
-#if !defined(SYSLOG_NG_HAVE_CLOCK_GETTIME) && defined(__APPLE__) && defined(__MACH__)
+#if ! SYSLOG_NG_HAVE_CLOCK_GETTIME && defined(__APPLE__) && defined(__MACH__)
 
 #include <mach/clock.h>
 #include <mach/mach.h>

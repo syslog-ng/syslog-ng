@@ -33,7 +33,7 @@
 #include "timeutils/misc.h"
 #include "compat/amqp-compat.h"
 
-#ifdef SYSLOG_NG_HAVE_RABBITMQ_C_TCP_SOCKET_H
+#if SYSLOG_NG_HAVE_RABBITMQ_C_TCP_SOCKET_H
 #include <rabbitmq-c/amqp.h>
 #include <rabbitmq-c/framing.h>
 #include <rabbitmq-c/tcp_socket.h>

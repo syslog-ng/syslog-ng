@@ -631,7 +631,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, CfgIncludeLevel *level, const gch
       globfree(&globbuf);
       if (r == GLOB_NOMATCH)
         {
-#ifndef SYSLOG_NG_HAVE_GLOB_NOMAGIC
+#if ! SYSLOG_NG_HAVE_GLOB_NOMAGIC
           if (!__glob_pattern_p (pattern))
             {
               cfg_lexer_include_level_file_add(self, level, pattern);

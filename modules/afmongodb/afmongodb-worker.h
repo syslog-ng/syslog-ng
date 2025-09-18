@@ -26,7 +26,7 @@
 #define AFMONGODB_WORKER_H_INCLUDED
 
 #include "syslog-ng.h"
-#ifdef SYSLOG_NG_HAVE_MONGOC_V2
+#if SYSLOG_NG_HAVE_MONGOC_V2
 # include "mongoc/mongoc.h"
 #else
 # include "mongoc.h"

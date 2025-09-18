@@ -51,7 +51,7 @@ Test(cryptofuncs, test_hash)
   assert_template_format("$(sha1 bar)", "62cdb7020ff920e5aa642c3d4066950dd1f01f4d");
   assert_template_format("$(md5 foo)", "acbd18db4cc2f85cedef654fccc4a4d8");
   assert_template_format("$(hash foo)", "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae");
-#ifdef SYSLOG_NG_HAVE_DECL_DIGEST_MD4
+#if SYSLOG_NG_HAVE_DECL_DIGEST_MD4
   assert_template_format("$(md4 foo)", "0ac6700c491d70fb8650940b1ca1e4b2");
 #endif
   assert_template_format("$(sha256 foo)", "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae");

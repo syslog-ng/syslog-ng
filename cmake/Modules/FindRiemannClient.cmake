@@ -35,7 +35,7 @@ if (NOT Riemann_LIBRARY)
 endif ()
 
 if (Riemann_LIBRARY)
-      message(STATUS "Found Riemann client: ${Riemann_LIBRARY}")
+  message(STATUS "Found Riemann client: ${Riemann_LIBRARY}")
 endif()
 
 set(Riemann_PROCESS_INCLUDES Riemann_INCLUDE_DIR)

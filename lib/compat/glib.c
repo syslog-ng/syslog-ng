@@ -23,7 +23,7 @@
 
 #include "glib.h"
 
-#ifndef SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
+#if ! SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
 
 /*
   Less efficient than the original implementation in glib 2.53.2 that
@@ -58,7 +58,7 @@ g_list_copy_deep(GList     *list,
 
 #endif
 
-#ifndef SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC
+#if ! SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC
 gboolean
 g_ptr_array_find_with_equal_func (GPtrArray     *haystack,
                                   gconstpointer  needle,
@@ -86,7 +86,7 @@ g_ptr_array_find_with_equal_func (GPtrArray     *haystack,
 }
 #endif
 
-#ifndef SYSLOG_NG_HAVE_G_CANONICALIZE_FILENAME
+#if ! SYSLOG_NG_HAVE_G_CANONICALIZE_FILENAME
 #include <string.h>
 /**
  * g_canonicalize_filename:

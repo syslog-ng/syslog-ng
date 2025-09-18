@@ -78,7 +78,7 @@ socket_options_inet_try_to_set_interface(SocketOptionsInet *self, gint fd)
 static inline gboolean
 _tcp_keepalive_timers_supported(void)
 {
-#ifdef SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
+#if SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
   return TRUE;
 #else
   return FALSE;
@@ -116,7 +116,7 @@ gboolean socket_options_inet_set_tcp_keepalive_probes(SocketOptionsInet *self, g
 static void
 socket_options_inet_setup_tcp_keepalive_timers(SocketOptionsInet *self, gint fd)
 {
-#ifdef SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
+#if SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
   if (self->tcp_keepalive_time > 0)
     setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &self->tcp_keepalive_time, sizeof(self->tcp_keepalive_time));
   if (self->tcp_keepalive_probes > 0)

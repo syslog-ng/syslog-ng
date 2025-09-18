@@ -82,11 +82,14 @@ jobs:
 
       - name: autogen.sh
         if: matrix.build-tool == 'autotools'
-        run: ./autogen.sh
+        run: |
+          env | sort
+          ./autogen.sh
 
       - name: autotools configure
         if: matrix.build-tool == 'autotools'
         run: |
+          env | sort
           mkdir build
           cd build
           ../configure ${CONFIGURE_FLAGS}
@@ -94,6 +97,7 @@ jobs:
       - name: cmake configure
         if: matrix.build-tool == 'cmake'
         run: |
+          env | sort
           mkdir build
           cd build
           cmake ${CMAKE_CONFIGURE_FLAGS} ..

@@ -28,16 +28,16 @@
 
 #include <glib.h>
 
-#ifndef SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
+#if ! SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
 GList *g_list_copy_deep (GList *list, GCopyFunc func, gpointer user_data);
 #endif
 
-#ifndef SYSLOG_NG_HAVE_G_CANONICALIZE_FILENAME
+#if ! SYSLOG_NG_HAVE_G_CANONICALIZE_FILENAME
 gchar *g_canonicalize_filename (const gchar *filename,
                                 const gchar *relative_to);
 #endif
 
-#ifndef SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC
+#if ! SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC
 gboolean g_ptr_array_find_with_equal_func (GPtrArray *haystack,
                                            gconstpointer needle,
                                            GEqualFunc equal_func,

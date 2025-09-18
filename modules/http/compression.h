@@ -27,10 +27,12 @@
 #include "syslog-ng.h"
 #include "compat/curl.h"
 
-#if defined(SYSLOG_NG_HAVE_ZLIB) && defined(CURL_VERSION_LIBZ)
-#define SYSLOG_NG_HTTP_COMPRESSION_ENABLED 1
-#else
 #define SYSLOG_NG_HTTP_COMPRESSION_ENABLED 0
+#if SYSLOG_NG_HAVE_ZLIB
+#if defined(CURL_VERSION_LIBZ)
+#undef SYSLOG_NG_HTTP_COMPRESSION_ENABLED
+#define SYSLOG_NG_HTTP_COMPRESSION_ENABLED 1
+#endif
 #endif
 
 enum CurlCompressionTypes

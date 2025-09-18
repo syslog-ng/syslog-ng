@@ -3,7 +3,7 @@ if (NOT DEFINED ENABLE_RIEMANN OR ENABLE_RIEMANN)
 endif()
 
 if (HAVE_RIEMANN_MICROSECONDS)
-  add_definitions("-DSYSLOG_NG_HAVE_RIEMANN_MICROSECONDS")
+  set(SYSLOG_NG_HAVE_RIEMANN_MICROSECONDS 1 CACHE BOOL "Riemann Microseconds support" FORCE)
 endif()
 
 module_switch(ENABLE_RIEMANN "Enable riemann destination" Riemann_FOUND)
@@ -33,4 +33,3 @@ add_module(
   DEPENDS ${Riemann_LIBRARIES}
   SOURCES ${RIEMANN_SOURCES}
 )
-
