@@ -16,6 +16,7 @@ jobs:
         version: [13, 14]
         build-tool: [ autotools, cmake ]
         compiler: [ {cpp: clang++, c: clang}, {cpp: g++, c: gcc} ]
+        macports-version: [2.10.1]
         exclude:
           - version: 14
             compiler: {cpp: clang++, c: clang}
@@ -26,6 +27,9 @@ jobs:
 
     runs-on: macOS-${{ matrix.version }}
     name: macOS${{ matrix.version }}-${{ matrix.version == '14' && 'arm64' || 'amd64' }}, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
+    env:
+      MACPORTS_ARCHIVE_DIR: $HOME/macports-cache
+      MACPORTS_ARCHIVE_FILE: $HOME/macports-cache/macports.tzst
 
     steps:
       - name: Checkout syslog-ng source
@@ -41,22 +45,99 @@ jobs:
               # The macos-13 GitHub runner has Python preinstalled as a pkg, this prevents linking the python@3
               # brew package, even when linking is forced. `brew "python@3", link: true, force: true`
               # also, brew cannot update the links even these cretated by itself for an earlier python version
-        run : |
+        run: |
           find /usr/local/bin/ -lname "*Python.framework*" -delete
 
-      - name: Install dependencies
+      # -------------------------------
+      # Cache Homebrew dependencies
+      - name: Cache Homebrew dependencies
+        uses: actions/cache@v3
+        with:
+          path: /Users/runner/Library/Caches/Homebrew
+          key: ${{ runner.os }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-${{ runner.arch }}-
+
+      # -------------------------------
+      # Install Homebrew dependencies
+      - name: Install Homebrew dependencies
         run: |
-          brew update --auto-update
+          if [ "${{ runner.arch }}" = "ARM64" ]; then
+            brew update --auto-update
+          else
+            export HOMEBREW_NO_AUTO_UPDATE=1
+            export HOMEBREW_NO_INSTALL_CLEANUP=1
+          fi
           brew bundle --force --file=contrib/Brewfile
 
-          OS_NAME=$([[ ${{ matrix.version }} -eq 13 ]] && echo "Ventura" || echo "Sonoma")
-          MACPORTS_VERSION=2.10.1
-          MACPORTS_PKG_NAME=MacPorts-${MACPORTS_VERSION}-${{ matrix.version }}-${OS_NAME}.pkg
-          MACPORTS_URL=https://github.com/macports/macports-base/releases/download/v${MACPORTS_VERSION}/${MACPORTS_PKG_NAME}
-          wget ${MACPORTS_URL}
-          sudo installer -pkg ./${MACPORTS_PKG_NAME} -target /
+      # -------------------------------
+      # Restore MacPorts self-made archive from cache (if available)
+      # NOTE: We cannot use the built-in root restore; we handle extraction manually
+      - name: Restore MacPorts archive
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ env.MACPORTS_ARCHIVE_FILE }}
+          key: ${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}
+          restore-keys: |
+            ${{ runner.os }}-macports-${{ runner.arch }}-
+
+      # -------------------------------
+      # Install MacPorts dependencies
+      - name: Install MacPorts dependencies
+        run: |
+          mkdir -p "$MACPORTS_ARCHIVE_DIR"
+
+          if [ -f "$MACPORTS_ARCHIVE_FILE" ]; then
+            echo "Restoring MacPorts from cached archive..."
+            sudo tar -C / -xf "$MACPORTS_ARCHIVE_FILE"
+
+            # Ensure macports user and group exist
+            if dscl . -read /Users/macports >/dev/null 2>&1 && dscl . -read /Groups/macports >/dev/null 2>&1; then
+              echo "macports user and group already exist."
+            else
+              echo "Creating macports user and group..."
+              sudo dscl . -create /Groups/macports
+              sudo dscl . -create /Groups/macports PrimaryGroupID 501
+              sudo dscl . -create /Users/macports
+              sudo dscl . -create /Users/macports UniqueID 503
+              sudo dscl . -create /Users/macports PrimaryGroupID 501
+              sudo dscl . -create /Users/macports UserShell /usr/bin/false
+              sudo dscl . -create /Users/macports NFSHomeDirectory /opt/local/var/macports/home
+            fi
+
+            # Fix ownership of extracted files
+            echo "Fixing ownership of /opt/local..."
+            sudo chown -R macports:macports /opt/local
+          else
+            echo "Cache missing — installing MacPorts..."
+            OS_NAME=$([[ ${{ matrix.version }} -eq 13 ]] && echo "Ventura" || echo "Sonoma")
+            MACPORTS_PKG_NAME=MacPorts-${{ matrix.macports-version }}-${{ matrix.version }}-${OS_NAME}.pkg
+            MACPORTS_URL=https://github.com/macports/macports-base/releases/download/v${{ matrix.macports-version }}/${MACPORTS_PKG_NAME}
+
+            wget "$MACPORTS_URL" -O "$MACPORTS_ARCHIVE_DIR/$MACPORTS_PKG_NAME"
+            sudo installer -pkg "$MACPORTS_ARCHIVE_DIR/$MACPORTS_PKG_NAME" -target /
+          fi
+
+          # Ensure MacPorts and ports are up-to-date
           sudo /opt/local/bin/port -v selfupdate
+          sudo /opt/local/bin/port upgrade outdated
           sudo /opt/local/bin/port install libesmtp
+
+          # Create/update the archive for caching
+          echo "Creating/updating MacPorts archive..."
+          sudo tar -C / -cf "$MACPORTS_ARCHIVE_FILE" /opt/local
+          sudo chown $USER:staff "$MACPORTS_ARCHIVE_FILE"
+
+      # -------------------------------
+      # Upload MacPorts dependencies archive to cache (always)
+      - name: Cache MacPorts archive
+        if: always()
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.MACPORTS_ARCHIVE_FILE }}
+          key: ${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}
+          restore-keys: |
+            ${{ runner.os }}-macports-${{ runner.arch }}-
 
       - name: Set ENV variables
         env:
