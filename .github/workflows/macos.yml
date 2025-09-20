@@ -130,14 +130,12 @@ jobs:
 
       # -------------------------------
       # Upload MacPorts dependencies archive to cache (always)
-      - name: Cache MacPorts archive
+      - name: Upload MacPorts archive
         if: always()
-        uses: actions/cache@v3
+        uses: actions/cache/save@v3
         with:
           path: ${{ env.MACPORTS_ARCHIVE_FILE }}
           key: ${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}
-          restore-keys: |
-            ${{ runner.os }}-macports-${{ runner.arch }}-
 
       - name: Set ENV variables
         env:
