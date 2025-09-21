@@ -30,6 +30,7 @@ jobs:
     env:
       MACPORTS_ARCHIVE_DIR: $HOME/macports-cache
       MACPORTS_ARCHIVE_FILE: $HOME/macports-cache/macports.tzst
+      MACPORTS_USER_INFO_FILE: $HOME/macports-cache/macports-user-info.txt
 
     steps:
       - name: Checkout syslog-ng source
@@ -98,15 +99,28 @@ jobs:
             sudo tar -C / -xf "$MACPORTS_ARCHIVE_FILE"
 
             # Ensure macports user and group exist
-            if dscl . -read /Users/macports >/dev/null 2>&1 && dscl . -read /Groups/macports >/dev/null 2>&1; then
-              echo "macports user and group already exist."
+            CURRENT_MACPORTS_UID=$(id -u macports 2>/dev/null || echo "")
+            CURRENT_MACPORTS_GID=$(id -g macports 2>/dev/null || echo "")
+
+            if [ -n "$CURRENT_MACPORTS_UID" ] && [ -n "$CURRENT_MACPORTS_GID" ]; then
+              echo "macports user(${CURRENT_MACPORTS_UID}) and group(${CURRENT_MACPORTS_GID}) already exist."
             else
               echo "Creating macports user and group..."
+              if [ -f "$MACPORTS_USER_INFO_FILE" ]; then
+                source "$MACPORTS_USER_INFO_FILE"
+                echo "Using saved macports user(${MACPORTS_UID}) and group(${MACPORTS_GID}) IDs."
+              else
+                # Pick next free IDs dynamically
+                MACPORTS_UID=$(dscl . -list /Users UniqueID | awk '{print $2}' | sort -n | tail -1 | awk '{print $1+1}')
+                MACPORTS_GID=$(dscl . -list /Groups PrimaryGroupID | awk '{print $2}' | sort -n | tail -1 | awk '{print $1+1}')
+                echo "Collected next free macports user(${MACPORTS_UID}) and group(${MACPORTS_GID}) IDs."
+              fi
+
               sudo dscl . -create /Groups/macports
-              sudo dscl . -create /Groups/macports PrimaryGroupID 501
+              sudo dscl . -create /Groups/macports PrimaryGroupID $MACPORTS_GID
               sudo dscl . -create /Users/macports
-              sudo dscl . -create /Users/macports UniqueID 503
-              sudo dscl . -create /Users/macports PrimaryGroupID 501
+              sudo dscl . -create /Users/macports UniqueID $MACPORTS_UID
+              sudo dscl . -create /Users/macports PrimaryGroupID $MACPORTS_GID
               sudo dscl . -create /Users/macports UserShell /usr/bin/false
               sudo dscl . -create /Users/macports NFSHomeDirectory /opt/local/var/macports/home
             fi
@@ -123,6 +137,14 @@ jobs:
             wget "$MACPORTS_URL" -O "$MACPORTS_ARCHIVE_DIR/$MACPORTS_PKG_NAME"
             sudo installer -pkg "$MACPORTS_ARCHIVE_DIR/$MACPORTS_PKG_NAME" -target /
           fi
+
+          # Save current macports user/group info
+          CURRENT_MACPORTS_UID=$(id -u macports)
+          CURRENT_MACPORTS_GID=$(id -g macports)
+          echo "Saving macports user(${CURRENT_MACPORTS_UID})/group(${CURRENT_MACPORTS_GID}) info..."
+          mkdir -p $(dirname "${MACPORTS_USER_INFO_FILE}")
+          echo "MACPORTS_UID=$CURRENT_MACPORTS_UID" > "${MACPORTS_USER_INFO_FILE}"
+          echo "MACPORTS_GID=$CURRENT_MACPORTS_GID" >> "${MACPORTS_USER_INFO_FILE}"
 
           # Ensure MacPorts and ports are up-to-date
           sudo /opt/local/bin/port -v selfupdate
