@@ -92,9 +92,9 @@ jobs:
 
       # -------------------------------
       # Restore MacPorts self-made archive from cache (if available)
-      # NOTE: We cannot use the built-in root restore; we handle extraction manually
-      - name: Restore MacPorts archive from cache
-        uses: actions/cache/restore@v3
+      # NOTE: We cannot use the built-in restore, as that can not work as root; we handle extraction manually
+      - name: Cache MacPorts archive
+        uses: actions/cache@v3
         with:
           path: ${{ env.MACPORTS_ARCHIVE_FILE }}
           key: ${{ env.MACPORTS_CACHE_KEY }}
@@ -164,18 +164,10 @@ jobs:
           sudo /opt/local/bin/port install libesmtp
 
           # Create/update the archive for caching
+          sudo rm -f "$MACPORTS_ARCHIVE_FILE"
           echo "Creating/updating MacPorts archive..."
           sudo tar -C / -cf "$MACPORTS_ARCHIVE_FILE" /opt/local
           sudo chown $USER:staff "$MACPORTS_ARCHIVE_FILE"
-
-      # -------------------------------
-      # Upload MacPorts dependencies archive to cache (always)
-      - name: Save MacPorts archive to cache
-        if: always()
-        uses: actions/cache/save@v3
-        with:
-          path: ${{ env.MACPORTS_ARCHIVE_FILE }}
-          key: ${{ env.MACPORTS_CACHE_KEY }}
 
       - name: Set ENV variables
         env:
