@@ -60,6 +60,7 @@ jobs:
 
       # -------------------------------
       # Restore Homebrew dependencies from cache
+      # The cache update is automatic as a "Post" step at the job end
       - name: Cache Homebrew dependencies
         uses: actions/cache@v3
         with:
@@ -81,7 +82,8 @@ jobs:
 
       # -------------------------------
       # Restore MacPorts user/group info from separate cache
-      - name: Restore MacPorts user/group info
+      # The cache update is automatic as a "Post" step at the job end
+      - name: Cache MacPorts user/group info
         id: macports-user-info-restore
         uses: actions/cache@v3
         with:
@@ -91,7 +93,7 @@ jobs:
       # -------------------------------
       # Restore MacPorts self-made archive from cache (if available)
       # NOTE: We cannot use the built-in root restore; we handle extraction manually
-      - name: Restore MacPorts archive
+      - name: Restore MacPorts archive from cache
         uses: actions/cache/restore@v3
         with:
           path: ${{ env.MACPORTS_ARCHIVE_FILE }}
@@ -100,7 +102,7 @@ jobs:
 
       # -------------------------------
       # Install MacPorts dependencies
-      - name: Install MacPorts dependencies
+      - name: Install/Update MacPorts dependencies
         run: |
           mkdir -p "$MACPORTS_ARCHIVE_DIR"
 
@@ -168,7 +170,7 @@ jobs:
 
       # -------------------------------
       # Upload MacPorts dependencies archive to cache (always)
-      - name: Upload MacPorts archive
+      - name: Save MacPorts archive to cache
         if: always()
         uses: actions/cache/save@v3
         with:
