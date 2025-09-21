@@ -56,9 +56,10 @@ jobs:
           echo "HOMEBREW_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-homebrew-${{ runner.arch }}-" >> $GITHUB_ENV
           echo "MACPORTS_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
           echo "MACPORTS_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-" >> $GITHUB_ENV
+          echo "MACPORTS_USER_INFO_CACHE_KEY=${{ runner.os }}-macports-user-info-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
 
       # -------------------------------
-      # Cache Homebrew dependencies
+      # Restore Homebrew dependencies from cache
       - name: Cache Homebrew dependencies
         uses: actions/cache@v3
         with:
@@ -77,6 +78,15 @@ jobs:
             export HOMEBREW_NO_INSTALL_CLEANUP=1
           fi
           brew bundle --force --file=contrib/Brewfile
+
+      # -------------------------------
+      # Restore MacPorts user/group info from separate cache
+      - name: Restore MacPorts user/group info
+        id: macports-user-info-restore
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.MACPORTS_USER_INFO_FILE }}
+          key: ${{ env.MACPORTS_USER_INFO_CACHE_KEY }}
 
       # -------------------------------
       # Restore MacPorts self-made archive from cache (if available)
