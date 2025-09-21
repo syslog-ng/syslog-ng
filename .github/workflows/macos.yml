@@ -51,10 +51,10 @@ jobs:
      # Compose cache keys dynamically
       - name: Compose cache keys
         run: |
-          echo "HOMEBREW_CACHE_KEY=${{ runner.os }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}" >> $GITHUB_ENV
-          echo "HOMEBREW_CACHE_RESTORE_KEY=${{ runner.os }}-homebrew-${{ runner.arch }}-" >> $GITHUB_ENV
-          echo "MACPORTS_CACHE_KEY=${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
-          echo "MACPORTS_CACHE_RESTORE_KEY=${{ runner.os }}-macports-${{ runner.arch }}-" >> $GITHUB_ENV
+          echo "HOMEBREW_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}" >> $GITHUB_ENV
+          echo "HOMEBREW_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-homebrew-${{ runner.arch }}-" >> $GITHUB_ENV
+          echo "MACPORTS_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
+          echo "MACPORTS_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-" >> $GITHUB_ENV
 
       # -------------------------------
       # Cache Homebrew dependencies
