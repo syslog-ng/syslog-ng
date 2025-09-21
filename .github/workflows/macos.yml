@@ -48,15 +48,22 @@ jobs:
         run: |
           find /usr/local/bin/ -lname "*Python.framework*" -delete
 
+     # Compose cache keys dynamically
+      - name: Compose cache keys
+        run: |
+          echo "HOMEBREW_CACHE_KEY=${{ runner.os }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}" >> $GITHUB_ENV
+          echo "HOMEBREW_CACHE_RESTORE_KEY=${{ runner.os }}-homebrew-${{ runner.arch }}-" >> $GITHUB_ENV
+          echo "MACPORTS_CACHE_KEY=${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
+          echo "MACPORTS_CACHE_RESTORE_KEY=${{ runner.os }}-macports-${{ runner.arch }}-" >> $GITHUB_ENV
+
       # -------------------------------
       # Cache Homebrew dependencies
       - name: Cache Homebrew dependencies
         uses: actions/cache@v3
         with:
           path: /Users/runner/Library/Caches/Homebrew
-          key: ${{ runner.os }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}
-          restore-keys: |
-            ${{ runner.os }}-homebrew-${{ runner.arch }}-
+          key: ${{ env.HOMEBREW_CACHE_KEY }}
+          restore-keys: ${{ env.HOMEBREW_CACHE_RESTORE_KEY }}
 
       # -------------------------------
       # Install Homebrew dependencies
@@ -77,9 +84,8 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: ${{ env.MACPORTS_ARCHIVE_FILE }}
-          key: ${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}
-          restore-keys: |
-            ${{ runner.os }}-macports-${{ runner.arch }}-
+          key: ${{ env.MACPORTS_CACHE_KEY }}
+          restore-keys: ${{ env.MACPORTS_CACHE_RESTORE_KEY }}
 
       # -------------------------------
       # Install MacPorts dependencies
@@ -135,7 +141,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: ${{ env.MACPORTS_ARCHIVE_FILE }}
-          key: ${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}
+          key: ${{ env.MACPORTS_CACHE_KEY }}
 
       - name: Set ENV variables
         env:
