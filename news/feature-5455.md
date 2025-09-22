@@ -1,1 +1,0 @@
-http-destination: add `msg_data_in_header` option to be able to turn off sending message content-related data in the HTTP header

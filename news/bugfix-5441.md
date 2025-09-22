@@ -1,1 +1,0 @@
-stats-exporter: Fix leaks caused by missing "virtual destructor" calls. Thanks to Gyula Kerekes for signaling it!
