@@ -39,7 +39,7 @@ typedef struct _AFUserDestDriver
   time_t time_reopen;
 } AFUserDestDriver;
 
-#ifdef SYSLOG_NG_HAVE_UTMPX_H
+#if SYSLOG_NG_HAVE_UTMPX_H
 
 typedef struct utmpx UtmpEntry;
 
@@ -76,7 +76,7 @@ _close_utmp(void)
 static gboolean
 _utmp_entry_matches(UtmpEntry *ut, GString *username)
 {
-#ifdef SYSLOG_NG_HAVE_MODERN_UTMP
+#if SYSLOG_NG_HAVE_MODERN_UTMP
   if (ut->ut_type != USER_PROCESS)
     return FALSE;
 #endif
@@ -85,7 +85,7 @@ _utmp_entry_matches(UtmpEntry *ut, GString *username)
     return TRUE;
 
   /* ut_user/ut_name may not be null-terminated */
-#ifdef SYSLOG_NG_HAVE_MODERN_UTMP
+#if SYSLOG_NG_HAVE_MODERN_UTMP
   if (strncmp(username->str, ut->ut_user, G_N_ELEMENTS(ut->ut_user)) == 0)
 #else
   if (strncmp(username->str, ut->ut_name, G_N_ELEMENTS(ut->ut_name)) == 0)
@@ -109,7 +109,7 @@ static EVTTAG *
 _evt_tag_utmp_username(UtmpEntry *ut)
 {
   /* ut_user/ut_name may not be null-terminated */
-#ifdef SYSLOG_NG_HAVE_MODERN_UTMP
+#if SYSLOG_NG_HAVE_MODERN_UTMP
   return evt_tag_mem("user", ut->ut_user, G_N_ELEMENTS(ut->ut_user));
 #else
   return evt_tag_mem("user", ut->ut_name, G_N_ELEMENTS(ut->ut_name));

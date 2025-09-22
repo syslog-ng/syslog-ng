@@ -24,7 +24,7 @@
 
 #include "compat/string.h"
 
-#ifndef SYSLOG_NG_HAVE_MEMRCHR
+#if ! SYSLOG_NG_HAVE_MEMRCHR
 
 #include <stdint.h>
 

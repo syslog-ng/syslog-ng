@@ -22,7 +22,7 @@
 #
 #############################################################################
 
-FROM debian:bookworm
+FROM debian:trixie
 LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/syslog-ng/syslog-ng"
 

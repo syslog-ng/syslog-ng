@@ -1,12 +1,13 @@
-lib_filter_tests_TESTS		 =              \
-		lib/filter/tests/test_filters_facility      \
-		lib/filter/tests/test_filters_level_new      \
-		lib/filter/tests/test_filter_call           \
+lib_filter_tests_TESTS = \
+		lib/filter/tests/test_filters_facility		\
+		lib/filter/tests/test_filters_level_new		\
+		lib/filter/tests/test_filter_call		\
 		lib/filter/tests/test_filters_in_list		\
-		lib/filter/tests/test_filters_regexp \
-		lib/filter/tests/test_filters_fop_cmp \
+		lib/filter/tests/test_filters_regexp		\
+		lib/filter/tests/test_filters_fop_cmp		\
 		lib/filter/tests/test_filters_fop		\
-		lib/filter/tests/test_filters_netmask
+		lib/filter/tests/test_filters_netmask		\
+		lib/filter/tests/test_filter_blank
 
 EXTRA_DIST += lib/filter/tests/CMakeLists.txt
 
@@ -67,6 +68,15 @@ lib_filter_tests_test_filters_netmask_LDADD      = $(TEST_LDADD)  \
 lib_filter_tests_test_filters_netmask_SOURCES = 			\
 	lib/filter/tests/test_filters_netmask.c \
 	lib/filter/tests/test_filters_common.c \
+	lib/filter/tests/test_filters_common.h
+
+lib_filter_tests_test_filter_blank_CFLAGS     = $(TEST_CFLAGS)	\
+	-I${top_srcdir}/lib/filter/tests
+lib_filter_tests_test_filter_blank_LDADD      = $(TEST_LDADD)	\
+	$(PREOPEN_SYSLOGFORMAT)
+lib_filter_tests_test_filter_blank_SOURCES = 			\
+	lib/filter/tests/test_filter_blank.c			\
+	lib/filter/tests/test_filters_common.c			\
 	lib/filter/tests/test_filters_common.h
 
 lib_filter_tests_test_filters_in_list_CFLAGS     = $(TEST_CFLAGS) \

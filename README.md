@@ -159,7 +159,9 @@ various OSes.
 
 Simply invoke the following command as root:
 
-    # apt install syslog-ng
+``` shell
+apt install syslog-ng
+```
 
 The latest versions of syslog-ng are available for a wide range of Debian
 and Ubuntu releases from our APT repository.
@@ -172,10 +174,13 @@ syslog-ng packages are released for the following distribution versions:
 
 | Distro version | sources.list component name | Arch |
 |---|---|---|
+| Ubuntu 25.04 | ubuntu-plucky | x86-64 |
+| Ubuntu 25.04 | ubuntu-plucky-arm64 | arm64 |
 | Ubuntu 24.04 | ubuntu-noble | x86-64 |
 | Ubuntu 24.04 | ubuntu-noble-arm64 | arm64 |
 | Ubuntu 22.04 | ubuntu-jammy | x86-64 |
-| Ubuntu 20.04 | ubuntu-focal | x86-64 |
+| Debian 13 | debian-trixie | x86-64 |
+| Debian 13 | debian-trixie-arm64 | arm64 |
 | Debian 12 | debian-bookworm | x86-64 |
 | Debian 12 | debian-bookworm-arm64 | arm64 |
 | Debian 11 | debian-bullseye | x86-64 |
@@ -184,33 +189,49 @@ syslog-ng packages are released for the following distribution versions:
 
 #### Adding the APT repository
 
-1. Download and install the release signing key:
+1. Download and store the release signing key:
 
     ``` shell
     wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo apt-key add -
     ```
 
-2. Add the repository containing the latest build of syslog-ng to your APT sources.  
-   For example if you are running Ubuntu 24.04, you would use `ubuntu-noble`, see chart above:
+   with newer apt (like on Debian 13 - Trixie)
 
     ``` shell
-    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-noble" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
+    wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo gpg --dearmor -o /etc/apt/keyrings/syslog-ng-ose.gpg
     ```
+
+2. Add the repository containing the latest stable build of syslog-ng to your APT sources.
+   For example if you are running Debian 13 on ARM64, you would use `debian-trixie-arm64` (see chart above)
+   NOTE: For X86-64 you do not have to use any postfix, so, for Debian 13 on X86-64, you should simply use `debian-trixie`.
+
+    ``` shell
+    deb [signed-by=/etc/apt/keyrings/syslog-ng-ose.gpg] https://ose-repo.syslog-ng.com/apt/ stable <os>-<codename>[-<architecture>]
+    ```
+
+   on newer OSes (like on Debian 13 - Trixie)
+
+    ``` shell
+    echo "deb [signed-by=/etc/apt/keyrings/syslog-ng-ose.gpg] https://ose-repo.syslog-ng.com/apt/ stable <os>-<codename>[-<architecture>]" | sudo tee /etc/apt/sources.list.d/syslog-ng-ose.list > /dev/null
+    ```
+
 3. Update your repositories with
-   ```` shell
+
+   ``` shell
    sudo apt update
-   ````
+   ```
 
 4. Now install syslog-ng:
-   ```` shell
+
+   ``` shell
    sudo apt install syslog-ng
-   ````
+   ```
 
 #### Nightly builds
 
 Nightly packages are built and released from the git `develop` branch everyday.
 
-Use `nightly` instead of `stable` in step 2 to use the nightly APT repository. E.g.:
+Use `nightly` instead of `stable` in step 2 to use the nightly APT repository. e.g.:
 
 ``` shell
 echo "deb https://ose-repo.syslog-ng.com/apt/ nightly ubuntu-noble" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
@@ -218,18 +239,76 @@ echo "deb https://ose-repo.syslog-ng.com/apt/ nightly ubuntu-noble" | sudo tee -
 
 Nightly builds can be used for testing purposes (obtaining new features and bugfixes) at the risk of breakage.
 
+### RHEL
+
+Simply invoke the following command as root:
+
+``` shell
+dnf install syslog-ng
+```
+
+The latest versions of syslog-ng are available for a wide range of RHEL releases from our DNF repository.
+
+The packages and the DNF repository are provided "as is" without warranty of any kind, on a best-effort level.
+
+#### Supported distributions
+
+syslog-ng packages are released for the following distribution versions:
+
+| Distro version | sources.list component name | Arch |
+|---|---|---|
+| RHEL 8 | rhel8 | x86-64 |
+| RHEL 8 | rhel8-arm64 | arm64 |
+| RHEL 9 | rhel9 | x86-64 |
+| RHEL 9 | rhel9-arm64 | arm64 |
+| RHEL 10 | rhel10 | x86-64 |
+| RHEL 10 | rhel10-arm64 | arm64 |
+
+#### Adding the DNF repository
+
+1. Download and install the repository definition:
+
+    ``` shell
+    sudo curl -o /etc/yum.repos.d/syslog-ng-ose-stable.repo https://ose-repo.syslog-ng.com/yum/syslog-ng-ose-stable.repo
+    ```
+
+2. Refresh repsitory metadata:
+
+    ``` shell
+    sudo dnf makecache
+    ```
+
+3. Now install syslog-ng:
+
+   ```` shell
+   sudo dnf install syslog-ng
+   ````
+
+#### Nightly builds
+
+Nightly packages are built and released from the git `develop` branch everyday.
+
+Use `nightly` instead of `stable` in step 1 to use the nightly DNF repository. E.g.:
+
+``` shell
+sudo curl -o /etc/yum.repos.d/syslog-ng-ose-nightly.repo https://ose-repo.syslog-ng.com/yum/syslog-ng-ose-nightly.repo
+```
+
+Nightly builds can be used for testing purposes (obtaining new features and bugfixes) at the risk of breakage.
+
 ### Arch Linux
 
 ``` shell
-# pacman -S syslog-ng
+pacman -S syslog-ng
 ```
 
 ### Fedora
 
-syslog-ng is available as a Fedora package that you can install using
-dnf:
+syslog-ng is available as a Fedora package that you can install using dnf:
 
-#### dnf install syslog-ng
+``` shell
+dnf install syslog-ng
+```
 
 You can download packages for the latest versions from [here](https://copr.fedoraproject.org/coprs/czanik/).
 
@@ -240,7 +319,7 @@ If you wish to install the latest RPM package that comes from a recent commit in
 ### macOS
 
 ``` shell
-# brew install syslog-ng
+brew install syslog-ng
 ```
 
 ### Others
@@ -252,7 +331,14 @@ official [third party page][3rd-party].
 
 ## Installation from Docker image
 
-Binaries are also available as a Docker image. To find out more, check out the blog post, [Your central log server in Docker](https://syslog-ng.com/blog/central-log-server-docker/).
+Binaries are also available as a [Docker image](https://hub.docker.com/r/balabit/syslog-ng). You can get:
+- the latest official release with
+
+  `docker pull balabit/syslog-ng:latest`
+
+- the latest developer nigthly build with
+
+  `docker pull balabit/syslog-ng:nightly`
 
 ## Documentation
 

@@ -84,6 +84,8 @@ lib/compat/cpp-(start|end).\h$
 lib/compat/curl.\h$
 lib/compat/getline.\c$
 lib/compat/json.\h$
+lib/filter/filter-blank\.[ch]$
+lib/filter/tests/test_filter_blank\.c$
 lib/healthcheck
 lib/healthcheck/tests
 lib/file-monitor\.[ch]
@@ -116,7 +118,6 @@ lib/logmsg/tests/dump_logmsg\.c
 lib/multi-line/smart-multi-line\.[ch]
 lib/multi-line/tests/test_smart_multi_line\.c
 libtest/mock-logpipe\.[ch]
-libtest/filterx-lib\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 lib/severity-aliases\.table
@@ -135,8 +136,6 @@ modules/python-modules/syslogng/reloc\.py
 modules/python-modules/syslogng/template\.py
 modules/python/python-confgen\.[ch]
 lib/tests/test_logscheduler\.c
-lib/filterx/.*\.[ch]
-lib/filterx/filterx-grammar\.ym
 lib/logproto/logproto-auto-server\.[ch]
 lib/transport/transport-factory-haproxy\.[ch]
 lib/transport/tests/test_transport\.c
@@ -210,7 +209,6 @@ modules/grpc/otel/grpc-credentials-builder\.(h|cpp|hpp)$
 modules/grpc/otel/syslog-ng-otlp-(dest|dest-worker)\.(h|cpp|hpp)$
 modules/grpc/otel/tests/test-otel-(protobuf-parser|protobuf-formatter)\.cpp$
 modules/grpc/otel/tests/test-syslog-ng-otlp\.cpp$
-modules/grpc/otel/tests/test-otel-filterx\.cpp$
 modules/grpc/loki
 modules/grpc/bigquery
 modules/grpc/pubsub
@@ -228,9 +226,6 @@ modules/python/python-binding.(c|h)$
 modules/python/python-flags.(c|h)$
 modules/python/tests/test_python_options.c$
 modules/python/tests/test_python_reloc\.c$
-modules/json/filterx-format-json\.[ch]$
-modules/json/filterx-cache-json-file\.[ch]$
-modules/json/tests/test_filterx_format_json\.c$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/elasticsearch/elastic-datastream.conf$
@@ -271,8 +266,6 @@ tests/light/functional_tests/logpath/test_midpoint_destinations\.py
 tests/light/functional_tests/value-pairs/test_value_pairs\.py
 tests/light/functional_tests/templates/test_template_stmt\.py
 tests/light/functional_tests/filters/test_multiple_filters\.py
-tests/light/functional_tests/filterx/test_filterx\.py
-tests/light/functional_tests/filterx/test_filterx_scope\.py
 tests/light/functional_tests/parsers/metrics-probe/test_metrics_probe\.py
 tests/light/functional_tests/source_drivers/syslog_source/auto/test_auto_proto\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
@@ -283,12 +276,10 @@ modules/correlation/id-counter\.[ch]$
 modules/correlation/group-lines.h
 modules/xml/windows-eventlog-xml-parser\.h
 modules/xml/tests/test_windows_eventlog_xml_parser\.c
-modules/examples/filterx/example-filterx-func/example-filterx-func-plugin\.[ch]
-modules/grpc/otel/filterx
-modules/kvformat/filterx-func-parse-kv\.[ch]
-modules/kvformat/filterx-func-format-kv\.[ch]
-modules/kvformat/tests/test_filterx_func_parse_kv.c
-modules/kvformat/tests/test_filterx_func_format_kv.c
+modules/affile/logrotate\.[ch]
+tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_all_messages_received\.py
+tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_deleting_log_file\.py
+tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_rotation_failure\.py
 
 ###########################################################################
 # These files are GPLd with Balabit origin.

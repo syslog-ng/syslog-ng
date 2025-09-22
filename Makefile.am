@@ -233,7 +233,7 @@ help:
 	@echo "One can also build individual modules (and their dependencies),"
 	@echo "using any of the following shortcuts:"
 	@echo
-	@echo "" ${SYSLOG_NG_MODULES} | sed -e 's#\(.\{,72\}\) #\1\n #g'
+	@echo "" ${SYSLOG_NG_MODULES} | sed -e 's#\(.\{0,72\}\) #\1\n #g'
 
 .PHONY: help populate-makefiles
 

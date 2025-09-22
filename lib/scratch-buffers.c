@@ -95,12 +95,12 @@ TLS_BLOCK_END;
 StatsCounterItem *stats_scratch_buffers_count;
 StatsCounterItem *stats_scratch_buffers_bytes;
 
-#define scratch_buffers       __tls_deref(scratch_buffers)
-#define scratch_buffers_used  __tls_deref(scratch_buffers_used)
-#define scratch_buffers_bytes_reported  __tls_deref(scratch_buffers_bytes_reported)
-#define scratch_buffers_time_of_last_maintenance  __tls_deref(scratch_buffers_time_of_last_maintenance)
-#define scratch_buffers_gc  __tls_deref(scratch_buffers_gc)
-#define scratch_buffers_gc_executed  __tls_deref(scratch_buffers_gc_executed)
+#define scratch_buffers       __slng_tls_deref(scratch_buffers)
+#define scratch_buffers_used  __slng_tls_deref(scratch_buffers_used)
+#define scratch_buffers_bytes_reported  __slng_tls_deref(scratch_buffers_bytes_reported)
+#define scratch_buffers_time_of_last_maintenance  __slng_tls_deref(scratch_buffers_time_of_last_maintenance)
+#define scratch_buffers_gc  __slng_tls_deref(scratch_buffers_gc)
+#define scratch_buffers_gc_executed  __slng_tls_deref(scratch_buffers_gc_executed)
 
 /* update allocation counters once every period, in seconds */
 #define SCRATCH_BUFFERS_MAINTENANCE_PERIOD 5

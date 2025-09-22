@@ -141,7 +141,9 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 static void
 _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 {
-  if (g_pattern_spec_match_string(self->compiled_pattern, event->name))
+  if (g_pattern_spec_match_string(self->compiled_pattern, event->name)
+      && !(self->compiled_exclude && g_pattern_spec_match_string(self->compiled_exclude, event->name))
+     )
     {
       WildcardFileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
 
@@ -223,6 +225,7 @@ _handler_directory_deleted(WildcardSourceDriver *self, const DirectoryMonitorEve
     }
 }
 
+#if SYSLOG_NG_HAVE_INOTIFY
 static void
 _handler_file_modified(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 {
@@ -231,6 +234,7 @@ _handler_file_modified(WildcardSourceDriver *self, const DirectoryMonitorEvent *
   if (reader)
     log_pipe_notify(&reader->super.super, NC_FILE_MODIFIED, NULL);
 }
+#endif
 
 static void
 _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_data)
@@ -255,10 +259,12 @@ _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_
     {
       _handler_directory_deleted(self, event);
     }
+#if SYSLOG_NG_HAVE_INOTIFY
   else if (event->event_type == FILE_MODIFIED)
     {
       _handler_file_modified(self, event);
     }
+#endif
 }
 
 
@@ -310,6 +316,22 @@ _init_filename_pattern(WildcardSourceDriver *self)
   return TRUE;
 }
 
+static gboolean
+_init_exclude_pattern(WildcardSourceDriver *self)
+{
+  if (self->exclude_pattern)
+    {
+      self->compiled_exclude = g_pattern_spec_new(self->exclude_pattern);
+      if (!self->compiled_exclude)
+        {
+          msg_error("wildcard-file(): Invalid value for exclude-pattern()",
+                    evt_tag_str("exclude-pattern", self->exclude_pattern));
+          return FALSE;
+        }
+    }
+  return TRUE;
+}
+
 static DirectoryMonitor *
 _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
 {
@@ -353,6 +375,11 @@ _init(LogPipe *s)
       return FALSE;
     }
 
+  if (!_init_exclude_pattern(self))
+    {
+      return FALSE;
+    }
+
   if (!_init_reader_options(self, cfg))
     return FALSE;
 
@@ -378,6 +405,8 @@ _deinit(LogPipe *s)
   WildcardSourceDriver *self = (WildcardSourceDriver *)s;
 
   g_pattern_spec_free(self->compiled_pattern);
+  if (self->compiled_exclude)
+    g_pattern_spec_free(self->compiled_exclude);
   g_hash_table_foreach(self->file_readers, _deinit_reader, NULL);
   g_hash_table_remove_all(self->directory_monitors);
   return TRUE;
@@ -399,6 +428,15 @@ wildcard_sd_set_filename_pattern(LogDriver *s, const gchar *filename_pattern)
 
   g_free(self->filename_pattern);
   self->filename_pattern = g_strdup(filename_pattern);
+}
+
+void
+wildcard_sd_set_exclude_pattern(LogDriver *s, const gchar *exclude_pattern)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+
+  g_free(self->exclude_pattern);
+  self->exclude_pattern = g_strdup(exclude_pattern);
 }
 
 void
@@ -449,6 +487,7 @@ _free(LogPipe *s)
   file_opener_free(self->file_opener);
   g_free(self->base_dir);
   g_free(self->filename_pattern);
+  g_free(self->exclude_pattern);
   g_hash_table_unref(self->file_readers);
   g_hash_table_unref(self->directory_monitors);
   file_reader_options_deinit(&self->file_reader_options);

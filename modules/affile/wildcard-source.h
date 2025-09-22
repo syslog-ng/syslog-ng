@@ -36,6 +36,7 @@ typedef struct _WildcardSourceDriver
   LogSrcDriver super;
   gchar *base_dir;
   gchar *filename_pattern;
+  gchar *exclude_pattern;
   MonitorMethod monitor_method;
   gint monitor_freq;
   guint32 max_files;
@@ -47,6 +48,7 @@ typedef struct _WildcardSourceDriver
   FileOpenerOptions file_opener_options;
 
   GPatternSpec *compiled_pattern;
+  GPatternSpec *compiled_exclude;
   GHashTable *file_readers;
   GHashTable *directory_monitors;
   FileOpener *file_opener;
@@ -58,6 +60,7 @@ LogDriver *wildcard_sd_new(GlobalConfig *cfg);
 
 void wildcard_sd_set_base_dir(LogDriver *s, const gchar *base_dir);
 void wildcard_sd_set_filename_pattern(LogDriver *s, const gchar *filename_pattern);
+void wildcard_sd_set_exclude_pattern(LogDriver *s, const gchar *exclude_pattern);
 void wildcard_sd_set_recursive(LogDriver *s, gboolean recursive);
 gboolean wildcard_sd_set_monitor_method(LogDriver *s, const gchar *method);
 void wildcard_sd_set_monitor_freq(LogDriver *s, gint monitor_freq);

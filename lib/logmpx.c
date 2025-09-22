@@ -88,12 +88,6 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   log_path_options_push_junction(&local_path_options, &matched, path_options);
   if (_has_multiple_arcs(self))
     {
-      /* if we are delivering to multiple branches, we need to sync the
-       * filterx state with our message and also need to make everything
-       * write protected so that changes in those branches don't overwrite
-       * data we still need */
-
-      filterx_eval_prepare_for_fork(path_options->filterx_context, &msg, path_options);
       log_msg_write_protect(msg);
     }
   for (fallback = 0; (fallback == 0) || (fallback == 1 && self->fallback_exists && !delivered); fallback++)

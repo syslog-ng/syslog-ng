@@ -24,11 +24,10 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
-#include "filterx/example-filterx-func/example-filterx-func-plugin.h"
 
 extern CfgParser msg_generator_parser;
 
-#ifdef SYSLOG_NG_HAVE_GETRANDOM
+#if SYSLOG_NG_HAVE_GETRANDOM
 extern CfgParser threaded_random_generator_parser;
 #endif
 
@@ -51,7 +50,7 @@ static Plugin example_plugins[] =
     .name = "example_msg_generator",
     .parser = &msg_generator_parser,
   },
-#ifdef SYSLOG_NG_HAVE_GETRANDOM
+#if SYSLOG_NG_HAVE_GETRANDOM
   {
     .type = LL_CONTEXT_SOURCE,
     .name = "example_random_generator",
@@ -84,11 +83,6 @@ static Plugin example_plugins[] =
     .type = LL_CONTEXT_DESTINATION,
     .name = "example_destination",
     .parser = &example_destination_parser
-  },
-  {
-    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
-    .name = "example_echo",
-    .construct = example_filterx_simple_func_construct_echo,
   },
 };
 

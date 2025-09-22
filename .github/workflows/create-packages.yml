@@ -18,26 +18,34 @@ on:
         required: false
         type: string
         default:
-          # Curently only the bellow packages are needed
-          #     - dbld images used by this package builder are already run and published their results, scheduled, prior this one runs
-          #     - the draft, and based on that the stable, releases are published only from this images (to AZURE)
-          #     - from this packager we do have a single published docker image, the bookworm one Tagged as Nighlty
-          # These are also built and published by the dbld-images builder, but not used now in the above steps at all
+          # Curently only the bellow packages are needed when invoked from (nightly|draft|stable)-release.yml
+          # NOT from the packages.yml workflow (that will provide its own set in the distros parameter)
+          #
+          # These are also built if distros is set from outside when invoked via the packages.yml workflow,
+          # but not used for docker or binary packages publishing, when invoked from the (nightly|draft|stable)-release.yml workflows
           #   "almalinux-8",
           #   "almalinux-9",
           #   "centos-stream9",
           #   "centos-stream10",
           #   "fedora-latest",
           #   "fedora-rawhide"
+          #   "ubuntu-focal",
           #
+          # upper block for   dbld docker + binary packages
+          # lower block for   dbld docker + binary packages + docker binary
           '[
-            "debian-testing",
             "debian-bullseye",
             "debian-bookworm",
             "debian-sid",
-            "ubuntu-focal",
+            "debian-testing",
             "ubuntu-jammy",
             "ubuntu-noble",
+            "ubuntu-plucky",
+            "rhel-8",
+            "rhel-9",
+            "rhel-10",
+
+            "debian-trixie",
           ]'
 
 jobs:
@@ -50,21 +58,24 @@ jobs:
     strategy:
       matrix:
         distro: ${{ fromJson(inputs.distros) }}
-        arch:
-          - amd64
-        arch-suffix:
-          - ''
-        runner-arch-suffix:
-          - ''
+        arch: [amd64, arm64]
+        exclude:
+          - distro: debian-bullseye
+            arch: arm64
+          - distro: debian-sid
+            arch: arm64
+          - distro: debian-testing
+            arch: arm64
+          - distro: ubuntu-jammy
+            arch: arm64
+        # add suffix mapping rules via include
         include:
-          - distro: debian-bookworm
-            arch: arm64
+          - arch: arm64
             arch-suffix: '-arm64'
             runner-arch-suffix: '-arm'
-          - distro: ubuntu-noble
-            arch: arm64
-            arch-suffix: '-arm64'
-            runner-arch-suffix: '-arm'
+          - arch: amd64
+            arch-suffix: ''
+            runner-arch-suffix: ''
       fail-fast: false
 
     steps:
@@ -96,8 +107,21 @@ jobs:
 
           gh_export CONTAINER_ARCH CONTAINER_NAME_SUFFIX
 
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Prepare docker image
         working-directory: syslog-ng
+        #env:
+            # FIXME: far not enough to access the docker image directly
+            # s.g. like
+            #     echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+            # might work
+            #GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ "${{ inputs.dbld-image-mode }}" = "build" ]]
           then
@@ -109,6 +133,10 @@ jobs:
             echo Unexpected input: dbld-image-mode=${{ inputs.dbld-image-mode }}
             false
           fi
+
+      # temp workaround of no sudo allowed
+      - name: Disable AppArmor on the GitHub runner
+        uses: cisagov/action-disable-apparmor@437d94f26a2e4bf8c03acfb500a6afc688b497db # v1.0.0
 
       - name: Create package
         working-directory: syslog-ng

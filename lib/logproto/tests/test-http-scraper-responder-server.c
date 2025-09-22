@@ -136,7 +136,7 @@ test_empty_crnl_multiline_at_eof(LogTransportMockConstructor log_transport_mock_
 // Mock of LogProtoHTTPScraperResponder::stats_generate_prometheus
 void
 stats_generate_prometheus(StatsPrometheusRecordFunc process_record, gpointer user_data, gboolean with_legacy,
-                          gboolean *cancelled)
+                          gboolean without_orphaned, gboolean *cancelled)
 {
   gpointer *args = (gpointer *)user_data;
   GString *result = *(GString **)args[1];

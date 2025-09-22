@@ -17,14 +17,19 @@ jobs:
         compiler: [ {cpp: clang++, c: clang} ] # , {cpp: g++, c: gcc}
         runner: [ ubuntu-24.04, ubuntu-24.04-arm ]
         exclude:
+          # Do not use mismatching runner and vm arch
           - runner: ubuntu-24.04
             arch: aarch64
           - runner: ubuntu-24.04-arm
             arch: amd64
-          # TODO: Though the arch of the runner and the vm is matching, it is extremly slow on aarch64
+          # TODO: Though the arch of the runner and the vm is matching, it is extremly slow on aarch64, even if the runner is a matching aarch64
           #       Turn it off for now. Check if it is a runner or a vm issue.
           - runner: ubuntu-24.04-arm
             arch: aarch64
+          # FIXME: The current FreeBSD 15 VM base OS is outdated, the latest packages are not available/installable
+          #       https://github.com/vmactions/freebsd-vm/issues/108
+          - runner: ubuntu-24.04
+            release: 15.0
       fail-fast: false
 
     runs-on: ${{ matrix.runner }}
@@ -89,7 +94,9 @@ jobs:
             BSDPORTS_PREFIX SYSLOG_NG_INSTALL_DIR CC CXX PKGCONF_PATH PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS CXXFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
 
           prepare: |
-            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf criterion gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk18 rabbitmq-c riemann-c-client ivykis
+            #cat /etc/pkg/FreeBSD.conf
+
+            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf criterion gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk18 rabbitmq-c riemann-c-client
 
           run: |
             env | sort

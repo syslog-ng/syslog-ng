@@ -572,6 +572,8 @@ error:
       else
         {
           self->persist_state = NULL;
+          if (self->state1)
+            g_free(self->state1);
           self->state1 = new_state;
         }
     }

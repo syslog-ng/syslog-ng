@@ -39,13 +39,15 @@ class Indexer(ABC):
     ) -> None:
         self.__incoming_remote_storage_synchronizer = incoming_remote_storage_synchronizer
         self.__indexed_remote_storage_synchronizer = indexed_remote_storage_synchronizer
-        self.__incoming_remote_storage_synchronizer.set_sub_dir(incoming_sub_dir)
-        self.__indexed_remote_storage_synchronizer.set_sub_dir(indexed_sub_dir)
+        self._incoming_sub_dir = incoming_sub_dir
+        self._indexed_sub_dir = indexed_sub_dir
 
         self.__cdn = cdn
         self.__logger = Indexer.__create_logger()
 
     def __sync_from_remote(self) -> None:
+        self.__incoming_remote_storage_synchronizer.set_sub_dir(self._incoming_sub_dir)
+        self.__indexed_remote_storage_synchronizer.set_sub_dir(self._indexed_sub_dir)
         self.__incoming_remote_storage_synchronizer.sync_from_remote()
         self.__indexed_remote_storage_synchronizer.sync_from_remote()
 
@@ -73,10 +75,10 @@ class Indexer(ABC):
         self.__cdn.refresh_cache(path)
 
     def index(self) -> None:
+        self.__sync_from_remote()
+
         incoming_dir = self.__incoming_remote_storage_synchronizer.local_dir.working_dir
         indexed_dir = self.__indexed_remote_storage_synchronizer.local_dir.working_dir
-
-        self.__sync_from_remote()
 
         self._prepare_indexed_dir(incoming_dir, indexed_dir)
         self._index_pkgs(indexed_dir)

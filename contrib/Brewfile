@@ -23,7 +23,7 @@ brew "libmaxminddb"
 brew "libnet"
 brew "libpaho-mqtt"
 brew "librdkafka"
-brew "mongo-c-driver@1" # TODO: brew upgraded to v2, we have to support it
+brew "mongo-c-driver"
 brew "net-snmp"
 brew "python@3", link: true, force: true
 brew "rabbitmq-c"

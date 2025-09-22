@@ -27,7 +27,6 @@
 
 #include "syslog-ng.h"
 #include "logmsg/logmsg.h"
-#include "filterx/filterx-eval.h"
 #include "cfg.h"
 #include "atomic.h"
 #include "messages.h"
@@ -42,10 +41,12 @@
 #define NC_FILE_DELETED     7
 #define NC_FILE_MODIFIED    8
 #define NC_AGAIN            9
+#define NC_LOGROTATE        10
 
 /* notify result mask values */
 #define NR_OK          0x0000
-#define NR_STOP_ON_EOF 0x0001
+#define NR_ERROR       0x0001
+#define NR_STOP_ON_EOF 0x0002
 
 /* indicates that the LogPipe was initialized */
 #define PIF_INITIALIZED       0x0001
@@ -76,9 +77,6 @@
 
 /* node created directly by the user */
 #define PIF_CONFIG_RELATED    0x0100
-
-/* sync filterx state and message in right before calling queue() */
-#define PIF_SYNC_FILTERX      0x0200
 
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 
@@ -224,7 +222,6 @@ struct _LogPathOptions
 
   gboolean *matched;
   const LogPathOptions *lpo_parent_junction;
-  FilterXEvalContext *filterx_context;
 };
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL, NULL }

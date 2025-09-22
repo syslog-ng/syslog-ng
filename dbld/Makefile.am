@@ -26,8 +26,12 @@ EXTRA_DIST += \
 	dbld/images/ubuntu.prepare.sh \
 	dbld/images/centos.prepare.sh \
 	dbld/images/fedora.prepare.sh \
+	dbld/images/rhel.prepare.sh \
+	dbld/images/rocky.prepare.sh \
+	dbld/images/opensuse.prepare.sh \
 	dbld/images/almalinux-8.dockerfile \
 	dbld/images/almalinux-9.dockerfile \
+	dbld/images/almalinux-10.dockerfile \
 	dbld/images/centos-stream9.dockerfile \
 	dbld/images/centos-stream10.dockerfile \
 	dbld/images/devshell.dockerfile \
@@ -35,11 +39,18 @@ EXTRA_DIST += \
 	dbld/images/fedora-rawhide.dockerfile \
 	dbld/images/debian-bullseye.dockerfile \
 	dbld/images/debian-bookworm.dockerfile \
+	dbld/images/debian-trixie.dockerfile \
 	dbld/images/debian-sid.dockerfile \
 	dbld/images/debian-testing.dockerfile \
+	dbld/images/opensuse-tumbleweed.dockerfile \
 	dbld/images/ubuntu-focal.dockerfile \
 	dbld/images/ubuntu-jammy.dockerfile \
 	dbld/images/ubuntu-noble.dockerfile \
+	dbld/images/ubuntu-plucky.dockerfile \
+	dbld/images/rhel-8.dockerfile \
+	dbld/images/rhel-9.dockerfile \
+	dbld/images/rhel-10.dockerfile \
+	dbld/images/rocky-9.dockerfile \
 	dbld/images/kira.dockerfile \
 	dbld/images/tarball.dockerfile \
 	dbld/images/hooks/build \

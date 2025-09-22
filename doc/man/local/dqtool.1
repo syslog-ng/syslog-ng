@@ -1,0 +1,149 @@
+.TH dqtool 1 "03 September 2025" 4.9.0 "The dqtool tool manual page"
+.SH NAME
+.PP
+dqtool \-\-\- Display the contents of a disk\-buffer file created with {{ site.product.short_name }}.
+.SH Synopsis
+.PP
+dqtool [command] [options]
+.SH Description
+.PP
+\fBNOTE:\fP The dqtool application is distributed with the syslog\-ng OSE
+system logging application, and is usually part of the syslog\-ng OSE
+package. The latest version of the syslog\-ng OSE application is
+available at the syslog\-ng OSE page.
+.PP
+This manual page is only an abstract.
+.PP
+The dqtool application is a utility that can be used to display and
+format the messages stored in a disk\-buffer file.
+.SH The cat command
+.PP
+.RS
+.nf
+cat [options] [file]
+.fi
+.RE
+.PP
+Use the cat command to display the log messages stored in the
+disk\-buffer (also called disk\-queue) file, and also information from the
+header of the disk queue file. The messages are printed to the standard
+output (stdout), so it is possible to use grep and other tools to find
+particular log messages, for example, \fBdqtool cat /var/log/messages.lgs
+|grep 192.168.1.1\fP\&.
+.PP
+The cat command has the following options:
+.RS
+.IP \(bu 2
+\-\-debug or \-d
+.PP
+Print diagnostic and debugging messages to stderr.
+.IP \(bu 2
+\-\-help or \-h
+.PP
+Display a brief help message.
+.IP \(bu 2
+\-\-template=<template> or \-t
+.PP
+Format the messages using the specified template.
+.IP \(bu 2
+\-\-verbose or \-v
+.PP
+Print verbose messages to stderr.
+.IP \(bu 2
+\-\-version or \-V
+.PP
+Display version information.
+.RE
+.SS Example: The cat command
+.PP
+.RS
+.nf
+\&./dqtool cat ../var/syslog\-ng\-00000.qf
+.fi
+.RE
+.PP
+The output looks like:
+.PP
+.RS
+Disk\-buffer state loaded;
+filename='../var/syslog\-ng\-00000.qf', qout\fIlength='65', qbacklog\fPlength='0', qoverflow\fIlength='9205', qdisk\fPlength='0'
+Mar  3 10:52:05 tristram localprg[1234]: seq: 0000011630, runid: 1267609923, stamp: 2010\-03\-03T10:52:05 PADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADD
+Mar  3 10:52:05 tristram localprg[1234]: seq: 0000011631, runid: 1267609923, stamp: 2010\-03\-03T10:52:05 PADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADD
+.RE
+.SH The relocate command
+.PP
+.RS
+.nf
+relocate [options] [files]
+.fi
+.RE
+.PP
+Use the relocate command to move or rename disk\-buffer (also called
+disk\-queue) files. Note that this option modifies the persist file. Stop
+syslog\-ng OSE before using this command.
+.PP
+The relocate command has the following options:
+.RS
+.IP \(bu 2
+\-\-all or \-a
+.PP
+Relocate every disk\-buffer file that is listed in the syslog\-ng OSE
+persist file.
+.IP \(bu 2
+\-\-new_path or \-n
+.PP
+The directory where you want to move the disk\-bufffer files. For
+example: /var/disk\-buffers
+.IP \(bu 2
+\-\-persist or \-p
+.PP
+The path to the syslog\-ng OSE persist file. The relocate command
+automatically updates the entries of the disk\-buffer files in the
+persist file.
+.RE
+.SS Examples
+.PP
+Relocate a single queue file:
+.PP
+.RS
+.nf
+bin/dqtool relocate \-\-new_path /tmp/dq \-\-persist var/syslog\-ng.persist /tmp/syslog\-ng\-00000.rqf
+.fi
+.RE
+.PP
+Relocate multiple queue files:
+.PP
+.RS
+.nf
+bin/dqtool relocate \-\-new_path /tmp/dq \-\-persist var/syslog\-ng.persist /tmp/syslog\-ng\-00000.rqf /tmp/syslog\-ng\-00001.rqf
+.fi
+.RE
+.PP
+Relocate every queue file:
+.PP
+.RS
+.nf
+bin/dqtool relocate \-\-new_path /tmp/dq \-\-persist var/syslog\-ng.persist \-\-all
+.fi
+.RE
+.SH Files
+.PP
+dqtool
+.PP
+\fBNOTE:\fP
+If you experience any problems or need help with syslog\-ng OSE, see the \fIsyslog\-ng OSE Administration Guide\fP[1], or visit the \fIsyslog\-ng OSE mailing list\fP[2].
+For news and notifications about syslog\-ng OSE, visit the \fIsyslog\-ng OSE blogs\fP[3].
+.SH AUTHOR
+.PP
+This manual page was generated from the \fIsyslog\-ng OSE Administration Guide\fP[1], which was written by several contributors to whom we'd like to extend our sincere thanks.
+.SH COPYRIGHT
+.SH NOTES
+.PP
+[1] \fB\fCsyslog\-ng OSE Administration Guide\fR
+    \[la]https://syslog-ng.github.io/admin-guide/README\[ra]
+.PP
+[2] \fB\fCsyslog\-ng OSE mailing list\fR
+    \[la]https://lists.balabit.hu/mailman/listinfo/syslog-ng\[ra]
+.PP
+[3] \fB\fCsyslog\-ng OSE blogs\fR
+    \[la]https://syslog-ng.com/blog/\[ra]

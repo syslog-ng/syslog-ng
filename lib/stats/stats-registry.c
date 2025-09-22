@@ -416,10 +416,10 @@ _foreach_cluster_helper(gpointer key, gpointer value, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   StatsForeachClusterFunc func = args[0];
-  gpointer func_data = args[1];
+  gpointer g_func_data = args[1];
   StatsCluster *sc = (StatsCluster *) value;
 
-  func(sc, func_data);
+  func(sc, g_func_data);
 }
 
 static void
@@ -452,10 +452,10 @@ _foreach_cluster_remove_helper(gpointer key, gpointer value, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   StatsForeachClusterRemoveFunc func = args[0];
-  gpointer func_data = args[1];
+  gpointer g_func_data = args[1];
   StatsCluster *sc = (StatsCluster *) value;
 
-  gboolean should_be_removed = func(sc, func_data) && stats_cluster_is_orphaned(sc);
+  gboolean should_be_removed = func(sc, g_func_data) && stats_cluster_is_orphaned(sc);
   return should_be_removed;
 }
 
@@ -472,9 +472,9 @@ _foreach_counter_helper(StatsCluster *sc, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   StatsForeachCounterFunc func = args[0];
-  gpointer func_data = args[1];
+  gpointer g_func_data = args[1];
 
-  stats_cluster_foreach_counter(sc, func, func_data);
+  stats_cluster_foreach_counter(sc, func, g_func_data);
 }
 
 static void

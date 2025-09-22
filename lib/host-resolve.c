@@ -40,7 +40,7 @@
 #define AI_V4MAPPED 0
 #endif
 
-#if !defined(SYSLOG_NG_HAVE_GETADDRINFO) || !defined(SYSLOG_NG_HAVE_GETNAMEINFO)
+#if ! SYSLOG_NG_HAVE_GETADDRINFO || ! SYSLOG_NG_HAVE_GETNAMEINFO
 G_LOCK_DEFINE_STATIC(resolv_lock);
 #endif
 
@@ -50,7 +50,7 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
-#define hostname_buffer  __tls_deref(hostname_buffer)
+#define hostname_buffer  __slng_tls_deref(hostname_buffer)
 
 static void
 normalize_hostname(gchar *result, gsize result_size, const gchar *hostname)
@@ -141,7 +141,7 @@ resolve_wildcard_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar
   return TRUE;
 }
 
-#ifdef SYSLOG_NG_HAVE_GETADDRINFO
+#if SYSLOG_NG_HAVE_GETADDRINFO
 static gboolean
 _getaddrinfo_to_sockaddr(GSockAddr **addr, gint family, const gchar *name, gint ai_flags, gint *result)
 {
@@ -249,7 +249,7 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
   if (is_wildcard_hostname(name))
     return resolve_wildcard_hostname_to_sockaddr(addr, family, name);
 
-#ifdef SYSLOG_NG_HAVE_GETADDRINFO
+#if SYSLOG_NG_HAVE_GETADDRINFO
   result = resolve_hostname_to_sockaddr_using_getaddrinfo(addr, family, name);
 #else
   result = resolve_hostname_to_sockaddr_using_gethostbyname(addr, family, name);
@@ -283,7 +283,7 @@ resolve_sockaddr_to_local_hostname(gsize *result_len, GSockAddr *saddr, const Ho
   return hostname_apply_options(-1, result_len, hname, host_resolve_options);
 }
 
-#ifdef SYSLOG_NG_HAVE_GETNAMEINFO
+#if SYSLOG_NG_HAVE_GETNAMEINFO
 
 static const gchar *
 resolve_address_using_getnameinfo(GSockAddr *saddr, gchar *buf, gsize buf_len)
@@ -362,7 +362,7 @@ resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr,
 
   if (!hname && host_resolve_options->use_dns && host_resolve_options->use_dns != 2)
     {
-#ifdef SYSLOG_NG_HAVE_GETNAMEINFO
+#if SYSLOG_NG_HAVE_GETNAMEINFO
       hname = resolve_address_using_getnameinfo(saddr, hostname_buffer, sizeof(hostname_buffer));
 #else
       hname = resolve_address_using_gethostbyaddr(saddr, hostname_buffer, sizeof(hostname_buffer));

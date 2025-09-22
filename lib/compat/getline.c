@@ -56,7 +56,7 @@
 
 #include "compat/string.h"
 
-#ifndef SYSLOG_NG_HAVE_GETLINE
+#if ! SYSLOG_NG_HAVE_GETLINE
 
 #include <stdlib.h>
 #include <stdio.h>

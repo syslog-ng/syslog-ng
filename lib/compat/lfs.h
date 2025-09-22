@@ -27,7 +27,7 @@
 
 #include "compat/compat.h"
 
-#ifndef SYSLOG_NG_HAVE_O_LARGEFILE
+#if ! SYSLOG_NG_HAVE_O_LARGEFILE
 #define O_LARGEFILE 0
 #endif
 

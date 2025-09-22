@@ -29,7 +29,7 @@
 
 #include <stddef.h>
 
-#ifndef SYSLOG_NG_HAVE_STRTOLL
+#if ! SYSLOG_NG_HAVE_STRTOLL
 # if SYSLOG_NG_HAVE_STRTOIMAX || defined(strtoimax)
 /* HP-UX has an strtoimax macro, not a function */
 #include <inttypes.h>
@@ -40,23 +40,23 @@
 # endif
 #endif
 
-#ifndef SYSLOG_NG_HAVE_STRCASESTR
+#if ! SYSLOG_NG_HAVE_STRCASESTR
 char *strcasestr(const char *s, const char *find);
 #endif
 
-#ifndef SYSLOG_NG_HAVE_MEMRCHR
+#if ! SYSLOG_NG_HAVE_MEMRCHR
 void *memrchr(const void *s, int c, size_t n);
 #endif
 
-#ifndef SYSLOG_NG_HAVE_STRTOK_R
+#if ! SYSLOG_NG_HAVE_STRTOK_R
 char *strtok_r(char *string, const char *delim, char **saveptr);
 #endif
 
-#ifndef SYSLOG_NG_HAVE_STRNLEN
+#if ! SYSLOG_NG_HAVE_STRNLEN
 size_t strnlen(const char *s, size_t maxlen);
 #endif
 
-#ifndef SYSLOG_NG_HAVE_GETLINE
+#if ! SYSLOG_NG_HAVE_GETLINE
 ssize_t getline(char **buf, size_t *bufsiz, FILE *fp);
 #endif
 

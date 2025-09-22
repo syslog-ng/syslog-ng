@@ -50,6 +50,7 @@ static CfgLexerKeyword http_keywords[] =
   { "use_system_cert_store", KW_USE_SYSTEM_CERT_STORE },
   { "ssl_version",      KW_SSL_VERSION },
   { "peer_verify",      KW_PEER_VERIFY },
+  { "msg_data_in_header", KW_SEND_MSG_DATA_IN_HEADER },
   { "ocsp_stapling_verify", KW_OCSP_STAPLING_VERIFY },
   { "accept_redirects", KW_ACCEPT_REDIRECTS },
   { "response_action",  KW_RESPONSE_ACTION },
