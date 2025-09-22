@@ -70,13 +70,22 @@ jobs:
 
       # -------------------------------
       # Install Homebrew dependencies
+      # TODO: We can add caching of the whole /usr/local/Homebrew folder too and use that cache in none scheduled runs.
+      #       During the scheduled runs we can update the cache after a full brew update --auto-update.
+      #       One drawback is the size of the cache image that is ~4GB (not compressed) with the current Brewfile package list.
       - name: Install Homebrew dependencies
         run: |
           if [ "${{ runner.arch }}" = "ARM64" ]; then
             brew update --auto-update
           else
-            export HOMEBREW_NO_AUTO_UPDATE=1
-            export HOMEBREW_NO_INSTALL_CLEANUP=1
+            if [ "${{ github.event_name }}" = "schedule" ]; then
+              echo "Scheduled run → forcing brew update"
+              brew update --auto-update
+            else
+              echo "Non-scheduled run → skipping brew update"
+              export HOMEBREW_NO_AUTO_UPDATE=1
+              export HOMEBREW_NO_INSTALL_CLEANUP=1
+            fi
           fi
           brew bundle --force --file=contrib/Brewfile
 
