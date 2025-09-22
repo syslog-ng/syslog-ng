@@ -54,7 +54,7 @@ jobs:
           - debian-bullseye
           - debian-bookworm
           - debian-sid
-          #  - debian-testing   //failing now, investigate
+          - debian-testing
           - ubuntu-jammy
           - ubuntu-noble
           - ubuntu-plucky
