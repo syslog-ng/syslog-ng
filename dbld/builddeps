@@ -87,17 +87,6 @@ function install_dbld_dependencies()
     esac
 }
 
-function install_cmake() {
-    CMAKE_VERSION=3.12.2
-    CMAKE_SHORT_VERSION=$(echo ${CMAKE_VERSION} | cut -d"." -f1-2)
-    download_target "https://cmake.org/files/v${CMAKE_SHORT_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh" /tmp/cmake.sh
-    chmod +x /tmp/cmake.sh
-    mkdir -p /opt/cmake
-    /tmp/cmake.sh --skip-license --prefix=/opt/cmake/
-    ln -s /opt/cmake/bin/cmake /usr/bin/cmake
-    rm -rf /tmp/cmake.sh
-}
-
 function install_criterion() {
     CRITERION_VERSION=2.3.3
 
