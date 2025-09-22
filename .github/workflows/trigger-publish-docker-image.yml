@@ -3,7 +3,15 @@ name: Trigger Publish Docker image
 
 on:
   workflow_call:
-
+  workflow_dispatch:
+    inputs:
+      pkg-type:
+        description: Package type
+        required: true
+        type: choice
+        options:
+          - stable
+          - nightly
 
 jobs:
   pre-check:
@@ -19,6 +27,8 @@ jobs:
   publish-docker-image:
     needs: pre-check
     uses: ./.github/workflows/publish-docker-image.yml
+    with:
+      pkg-type: ${{ inputs.pkg-type }}
     secrets:
       dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
       dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}
