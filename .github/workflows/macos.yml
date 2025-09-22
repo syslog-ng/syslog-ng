@@ -30,6 +30,7 @@ jobs:
     env:
       MACPORTS_ARCHIVE_DIR: $HOME/macports-cache
       MACPORTS_ARCHIVE_FILE: $HOME/macports-cache/macports.tzst
+      MACPORTS_USER_INFO_FILE: $HOME/macports-cache/macports-user-info.txt
 
     steps:
       - name: Checkout syslog-ng source
@@ -48,42 +49,69 @@ jobs:
         run: |
           find /usr/local/bin/ -lname "*Python.framework*" -delete
 
+     # Compose cache keys dynamically
+      - name: Compose cache keys
+        run: |
+          echo "HOMEBREW_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}" >> $GITHUB_ENV
+          echo "HOMEBREW_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-homebrew-${{ runner.arch }}-" >> $GITHUB_ENV
+          echo "MACPORTS_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
+          echo "MACPORTS_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-" >> $GITHUB_ENV
+          echo "MACPORTS_USER_INFO_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-macports-user-info-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
+
       # -------------------------------
-      # Cache Homebrew dependencies
+      # Restore Homebrew dependencies from cache
+      # The cache update is automatic as a "Post" step at the job end
       - name: Cache Homebrew dependencies
         uses: actions/cache@v3
         with:
           path: /Users/runner/Library/Caches/Homebrew
-          key: ${{ runner.os }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}
-          restore-keys: |
-            ${{ runner.os }}-homebrew-${{ runner.arch }}-
+          key: ${{ env.HOMEBREW_CACHE_KEY }}
+          restore-keys: ${{ env.HOMEBREW_CACHE_RESTORE_KEY }}
 
       # -------------------------------
       # Install Homebrew dependencies
+      # TODO: We can add caching of the whole /usr/local/Homebrew folder too and use that cache in none scheduled runs.
+      #       During the scheduled runs we can update the cache after a full brew update --auto-update.
+      #       One drawback is the size of the cache image that is ~4GB (not compressed) with the current Brewfile package list.
       - name: Install Homebrew dependencies
         run: |
           if [ "${{ runner.arch }}" = "ARM64" ]; then
             brew update --auto-update
           else
-            export HOMEBREW_NO_AUTO_UPDATE=1
-            export HOMEBREW_NO_INSTALL_CLEANUP=1
+            if [ "${{ github.event_name }}" = "schedule" ]; then
+              echo "Scheduled run → forcing brew update"
+              brew update --auto-update
+            else
+              echo "Non-scheduled run → skipping brew update"
+              export HOMEBREW_NO_AUTO_UPDATE=1
+              export HOMEBREW_NO_INSTALL_CLEANUP=1
+            fi
           fi
           brew bundle --force --file=contrib/Brewfile
 
       # -------------------------------
+      # Restore MacPorts user/group info from separate cache
+      # The cache update is automatic as a "Post" step at the job end
+      - name: Cache MacPorts user/group info
+        id: macports-user-info-restore
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.MACPORTS_USER_INFO_FILE }}
+          key: ${{ env.MACPORTS_USER_INFO_CACHE_KEY }}
+
+      # -------------------------------
       # Restore MacPorts self-made archive from cache (if available)
-      # NOTE: We cannot use the built-in root restore; we handle extraction manually
-      - name: Restore MacPorts archive
-        uses: actions/cache/restore@v3
+      # NOTE: We cannot use the built-in restore, as that can not work as root; we handle extraction manually
+      - name: Cache MacPorts archive
+        uses: actions/cache@v3
         with:
           path: ${{ env.MACPORTS_ARCHIVE_FILE }}
-          key: ${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}
-          restore-keys: |
-            ${{ runner.os }}-macports-${{ runner.arch }}-
+          key: ${{ env.MACPORTS_CACHE_KEY }}
+          restore-keys: ${{ env.MACPORTS_CACHE_RESTORE_KEY }}
 
       # -------------------------------
       # Install MacPorts dependencies
-      - name: Install MacPorts dependencies
+      - name: Install/Update MacPorts dependencies
         run: |
           mkdir -p "$MACPORTS_ARCHIVE_DIR"
 
@@ -92,15 +120,28 @@ jobs:
             sudo tar -C / -xf "$MACPORTS_ARCHIVE_FILE"
 
             # Ensure macports user and group exist
-            if dscl . -read /Users/macports >/dev/null 2>&1 && dscl . -read /Groups/macports >/dev/null 2>&1; then
-              echo "macports user and group already exist."
+            CURRENT_MACPORTS_UID=$(id -u macports 2>/dev/null || echo "")
+            CURRENT_MACPORTS_GID=$(id -g macports 2>/dev/null || echo "")
+
+            if [ -n "$CURRENT_MACPORTS_UID" ] && [ -n "$CURRENT_MACPORTS_GID" ]; then
+              echo "macports user(${CURRENT_MACPORTS_UID}) and group(${CURRENT_MACPORTS_GID}) already exist."
             else
               echo "Creating macports user and group..."
+              if [ -f "$MACPORTS_USER_INFO_FILE" ]; then
+                source "$MACPORTS_USER_INFO_FILE"
+                echo "Using saved macports user(${MACPORTS_UID}) and group(${MACPORTS_GID}) IDs."
+              else
+                # Pick next free IDs dynamically
+                MACPORTS_UID=$(dscl . -list /Users UniqueID | awk '{print $2}' | sort -n | tail -1 | awk '{print $1+1}')
+                MACPORTS_GID=$(dscl . -list /Groups PrimaryGroupID | awk '{print $2}' | sort -n | tail -1 | awk '{print $1+1}')
+                echo "Collected next free macports user(${MACPORTS_UID}) and group(${MACPORTS_GID}) IDs."
+              fi
+
               sudo dscl . -create /Groups/macports
-              sudo dscl . -create /Groups/macports PrimaryGroupID 501
+              sudo dscl . -create /Groups/macports PrimaryGroupID $MACPORTS_GID
               sudo dscl . -create /Users/macports
-              sudo dscl . -create /Users/macports UniqueID 503
-              sudo dscl . -create /Users/macports PrimaryGroupID 501
+              sudo dscl . -create /Users/macports UniqueID $MACPORTS_UID
+              sudo dscl . -create /Users/macports PrimaryGroupID $MACPORTS_GID
               sudo dscl . -create /Users/macports UserShell /usr/bin/false
               sudo dscl . -create /Users/macports NFSHomeDirectory /opt/local/var/macports/home
             fi
@@ -118,26 +159,24 @@ jobs:
             sudo installer -pkg "$MACPORTS_ARCHIVE_DIR/$MACPORTS_PKG_NAME" -target /
           fi
 
+          # Save current macports user/group info
+          CURRENT_MACPORTS_UID=$(id -u macports)
+          CURRENT_MACPORTS_GID=$(id -g macports)
+          echo "Saving macports user(${CURRENT_MACPORTS_UID})/group(${CURRENT_MACPORTS_GID}) info..."
+          mkdir -p $(dirname "${MACPORTS_USER_INFO_FILE}")
+          echo "MACPORTS_UID=$CURRENT_MACPORTS_UID" > "${MACPORTS_USER_INFO_FILE}"
+          echo "MACPORTS_GID=$CURRENT_MACPORTS_GID" >> "${MACPORTS_USER_INFO_FILE}"
+
           # Ensure MacPorts and ports are up-to-date
           sudo /opt/local/bin/port -v selfupdate
           sudo /opt/local/bin/port upgrade outdated
           sudo /opt/local/bin/port install libesmtp
 
           # Create/update the archive for caching
+          sudo rm -f "$MACPORTS_ARCHIVE_FILE"
           echo "Creating/updating MacPorts archive..."
           sudo tar -C / -cf "$MACPORTS_ARCHIVE_FILE" /opt/local
           sudo chown $USER:staff "$MACPORTS_ARCHIVE_FILE"
-
-      # -------------------------------
-      # Upload MacPorts dependencies archive to cache (always)
-      - name: Cache MacPorts archive
-        if: always()
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.MACPORTS_ARCHIVE_FILE }}
-          key: ${{ runner.os }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}
-          restore-keys: |
-            ${{ runner.os }}-macports-${{ runner.arch }}-
 
       - name: Set ENV variables
         env:
