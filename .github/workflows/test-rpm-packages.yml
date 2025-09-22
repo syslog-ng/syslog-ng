@@ -127,7 +127,7 @@ jobs:
               fi
             fi
           elif [ "${{ inputs.pkg-type }}" = "stable" ]; then
-            if ! echo "$REV" | egrep -q "^[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}-[0-9]{1,2}$"; then
+            if ! echo "$REV" | egrep -q "^[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}$"; then
               echo "No valid stable revision found!" >&2
               exit 1
             fi
