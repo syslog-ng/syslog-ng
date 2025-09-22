@@ -1,1 +1,0 @@
-stats-exporter: Add `stats-without-orphaned()` and `stats-with-legacy()` options to further filter the stats output.

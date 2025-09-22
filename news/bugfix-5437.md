@@ -1,1 +1,0 @@
-wildcard-file: Fix possible act_tracker crash caused by duplicated file change notification handler invocation.
