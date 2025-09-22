@@ -5,6 +5,6 @@ line-length = 120
 disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = "azure.*"
+module = ["pexpect.*", "azure.*"]
 follow_imports = "skip"
 ignore_missing_imports = true

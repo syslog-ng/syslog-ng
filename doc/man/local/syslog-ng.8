@@ -1,0 +1,159 @@
+.TH syslog\-ng 8 "03 September 2025" 4.9.0 "The syslog\-ng OSE manual page"
+.SH NAME
+.PP
+syslog\-ng \- syslog\-ng system logger application
+.SH SYNOPSIS
+.PP
+syslog\-ng [options]
+.SH DESCRIPTION
+.PP
+This manual page is only an abstract.
+.PP
+The syslog\-ng OSE application is a flexible and highly scalable system
+logging application. Typically, syslog\-ng OSE is used to manage log
+messages and implement centralized logging, where the aim is to collect
+the log messages of several devices on a single, central log server. The
+different devices \- called syslog\-ng OSE clients \- all run syslog\-ng OSE,
+and collect the log messages from the various applications, files, and
+other sources. The clients send all important log messages to the remote
+syslog\-ng OSE server, where the server sorts and stores them.
+.SH OPTIONS
+.PP
+\fB\fC\-\-caps\fR
+    Run syslog\-ng OSE process with the specified POSIX capability flags.
+.RS
+.IP \(bu 2
+If the \fB\fC\-\-no\-caps\fR option is not set, syslog\-ng OSE has been compiled with the \fB\fC\-\-enable\-linux\-caps\fR compile option, and the host supports CAP\fISYSLOG, syslog\-ng OSE uses the following capabilities: "cap\fPnet\fIbind\fPservice, cap\fInet\fPbroadcast, cap\fInet\fPraw, cap\fIdac\fPread\fIsearch, cap\fPdac\fIoverride, cap\fPchown, cap\fIfowner=p cap\fPsyslog=ep"
+.IP \(bu 2
+If the \fB\fC\-\-no\-caps\fR option is not set, and the host does not support CAP\fISYSLOG, syslog\-ng OSE uses the following capabilities: "cap\fPnet\fIbind\fPservice, ap\fInet\fPbroadcast, cap\fInet\fPraw, cap\fIdac\fPread\fIsearch, cap\fPdac\fIoverride, cap\fPchown, cap\fIfowner=p cap\fPsys_admin=ep"
+.PP
+For example:
+.PP
+.RS
+.nf
+    /opt/syslog\-ng/sbin/syslog\-ng \-Fv \-\-caps cap_sys_admin,cap_chown,cap_dac_override,cap_net_bind_service,cap_fowner=pi
+.fi
+.RE
+.PP
+\fBNOTE:\fP The capabilities are not case sensitive, the following command is also good:
+.PP
+.RS
+.nf
+    /opt/syslog\-ng/sbin/syslog\-ng \-Fv \-\-caps CAP_SYS_ADMIN,CAP_CHOWN,CAP_DAC_OVERRIDE,CAP_NET_BIND_SERVICE,CAP_FOWNER=pi
+.fi
+.RE
+.PP
+For details on the capability flags, see the following man pages: \fB\fCcap_from_text\fR(3) and \fB\fCcapabilities\fR(7)
+.RE
+.PP
+\fB\fC\-\-cfgfile <file>\fR or \fB\fC\-f <file>\fR
+    Use the specified configuration file.
+.PP
+\fB\fC\-\-chroot <dir>\fR or \fB\fC\-C <dir>\fR
+    Change root to the specified directory. The configuration file is read after chrooting so, the configuration file must be available within the chroot. That way it is also possible to reload the syslog\-ng OSE configuration after chrooting. However, note that the \fB\fC\-\-user\fR and \fB\fC\-\-group\fR options are resolved before chrooting.
+.PP
+\fB\fC\-\-check\-startup\fR
+    Available in syslog\-ng OSE 4.5 and later versions.
+    This option can be used to perform a complete configuration initialization with syslog\-ng OSE, then exit with the exit code indicating the result. This option can also be used to check if the configuration is semantically valid and that syslog\-ng OSE can actually start. (The \fB\fC\-\-syntax\-only\fR option catches only syntactical errors.)
+    Furthermore, \fB\fC\-\-check\-startup\fR can also be used in a Kubernetes environment, to run it as a dedicated configuration check container.
+.PP
+\fBNOTE:\fP This option is highly likely to fail if another syslog\-ng OSE instance is running in the background, since it initializes several processes, such as network listeners. In such a case, the network address would already be in use.
+.PP
+\fB\fC\-\-control <file>\fR or \fB\fC\-c <file>\fR
+    Set the location of the syslog\-ng OSE control socket. Default value: \fI/var/run/syslog\-ng.ctl\fP
+.PP
+\fB\fC\-\-debug\fR or \fB\fC\-d\fR
+    Start syslog\-ng OSE in debug mode.
+.PP
+\fB\fC\-\-default\-modules\fR
+    A comma\-separated list of the modules that are loaded automatically. Modules not loaded automatically can be loaded by including the \fB\fC@module <modulename>\fR statement in the syslog\-ng OSE configuration file. Available only in syslog\-ng OSE version 4.1 and later.
+.PP
+\fB\fC\-\-enable\-core\fR
+    Enable syslog\-ng OSE to write core files in case of a crash to help support and debugging.
+.PP
+\fB\fC\-\-fd\-limit <number>\fR
+    Set the minimal number of required file descriptors (fd\-s). This sets how many files syslog\-ng OSE can keep open simultaneously.
+    Default value: 4096.
+.PP
+\fBNOTE:\fP This does not override the global ulimit setting of the host.
+.PP
+\fB\fC\-\-foreground\fR or \fB\fC\-F\fR
+    Do not daemonize, run in the foreground. When running in the foreground, syslog\-ng OSE starts from the current directory (\fI${CWD}\fP) so it can create core files (normally, syslog\-ng OSE starts from \fI${PREFIX}/var\fP).
+.PP
+\fB\fC\-\-group <group>\fR or \fB\fC\-g <group>\fR
+    Switch to the specified group after initializing the configuration file.
+.PP
+\fB\fC\-\-help\fR or \fB\fC\-h\fR
+    Display a brief help message.
+.PP
+\fB\fC\-\-module\-registry\fR
+    Display the list and description of the available modules.
+.PP
+\fBNOTE:\fP Not all of these modules are loaded automatically, only the ones specified in the \fB\fC\-\-default\-modules\fR option. Available only in syslog\-ng OSE 4.0 and later.
+.PP
+\fB\fC\-\-no\-caps\fR
+    Run syslog\-ng OSE as root, without capability\-support. This is the default behavior. On Linux, it is possible to run syslog\-ng OSE as non\-root with capability\-support if syslog\-ng OSE was compiled with the \fB\fC\-\-enable\-linux\-caps\fR option enabled. (Run \fB\fCsyslog\-ng \-\-version\fR to display the list of enabled build parameters.)
+    To run syslog\-ng OSE with specific capabilities, use the \fB\fC\-\-caps\fR option.
+.PP
+\fB\fC\-\-persist\-file <persist\-file>\fR or \fB\fC\-R <persist\-file>\fR
+    Set the path and name of the syslog\-ng.persist file where the persistent options and data are stored.
+.PP
+\fB\fC\-\-pidfile <pidfile>\fR or \fB\fC\-p <pidfile>\fR
+    Set path to the \fB\fCPID\fR file where the pid of the main process is stored.
+.PP
+\fB\fC\-\-preprocess\-into <output\-file>\fR
+    After processing the configuration file and resolving included files and variables, write the resulting configuration into the specified output file. Available only in syslog\-ng OSE 4.0 and later.
+.PP
+\fB\fC\-\-process\-mode <mode>\fR
+    Sets how to run syslog\-ng OSE: in the foreground (mainly used for debugging), in the background as a daemon, or in safe\-background mode. By default, syslog\-ng OSE runs in safe\-background mode. This mode creates a supervisor process called supervising syslog\-ng OSE, that restarts syslog\-ng OSE if it crashes.
+.PP
+\fB\fC\-\-stderr\fR or \fB\fC\-e\fR
+    Log internal messages of syslog\-ng OSE to stderr. Mainly used for debugging purposes in conjunction with the \fB\fC\-\-foreground option\fR\&. If not specified, syslog\-ng OSE will log such messages to its internal source.
+.PP
+\fB\fC\-\-syntax\-only\fR or \fB\fC\-s\fR
+    Verify that the configuration file is syntactically correct and exit.
+.PP
+\fB\fC\-\-user <user>\fR or \fB\fC\-u <user>\fR
+    Switch to the specified user after initializing the configuration file (and optionally chrooting).
+.PP
+\fBNOTE:\fP It is not possible to reload the syslog\-ng OSE configuration if the specified user has no privilege to create the \fI/dev/log\fP file.
+.PP
+\fB\fC\-\-verbose\fR or \fB\fC\-v\fR
+    Enable verbose logging used to troubleshoot syslog\-ng OSE.
+.PP
+\fB\fC\-\-version\fR or \fB\fC\-V\fR
+    Display version number and compilation information, and also the list and short description of the available modules. For detailed description of the available modules, see the \fB\fC\-\-module\-registry\fR option.
+.PP
+\fBNOTE:\fP Not all of these modules are loaded automatically, only the ones specified in the \fB\fC\-\-default\-modules\fR option.
+.PP
+\fB\fC\-\-worker\-threads\fR
+    Sets the number of worker threads syslog\-ng OSE can use, including the main syslog\-ng OSE thread.
+    See the \fIsyslog\-ng OSE Administrator Guide\fP[1] for details.
+.PP
+\fBNOTE:\fP Certain operations in syslog\-ng OSE can use threads that are not limited by this option. This setting has effect only when syslog\-ng OSE is running in multithreaded mode. Available only in syslog\-ng OSE 4.0 and later.
+.SH FILES
+.PP
+/opt/syslog\-ng/
+.PP
+/opt/syslog\-ng/etc/syslog\-ng.conf
+.SH SEE ALSO
+.PP
+\fB\fCsyslog\-ng.conf\fR(5)
+.PP
+\fBNOTE:\fP
+If you experience any problems or need help with syslog\-ng OSE, see the \fIsyslog\-ng OSE Administration Guide\fP[1], or visit the \fIsyslog\-ng OSE mailing list\fP[2].
+For news and notifications about syslog\-ng OSE, visit the \fIsyslog\-ng OSE blogs\fP[3].
+.SH AUTHOR
+.PP
+This manual page was generated from the \fIsyslog\-ng OSE Administration Guide\fP[1], which was written by several contributors to whom we'd like to extend our sincere thanks.
+.SH COPYRIGHT
+.SH NOTES
+.PP
+[1] \fB\fCsyslog\-ng OSE Administration Guide\fR
+    \[la]https://syslog-ng.github.io/admin-guide/README\[ra]
+.PP
+[2] \fB\fCsyslog\-ng OSE mailing list\fR
+    \[la]https://lists.balabit.hu/mailman/listinfo/syslog-ng\[ra]
+.PP
+[3] \fB\fCsyslog\-ng OSE blogs\fR
+    \[la]https://syslog-ng.com/blog/\[ra]

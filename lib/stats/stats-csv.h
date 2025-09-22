@@ -32,6 +32,6 @@ typedef void (*StatsCSVRecordFunc)(const char *record, gpointer user_data);
 GString *stats_csv_format_counter(StatsCluster *sc, gint type, StatsCounterItem *counter);
 
 void stats_generate_csv_or_kv(StatsCSVRecordFunc process_record, gpointer user_data, gboolean csv,
-                              gboolean with_header, gboolean *cancelled);
+                              gboolean with_header, gboolean without_orphaned, gboolean *cancelled);
 
 #endif

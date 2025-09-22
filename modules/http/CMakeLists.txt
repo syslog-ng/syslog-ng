@@ -2,6 +2,8 @@ if (NOT DEFINED ENABLE_CURL OR ENABLE_CURL)
   find_package(Curl)
 endif()
 
+set(SYSLOG_NG_HAVE_ZLIB 0 CACHE BOOL "Zlib support" FORCE)
+
 module_switch(ENABLE_CURL "Enable http destination" Curl_FOUND)
 if (NOT ENABLE_CURL)
   return ()
@@ -12,8 +14,10 @@ if (NOT Curl_FOUND)
 endif ()
 
 find_package(ZLIB)
-if(ZLIB_FOUND)
-    add_compile_definitions(SYSLOG_NG_HAVE_ZLIB)
+# TODO: We need a proper FindZLIB.cmake here it seems
+#       e.g. on macOS ZLIB_FOUND is not defined after find_package(), use now the presented ZLIB_INCLUDE_DIR string as well
+if (ZLIB_FOUND OR (DEFINED ZLIB_INCLUDE_DIR AND NOT ZLIB_INCLUDE_DIR STREQUAL ""))
+  set(SYSLOG_NG_HAVE_ZLIB 1 CACHE BOOL "Zlib support" FORCE)
 endif()
 
 set(HTTP_DESTINATION_SOURCES
@@ -57,10 +61,8 @@ function (curl_detect_compile_option NAME)
   string(TOUPPER ${NAME} NAME_CAPITAL)
 
   check_type_size(${NAME} SYSLOG_NG_HAVE_DECL_${NAME_CAPITAL})
-  if (SYSLOG_NG_HAVE_DECL_${NAME_CAPITAL})
-    target_compile_definitions(http PRIVATE "-DSYSLOG_NG_HAVE_DECL_${NAME_CAPITAL}=1")
-  else()
-    target_compile_definitions(http PRIVATE "-DSYSLOG_NG_HAVE_DECL_${NAME_CAPITAL}=0")
+  if(SYSLOG_NG_HAVE_DECL_${NAME_CAPITAL})
+    set(SYSLOG_NG_HAVE_DECL_${NAME_CAPITAL} 1 CACHE INTERNAL "")
   endif()
 endfunction ()
 

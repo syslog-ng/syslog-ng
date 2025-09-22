@@ -31,7 +31,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 
-#ifndef SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE
+#if ! SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage
 {
   union
@@ -47,7 +47,7 @@ struct sockaddr_storage
 };
 #endif
 
-#ifndef SYSLOG_NG_HAVE_INET_ATON
+#if ! SYSLOG_NG_HAVE_INET_ATON
 int inet_aton(const char *cp, struct in_addr *dst);
 #endif
 

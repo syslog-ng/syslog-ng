@@ -21,47 +21,79 @@
 #
 #############################################################################
 
-# - Try to find the libnet library
-# Once done this will define
-#
-#  LIBNET_FOUND - system has the libnet library
-#  LIBNET_CONFIG
-#  LIBNET_LIBRARIES - The libraries needed to use libnet
-#
-# Based on FindESMTP.cmake
-# Distributed under the BSD license.
+# -----------------------------------------------------------------------------
+# Find and configure LIBNET
+# -----------------------------------------------------------------------------
+# Variables exported:
+# LIBNET_FOUND         - TRUE if libnet was found
+# LIBNET_CONFIG        - path to libnet-config program
+# LIBNET_INCLUDE_DIRS  - include directories needed for libnet
+# LIBNET_LIBRARIES     - libraries needed to link with libnet
+# LIBNET_COMPILE_DEFS  - preprocessor definitions from libnet-config
+# LIBNET_CFLAGS        - original CFLAGS returned by libnet-config
+# -----------------------------------------------------------------------------
 
-if (LIBNET_LIBRARIES)
-  # Already in cache, be silent
-  set(LIBNET_FIND_QUIETLY TRUE)
-endif (LIBNET_LIBRARIES)
-
-FIND_PROGRAM(LIBNET_CONFIG libnet-config)
+find_program(LIBNET_CONFIG libnet-config)
 
 add_library(libnet INTERFACE)
 
-IF (LIBNET_CONFIG)
-  EXEC_PROGRAM(${LIBNET_CONFIG} ARGS --libs OUTPUT_VARIABLE _LIBNET_LIBRARIES)
-  EXEC_PROGRAM(${LIBNET_CONFIG} ARGS --cflags OUTPUT_VARIABLE _LIBNET_CFLAGS)
-  string(REGEX REPLACE "[\r\n]" " " _LIBNET_LIBRARIES "${_LIBNET_LIBRARIES}")
+if(LIBNET_CONFIG)
+  message(STATUS "Found libnet-config: ${LIBNET_CONFIG}")
+
+  set(LIBNET_FOUND TRUE CACHE BOOL "Libnet found")
+
+  # Get flags from libnet-config
+  execute_process(
+    COMMAND ${LIBNET_CONFIG} --cflags
+    OUTPUT_VARIABLE _LIBNET_CFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  execute_process(
+    COMMAND ${LIBNET_CONFIG} --libs
+    OUTPUT_VARIABLE _LIBNET_LIBRARIES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
   string(REGEX REPLACE "[\r\n]" " " _LIBNET_CFLAGS "${_LIBNET_CFLAGS}")
-  set (LIBNET_LIBRARIES ${_LIBNET_LIBRARIES} CACHE STRING "The libraries needed for LIBNET")
-  set (LIBNET_CFLAGS ${_LIBNET_CFLAGS} CACHE STRING "The compiler switches needed for LIBNET")
-  set (LIBNET_FOUND TRUE CACHE BOOL "LibNet is found")
+  string(REGEX REPLACE "[\r\n]" " " _LIBNET_LIBRARIES "${_LIBNET_LIBRARIES}")
 
-# this is due to libnet-config provides old fashined defines, which triggers warning on newer systems
-# for details see: https://github.com/libnet/libnet/pull/71
+  # This is due to libnet-config provides old fashined defines, which triggers warning on newer systems
+  # for details see: https://github.com/libnet/libnet/pull/71
+  set(LIBNET_CFLAGS "${LIBNET_CFLAGS} -D_DEFAULT_SOURCE")
 
-   set (LIBNET_CFLAGS "${LIBNET_CFLAGS} -D_DEFAULT_SOURCE")
+  # Split flags into lists
+  separate_arguments(_LIBNET_CFLAGS_LIST UNIX_COMMAND "${_LIBNET_CFLAGS}")
 
-   target_include_directories(libnet INTERFACE ${LIBNET_CFLAGS})
-   target_link_libraries(libnet INTERFACE ${LIBNET_LIBRARIES})
+  # Separate include directories and preprocessor definitions
+  set(LIBNET_INCLUDE_DIRS "")
+  set(LIBNET_COMPILE_DEFS "")
+  set(LIBNET_LIBRARIES ${_LIBNET_LIBRARIES})
 
-ELSE(LIBNET_CONFIG)
-  set (LIBNET_FOUND FALSE CACHE BOOL "LibNet is found")
-ENDIF()
+  foreach(flag ${_LIBNET_CFLAGS_LIST})
+    if(flag MATCHES "^-I(.+)")
+      list(APPEND LIBNET_INCLUDE_DIRS "${CMAKE_MATCH_1}")
+    elseif(flag MATCHES "^-D(.+)")
+      list(APPEND LIBNET_COMPILE_DEFS "${CMAKE_MATCH_1}")
+    endif()
+  endforeach()
+
+  target_include_directories(libnet INTERFACE ${LIBNET_INCLUDE_DIRS})
+  target_compile_definitions(libnet INTERFACE ${LIBNET_COMPILE_DEFS})
+  target_link_libraries(libnet INTERFACE ${LIBNET_LIBRARIES})
+
+else()
+  set(LIBNET_FOUND FALSE CACHE BOOL "Libnet found")
+endif()
+
+set(LIBNET_INCLUDE_DIRS "${LIBNET_INCLUDE_DIRS}" CACHE STRING "LibNet headers")
+set(LIBNET_LIBRARIES "${LIBNET_LIBRARIES}" CACHE STRING "LibNet libraries")
+set(LIBNET_COMPILE_DEFS "${LIBNET_COMPILE_DEFS}" CACHE STRING "LibNet compile definitions")
+set(LIBNET_CFLAGS "${_LIBNET_CFLAGS}" CACHE STRING "Original cflags from libnet-config")
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBNET DEFAULT_MSG LIBNET_LIBRARIES LIBNET_CFLAGS LIBNET_FOUND)
 
-MARK_AS_ADVANCED(LIBNET_LIBRARIES LIBNET_CFLAGS)
+# NOTE: This will reset LIBNET_FOUND if any of the other checked vars is empty
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBNET DEFAULT_MSG LIBNET_LIBRARIES LIBNET_INCLUDE_DIRS LIBNET_FOUND)
+
+# Mark advanced variables for GUI
+MARK_AS_ADVANCED(LIBNET_LIBRARIES LIBNET_INCLUDE_DIRS LIBNET_COMPILE_DEFS LIBNET_CFLAGS)

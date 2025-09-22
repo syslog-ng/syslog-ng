@@ -519,7 +519,7 @@ afprogram_dd_exit(pid_t pid, int status, gpointer s)
 static gboolean
 afprogram_dd_restore_reload_store_item(AFProgramDestDriver *self, GlobalConfig *cfg)
 {
-  const gchar *persist_name = afprogram_dd_format_persist_name((const LogPipe *)self);
+  const gchar *persist_name = afprogram_dd_format_persist_name((const LogPipe *)  self);
   AFProgramReloadStoreItem *restored_info =
     (AFProgramReloadStoreItem *)cfg_persist_config_fetch(cfg, persist_name);
 
@@ -573,9 +573,13 @@ afprogram_dd_init(LogPipe *s)
   log_writer_options_init(&self->writer_options, cfg, 0);
 
   const gboolean restore_successful = afprogram_dd_restore_reload_store_item(self, cfg);
-
-  if (!self->writer)
-    self->writer = log_writer_new(LW_FORMAT_FILE, s->cfg);
+  if (restore_successful)
+    log_pipe_set_config((LogPipe *) self->writer, cfg);
+  else
+    {
+      g_assert(self->writer == NULL);
+      self->writer = log_writer_new(LW_FORMAT_FILE, cfg);
+    }
 
   StatsClusterKeyBuilder *writer_sck_builder;
   StatsClusterKeyBuilder *driver_sck_builder;
@@ -640,6 +644,9 @@ afprogram_dd_deinit(LogPipe *s)
 
   if (self->keep_alive)
     {
+      // Do not store the writer's config, as it will be freshly initialized during reload
+      // TODO: by a good chance this should go to log_pipe_deinit, investigate it
+      log_pipe_reset_config((LogPipe *) self->writer);
       afprogram_dd_store_reload_store_item(self, cfg);
     }
   else

@@ -11,14 +11,24 @@ on:
         required: false
         type: string
         default:
+          # Keep synced with the distros default in the create-packages.yml workflow.
+          # See there for more details.
+          #
+          # upper block for   dbld docker + binary packages
+          # lower block for   dbld docker + binary packages + docker binary
           '[
-            "debian-testing",
             "debian-bullseye",
             "debian-bookworm",
             "debian-sid",
-            "ubuntu-focal",
+            "debian-testing",
             "ubuntu-jammy",
-            "ubuntu-noble"
+            "ubuntu-noble",
+            "ubuntu-plucky",
+            "rhel-8",
+            "rhel-9",
+            "rhel-10",
+
+            "debian-trixie",
           ]'
     secrets:
       azure-sas-token:
@@ -27,7 +37,7 @@ on:
 
 jobs:
   upload-packages:
-    name: ${{ matrix.distro }}
+    name: ${{ matrix.distro }}-${{ matrix.arch }}
 
     runs-on: ubuntu-latest
 
@@ -36,21 +46,32 @@ jobs:
     strategy:
       matrix:
         distro: ${{ fromJson(inputs.distros) }}
-        arch:
-          - amd64
+        arch: [amd64, arm64]
+        exclude:
+          - distro: debian-bullseye
+            arch: arm64
+          - distro: debian-sid
+            arch: arm64
+          - distro: debian-testing
+            arch: arm64
+          - distro: ubuntu-jammy
+            arch: arm64
+        # add suffix mapping rules via include
         include:
-          - distro: debian-bookworm-arm64
-            arch: arm64
-          - distro: ubuntu-noble-arm64
-            arch: arm64
+          - arch: arm64
+            arch-suffix: '-arm64'
+            runner-arch-suffix: '-arm'
+          - arch: amd64
+            arch-suffix: ''
+            runner-arch-suffix: ''
       fail-fast: false
 
     steps:
       - name: Download package artifact
         uses: actions/download-artifact@v4
         with:
-          name: package-${{ matrix.distro }}
-          path: package
+          name: package-${{ matrix.distro }}${{ matrix.arch-suffix }}
+          path: package${{ matrix.arch-suffix }}
 
       - name: Calculate Azure path
         run: |
@@ -70,5 +91,5 @@ jobs:
             az storage blob upload-batch \
               --sas-token '${{ secrets.azure-sas-token }}' \
               --account-name 'syslogngose' \
-              --source 'package' \
+              --source 'package${{ matrix.arch-suffix }}' \
               --destination '${{ env.AZURE_PATH }}'

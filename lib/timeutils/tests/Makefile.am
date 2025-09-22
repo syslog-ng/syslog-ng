@@ -12,7 +12,7 @@ lib_timeutils_tests_test_conv_CFLAGS	= $(TEST_CFLAGS) -I$(top_srcdir)/lib/timeut
 lib_timeutils_tests_test_conv_LDADD	= \
 	$(TEST_LDADD)
 
-lib_timeutils_tests_test_scan_timestamp_SOURCES	= lib/timeutils/tests/test_scan-timestamp.c
+lib_timeutils_tests_test_scan_timestamp_SOURCES	= lib/timeutils/tests/test_scan_timestamp.c
 lib_timeutils_tests_test_scan_timestamp_CFLAGS	= $(TEST_CFLAGS) -I$(top_srcdir)/lib/timeutils
 lib_timeutils_tests_test_scan_timestamp_LDADD	= \
 	$(TEST_LDADD)

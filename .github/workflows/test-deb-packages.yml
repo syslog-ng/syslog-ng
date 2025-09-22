@@ -1,0 +1,116 @@
+# Please note that the syslog-ng git repository is not available in this workflow.
+# It means that certain convenience/helper functions are not available (e.g. gh_output).
+# This is intentional as syslog-ng will be acquired from the APT repository.
+
+name: Run smoke tests on DEB packages
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      pkg-type:
+        required: true
+        type: string
+
+jobs:
+  TestPackagesWith:
+    strategy:
+      matrix:
+        distro:
+          # Keep synced with the distros default in the create-packages.yml workflow.
+          # See there for more details.
+          #
+          # upper block for   dbld docker + binary packages
+          # lower block for   dbld docker + binary packages + docker binary
+          - "debian:bullseye"
+          - "debian:bookworm"
+          - "debian:sid"
+          - "debian:testing"
+          - "ubuntu:jammy"
+          - "ubuntu:noble"
+          - "ubuntu:plucky"
+          # NOTE: These are RPM based distros, so they are tested in the test-rpm-packages.yml workflow
+          # - "rhel-8"
+          # - "rhel-9"
+          # - "rhel-10"
+
+          - "debian:trixie"
+        upgrade-from:
+          - "debian-official"
+          - "syslog-ng-last"
+        arch: [amd64, arm64]
+        # This for a matching runner architecture
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            arch-suffix: ''
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            arch-suffix: '-arm64'
+        exclude:
+          - distro: debian:bullseye
+            arch: arm64
+          - distro: debian:sid
+            arch: arm64
+          - distro: debian:testing
+            arch: arm64
+          - distro: ubuntu:jammy
+            arch: arm64
+      fail-fast: false
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: ${{ matrix.distro }}
+      options: --platform=linux/${{ matrix.arch }}
+    name: ${{ matrix.distro }}, ${{ matrix.arch }}, ${{ matrix.upgrade-from }}
+    steps:
+      - name: Install prerequisites for adding 3rd party repository
+        run: |
+          apt-get update -qq
+          apt-get install --yes wget gnupg2 ca-certificates apt-transport-https
+
+      - name: Install the Debian official syslog-ng OSE package
+        if: matrix.upgrade-from == 'debian-official'
+        run: |
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes syslog-ng
+
+      - name: Add our OSE repository
+        run: |
+          wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${{ inputs.pkg-type }} $(echo ${{ matrix.distro }}${{ matrix.arch-suffix }} | sed 's/:/-/g')" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
+          apt-get update -qq
+
+      - name: Install the last but one syslog-ng OSE package
+        if: matrix.upgrade-from == 'syslog-ng-last'
+        run: |
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes syslog-ng=$(apt-cache madison syslog-ng | sed -n 2p | awk -F"|" '{print $2}' | sed 's/ //g')
+
+      - name: Upgrade to the latest syslog-ng OSE package
+        run: |
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes syslog-ng
+
+      - name: Get syslog-ng revision
+        run: |
+          syslog-ng -V
+          echo "REVISION=$(syslog-ng -V | grep Revision | cut -d" " -f2)" >> $GITHUB_OUTPUT
+        id: syslog_ng_revision
+
+      - name: Check revision
+        run: |
+          if [ "${{ inputs.pkg-type }}" = "nightly" ]; then
+            echo "${{ steps.syslog_ng_revision.outputs.REVISION }}" | egrep "^[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}(\.[0-9]{1,3}\.[a-z0-9]{8})?-snapshot\+[0-9]{8}T[0-9]{6}$"
+          elif [ "${{ inputs.pkg-type }}" = "stable" ]; then
+            echo "${{ steps.syslog_ng_revision.outputs.REVISION }}" | egrep "^[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}-[0-9]{1,2}$"
+          fi
+
+      - name: Check if installed package version matches with install revision
+        run: |
+          echo "Installed revision value: ${{ steps.syslog_ng_revision.outputs.REVISION }}"
+          dpkg-query --show syslog-ng\*
+          dpkg-query -f='${db:Status-Status}\t${package}\t${version}\t\n' --show syslog-ng\* | grep ^installed | while read installed_syslog_ng_package ; do echo $installed_syslog_ng_package | grep ${{ steps.syslog_ng_revision.outputs.REVISION }} ; done
+
+      - name: Check if syslog-ng can start with default config
+        run: |
+          nohup syslog-ng -Fe &
+          sleep 5
+          syslog-ng-ctl stop

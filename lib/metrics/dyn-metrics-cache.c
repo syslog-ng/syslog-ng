@@ -35,7 +35,7 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
-#define metrics_cache __tls_deref(metrics_cache)
+#define metrics_cache __slng_tls_deref(metrics_cache)
 
 static DynMetricsStore *global_metrics_cache;
 static GMutex global_metrics_cache_lock;

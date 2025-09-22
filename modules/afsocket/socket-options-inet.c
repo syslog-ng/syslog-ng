@@ -78,7 +78,7 @@ socket_options_inet_try_to_set_interface(SocketOptionsInet *self, gint fd)
 static inline gboolean
 _tcp_keepalive_timers_supported(void)
 {
-#ifdef SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
+#if SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
   return TRUE;
 #else
   return FALSE;
@@ -116,7 +116,7 @@ gboolean socket_options_inet_set_tcp_keepalive_probes(SocketOptionsInet *self, g
 static void
 socket_options_inet_setup_tcp_keepalive_timers(SocketOptionsInet *self, gint fd)
 {
-#ifdef SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
+#if SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
   if (self->tcp_keepalive_time > 0)
     setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &self->tcp_keepalive_time, sizeof(self->tcp_keepalive_time));
   if (self->tcp_keepalive_probes > 0)
@@ -160,18 +160,18 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
             }
           if (dir & AFSOCKET_DIR_SEND)
             {
-              if (self->ip_ttl)
-                setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &self->ip_ttl, sizeof(self->ip_ttl));
+              if (self->ip_ttl_val)
+                setsockopt(fd, SOL_IP, IP_MULTICAST_TTL, &self->ip_ttl_val, sizeof(self->ip_ttl_val));
             }
 
         }
       else
         {
-          if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
-            setsockopt(fd, SOL_IP, IP_TTL, &self->ip_ttl, sizeof(self->ip_ttl));
+          if (self->ip_ttl_val && (dir & AFSOCKET_DIR_SEND))
+            setsockopt(fd, SOL_IP, IP_TTL, &self->ip_ttl_val, sizeof(self->ip_ttl_val));
         }
-      if (self->ip_tos && (dir & AFSOCKET_DIR_SEND))
-        setsockopt(fd, SOL_IP, IP_TOS, &self->ip_tos, sizeof(self->ip_tos));
+      if (self->ip_tos_val && (dir & AFSOCKET_DIR_SEND))
+        setsockopt(fd, SOL_IP, IP_TOS, &self->ip_tos_val, sizeof(self->ip_tos_val));
 
       if (self->ip_freebind && (dir & AFSOCKET_DIR_RECV))
         {
@@ -202,14 +202,14 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
             }
           if (dir & AFSOCKET_DIR_SEND)
             {
-              if (self->ip_ttl)
-                setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
+              if (self->ip_ttl_val)
+                setsockopt(fd, SOL_IPV6, IPV6_MULTICAST_HOPS, &self->ip_ttl_val, sizeof(self->ip_ttl_val));
             }
         }
       else
         {
-          if (self->ip_ttl && (dir & AFSOCKET_DIR_SEND))
-            setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &self->ip_ttl, sizeof(self->ip_ttl));
+          if (self->ip_ttl_val && (dir & AFSOCKET_DIR_SEND))
+            setsockopt(fd, SOL_IPV6, IPV6_UNICAST_HOPS, &self->ip_ttl_val, sizeof(self->ip_ttl_val));
         }
 
       if (self->ip_freebind && (dir & AFSOCKET_DIR_RECV))

@@ -32,8 +32,8 @@ int afsocket_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword afsocket_keywords[] =
 {
-  { "unix_dgram", KW_UNIX_DGRAM },
-  { "unix_stream",  KW_UNIX_STREAM },
+  { "unix_dgram",         KW_UNIX_DGRAM },
+  { "unix_stream",        KW_UNIX_STREAM },
   { "udp",                KW_UDP },
   { "tcp",                KW_TCP },
   { "syslog",             KW_SYSLOG },
@@ -47,6 +47,8 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "stat_type",          KW_STAT_TYPE},
   { "stat_query",         KW_STAT_QUERY},
   { "stat_format",        KW_STAT_FORMAT},
+  { "stats_without_orphaned", KW_STATS_WITHOUT_ORPHANED },
+  { "stats_with_legacy",  KW_STATS_WITH_LEGACY },
 
 #if SYSLOG_NG_ENABLE_IPV6
   { "udp6",               KW_UDP6 },

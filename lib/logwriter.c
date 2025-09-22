@@ -1193,7 +1193,8 @@ log_writer_update_message_stats(LogWriter *self, const LogMessage *msg, gsize ms
 }
 
 static gboolean
-log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gboolean *write_error)
+log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gsize *msg_len,
+                         gboolean *write_error)
 {
   gboolean consumed = FALSE;
 
@@ -1210,10 +1211,10 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
                 evt_tag_printf("message", "%s", self->line_buffer->str));
     }
 
-  gsize msg_len = 0;
+  *msg_len = 0;
   if (self->line_buffer->len)
     {
-      msg_len = self->line_buffer->len;
+      *msg_len = self->line_buffer->len;
       LogProtoStatus status = log_proto_client_post(self->proto, msg, (guchar *)self->line_buffer->str,
                                                     self->line_buffer->len,
                                                     &consumed);
@@ -1252,8 +1253,8 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
       if ((self->options->options & LWO_SEQNUM_ALL) || (msg->flags & LF_LOCAL))
         step_sequence_number(&self->seq_num);
 
-      log_writer_update_message_stats(self, msg, msg_len);
-      stats_byte_counter_add(&self->metrics.written_bytes, msg_len);
+      log_writer_update_message_stats(self, msg, *msg_len);
+      stats_byte_counter_add(&self->metrics.written_bytes, *msg_len);
       log_msg_unref(msg);
       msg_set_context(NULL);
       log_msg_refcache_stop();
@@ -1298,6 +1299,55 @@ log_writer_process_handshake(LogWriter *self)
   return LPS_SUCCESS;
 }
 
+
+/*
+ * This function is intended to be called by the current logwriter worker thread.
+ * As the writer thread is the only one currently working with proto, we can set it without lock.
+ *
+ * The log_pipe_notify call creates a new LogProtoClient, and the log_writer is updated.
+ */
+static LogProtoStatus
+log_writer_logrotate(LogWriter *self, gsize buf_len, gboolean *write_error)
+{
+  /* Signal AFFileDestWriter to check for logrotation */
+  LogProtoClient *proto = NULL;
+  gpointer args[] = { &proto, (gpointer *) buf_len };
+  gint result = log_pipe_notify(self->control, NC_LOGROTATE, args);
+
+  // error during logrotate or reopen of log file
+  if (result == NR_ERROR)
+    {
+      // flush 'old' log file
+      if (log_writer_opened(self))
+        log_writer_flush_finalize(self);
+
+      *write_error = TRUE;
+      return LPS_ERROR;
+    }
+
+  if (proto)
+    {
+      // reopening was successful, flush remaining messages to 'old' log file
+      LogProtoStatus status = log_writer_flush_finalize(self);
+      if (!(status == LPS_SUCCESS || status == LPS_PARTIAL))
+        {
+          log_proto_client_free(proto);
+          *write_error = TRUE;
+          return status;
+        }
+
+      // update proto-client
+      log_writer_free_proto(self);
+      log_writer_set_proto(self, proto);
+    }
+
+  // if proto has not been set in the log_pipe_notify call (i.e. proto == null)
+  // and no error code has been returned, either no logrotate was setup/needed or
+  // the proto has been already set by affile_dw_reopen and it was successful
+  // if proto has not been update return error
+  return log_writer_opened(self)? LPS_SUCCESS : LPS_ERROR;
+}
+
 /*
  * @flush_mode specifies how hard LogWriter is trying to send messages to
  * the actual destination:
@@ -1331,9 +1381,10 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       if (!msg)
         break;
 
+      gsize msg_len = 0;
       ScratchBuffersMarker mark;
       scratch_buffers_mark(&mark);
-      if (!log_writer_write_message(self, msg, &path_options, &write_error))
+      if (!log_writer_write_message(self, msg, &path_options, &msg_len, &write_error))
         {
           scratch_buffers_reclaim_marked(mark);
           break;
@@ -1341,7 +1392,13 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       scratch_buffers_reclaim_marked(mark);
 
       if (!write_error)
-        stats_counter_inc(self->metrics.written_messages);
+        {
+          stats_counter_inc(self->metrics.written_messages);
+
+          LogProtoStatus status = log_writer_logrotate(self, msg_len, &write_error);
+          if (status != LPS_SUCCESS)
+            return status;
+        }
     }
 
   if (write_error)

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 #############################################################################
 # Copyright (c) 2017 Balabit
 #
@@ -21,32 +21,71 @@
 # COPYING for details.
 #
 #############################################################################
-
-GUIDE_REPO=syslog-ng-ose-guides
-
-PROJECT_DIR=$(dirname $(realpath ${BASH_SOURCE}))
-
 set -e
 
-echo -e "\e[33;1mDownload admin guide\e[0m"
-cd $PROJECT_DIR
-rm -rf $GUIDE_REPO
-git clone git@github.com:balabit/${GUIDE_REPO}.git
-cd $GUIDE_REPO/en
-echo -e "\e[33;1mBuild profiled XML source files\e[0m"
-make manpages
+BASE_URL="https://syslog-ng.github.io/manpages/"
 
-echo -e "\e[33;1mUpdate manpage source files\e[0m"
-cd $PROJECT_DIR
-rm *.xml
-for new_file in $GUIDE_REPO/en/out/tmp/man/*.profiled.xml; do
-    original=$(basename ${new_file/.profiled/})
-    echo "Updating file '$original'"
-    cp "$new_file" "./$original"
+FILES="
+  dqtool.1
+  loggen.1
+  pdbtool.1
+  persist-tool.1
+  secure-logging.7
+  slogencrypt.1
+  slogkey.1
+  slogverify.1
+  syslog-ng.8
+  syslog-ng.conf.5
+  syslog-ng-ctl.1
+  syslog-ng-debun.1
+"
+
+usage() {
+  echo "Usage: $0 -f OUTPUT_DIR"
+  echo "       $0 -u SYSCONFDIR PREFIX OUTPUT_DIR"
+  echo ""
+  echo "  -f OUTPUT_DIR   Fetch manpages from ${BASE_URL} and store them in OUTPUT_DIR"
+  echo "  -u SYSCONFDIR PREFIX OUTPUT_DIR   Update hardcoded paths in manpages located in OUTPUT_DIR"
+  echo ""
+  exit 1
+}
+
+echo "Fetch or update syslog-ng manpages."
+
+if [ "$#" -lt 2 ]; then
+  usage
+fi
+
+TODO=$1
+if [ "$TODO" = "-f" ]; then
+  if [ "$#" -ne 2 ]; then
+    usage
+  fi
+  OUTPUT_DIR=$2
+elif [ "$TODO" = "-u" ]; then
+  if [ "$#" -ne 4 ]; then
+    usage
+  fi
+  SYSCONFDIR=$2
+  PREFIX=$3
+  OUTPUT_DIR=$4
+else
+  usage
+fi
+
+mkdir -p "$OUTPUT_DIR" || true
+
+for FILE in $FILES; do
+  if [ "$TODO" = "-f" ]; then
+    echo "Downloading $FILE ..."
+    curl -fsSL "$BASE_URL/$FILE" -o "$OUTPUT_DIR/$FILE"
+  else
+    echo "Updating $FILE ..."
+    sed -e "s,/opt/syslog\\\*-ng/etc,$SYSCONFDIR,g" \
+        -e "s,/opt/syslog\\\*-ng/,$PREFIX/,g" \
+        <"$OUTPUT_DIR/$FILE" >"$OUTPUT_DIR/$FILE.tmp" \
+        && mv "$OUTPUT_DIR/$FILE.tmp" "$OUTPUT_DIR/$FILE"
+  fi
 done
 
-rm -rf $GUIDE_REPO
-
-echo -e "\e[33;1mDONE.\e[0m"
-
-git status
+echo "DONE."

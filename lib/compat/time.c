@@ -23,7 +23,7 @@
 
 #include "compat/time.h"
 
-#if !defined(SYSLOG_NG_HAVE_CLOCK_GETTIME) && defined(__APPLE__) && defined(__MACH__)
+#if ! SYSLOG_NG_HAVE_CLOCK_GETTIME && defined(__APPLE__) && defined(__MACH__)
 
 int
 clock_gettime(clock_t clock_id, struct timespec *timestamp)

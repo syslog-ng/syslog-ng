@@ -52,7 +52,8 @@ Test(log_proto, test_log_proto_error_in_initial_frame)
 
   proto = log_proto_auto_server_new(
             log_transport_mock_stream_new(
-              LTM_INJECT_ERROR(EIO)),
+              LTM_INJECT_ERROR(EIO),
+              LTM_EOF),
             get_inited_proto_server_options());
 
   assert_proto_server_handshake_failure(&proto, LPS_ERROR);

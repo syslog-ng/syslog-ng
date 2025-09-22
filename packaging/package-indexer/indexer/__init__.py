@@ -22,9 +22,12 @@
 
 from .indexer import Indexer
 from .deb_indexer import StableDebIndexer, NightlyDebIndexer
+from .rpm_indexer import StableRPMIndexer, NightlyRPMIndexer
 
 __all__ = [
     "Indexer",
     "StableDebIndexer",
     "NightlyDebIndexer",
+    "StableRPMIndexer",
+    "NightlyRPMIndexer",
 ]

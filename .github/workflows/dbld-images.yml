@@ -1,5 +1,7 @@
 name: Compile dbld-images
-
+permissions:
+  contents: read
+  packages: write
 
 on:
   pull_request:
@@ -28,39 +30,77 @@ on:
 
 jobs:
   build:
+    name: build (${{ matrix.image }}-${{ matrix.arch }})
     runs-on: ${{ matrix.platform }}
 
     strategy:
       matrix:
         image:
+          # dbld docker images only
           - almalinux-8
           - almalinux-9
+          - almalinux-10
           - centos-stream9
           - centos-stream10
           - fedora-latest
-          - fedora-rawhide # - rawhide is always a problem turning it off now
+          - fedora-rawhide
+          - opensuse-tumbleweed
+          - rocky-9
+          - ubuntu-focal
+          - devshell
+          - kira
+          - tarball
+          # dbld docker image + binary packages
           - debian-bullseye
           - debian-bookworm
           - debian-sid
           - debian-testing
-          - ubuntu-focal
           - ubuntu-jammy
           - ubuntu-noble
-          - devshell
-          - kira
-          - tarball
+          - ubuntu-plucky
+          - rhel-8
+          - rhel-9
+          - rhel-10
+          # dbld docker image + binary packages + docker binary
+          - debian-trixie
         arch:
           - amd64
+        # this is the build platform we use to build the images
+        # FIXME: temporary because sudo doesn't work in RedHat and descendants on an ubuntu-24.04 hosts (ubuntu-latest)
+        # workaround can be to add --privileged to DOCKER_SHELL in dbld/rules
         platform:
-          # FIXME: temporary because sudo doesn't work in RedHat and descendants on an ubuntu-24.04 hosts (ubuntu-latest)
           - ubuntu-22.04
           - ubuntu-22.04-arm
         exclude:
+          # we need only arm builder for the outputs bellow
           - platform: ubuntu-22.04-arm
         include:
+          # arm64 docker images with binary syslog-ng installation
           - image: debian-bookworm
             platform: ubuntu-22.04-arm
             arch: arm64
+          - image: debian-trixie
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: ubuntu-noble
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: ubuntu-plucky
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: rhel-8
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: rhel-9
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: rhel-10
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: rocky-9
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          # devshell docker image for arm64 (devshell must be debian stable based)
           - image: devshell
             platform: ubuntu-22.04-arm
             arch: arm64
@@ -113,3 +153,15 @@ jobs:
         if: env.UPLOAD_IMAGES_INTERNAL == 'true'
         run: |
           dbld/rules push-image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX}
+
+      # FIXME: this one is something not final, exists in public preview, so the gh api command might have changed?!
+      #        the rights set to internal currently manually from the UI
+      # - name: Hide the internal images
+      #   if: env.UPLOAD_IMAGES_INTERNAL == 'true' && startsWith(matrix.image, 'rhel-')
+      #   env:
+      #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     gh api \
+      #           --method PATCH \
+      #           "/orgs/syslog-ng/packages/container/dbld-${{ matrix.image }}${CONTAINER_NAME_SUFFIX}/visibility" \
+      #           -f visibility=internal

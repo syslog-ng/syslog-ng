@@ -1,0 +1,117 @@
+name: "CodeQL Advanced"
+
+on:
+  push:
+    branches: [ "develop", "master" ]
+  pull_request:
+    branches: [ "develop", "master" ]
+  schedule:
+    - cron: '28 18 * * 5'
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    # Runner size impacts CodeQL analysis time. To learn more, please see:
+    #   - https://gh.io/recommended-hardware-resources-for-running-codeql
+    #   - https://gh.io/supported-runners-and-hardware-resources
+    #   - https://gh.io/using-larger-runners (GitHub.com only)
+    # Consider using larger runners or machines with greater resources for possible analysis time improvements.
+    runs-on: 'ubuntu-latest'
+    permissions:
+      # required for all workflows
+      security-events: write
+
+      # required to fetch internal or private CodeQL packs
+      packages: read
+
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
+        # Use `c-cpp` to analyze code written in C, C++ or both
+        # Use 'java-kotlin' to analyze code written in Java, Kotlin or both
+        # Use 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
+        # To learn more about changing the languages that are analyzed or customizing the build mode for your analysis,
+        # see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning.
+        # If you are analyzing a compiled language, you can modify the 'build-mode' for that language to customize how
+        # your codebase is analyzed, see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages
+        include:
+        - language: actions
+          build-mode: none
+        - language: c-cpp
+          build-mode: manual
+        - language: java-kotlin
+          build-mode: manual # This mode only analyzes Java. Set this to 'autobuild' or 'manual' to analyze Kotlin too.
+        - language: python
+          build-mode: none
+
+    #container:
+      # CodeQL tools in GitHub actions built for Ubuntu 22.04 currently, so we would need dbld-ubuntu-jammy
+      # FIXME: Might worth a bit more try, but currently
+      #       - it has a none matching libtool version
+      #       - still has some missing packages from the bellow list (how?!?!)
+      #       - fails to build internal ivykis too
+      #image: ghcr.io/syslog-ng/dbld-ubuntu-jammy:latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Fix repo ownership
+      run: |
+        git config --global --add safe.directory '*'
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        build-mode: ${{ matrix.build-mode }}
+        dependency-caching: true
+        # If you wish to specify custom queries, you can do so here or in a config file.
+        # By default, queries listed here will override any specified in a config file.
+        # Prefix the list here with "+" to use these queries and those in the config file.
+
+        # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
+        # queries: security-extended,security-and-quality
+
+    # If the analyze step fails for one of the languages you are analyzing with
+    # "We were unable to automatically build your code", modify the matrix above
+    # to set the build mode to "manual" for that language. Then modify this step
+    # to build your code.
+    # ℹ️ Command-line programs to run using the OS shell.
+    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
+    - if: matrix.build-mode == 'manual'
+      shell: bash
+      run: |
+        echo -e "Manual build mode: Building the code for ${{ matrix.language }}\n"
+
+        echo -e "Installing build dependencies...\n"
+        if [[ "${{ matrix.language }}" == "c-cpp" ]]; then
+          sudo apt install -y build-essential git cmake g++-11 gcc-11 debhelper automake autoconf-archive tzdata pkg-config gperf flex bison libesmtp-dev libnet1-dev libglib2.0-dev libdbi-dev libssl-dev libmongoc-dev libbson-dev libjson-c-dev libwrap0-dev libpcre3-dev libcap-dev libsystemd-dev libhiredis-dev libriemann-client-dev librabbitmq-dev python3 python3-dev python3-venv python3-ply python3-setuptools dh-python dh-exec geoip-database libmaxminddb-dev libcurl4-openssl-dev libsnappy-dev libsnmp-dev librdkafka-dev gradle libpaho-mqtt-dev protobuf-compiler  protobuf-c-compiler protobuf-compiler-grpc libprotobuf-dev libprotoc-dev libprotobuf-c-dev libgrpc++-dev  libabsl-dev openjdk-8-jdk libcriterion-dev libbpf-dev binutils-bpf
+        elif [[ "${{ matrix.language }}" == "java-kotlin" ]]; then
+          sudo apt install -y build-essential git cmake g++-11 gcc-11 debhelper automake autoconf-archive tzdata pkg-config gperf flex bison libnet1-dev libglib2.0-dev libssl-dev libbson-dev libjson-c-dev libwrap0-dev libpcre3-dev libcap-dev libsystemd-dev python3 python3-dev python3-venv python3-ply python3-setuptools dh-python dh-exec libcurl4-openssl-dev libsnappy-dev openjdk-8-jdk libcriterion-dev
+        fi
+
+        echo -e "\nBuilding...\n"
+        if [[ "${{ matrix.language }}" == "c-cpp" ]]; then
+          cmake -B build . -Wno-dev -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF  -DCMAKE_BUILD_TYPE=Release -DIVYKIS_SOURCE=internal -DENABLE_EBPF=ON -DENABLE_JAVA=ON -DENABLE_JAVA_MODULES=ON -DBUILD_TESTING=ON -DENABLE_FORCE_GNU99=ON -DSUMMARY_LEVEL=0 -DENABLE_EXTRA_WARNINGS=ON -Werror --fresh
+        elif [[ "${{ matrix.language }}" == "java-kotlin" ]]; then
+          # The CodeQL runner uses its own JDK distribution inside the CodeQL Action environment.
+          # That JDK is stricter about module encapsulation, so reflective access to com.sun.tools.javac.api fails unless you explicitly open the module.
+          #
+          export ORG_GRADLE_PROJECT_org_gradle_jvmargs="--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
+            --add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED \
+            --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED"
+          cmake -B build . -Wno-dev -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF  -DCMAKE_BUILD_TYPE=Release -DIVYKIS_SOURCE=internal -DDISABLE_ALL_MODULES=ON -DENABLE_JAVA=ON -DENABLE_JAVA_MODULES=ON -DENABLE_FORCE_GNU99=ON -DSUMMARY_LEVEL=0 -DENABLE_EXTRA_WARNINGS=ON -Werror --fresh
+        fi
+        cmake --build ./build -j$(nproc) --target all
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"

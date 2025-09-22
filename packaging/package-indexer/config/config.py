@@ -84,6 +84,7 @@ class Config:
         client-secret: "cdn-secret7"
 
     gpg-key-path: "secret-path"
+    gpg-key-name: "key id or email"
     ```
     """
 
@@ -139,6 +140,9 @@ class Config:
 
     def get_gpg_key_path(self) -> Path:
         return self.__cfg["gpg-key-path"]
+
+    def get_gpg_key_name(self) -> str:
+        return self.__cfg["gpg-key-name"] if "gpg-key-name" in self.__cfg.keys() else ""
 
     @staticmethod
     def __get_storage_implementation(vendor: str) -> Type[remote_storage_synchronizer.RemoteStorageSynchronizer]:

@@ -52,18 +52,26 @@ if(ENABLE_OBJC)
   set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
 endif()
 
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+# FIXME: This does not handle multiple sub-modules, must be made recursive and smarter later
+#        Also it should be moved to a separate file
+#        We have only one such module now (ivykis), so it is not a big problem currently
+if("${IVYKIS_SOURCE}" STREQUAL "internal" OR "${IVYKIS_SOURCE}}" STREQUAL "auto" OR "${IVYKIS_SOURCE}}" STREQUAL "AUTO")
+  find_package(Git QUIET)
+
+  if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     option(GIT_SUBMODULE "Checkout submodules during build" ON)
+
     if(GIT_SUBMODULE)
-        message(STATUS "Submodule update")
-        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
-        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-            message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-        endif()
+      message(STATUS "Submodule update")
+      execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE GIT_SUBMOD_RESULT)
+
+      if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+        message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+      endif()
     endif()
+  endif()
 endif()
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/tests/valgrind/unit-test-leak.supp")
@@ -115,18 +123,16 @@ include(CheckCSourceCompiles)
 
 add_definitions(-D_GNU_SOURCE=1)
 add_definitions(-D_LARGEFILE64_SOURCE=1)
-add_definitions(-D__APPLE_USE_RFC_3542)
-
 
 include(CheckSockaddrStorage)
 if (HAVE_STRUCT_SOCKADDR_STORAGE)
   set(SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE 1)
-else()
-  set(SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE 0)
 endif()
 
 include(CheckCreds)
-set(SYSLOG_NG_HAVE_STRUCT_UCRED (HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED))
+if (HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED)
+  set(SYSLOG_NG_HAVE_STRUCT_UCRED 1)
+endif()
 check_struct_member ("struct msghdr" "msg_control" "sys/types.h;sys/socket.h" SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
 
 include(CheckIPv6)
@@ -153,16 +159,6 @@ if(NOT DEFINED ENABLE_ENV_WRAPPER)
   endif ()
 endif ()
 set(SYSLOG_NG_ENABLE_ENV_WRAPPER ${ENABLE_ENV_WRAPPER})
-
-# NOTE: This is now seems to be an Apple/Xcode "only" issue, but probably much better a clang one, so later we might want to add this globally
-if (APPLE)
-  option(FORCE_CLASSIC_LINKING "Enable classic linking" OFF)
-  if (FORCE_CLASSIC_LINKING)
-    # XCode15 new linker has some issues (e.g. https://developer.apple.com/forums/thread/737707)
-    # switch back to classic linking till not fixed (https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking)
-    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-ld_classic")
-  endif()
-endif()
 
 option(WITH_COMPILE_DATE "Include compile date in binary" ON)
 if (WITH_COMPILE_DATE)
@@ -192,7 +188,6 @@ check_symbol_exists(getutent utmp.h SYSLOG_NG_HAVE_GETUTENT)
 check_symbol_exists(getutxent utmpx.h SYSLOG_NG_HAVE_GETUTXENT)
 check_symbol_exists(getaddrinfo "netdb.h;sys/socket.h;sys/types.h" SYSLOG_NG_HAVE_GETADDRINFO)
 check_symbol_exists(getnameinfo "netdb.h;sys/socket.h" SYSLOG_NG_HAVE_GETNAMEINFO)
-check_symbol_exists(getprotobynumber_r "netdb.h" SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R)
 check_symbol_exists(clock_gettime "time.h" SYSLOG_NG_HAVE_CLOCK_GETTIME)
 check_symbol_exists(gmtime_r "time.h" SYSLOG_NG_HAVE_GMTIME_R)
 check_symbol_exists(localtime_r "time.h" SYSLOG_NG_HAVE_LOCALTIME_R)
@@ -210,13 +205,36 @@ check_include_files(utmp.h SYSLOG_NG_HAVE_UTMP_H)
 check_include_files(utmpx.h SYSLOG_NG_HAVE_UTMPX_H)
 check_include_files(dlfcn.h SYSLOG_NG_HAVE_DLFCN_H)
 check_include_files(getopt.h SYSLOG_NG_HAVE_GETOPT_H)
+check_include_files(door.h SYSLOG_NG_HAVE_DOOR_H)
 
 check_struct_has_member("struct utmpx" "ut_type" "utmpx.h" UTMPX_HAS_UT_TYPE LANGUAGE C)
 check_struct_has_member("struct utmp" "ut_type" "utmp.h" UTMP_HAS_UT_TYPE LANGUAGE C)
 check_struct_has_member("struct utmpx" "ut_user" "utmpx.h" UTMPX_HAS_UT_USER LANGUAGE C)
 check_struct_has_member("struct utmp" "ut_user" "utmp.h" UTMP_HAS_UT_USER LANGUAGE C)
-check_struct_has_member("struct tm" "tm_gmtoff" "sys/time.h;time.h" SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF)
 
+# AIX has issues detecting getprotobynumber_r
+check_c_source_compiles("
+#include <netdb.h>
+int main(void) {
+    struct protoent result;
+    struct protoent *res = 0;
+    char buf[1024];
+    getprotobynumber_r(6, &result, buf, sizeof(buf), &res);
+    return 0;
+}
+" SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R)
+
+# AIX has issues detecting struct tm.tm_gmtoff
+check_c_source_compiles("
+#include <sys/types.h>
+#include <sys/time.h>
+#include <time.h>
+int main(void) {
+    struct tm t;
+    (void) t.tm_gmtoff; /* try to actually use it */
+    return 0;
+}
+" SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF)
 
 if ((UTMPX_HAS_UT_TYPE AND UTMPX_HAS_UT_USER) OR (UTMPX_HAS_UT_TYPE AND UTMP_HAS_UT_USER))
   set(SYSLOG_NG_HAVE_MODERN_UTMP 1)
@@ -254,7 +272,6 @@ check_symbol_exists(g_canonicalize_filename "glib.h" SYSLOG_NG_HAVE_G_CANONICALI
 # Best of both worlds: we set to 2.68 if we have that version, so we
 # get clang to compile our code, otherwise we set it to 2.32.
 if (PC_GLIB_VERSION VERSION_GREATER_EQUAL "2.68")
-
   set_target_properties(GLib::GLib PROPERTIES
         INTERFACE_COMPILE_DEFINITIONS "GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_68")
 
@@ -271,12 +288,11 @@ if (RabbitMQ_FOUND)
   check_symbol_exists(amqp_ssl_socket_set_verify_peer "amqp.h;amqp_ssl_socket.h" SYSLOG_NG_HAVE_AMQP_SSL_SOCKET_SET_VERIFY_PEER)
 endif()
 
-
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
-set (IVYKIS_SOURCE "internal")
+set (IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path/AUTO)")
 external_or_find_package(IVYKIS REQUIRED)
 set(IVYKIS_LIBRARIES ${IVYKIS_LIBRARY} CACHE STRING "IVYKIS libraries path")
-if((NOT IVYKIS_INTERNAL) AND(IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
+if((NOT IVYKIS_INTERNAL) AND (IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
   set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 0)
 elseif(IVYKIS_INTERNAL)
   # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
@@ -290,11 +306,11 @@ external_or_find_package(JSONC REQUIRED)
 
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
-find_package(LIBNET REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(WRAP)
 find_package(Inotify)
 find_package(LIBCAP)
+find_package(LIBNET)
 
 find_package(systemd)
 pkg_search_module(SYSTEMD_WITH_NAMESPACE libsystemd>=245)
@@ -318,8 +334,6 @@ if (ENABLE_JOURNALD)
     if (SYSTEMD_WITH_NAMESPACE_LIBRARIES STREQUAL "systemd")
        set(SYSLOG_NG_HAVE_JOURNAL_NAMESPACES 1)
        message(STATUS "Have journal namespaces")
-    else()
-       set(SYSLOG_NG_HAVE_JOURNAL_NAMESPACES 0)
     endif()
     set(SYSLOG_NG_SYSTEMD_JOURNAL_MODE SYSLOG_NG_JOURNALD_SYSTEM)
   elseif (WITH_SYSTEMD_JOURNAL STREQUAL "wrapper")
@@ -333,12 +347,16 @@ set (SYSLOG_NG_ENABLE_SYSTEMD ${ENABLE_SYSTEMD})
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
+
+if (Inotify_FOUND)
+  set(SYSLOG_NG_HAVE_INOTIFY 1)
+endif()
+
 check_function_exists(kqueue SYSLOG_NG_HAVE_KQUEUE)
 
 set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
 
-if ("${PYTHON_VERSION}" STREQUAL "AUTO")
+if("${PYTHON_VERSION}" STREQUAL "AUTO" OR "${PYTHON_VERSION}" STREQUAL "auto")
   find_package(PythonInterp EXACT 3)
   find_package(PythonLibs EXACT 3)
 else ()
@@ -357,8 +375,93 @@ pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 option (ENABLE_TCP_WRAPPER "Enable TCP wrapper support" ${WRAP_FOUND})
 set (SYSLOG_NG_ENABLE_TCP_WRAPPER ${ENABLE_TCP_WRAPPER})
 
-option (ENABLE_SPOOF_SOURCE "Enable spoof source support" ${LIBNET_FOUND})
-set (SYSLOG_NG_ENABLE_SPOOF_SOURCE ${LIBNET_FOUND})
+
+# OS specific other comile/linker options might be needed
+if(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
+  # Check if compiler is GCC
+  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    target_compile_definitions(-U_XOPEN_SOURCE -U_XOPEN_SOURCE_EXTENDED _HPUX_SOURCE)
+    add_link_options(-lcl)
+
+    set(SYSLOG_NG_HAVE_BROKEN_PREAD=1)
+    message(WARNING "NOTE: on HP-UX with gcc, you might need to edit sys/socket.h manually or you'll get compilation errors")
+  endif()
+
+elseif(CMAKE_SYSTEM_NAME STREQUAL "AIX")
+  # Try to detect if large file support is available
+  check_symbol_exists(lseek64 "unistd.h" HAVE_LSEEK64)
+  if(HAVE_LSEEK64)
+    add_compile_definitions(_LARGE_FILES=1)
+  endif()
+
+  # NOTE: The -brtl option to the linker must be set before calling the
+  # configure script, as otherwise the generated libtool will behave
+  # differently. We need the runtime linker during execution (hence the
+  # -brtl) to load external modules. Also, please note that with -brtl the
+  # linker behaves similarly to what is expected on other UNIX systems,
+  # without it, it refuses to link an .so in if there's no reference from
+  # the main program, even if there is a proper -llibname option.
+  add_link_options(-Wl,-brtl)
+
+  # NOTE: There is no common, global LDFLAGS implementation for modules in cmake, but hhe currently produced modules are loadable .a modules now already
+  #set(MODULE_LDFLAGS "-avoid-version -module")
+
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  # NOTE: These are not needed in cmake, 1st should be explicitly set in CMakeLists.txt and not set by default, the 2nd is controlled by add_library(foo SHARED/STATIC...)
+  #set(MODULE_LDFLAGS "-avoid-version -dylib")
+  # NOTE: BUILD_WITH_INSTALL_RPATH/SKIP_BUILD_RPATH controls this on macOS
+  #TEST_NO_INSTALL_FLAG="-no-fast-install"
+
+  # NOTE: This is now seems to be an Apple/Xcode "only" issue, but probably much better a clang one, so later we might want to add this globally
+  # XCode15 new linker has some issues (e.g. https://developer.apple.com/forums/thread/737707)
+  # Let the user switch back to classic linking if needed (https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking)
+  option(FORCE_CLASSIC_LINKING "Enable classic linking" OFF)
+  if(FORCE_CLASSIC_LINKING)
+    # XCode15 new linker has some issues (e.g. https://developer.apple.com/forums/thread/737707)
+    # switch back to classic linking till not fixed (https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking)
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-ld_classic")
+  endif()
+
+  # Expose the modern, RFC 3542 IPv6 socket API instead of the deprecated RFC 2292 one
+  add_compile_definitions(__APPLE_USE_RFC_3542)
+
+elseif(CMAKE_SYSTEM_NAME STREQUAL "OSF1")
+  add_compile_definitions(_XOPEN_SOURCE=500 _XOPEN_SOURCE_EXTENDED _OSF_SOURCE _POSIX_C_SOURCE)
+
+endif()
+
+
+# Let the user specify a timezone directory
+set(TIMEZONE_DIR "" CACHE PATH "Use path as the directory to get the timezone files")
+if(TIMEZONE_DIR)
+  set(PATH_TIMEZONEDIR "${TIMEZONE_DIR}")
+endif()
+
+set(ENABLE_SPOOF_SOURCE "AUTO" CACHE STRING "Enable spoof source support: ON, OFF, AUTO")
+set_property(CACHE ENABLE_SPOOF_SOURCE PROPERTY STRINGS AUTO ON OFF)
+message(STATUS "Checking Spoof source support")
+
+# find_package(LIBNET) already set LIBNET_FOUND
+if(ENABLE_SPOOF_SOURCE STREQUAL "AUTO" OR ENABLE_SPOOF_SOURCE STREQUAL "auto")
+  if(LIBNET_FOUND)
+    set(SYSLOG_NG_ENABLE_SPOOF_SOURCE ON)
+    message(STATUS "  Spoof source support: enabled (AUTO, found libnet)")
+  else()
+    set(SYSLOG_NG_ENABLE_SPOOF_SOURCE OFF)
+    message(STATUS "  Spoof source support: disabled (AUTO, libnet not found)")
+  endif()
+elseif(ENABLE_SPOOF_SOURCE STREQUAL "ON")
+  if(NOT LIBNET_FOUND)
+    message(FATAL_ERROR "Could not find libnet, and spoof source support was explicitly enabled.")
+  endif()
+  set(SYSLOG_NG_ENABLE_SPOOF_SOURCE ON)
+  message(STATUS "  Spoof source support: enabled (forced ON)")
+elseif(ENABLE_SPOOF_SOURCE STREQUAL "OFF")
+  set(SYSLOG_NG_ENABLE_SPOOF_SOURCE OFF)
+  message(STATUS "  Spoof source support: disabled (forced OFF)")
+else()
+  message(FATAL_ERROR "Invalid value (${ENABLE_SPOOF_SOURCE}) for ENABLE_SPOOF_SOURCE (must be ON, OFF, or AUTO)")
+endif()
 
 if(ENABLE_LINUX_CAPS AND NOT PC_LIBCAP_FOUND)
   message(FATAL_ERROR "ENABLE_LINUX_CAPS is defined, but the POSIX capabilities library could not be found.")
@@ -420,7 +523,6 @@ if (BUILD_TESTING)
 endif()
 
 include(add_tests)
-
 if (BUILD_TESTING)
   if (NOT CRITERION_FOUND)
     message(FATAL_ERROR "BUILD_TESTING is enabled (by default, or explicitely) without criterion detected! You can turn off testing via the -DBUILD_TESTING=OFF cmake option.")
@@ -538,6 +640,7 @@ add_subdirectory(scripts)
 add_subdirectory(syslog-ng)
 add_subdirectory(syslog-ng-ctl)
 add_subdirectory(persist-tool)
+add_subdirectory(doc)
 add_subdirectory(tests)
 add_subdirectory(libtest)
 
@@ -558,8 +661,8 @@ set(PKG_CONFIG_MODULEDIR ${SYSLOG_NG_PATH_MODULEDIR})
 set(PKG_CONFIG_CONFIG_INCLUDEDIR ${SYSLOG_NG_PATH_CONFIG_INCLUDEDIR})
 set(PKG_CONFIG_SCLDIR ${SYSLOG_NG_PATH_SCLDIR})
 set(PKG_CONFIG_IVYKIS ${IVYKIS_INCLUDE_DIRS})
-set(PKG_CONFIG_PACKAGE_VERSION ${SYSLOG_NG_VERSION})
 set(PKG_CONFIG_INTERNAL_IVYKIS_CFLAGS ${IVYKIS_INCLUDE_DIRS})
+set(PKG_CONFIG_PACKAGE_VERSION ${SYSLOG_NG_VERSION})
 set(libdir "\${libdir}")
 set(includedir "\${includedir}")
 

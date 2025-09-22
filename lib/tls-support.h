@@ -28,15 +28,15 @@
 
 #include <syslog-ng-config.h>
 
-#ifndef SYSLOG_NG_HAVE_THREAD_KEYWORD
+#if ! SYSLOG_NG_HAVE_THREAD_KEYWORD
 
 #include <stdlib.h>
 #include <pthread.h>
 
-static struct __tls_variables *
-__tls_init_thread(pthread_key_t key, size_t size)
+static struct __slng_tls_variables *
+__slng_tls_init_thread(pthread_key_t key, size_t size)
 {
-  struct __tls_variables *ptr;
+  struct __slng_tls_variables *ptr;
 
   ptr = calloc(1, size);
   if (!ptr)
@@ -46,42 +46,42 @@ __tls_init_thread(pthread_key_t key, size_t size)
   return ptr;
 }
 
-static inline struct __tls_variables *__tls_deref_helper(pthread_key_t key, size_t size)
+static inline struct __slng_tls_variables *__slng_tls_deref_helper(pthread_key_t key, size_t size)
 {
-  struct __tls_variables *ptr;
+  struct __slng_tls_variables *ptr;
 
   ptr = pthread_getspecific(key);
   if (!ptr)
-    ptr = __tls_init_thread(key, size);
+    ptr = __slng_tls_init_thread(key, size);
   return ptr;
 }
 
 #define TLS_BLOCK_START                                         \
-  static pthread_key_t __tls_key;                               \
-  static void __attribute__((constructor)) __tls_init_key(void) \
+  static pthread_key_t __slng_tls_key;                               \
+  static void __attribute__((constructor)) __slng_tls_init_key(void) \
   {                                                             \
-    pthread_key_create(&__tls_key, free);                       \
+    pthread_key_create(&__slng_tls_key, free);                       \
   }                                                             \
                                                                 \
-  struct __tls_variables
+  struct __slng_tls_variables
 
 #define TLS_BLOCK_END
 
-#define __tls_deref(var)   (*({ struct __tls_variables *__ptr = __tls_deref_helper(__tls_key, sizeof(struct __tls_variables)); &__ptr->var; }))
+#define __slng_tls_deref(var)   (*({ struct __slng_tls_variables *__ptr = __slng_tls_deref_helper(__slng_tls_key, sizeof(struct __slng_tls_variables)); &__ptr->var; }))
 
 #define __thread #
 
 #else  /* SYSLOG_NG_HAVE_TLS */
 
 #define TLS_BLOCK_START                         \
-  struct __tls_variables
+  struct __slng_tls_variables
 
 #define TLS_BLOCK_END                           \
   ;                                             \
-  static __thread struct __tls_variables __tls
+  static __thread struct __slng_tls_variables __slng_tls
 
 
-#define __tls_deref(var)   (__tls.var)
+#define __slng_tls_deref(var)   (__slng_tls.var)
 
 #endif
 

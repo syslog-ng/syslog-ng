@@ -45,7 +45,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#ifdef HAVE_MALLOC_H
+#if SYSLOG_NG_HAVE_MALLOC_H
 #include <malloc.h>
 #endif
 

@@ -23,7 +23,7 @@
 
 #include "compat/getent-generic.h"
 
-#ifndef SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R
+#if ! SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R
 
 #include <glib.h>
 #include <errno.h>

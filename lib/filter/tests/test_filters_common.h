@@ -37,6 +37,12 @@ testcase(const gchar *msg,
          gboolean expected_result);
 
 void
+testcase_with_message(LogMessage *msg,
+                      const gchar *name,
+                      FilterExprNode *f,
+                      gboolean expected_result);
+
+void
 testcase_with_backref_chk(const gchar *msg,
                           FilterExprNode *f,
                           gboolean expected_result,

@@ -384,7 +384,7 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
-#define dns_cache __tls_deref(dns_cache)
+#define dns_cache __slng_tls_deref(dns_cache)
 
 /* DNS cache related options are global, independent of the configuration
  * (e.g.  GlobalConfig instance), and they are stored in the

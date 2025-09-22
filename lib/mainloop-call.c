@@ -51,7 +51,7 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
-#define call_info  __tls_deref(call_info)
+#define call_info  __slng_tls_deref(call_info)
 
 static GMutex main_task_lock;
 static struct iv_list_head main_task_queue = IV_LIST_HEAD_INIT(main_task_queue);

@@ -312,13 +312,20 @@ http_dd_set_content_compression(LogDriver *d, const gchar *encoding)
   return self->content_compression != CURL_COMPRESSION_UNKNOWN;
 }
 
-
 void
 http_dd_set_peer_verify(LogDriver *d, gboolean verify)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   self->peer_verify = verify;
+}
+
+void
+http_dd_set_send_message_data_in_header(LogDriver *d, gboolean value)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->send_message_data_in_header = value;
 }
 
 gboolean
@@ -520,6 +527,7 @@ http_dd_new(GlobalConfig *cfg)
 
   self->ssl_version = CURL_SSLVERSION_DEFAULT;
   self->peer_verify = TRUE;
+  self->send_message_data_in_header = TRUE;
   /* disable batching even if the global batch_lines is specified */
   self->super.batch_lines = 0;
   self->batch_bytes = 0;

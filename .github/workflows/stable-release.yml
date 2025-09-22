@@ -3,6 +3,10 @@
 # This is intentional as syslog-ng will be acquired from the tarball.
 
 name: Stable release
+permissions:
+  contents: read
+  packages: write
+  security-events: write
 
 on:
   workflow_dispatch:
@@ -58,14 +62,22 @@ jobs:
       gpg-key-base64: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_BASE64 }}
       gpg-key-passphrase: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_PASSPHRASE }}
 
-  test-packages:
+  test-deb-packages:
     needs: index-packages
-    uses: ./.github/workflows/test-apt-packages.yml
+    uses: ./.github/workflows/test-deb-packages.yml
+    with:
+      pkg-type: stable
+
+  test-rpm-packages:
+    needs: index-packages
+    uses: ./.github/workflows/test-rpm-packages.yml
     with:
       pkg-type: stable
 
   publish-docker-image:
-    needs: test-packages
+    needs:
+      - test-deb-packages
+      - test-rpm-packages
     uses: ./.github/workflows/publish-docker-image.yml
     with:
       pkg-type: stable

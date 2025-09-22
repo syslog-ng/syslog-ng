@@ -168,6 +168,27 @@ testcase(const gchar *msg,
 }
 
 void
+testcase_with_message(LogMessage *msg,
+                      const gchar *name,
+                      FilterExprNode *f,
+                      gboolean expected_result)
+{
+  gboolean res;
+
+  res = filter_expr_init(f, configuration);
+  cr_assert(res, "Filter init failed; name='%s'\n", name);
+
+  res = filter_expr_eval(f, msg);
+  cr_assert_eq(res, expected_result, "Filter test failed; name='%s'\n", name);
+
+  f->comp = !f->comp;
+  res = filter_expr_eval(f, msg);
+  cr_assert_eq(res, !expected_result, "Filter test failed (negated); name='%s'\n", name);
+
+  filter_expr_unref(f);
+}
+
+void
 testcase_with_backref_chk(const gchar *msg,
                           FilterExprNode *f,
                           gboolean expected_result,

@@ -512,11 +512,14 @@ _on_file_deleted(FileReader *self)
     log_reader_trigger_one_check(self->reader);
 }
 
+#if SYSLOG_NG_HAVE_INOTIFY
 static inline void
 _on_file_modified(FileReader *self)
 {
-  log_reader_trigger_one_check(self->reader);
+  if (self->options->follow_method == FM_INOTIFY)
+    log_reader_trigger_one_check(self->reader);
 }
+#endif
 
 static void
 _on_read_error(FileReader *self)
@@ -549,10 +552,12 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
       _on_file_deleted(self);
       break;
 
+#if SYSLOG_NG_HAVE_INOTIFY
     case NC_FILE_MODIFIED:
       /* This is a notification from the directory monitor, we can read the file for changes */
       _on_file_modified(self);
       break;
+#endif
 
     default:
       break;
