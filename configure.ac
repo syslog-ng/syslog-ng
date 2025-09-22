@@ -602,8 +602,8 @@ dnl ============================================================
 dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
 AC_DEFUN([CHECK_HEADERS_AND_DEFINE],
 [
-    m4_foreach([_hdr], m4_split([$1]), [
-        CHECK_HEADER_AND_DEFINE(m4_normalize(_hdr))
+    m4_foreach([_hdr], m4_split(m4_normalize([$1])), [
+        CHECK_HEADER_AND_DEFINE(_hdr)
     ])
 ])
 
@@ -629,8 +629,8 @@ dnl ============================================================
 dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
 AC_DEFUN([CHECK_FUNCS_AND_DEFINE],
 [
-    m4_foreach([_func], m4_split([$1]), [
-        CHECK_FUNC_AND_DEFINE(m4_normalize(_func))
+    m4_foreach([_func], m4_split(m4_normalize([$1])), [
+        CHECK_FUNC_AND_DEFINE(_func)
     ])
 ])
 
