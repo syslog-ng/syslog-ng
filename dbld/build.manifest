@@ -31,7 +31,7 @@
 debian-bullseye		python3,nojava,notzdatalegacy
 debian-bookworm		python3,nojava,notzdatalegacy
 debian-trixie		python3,nojava,notzdatalegacy
-debian-testing		python3,nojava
+debian-testing		python3,nojava,nocriterion
 debian-sid			python3,nojava
 
 # on ubuntu, we start using Python3 at focal onwards.

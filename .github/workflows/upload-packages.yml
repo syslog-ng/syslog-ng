@@ -16,12 +16,11 @@ on:
           #
           # upper block for   dbld docker + binary packages
           # lower block for   dbld docker + binary packages + docker binary
-          #
-          #  "debian-testing", //failing now, investigate
           '[
             "debian-bullseye",
             "debian-bookworm",
             "debian-sid",
+            "debian-testing",
             "ubuntu-jammy",
             "ubuntu-noble",
             "ubuntu-plucky",
