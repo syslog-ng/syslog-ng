@@ -185,7 +185,6 @@ syslog-ng packages are released for the following distribution versions:
 | Debian 12 | debian-bookworm-arm64 | arm64 |
 | Debian 11 | debian-bullseye | x86-64 |
 | Debian Unstable | debian-sid | x86-64 |
-| Debian Testing | debian-testing | x86-64 |
 
 #### Adding the APT repository
 

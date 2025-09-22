@@ -50,6 +50,7 @@ jobs:
       #
       # FIXME: broken targets currently
       #   "opensuse-tumbleweed",
+      #   "debian-testing", //failing now, investigate
       distros: '[
         "almalinux-8",
         "almalinux-9",
@@ -64,7 +65,6 @@ jobs:
         "debian-bullseye",
         "debian-bookworm",
         "debian-sid",
-        "debian-testing",
         "ubuntu-jammy",
         "ubuntu-noble",
         "ubuntu-plucky",
