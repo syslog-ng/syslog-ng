@@ -26,10 +26,6 @@ jobs:
           #       Turn it off for now. Check if it is a runner or a vm issue.
           - runner: ubuntu-24.04-arm
             arch: aarch64
-          # FIXME: The current FreeBSD 15 VM base OS is outdated, the latest packages are not available/installable
-          #       https://github.com/vmactions/freebsd-vm/issues/108
-          - runner: ubuntu-24.04
-            release: 15.0
       fail-fast: false
 
     runs-on: ${{ matrix.runner }}
