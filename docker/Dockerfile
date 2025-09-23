@@ -22,7 +22,11 @@
 #
 #############################################################################
 
-FROM debian:trixie
+# Declare the BASE_IMAGE ARG first!
+ARG BASE_IMAGE=debian:trixie
+
+FROM ${BASE_IMAGE}
+
 LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/syslog-ng/syslog-ng"
 
@@ -43,8 +47,10 @@ RUN ARCH=$(arch) && \
   else \
     CONTAINER_ARCH="amd64"; CONTAINER_NAME_SUFFIX=""; \
   fi && \
-  wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg && \
-  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg arch=$CONTAINER_ARCH] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} debian-bookworm$CONTAINER_NAME_SUFFIX" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
+  DISTRO=$(echo $BASE_IMAGE | cut -d: -f1) && \
+  CODENAME=$(echo $BASE_IMAGE | cut -d: -f2) && \
+  wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor -o /usr/share/keyrings/ose-repo-archive-keyring.gpg && \
+  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg arch=$CONTAINER_ARCH] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} ${DISTRO}-${CODENAME}$CONTAINER_NAME_SUFFIX" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
 
 RUN apt-get update -qq && apt-get install -y \
     libdbd-mysql libdbd-pgsql libdbd-sqlite3 syslog-ng libjemalloc2 \
