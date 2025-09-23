@@ -16,25 +16,121 @@ on:
 jobs:
   general:
     runs-on: ${{ matrix.platform }}
-    name: general (${{ matrix.build-tool }}-${{ matrix.cc }}${{ matrix.image_arch_suffix != '' && matrix.image_arch_suffix || '-X86-64' }})
+    name: ${{ matrix.image.name }}-${{ matrix.build-tool }}-${{ matrix.cc }}${{ matrix.image.arch_suffix != '' && matrix.image.arch_suffix || '-X86-64' }}
     container:
-      image: ghcr.io/syslog-ng/dbld-devshell${{ matrix.image_arch_suffix }}:latest
+      image: ghcr.io/syslog-ng/dbld-${{ matrix.image.name }}${{ matrix.image.arch_suffix }}:latest
       options: --privileged --ulimit core=-1
 
     strategy:
+      fail-fast: false
       matrix:
         build-tool: [autotools, cmake]
         cc: [gcc, clang]
         platform: [ ubuntu-24.04-arm, ubuntu-latest]
-        include:
+        image:
+          # We test building in dbld docker images only that have no binary packages, or docker installations
+          # OS varians that have binary packages or docker installations will be built by the 'Nghtly release'
+          # NOTE: Keep the image list synced with the dbld-images.yaml !!!
+          # --------------------------------------------------------------------
+          # Current Build Matrix Coverage
+          #
+          # image - name        | cmake | autotools | gcc | clang | X86-64 | arm64
+          # --------------------|-------|-----------|-----|-------|--------|------
+          # almalinux-8         |   x   |           |  x  |   x   |   x    |
+          # almalinux-9         |   x   |           |  x  |   x   |   x    |
+          # almalinux-10        |   x   |           |  x  |   x   |   x    |
+          # centos-stream9      |   x   |           |  x  |   x   |   x    |
+          # centos-stream10     |   x   |           |  x  |   x   |   x    |
+          # fedora-latest       |   x   |           |  x  |   x   |   x    |
+          # fedora-rawhide      |   x   |           |  x  |   x   |   x    |
+          # opensuse-tumbleweed |       |           |     |       |        |
+          # rocky-9             |   x   |           |  x  |   x   |   x    |
+          # ubuntu-focal        |   x   |           |  x  |   x   |   x    |
+          # devshell            |   x   |     x     |  x  |   x   |   x    |   x
+          #
+          # Notes:
+          # - All non-devshell images: cmake only, both gcc and clang, on x86-64.
+          # - devshell: cmake + autotools, gcc + clang, both on x86-64 and arm64.
+          # --------------------------------------------------------------------
+          - name: almalinux-8
+            # grpc/protobuf is presented, but configure cannot find protobuf
+            # python is presented, but configure cannot find it
+            configure_flags: '--disable-sql --disable-grpc --disable-python --disable-ebpf'
+            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_GRPC=OFF -DENABLE_PYTHON=OFF -DENABLE_EBPF=OFF'
+          - name: almalinux-9
+            # grpc is presented, but does not compile
+            configure_flags: '--disable-sql --disable-grpc'
+            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_GRPC=OFF'
+          - name: almalinux-10
+            configure_flags: '--disable-sql --disable-mqtt'
+            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF'
+          - name: centos-stream9
+            # grpc is presented, but does not compile
+            configure_flags: '--disable-sql --disable-mqtt --disable-grpc'
+            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF -DENABLE_GRPC=OFF'
+          - name: centos-stream10
+            configure_flags: '--disable-sql --disable-mqtt'
+            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF'
+          - name: fedora-latest
+            configure_flags: '--disable-stackdump'
+            cmake_configure_flags: '-DENABLE_STACKDUMP=OFF'
+          - name: fedora-rawhide
+          # TODO: We still need to implement install_rpm_build_deps for opensuse
+          #- name: opensuse-tumbleweed
+          - name: rocky-9
+          - name: ubuntu-focal
+            configure_flags: '--disable-ebpf'
+            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+          - name: devshell
+            # Now only for devsell we support -Werror, all other none-packaged targets are just best efforts
+            cflags: '-Werror'
+            configure_flags: '--enable-stackdump'
+            cmake_configure_flags: '-DENABLE_STACKDUMP=ON'
+        exclude:
           - platform: ubuntu-24.04-arm
-            image_arch_suffix: '-arm64'
+          # Test autotools only in devshell, all other none-packaged targets are just best efforts with autotools, use cmake
+          - build-tool: autotools
+        include:
+          # Add back excluded autotools builds for devshell
           - platform: ubuntu-latest
-            image_arch_suffix: ''
-      fail-fast: false
+            image:
+              name: devshell
+            build-tool: autotools
+            cc: gcc
+          - platform: ubuntu-latest
+            image:
+              name: devshell
+            build-tool: autotools
+            cc: clang
+          # Currently testing ARM64 in devshell only
+          - platform: ubuntu-24.04-arm
+            image:
+              name: devshell
+              arch_suffix: '-arm64'
+            build-tool: autotools
+            cc: gcc
+          - platform: ubuntu-24.04-arm
+            image:
+              name: devshell
+              arch_suffix: '-arm64'
+            build-tool: autotools
+            cc: clang
+          - platform: ubuntu-24.04-arm
+            image:
+              name: devshell
+              arch_suffix: '-arm64'
+            build-tool: cmake
+            cc: gcc
+          - platform: ubuntu-24.04-arm
+            image:
+              name: devshell
+              arch_suffix: '-arm64'
+            build-tool: cmake
+            cc: clang
 
     steps:
       - name: Checkout syslog-ng source
+        # if: ${{ matrix.image.name }} == 'devshell' || ${{ github.event_name }} == 'schedule'
         uses: actions/checkout@v4
 
       - name: Setup Git safedir
@@ -54,7 +150,7 @@ jobs:
           PYTHONUSERBASE="${HOME}/python_packages"
           CC="${{ matrix.cc }}"
           CXX=`[ $CC = gcc ] && echo g++ || echo clang++`
-          CFLAGS="-Werror -Wno-unused-command-line-argument"
+          CFLAGS="${{ matrix.image.cflags}} -Wno-unused-command-line-argument"
           CXXFLAGS="${CFLAGS}"
           SYSLOG_NG_INSTALL_DIR=${HOME}/install/syslog-ng
           CONFIGURE_FLAGS="
@@ -68,8 +164,7 @@ jobs:
             --with-ivykis=internal
             --disable-java
             --disable-java-modules
-            --enable-ebpf
-            --enable-stackdump
+            ${{ matrix.image.configure_flags }}
           "
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
@@ -82,7 +177,7 @@ jobs:
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
             -DENABLE_EBPF=ON
-            -DENABLE_LIBUNWIND=ON
+            ${{ matrix.image.cmake_configure_flags }}
           "
           gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CFLAGS CXXFLAGS CONFIGURE_FLAGS CMAKE_CONFIGURE_FLAGS
           gh_path "${PYTHONUSERBASE}"
@@ -113,21 +208,27 @@ jobs:
         working-directory: ./build
         run: make V=1 -j $(nproc)
 
-      - name: make check
-        id: make_check
-        working-directory: ./build
-        run: make V=1 check || (mkdir -p ${COREFILES_DIR} && find . -executable -a -type f | tar -cf ${COREFILES_DIR}/test-binaries.tar  --files-from=- && cat test-suite.log && false)
-
       - name: make install
         working-directory: ./build
         run: |
           make install
-          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -V
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -Fdevt -V 2>&1 |sort
+
+      - name: make check
+        # Skip testing steps for now in none-devshell images
+        if: ${{ matrix.image.name == 'devshell' }}
+        id: make_check
+        working-directory: ./build
+        run: make V=1 check || (mkdir -p ${COREFILES_DIR} && find . -executable -a -type f | tar -cf ${COREFILES_DIR}/test-binaries.tar  --files-from=- && cat test-suite.log && false)
 
       - name: Python virtualenv for syslog-ng runtime
+        # Skip testing steps for now in none-devshell images
+        if: ${{ matrix.image.name == 'devshell' }}
         run: ${SYSLOG_NG_INSTALL_DIR}/bin/syslog-ng-update-virtualenv -y
 
       - name: Light
+        # Skip testing steps for now in none-devshell images
+        if: ${{ matrix.image.name == 'devshell' }}
         id: light
         working-directory: ./build
         run: |
@@ -135,19 +236,21 @@ jobs:
           make light-check
 
       - name: make func-test
+        # Skip testing steps for now in none-devshell images
+        if: ${{ matrix.image.name == 'devshell' }}
         working-directory: ./build
         run: make VERBOSE=1 func-test
 
       - name: "Artifact: test-suite.log"
         uses: actions/upload-artifact@v4
-        if: always() && steps.make_check.outcome == 'failure'
+        if: ${{ matrix.image.name == 'devshell' && always() && steps.make_check.outcome == 'failure' }}
         with:
           name: test-suite-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: ${{ github.workspace }}/build/test-suite.log
 
       - name: "Prepare artifact: light-reports"
         id: prepare-light-reports
-        if: always() && steps.light.outcome == 'failure'
+        if: ${{ matrix.image.name == 'devshell' && always() && steps.light.outcome == 'failure' }}
         run: |
           REPORTS_DIR=tests/light/reports
           cp -r ${REPORTS_DIR} /tmp/light-reports
@@ -156,21 +259,21 @@ jobs:
 
       - name: "Artifact: light-reports"
         uses: actions/upload-artifact@v4
-        if: always() && steps.prepare-light-reports.outcome == 'success'
+        if: ${{ matrix.image.name == 'devshell' && always() && steps.prepare-light-reports.outcome == 'success' }}
         with:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: /tmp/light-reports.tar.gz
 
       - name: Dump corefile backtrace
         working-directory: ${{ env.COREFILES_DIR }}
-        if: failure()
+        if: ${{ matrix.image.name == 'devshell' && failure() }}
         run: |
           find -name "core.*syslog-ng*" -exec \
             gdb --ex="thread apply all bt full" --ex="quit" ${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng --core {} \;
 
       - name: "Artifact: corefiles"
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: ${{ matrix.image.name == 'devshell' && failure() }}
         with:
           name: corefiles-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: ${{ env.COREFILES_DIR }}
