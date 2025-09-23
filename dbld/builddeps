@@ -3,7 +3,6 @@
 . /dbld/functions.sh
 DBLD_DIR=/dbld
 
-YUM_INSTALL="yum install -y"
 DNF_INSTALL="dnf install -y"
 APT_INSTALL="apt-get install -y --no-install-recommends"
 ZYPPER_INSTALL="zypper -n install"
@@ -13,9 +12,6 @@ set -x
 
 function update_packages() {
     case "${OS_DISTRIBUTION}" in
-        centos|almalinux)
-            yum update -y
-            ;;
         debian|ubuntu)
             if [ "$JENKINS_URL" = "https://ci.syslog-ng.com/" ]; then
                 # we are running under the ci.syslog-ng.com thus AWS. Use their
@@ -42,7 +38,7 @@ function update_packages() {
             curl -s "http://whatismyip.akamai.com"
 
             ;;
-        fedora|rhel|rocky)
+        fedora|rhel|rocky|centos|almalinux)
             dnf upgrade -y
             ;;
         opensuse)
@@ -72,13 +68,10 @@ function workaround_rpm_repos() {
 function install_dbld_dependencies()
 {
     case "${OS_DISTRIBUTION}" in
-        centos|almalinux)
-            $YUM_INSTALL yum-utils yum-plugin-copr sudo
-            ;;
         debian|ubuntu)
             $APT_INSTALL curl gnupg2
             ;;
-        fedora|rhel|rocky)
+        centos|almalinux|fedora|rhel|rocky)
             $DNF_INSTALL dnf-plugins-core sudo
             ;;
         opensuse)
@@ -188,8 +181,8 @@ function add_copr_repo {
 
 function add_epel_repo {
     case "${OS_DISTRIBUTION}" in
-        centos|almalinux-8|almalinux-9)
-            $YUM_INSTALL epel-release
+        centos|almalinux-8|almalinux-9|rocky)
+            $DNF_INSTALL epel-release
             ;;
         rhel|almalinux)
             # $DNF_INSTALL epel-release
@@ -200,9 +193,6 @@ function add_epel_repo {
                 rpm -Uvh epel-next-release-latest-${OS_DISTRIBUTION_CODE_NAME}.noarch.rpm
             fi
             /usr/bin/crb enable
-            ;;
-        rocky)
-            $DNF_INSTALL epel-release
             ;;
     esac
 }
@@ -229,10 +219,7 @@ function install_rpm_build_deps {
     fi
 
     case "${OS_DISTRIBUTION}" in
-        centos|almalinux-8|almalinux-9)
-            rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
-            ;;
-        fedora|rhel|almalinux|rocky)
+        fedora|rhel|almalinux|centos|rocky)
             rpm_run_build_command dnf builddep -y --allowerasing ${RPM_SPEC_FILE}
             ;;
         opensuse)
@@ -240,11 +227,6 @@ function install_rpm_build_deps {
             rpm_run_build_command zypper --build-deps-only ${RPM_SPEC_FILE}
             ;;
     esac
-}
-
-function install_yum_packages {
-    $YUM_INSTALL findutils
-    filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs $YUM_INSTALL
 }
 
 function install_dnf_packages {
