@@ -509,7 +509,7 @@ dnl     $3 = override macro name (optional)
 dnl ============================================================
 AC_DEFUN([CHECK_AND_DEFINE],
 [
-    AC_MSG_NOTICE([Checking $target_kind $2 $3])
+    dnl AC_MSG_NOTICE([Checking $target_kind $2 $3])
 
     dnl Figure out what we are checking
     m4_case([$1],
@@ -521,19 +521,19 @@ AC_DEFUN([CHECK_AND_DEFINE],
 
     dnl Safely copy the cached result into shell var "cacheval"
     AS_VAR_COPY([cacheval], [$cachevar])
-    AC_MSG_NOTICE([ -> cache var: $cachevar = $cacheval])
+    dnl AC_MSG_NOTICE([ -> cache var: $cachevar = $cacheval])
 
     m4_ifval([$3],
         [
             dnl override define name provided
-            AC_MSG_NOTICE([ -> define (override): $3])
+            dnl AC_MSG_NOTICE([ -> define (override): $3])
             AS_IF([test "x$cacheval" = "xyes"],
                 [AC_DEFINE([$3], [1], [Define if $2 is present])],
                 [AC_DEFINE([$3], [0], [Define if $2 is present])])
         ],
         [
             dnl default define name
-            AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]))
+            dnl AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]))
             AS_IF([test "x$cacheval" = "xyes"],
                 [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [1], [Define if $2 is present])],
                 [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [0], [Define if $2 is present])])
@@ -602,8 +602,8 @@ dnl ============================================================
 dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
 AC_DEFUN([CHECK_HEADERS_AND_DEFINE],
 [
-    m4_foreach([_hdr], m4_split([$1]), [
-        CHECK_HEADER_AND_DEFINE(m4_normalize(_hdr))
+    m4_foreach([_hdr], m4_split(m4_normalize([$1])), [
+        CHECK_HEADER_AND_DEFINE(_hdr)
     ])
 ])
 
@@ -629,8 +629,8 @@ dnl ============================================================
 dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
 AC_DEFUN([CHECK_FUNCS_AND_DEFINE],
 [
-    m4_foreach([_func], m4_split([$1]), [
-        CHECK_FUNC_AND_DEFINE(m4_normalize(_func))
+    m4_foreach([_func], m4_split(m4_normalize([$1])), [
+        CHECK_FUNC_AND_DEFINE(_func)
     ])
 ])
 
