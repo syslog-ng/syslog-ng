@@ -216,19 +216,19 @@ jobs:
 
       - name: make check
         # Skip testing steps for now in none-devshell images
-        if: ${{ matrix.image.name == 'devshell' }}
+        #if: ${{ matrix.image.name == 'devshell' }}
         id: make_check
         working-directory: ./build
         run: make V=1 check || (mkdir -p ${COREFILES_DIR} && find . -executable -a -type f | tar -cf ${COREFILES_DIR}/test-binaries.tar  --files-from=- && cat test-suite.log && false)
 
       - name: Python virtualenv for syslog-ng runtime
         # Skip testing steps for now in none-devshell images
-        if: ${{ matrix.image.name == 'devshell' }}
+        #if: ${{ matrix.image.name == 'devshell' }}
         run: ${SYSLOG_NG_INSTALL_DIR}/bin/syslog-ng-update-virtualenv -y
 
       - name: Light
         # Skip testing steps for now in none-devshell images
-        if: ${{ matrix.image.name == 'devshell' }}
+        #if: ${{ matrix.image.name == 'devshell' }}
         id: light
         working-directory: ./build
         run: |
@@ -237,7 +237,7 @@ jobs:
 
       - name: make func-test
         # Skip testing steps for now in none-devshell images
-        if: ${{ matrix.image.name == 'devshell' }}
+        #if: ${{ matrix.image.name == 'devshell' }}
         working-directory: ./build
         run: make VERBOSE=1 func-test
 
