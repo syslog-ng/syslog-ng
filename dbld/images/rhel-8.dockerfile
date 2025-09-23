@@ -25,6 +25,7 @@ RUN /dbld/builddeps install_rpm_build_deps
 
 RUN /dbld/builddeps install_criterion
 RUN /dbld/builddeps install_gradle
+RUN /dbld/builddeps install_bison_from_source
 
 VOLUME /source
 VOLUME /build
