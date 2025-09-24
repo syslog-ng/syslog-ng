@@ -123,7 +123,7 @@ jobs:
           cd $GITHUB_WORKSPACE; pwd
 
           cmake --build ./build -j ${THREADS} --target install
-          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -V
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV 2>&1 |sort
 
       - name: cmake check
         shell: freebsd {0}
