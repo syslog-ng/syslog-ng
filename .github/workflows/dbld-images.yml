@@ -12,13 +12,12 @@ on:
       - '.github/workflows/dbld-images.yml'
 
   push:
+    branches: [ "develop", "master" ]
     paths:
       - 'dbld/**'
       - 'packaging/rhel/**'
       - 'packaging/debian/**'
       - '.github/workflows/dbld-images.yml'
-      - 'master'
-      - 'develop'
 
   schedule:
     - cron: '00 22 * * *'
