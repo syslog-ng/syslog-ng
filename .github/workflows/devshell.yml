@@ -6,6 +6,12 @@ on:
     branches: [ "develop", "master" ]
   schedule:
     - cron: '00 21 * * *'
+  workflow_dispatch:
+    inputs:
+      use_all:
+        description: Should we build for all iamges? (true/false)
+        required: false
+        default: "false"
 
 jobs:
   general:
