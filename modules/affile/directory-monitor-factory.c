@@ -23,13 +23,12 @@
 #include "directory-monitor-factory.h"
 #include "directory-monitor-poll.h"
 
-#if SYSLOG_NG_HAVE_INOTIFY
+#if SYSLOG_NG_HAVE_KQUEUE
+#include "directory-monitor-kqueue.h"
+#elif SYSLOG_NG_HAVE_INOTIFY
 #include "directory-monitor-inotify.h"
 #endif
 
-#if SYSLOG_NG_HAVE_KQUEUE
-#include "directory-monitor-kqueue.h"
-#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -45,16 +44,15 @@ directory_monitor_factory_get_monitor_method(const gchar *method)
     {
       return MM_POLL;
     }
-#if SYSLOG_NG_HAVE_INOTIFY
-  else if (strcmp(method, "inotify") == 0)
-    {
-      return MM_INOTIFY;
-    }
-#endif
 #if SYSLOG_NG_HAVE_KQUEUE
   else if (strcmp(method, "kqueue") == 0)
     {
       return MM_KQUEUE;
+    }
+#elif SYSLOG_NG_HAVE_INOTIFY
+  else if (strcmp(method, "inotify") == 0)
+    {
+      return MM_INOTIFY;
     }
 #endif
   return MM_UNKNOWN;
@@ -64,20 +62,19 @@ DirectoryMonitorConstructor
 directory_monitor_factory_get_constructor(DirectoryMonitorOptions *options)
 {
   DirectoryMonitorConstructor constructor = NULL;
-
-#if SYSLOG_NG_HAVE_INOTIFY
+  
+#if SYSLOG_NG_HAVE_KQUEUE
+  if (constructor == NULL && (options->method == MM_AUTO || options->method == MM_KQUEUE))
+    {
+      constructor = directory_monitor_kqueue_new;
+    }
+#elif SYSLOG_NG_HAVE_INOTIFY
   if (options->method == MM_AUTO || options->method == MM_INOTIFY)
     {
       constructor = directory_monitor_inotify_new;
     }
 #endif
 
-#if SYSLOG_NG_HAVE_KQUEUE
-  if (constructor == NULL && (options->method == MM_AUTO || options->method == MM_KQUEUE))
-    {
-      constructor = directory_monitor_kqueue_new;
-    }
-#endif
 
   if (constructor == NULL && (options->method == MM_AUTO || options->method == MM_POLL))
     {
