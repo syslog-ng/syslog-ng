@@ -53,6 +53,14 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/logrotate.h \
 	modules/affile/logrotate.c
 
+if HAVE_KQUEUE
+  modules_affile_libaffile_la_SOURCES +=      \
+  modules/affile/directory-monitor-kqueue.h  \
+  modules/affile/directory-monitor-kqueue.c
+else
+  EXTRA_DIST +=                               \
+  modules/affile/directory-monitor-kqueue.h  \
+  modules/affile/directory-monitor-kqueue.c
 if HAVE_INOTIFY
   modules_affile_libaffile_la_SOURCES +=      \
   modules/affile/directory-monitor-inotify.h  \
@@ -62,15 +70,6 @@ else
   modules/affile/directory-monitor-inotify.h  \
   modules/affile/directory-monitor-inotify.c
 endif
-
-if HAVE_KQUEUE
-  modules_affile_libaffile_la_SOURCES +=      \
-  modules/affile/directory-monitor-kqueue.h  \
-  modules/affile/directory-monitor-kqueue.c
-else
-  EXTRA_DIST +=                               \
-  modules/affile/directory-monitor-kqueue.h  \
-  modules/affile/directory-monitor-kqueue.c
 endif
 
 BUILT_SOURCES				+= 			\
