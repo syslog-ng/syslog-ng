@@ -57,6 +57,7 @@ jobs:
             # python is presented, but configure cannot find it
             configure_flags: '--disable-sql --disable-grpc --disable-python --disable-ebpf'
             cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_GRPC=OFF -DENABLE_PYTHON=OFF -DENABLE_EBPF=OFF'
+            has_no_python: 'true'
           - name: almalinux-9
             # grpc is presented, but does not compile
             configure_flags: '--disable-sql --disable-grpc'
@@ -224,11 +225,13 @@ jobs:
       - name: Python virtualenv for syslog-ng runtime
         # Skip testing steps for now in none-devshell images
         #if: ${{ matrix.image.name == 'devshell' }}
+        if: ${{ matrix.image.has_no_python != 'true' }}
         run: ${SYSLOG_NG_INSTALL_DIR}/bin/syslog-ng-update-virtualenv -y
 
       - name: Light
         # Skip testing steps for now in none-devshell images
         #if: ${{ matrix.image.name == 'devshell' }}
+        if: ${{ matrix.image.has_no_python != 'true' }}
         id: light
         working-directory: ./build
         run: |
@@ -238,6 +241,7 @@ jobs:
       - name: make func-test
         # Skip testing steps for now in none-devshell images
         #if: ${{ matrix.image.name == 'devshell' }}
+        if: ${{ matrix.image.has_no_python != 'true' }}
         working-directory: ./build
         run: make VERBOSE=1 func-test
 
