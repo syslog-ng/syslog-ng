@@ -46,7 +46,22 @@ jobs:
           # opensuse-tumbleweed |       |           |     |       |        |
           # rocky-9             |   x   |           |  x  |   x   |   x    |
           # ubuntu-focal        |   x   |           |  x  |   x   |   x    |
+          # --------------------------------------------------------------------
+          # debian-bullseye
+          # debian-bookworm
+          # debian-testing
+          # debian-sid
+          # ubuntu-jammy
+          # ubuntu-noble
+          # ubuntu-plucky
+          # rhel-8
+          # rhel-9
+          # rhel-10
+          # --------------------------------------------------------------------
+          # debian-trixie
+          # --------------------------------------------------------------------
           # devshell            |   x   |     x     |  x  |   x   |   x    |   x
+          # --------------------------------------------------------------------
           #
           # Notes:
           # - All non-devshell images: cmake only, both gcc and clang, on x86-64.
@@ -55,9 +70,9 @@ jobs:
           - name: almalinux-8
             # grpc/protobuf is presented, but configure cannot find protobuf
             # python is presented, but configure cannot find it
-            configure_flags: '--disable-sql --disable-grpc --disable-python --disable-ebpf'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_GRPC=OFF -DENABLE_PYTHON=OFF -DENABLE_EBPF=OFF'
-            has_no_python: 'true'
+            configure_flags: '--disable-sql --disable-grpc --disable-ebpf --with-python=3.9'
+            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_GRPC=OFF -DENABLE_EBPF=OFF -DPYTHON_VERSION=3.9'
+            # has_no_python: 'true'
           - name: almalinux-9
             # grpc is presented, but does not compile
             configure_flags: '--disable-sql --disable-grpc'
@@ -80,8 +95,32 @@ jobs:
           #- name: opensuse-tumbleweed
           - name: rocky-9
           - name: ubuntu-focal
+            # too old ebpf
             configure_flags: '--disable-ebpf'
             cmake_configure_flags: '-DENABLE_EBPF=OFF'
+          # --------------------------------------------------------------------
+          - name: debian-bullseye
+            # too old ebpf
+            configure_flags: '--disable-ebpf'
+            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+          - name: debian-bookworm
+          - name: debian-testing
+          - name: debian-sid
+          - name: ubuntu-jammy
+            # too old ebpf
+            configure_flags: '--disable-ebpf'
+            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+          - name: ubuntu-noble
+            # no bpftool ?!?
+            configure_flags: '--disable-ebpf'
+            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+          - name: ubuntu-plucky
+          - name: rhel-8
+          - name: rhel-9
+          - name: rhel-10
+          # --------------------------------------------------------------------
+          - name: debian-trixie
+          # --------------------------------------------------------------------
           - name: devshell
             # Now only for devsell we support -Werror, all other none-packaged targets are just best efforts
             cflags: '-Werror'
@@ -131,13 +170,15 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        # if: ${{ matrix.image.name }} == 'devshell' || ${{ github.event_name }} == 'schedule'
+        if: ${{ matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all }} == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Git safedir
+        if: ${{ matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all }} == 'true'
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - name: Setup environment
+        if: ${{ matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all }} == 'true'
         run: |
           . .github/workflows/gh-tools.sh
 
@@ -184,13 +225,13 @@ jobs:
           gh_path "${PYTHONUSERBASE}"
 
       - name: autogen.sh
-        if: matrix.build-tool == 'autotools'
+        if: ${{ matrix.build-tool == 'autotools' && (matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true') }}
         run: |
           env | sort
           ./autogen.sh
 
       - name: autotools configure
-        if: matrix.build-tool == 'autotools'
+        if: ${{ matrix.build-tool == 'autotools' && (matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true') }}
         run: |
           env | sort
           mkdir build
@@ -198,7 +239,7 @@ jobs:
           ../configure ${CONFIGURE_FLAGS}
 
       - name: cmake configure
-        if: matrix.build-tool == 'cmake'
+        if: ${{ matrix.build-tool == 'cmake' && (matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true') }}
         run: |
           env | sort
           mkdir build
@@ -206,32 +247,32 @@ jobs:
           cmake ${CMAKE_CONFIGURE_FLAGS} ..
 
       - name: make
+        if: ${{ matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true' }}
         working-directory: ./build
         run: make V=1 -j $(nproc)
 
       - name: make install
+        if: ${{ matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true' }}
         working-directory: ./build
         run: |
           make install
           "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -Fdevt -V 2>&1 |sort
 
       - name: make check
-        # Skip testing steps for now in none-devshell images
-        #if: ${{ matrix.image.name == 'devshell' }}
+        # Skip testing for now in none-devshell images
+        if: ${{ matrix.image.name == 'devshell' || inputs.use_all == 'true' }}
         id: make_check
         working-directory: ./build
         run: make V=1 check || (mkdir -p ${COREFILES_DIR} && find . -executable -a -type f | tar -cf ${COREFILES_DIR}/test-binaries.tar  --files-from=- && cat test-suite.log && false)
 
       - name: Python virtualenv for syslog-ng runtime
-        # Skip testing steps for now in none-devshell images
-        #if: ${{ matrix.image.name == 'devshell' }}
-        if: ${{ matrix.image.has_no_python != 'true' }}
+        # Skip Python virtualenv setup for now in none-devshell images or if no python support in the image yet
+        if: ${{ (matrix.image.name == 'devshell' || inputs.use_all == 'true') && matrix.image.has_no_python != 'true' }}
         run: ${SYSLOG_NG_INSTALL_DIR}/bin/syslog-ng-update-virtualenv -y
 
       - name: Light
-        # Skip testing steps for now in none-devshell images
-        #if: ${{ matrix.image.name == 'devshell' }}
-        if: ${{ matrix.image.has_no_python != 'true' }}
+        # Skip Light testing for now in none-devshell images or if no python support in the image yet
+        if: ${{ (matrix.image.name == 'devshell' || inputs.use_all == 'true') && matrix.image.has_no_python != 'true' }}
         id: light
         working-directory: ./build
         run: |
@@ -239,14 +280,14 @@ jobs:
           make light-check
 
       - name: make func-test
-        # Skip testing steps for now in none-devshell images
-        #if: ${{ matrix.image.name == 'devshell' }}
-        if: ${{ matrix.image.has_no_python != 'true' }}
+        # Skip func-test testing for now in none-devshell images or if no python support in the image yet
+        if: ${{ (matrix.image.name == 'devshell' || inputs.use_all == 'true') && matrix.image.has_no_python != 'true' }}
         working-directory: ./build
         run: make VERBOSE=1 func-test
 
       - name: "Artifact: test-suite.log"
         uses: actions/upload-artifact@v4
+        # Handle failures only for devshell images now
         if: ${{ matrix.image.name == 'devshell' && always() && steps.make_check.outcome == 'failure' }}
         with:
           name: test-suite-${{ matrix.build-tool }}-${{ matrix.cc }}
@@ -254,6 +295,7 @@ jobs:
 
       - name: "Prepare artifact: light-reports"
         id: prepare-light-reports
+        # Handle failures only for devshell images now
         if: ${{ matrix.image.name == 'devshell' && always() && steps.light.outcome == 'failure' }}
         run: |
           REPORTS_DIR=tests/light/reports
@@ -263,6 +305,7 @@ jobs:
 
       - name: "Artifact: light-reports"
         uses: actions/upload-artifact@v4
+        # Handle failures only for devshell images now
         if: ${{ matrix.image.name == 'devshell' && always() && steps.prepare-light-reports.outcome == 'success' }}
         with:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}
@@ -270,6 +313,7 @@ jobs:
 
       - name: Dump corefile backtrace
         working-directory: ${{ env.COREFILES_DIR }}
+        # Handle failures only for devshell images now
         if: ${{ matrix.image.name == 'devshell' && failure() }}
         run: |
           find -name "core.*syslog-ng*" -exec \
@@ -277,6 +321,7 @@ jobs:
 
       - name: "Artifact: corefiles"
         uses: actions/upload-artifact@v4
+        # Handle failures only for devshell images now
         if: ${{ matrix.image.name == 'devshell' && failure() }}
         with:
           name: corefiles-${{ matrix.build-tool }}-${{ matrix.cc }}
