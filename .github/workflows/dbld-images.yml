@@ -17,6 +17,8 @@ on:
       - 'packaging/rhel/**'
       - 'packaging/debian/**'
       - '.github/workflows/dbld-images.yml'
+      - 'master'
+      - 'develop'
 
   schedule:
     - cron: '00 22 * * *'
