@@ -25,7 +25,9 @@
 
 #if SYSLOG_NG_HAVE_INOTIFY
 #include "directory-monitor-inotify.h"
-#elif SYSLOG_NG_HAVE_KQUEUE
+#endif
+
+#if SYSLOG_NG_HAVE_KQUEUE
 #include "directory-monitor-kqueue.h"
 #endif
 
