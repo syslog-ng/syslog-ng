@@ -1,5 +1,6 @@
 # pip packages for kira tests
 distro                  [kira]                                                 [python2, python3]
+cryptography            [kira]                                                 [python2]
 hy                      [kira]                                                 [python3]
 hyrule                  [kira]                                                 [python3]
 requests                [kira]                                                 [python2, python3]
