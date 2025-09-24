@@ -308,7 +308,6 @@ find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(WRAP)
-find_package(Inotify)
 find_package(LIBCAP)
 find_package(LIBNET)
 
@@ -348,11 +347,15 @@ set (SYSLOG_NG_ENABLE_SYSTEMD ${ENABLE_SYSTEMD})
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-if (Inotify_FOUND)
-  set(SYSLOG_NG_HAVE_INOTIFY 1)
-endif()
-
+# Use only one of them if both are present, like on FreeBSD, where the inotify wrapper started to be distributed.
+# Prioritize kqueue, as inotify is just a wrapper around it if both are present.
 check_function_exists(kqueue SYSLOG_NG_HAVE_KQUEUE)
+if(NOT SYSLOG_NG_HAVE_KQUEUE)
+  find_package(Inotify)
+  if(Inotify_FOUND)
+    set(SYSLOG_NG_HAVE_INOTIFY 1)
+  endif()
+endif()
 
 set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
 

@@ -1191,7 +1191,6 @@ AC_CHECK_LIB(regex, regexec, REGEX_LIBS="-lregex")
 AC_CHECK_LIB(resolv, res_init, RESOLV_LIBS="-lresolv")
 
 CHECK_FUNCS_AND_DEFINE([
-    kqueue
     fmemopen
     getutent
     memrchr
@@ -1212,9 +1211,21 @@ CHECK_FUNCS_AND_DEFINE([
     strnlen
     getline
     strtok_r
-    inotify_init
     getrandom
 ])
+dnl Use only one of them if both are present, like on FreeBSD, where the inotify wrapper started to be distributed.
+dnl Prioritize kqueue, as inotify is just a wrapper around it if both are present.
+AC_CHECK_FUNCS([kqueue inotify_init])
+if test "x$ac_cv_func_kqueue" = xyes; then
+  have_kqueue=yes
+  have_inotify=no
+elif test "x$ac_cv_func_inotify_init" = xyes; then
+  have_kqueue=no
+  have_inotify=yes
+else
+  have_kqueue=no
+  have_inotify=no
+fi
 
 dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
 SAFE_C_CHECK_BEGIN
@@ -2617,8 +2628,8 @@ AC_DEFINE_UNQUOTED(ENABLE_KAFKA, `enable_value $enable_kafka`, [Enable kafka sup
 AC_DEFINE_UNQUOTED(ENABLE_CPP, `enable_value $enable_cpp`, [Enable C++ support])
 AC_DEFINE_UNQUOTED(ENABLE_STACKDUMP, `enable_value $enable_stackdump`, [Enable stackdump using libunwind])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
-AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
-AC_DEFINE_UNQUOTED(HAVE_KQUEUE, `enable_value $ac_cv_func_kqueue`, [Have kqueue])
+AC_DEFINE_UNQUOTED([HAVE_KQUEUE], [`enable_value $have_kqueue`], [Have kqueue])
+AC_DEFINE_UNQUOTED([HAVE_INOTIFY], [`enable_value $have_inotify`], [Have inotify])
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
 dnl WARNING
@@ -2672,8 +2683,8 @@ AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
 AM_CONDITIONAL(ENABLE_EXAMPLE_MODULES, [test "$enable_example_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_SANITIZER, [test "$with_sanitizer" != "no"])
 AM_CONDITIONAL(ENABLE_DEBUG, [test "$enable_debug" != "no"])
-AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
-AM_CONDITIONAL([HAVE_KQUEUE], [test x$ac_cv_func_kqueue = xyes])
+AM_CONDITIONAL([HAVE_KQUEUE], [test "x$have_kqueue" = xyes])
+AM_CONDITIONAL([HAVE_INOTIFY], [test "x$have_inotify" = xyes])
 AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL([HAVE_JAVAH], [test -n "$JAVAH_BIN"])
