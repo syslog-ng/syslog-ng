@@ -37,7 +37,7 @@ if(NOT DEFINED ENABLE_MONGODB OR ENABLE_MONGODB)
 endif()
 
 if(ENABLE_MONGODB AND NOT LIBMONGO_FOUND)
-  message(FATAL_ERROR "Could not find suitable mongo-c-driver (or its dependencies), and MongoDB support was explicitly enabled.")
+  message(FATAL_ERROR "MongoDB module was explicitly enabled, but the required mongo-c-driver (or its dependencies) not found.")
 endif()
 
 module_switch(ENABLE_MONGODB "Enable mongodb destination driver" LIBMONGO_FOUND)
