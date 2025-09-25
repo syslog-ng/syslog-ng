@@ -1,19 +1,24 @@
-if (NOT DEFINED ENABLE_REDIS OR ENABLE_REDIS)
+if(NOT DEFINED ENABLE_REDIS OR ENABLE_REDIS)
   find_package(Hiredis)
 endif()
 
 module_switch(ENABLE_REDIS "Enable redis module" HIREDIS_FOUND)
-if (NOT ENABLE_REDIS)
+
+if(ENABLE_REDIS AND NOT HIREDIS_FOUND)
+  message(FATAL_ERROR "Redis module was explicitly enabled, but the required hiredis library dependency could not be found")
+endif()
+
+if(NOT ENABLE_REDIS)
   return()
 endif()
 
 set(REDIS_SOURCES
-    "redis-parser.h"
-    "redis.h"
-    "redis-worker.h"
-    "redis-worker.c"
-    "redis-parser.c"
-    "redis.c"
+  "redis-parser.h"
+  "redis.h"
+  "redis-worker.h"
+  "redis-worker.c"
+  "redis-parser.c"
+  "redis.c"
 )
 
 add_module(
@@ -23,4 +28,3 @@ add_module(
   DEPENDS ${HIREDIS_LIBRARIES}
   SOURCES ${REDIS_SOURCES}
 )
-

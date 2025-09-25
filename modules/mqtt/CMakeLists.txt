@@ -1,14 +1,14 @@
-if (NOT DEFINED ENABLE_MQTT OR ENABLE_MQTT)
+if(NOT DEFINED ENABLE_MQTT OR ENABLE_MQTT)
   find_package(eclipse-paho-mqtt-c)
 endif()
 
 module_switch(ENABLE_MQTT "Enable mqtt" eclipse-paho-mqtt-c_FOUND)
 
-if (ENABLE_MQTT AND NOT eclipse-paho-mqtt-c_FOUND)
-  message (FATAL_ERROR "MQTT enabled but no eclipse-paho-mqtt-c library found")
-endif ()
+if(ENABLE_MQTT AND NOT eclipse-paho-mqtt-c_FOUND)
+  message(FATAL_ERROR "MQTT module was explicitly enabled, but the required eclipse-paho-mqtt-c library dependency could not be found")
+endif()
 
-if (NOT ENABLE_MQTT)
+if(NOT ENABLE_MQTT)
   return()
 endif()
 
@@ -17,17 +17,17 @@ CHECK_STRUCT_HAS_MEMBER("MQTTClient_connectOptions" "httpProxy" "MQTTClient.h" S
 set(MQTT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(MQTT_COMMON
-    mqtt-options.c
-    mqtt-options.h
+  mqtt-options.c
+  mqtt-options.h
 )
 
 add_subdirectory(destination)
 add_subdirectory(source)
 
 set(MQTT_SOURCES
-    mqtt-parser.c
-    mqtt-parser.h
-    mqtt-plugins.c
+  mqtt-parser.c
+  mqtt-parser.h
+  mqtt-plugins.c
 )
 
 add_module(

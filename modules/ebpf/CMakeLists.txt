@@ -1,32 +1,36 @@
-if (NOT DEFINED ENABLE_EBPF OR ENABLE_EBPF)
+if(NOT DEFINED ENABLE_EBPF OR ENABLE_EBPF)
   find_package(LIBBPF)
 endif()
 
 module_switch(ENABLE_EBPF "Enable ebpf module (requires ebpf toolchain)" LIBBPF_FOUND)
 
-if (NOT ENABLE_EBPF)
+if(ENABLE_EBPF AND NOT LIBBPF_FOUND)
+  message(FATAL_ERROR "BPF module was explicitly enabled, but the required libbpf or bpftool dependency could not be found")
+endif()
+
+if(NOT ENABLE_EBPF)
   return()
 endif()
 
 add_custom_command(OUTPUT vmlinux.h
-                   COMMAND ${BPFTOOL} btf dump file /sys/kernel/btf/vmlinux format c >vmlinux.h)
+  COMMAND ${BPFTOOL} btf dump file /sys/kernel/btf/vmlinux format c >vmlinux.h)
 
 add_custom_command(OUTPUT random.skel.c
-                   COMMAND ${BPFTOOL} gen skeleton random.kern.o > random.skel.c
-		   DEPENDS random.kern.o)
+  COMMAND ${BPFTOOL} gen skeleton random.kern.o > random.skel.c
+  DEPENDS random.kern.o)
 
 add_custom_command(OUTPUT random.kern.o
-                   COMMAND ${BPF_CC} ${BPF_CFLAGS} -c ${CMAKE_CURRENT_SOURCE_DIR}/random.kern.c -o random.kern.o
-                   DEPENDS random.kern.c vmlinux.h)
+  COMMAND ${BPF_CC} ${BPF_CFLAGS} -c ${CMAKE_CURRENT_SOURCE_DIR}/random.kern.c -o random.kern.o
+  DEPENDS random.kern.c vmlinux.h)
 
 add_custom_target(generate_ebpf_skeletons DEPENDS "random.skel.c")
 
 set(EBPF_SOURCES
-    ebpf-parser.h
-    ebpf-reuseport.h
-    ebpf-reuseport.c
-    ebpf-plugin.c
-    ebpf-parser.c
+  ebpf-parser.h
+  ebpf-reuseport.h
+  ebpf-reuseport.c
+  ebpf-plugin.c
+  ebpf-parser.c
 )
 
 add_module(
