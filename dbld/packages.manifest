@@ -54,11 +54,6 @@ bpftool                         [devshell, tarball]
 # Tarball related tools
 #############################################################################
 
-# docbook to generate man pages
-docbook-xsl                     [devshell, tarball]
-docbook-style-xsl               [fedora, rocky]
-docbook-xsl-stylesheets         [opensuse]
-
 #############################################################################
 # Build environment dependencies that are not strictly required by syslog-ng
 # but are needed by our dbld functionality.
