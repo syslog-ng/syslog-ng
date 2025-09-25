@@ -1,6 +1,7 @@
 name: FreeBSD
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [ "develop", "master" ]
@@ -14,7 +15,7 @@ jobs:
         # https://github.com/marketplace/actions/freebsd-vm
         release: [ "15.0", "14.2" ]
         arch: [ aarch64, amd64 ]
-        build-tool: [ cmake ] # , autotools
+        build-tool: [ cmake, autotools ]
         compiler: [ {cpp: clang++, c: clang} ] # , {cpp: g++, c: gcc}
         runner: [ ubuntu-24.04, ubuntu-24.04-arm ]
         exclude:
@@ -52,6 +53,19 @@ jobs:
           CXXFLAGS="${CFLAGS}"
           LDFLAGS="-L${BSDPORTS_PREFIX}/lib"
           # -DIVYKIS_SOURCE=internal is switched to system temporally as of https://github.com/buytenh/ivykis/pulls
+          CONFIGURE_FLAGS="
+            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
+            --enable-extra-warnings
+            --enable-debug
+            --prefix=${SYSLOG_NG_INSTALL_DIR}
+            --enable-tests
+            --disable-stackdump
+            --with-python=3
+            --with-ivykis=internal
+            --with-systemd-journal=no
+            --disable-java
+            --disable-java-modules
+          "
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
             -DENABLE_EXTRA_WARNINGS=ON
@@ -59,6 +73,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DBUILD_TESTING=ON
+            -DENABLE_STACKDUMP=OFF
             -DPYTHON_VERSION=3
             -DIVYKIS_SOURCE=internal
             -DENABLE_JOURNALD=OFF
@@ -69,7 +84,7 @@ jobs:
           export PKG_CONFIG_PATH="${PKGCONF_PATH}:$PKG_CONFIG_PATH"
           PATH="${BSDPORTS_PREFIX}/bin:${BSDPORTS_PREFIX}/sbin:${PATH}"
 
-          gh_export BSDPORTS_PREFIX SYSLOG_NG_INSTALL_DIR CC CXX PKGCONF_PATH PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS CXXFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
+          gh_export BSDPORTS_PREFIX SYSLOG_NG_INSTALL_DIR CC CXX PKGCONF_PATH PKG_CONFIG_PATH THREADS CFLAGS CXXFLAGS LDFLAGS CONFIGURE_FLAGS CMAKE_CONFIGURE_FLAGS PATH
           gh_path "${PATH}"
 
           env | sort
@@ -88,26 +103,34 @@ jobs:
           copyback: false
 
           envs: |
-            BSDPORTS_PREFIX SYSLOG_NG_INSTALL_DIR CC CXX PKGCONF_PATH PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS CXXFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
+            BSDPORTS_PREFIX SYSLOG_NG_INSTALL_DIR CC CXX PKGCONF_PATH PKG_CONFIG_PATH THREADS CFLAGS CXXFLAGS LDFLAGS CONFIGURE_FLAGS CMAKE_CONFIGURE_FLAGS PATH
 
           prepare: |
             #cat /etc/pkg/FreeBSD.conf
 
             pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf criterion gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk18 rabbitmq-c riemann-c-client
+            if  [ "${{ matrix.build-tool }}" = "autotools" ]; then
+              # NOTE: Must have for autotools builds, but breaks cmake builds, nice :S
+              pkg install -y gmake
+            fi
 
           run: |
             env | sort
+
             # For checking the FreeBSD port source branch
             #cat /etc/pkg/FreeBSD.conf || true
             # As using the default actions/checkout@v4 to get the source code, the submodules are not checked out by default
             # Calling the git submodule update --init --recursive during the configure step would fail bacuse of the different git owners
             # So, the safe exceptions are added to the git config (other option could be a full manual source checkout that requires a bit
             # bigger effort, as the correct branch must be maintained as well)
+
             git config --global --add safe.directory $GITHUB_WORKSPACE
 
-      - name: cmake configure
+      - name: cmake build
+        if: matrix.build-tool == 'cmake'
         shell: freebsd {0}
         run: |
+          set -e
           cd $GITHUB_WORKSPACE; pwd
 
           env | sort
@@ -115,19 +138,48 @@ jobs:
           echo "clang:" $(which clang; clang --version)
 
           cmake --install-prefix "${SYSLOG_NG_INSTALL_DIR}" -B build . ${CMAKE_CONFIGURE_FLAGS}
+          cmake --build ./build -j ${THREADS}  --target install
 
-      - name: cmake install
-        shell: freebsd {0}
-        run: |
-          cd $GITHUB_WORKSPACE; pwd
-
-          cmake --build ./build -j ${THREADS} --target install
-          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -V
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV 2>&1 |sort
 
       - name: cmake check
+        if: matrix.build-tool == 'cmake'
         shell: freebsd {0}
         run: |
           cd $GITHUB_WORKSPACE; pwd
 
           # TODO: Skip for now, should fix the FreeBSD tests
           #cmake --build ./build -j ${THREADS} --target check
+
+      - name: autotools build
+        if: matrix.build-tool == 'autotools'
+        # Must use this custom shell, otherwise the evironment set up by the package installations above
+        # will not be inherited
+        # TODO: Also, for some reason splitting certain job steps has a similar issue, it cannot always work form the result of the previos step
+        #       Using a single step now for building
+        shell: freebsd {0}
+        run: |
+          set -e
+          cd $GITHUB_WORKSPACE; pwd
+
+          env | sort
+          echo "ARCH: " $(uname -m)
+          echo "clang:" $(which clang; clang --version)
+
+          ./autogen.sh
+          mkdir build
+          cd build
+          ../configure --disable-dependency-tracking ${CONFIGURE_FLAGS}
+          cd ..
+          /usr/local/bin/gmake -C build install -j ${THREADS}
+
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV 2>&1 |sort
+
+      - name: autotools check
+        if: matrix.build-tool == 'autotools'
+        shell: freebsd {0}
+        run: |
+          cd $GITHUB_WORKSPACE; pwd
+
+          # TODO: Skip for now, should fix the FreeBSD tests
+          #/usr/local/bin/gmake -C build check -j ${THREADS}
