@@ -18,6 +18,10 @@ unzip                           [centos, almalinux, fedora, debian, opensuse, rh
 # I dont know why this is needed.
 bzip2                           [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 
+# Compression test requirements (qpdf provides zlib-flate)
+gunzip                          [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+qpdf                            [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+
 # Basic interactive tools
 gawk                            [opensuse, rhel, rocky]
 less                            [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
