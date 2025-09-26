@@ -48,9 +48,8 @@ which                           [fedora, opensuse, rhel, rocky]
 # eBPF related tools
 #############################################################################
 
-clang                           [devshell, tarball]
-libbpf-dev                      [devshell, tarball]
-bpftool                         [devshell, tarball]
+libbpf-dev                      [devshell, tarball, debian, ubuntu-plucky]
+bpftool                         [devshell, tarball, debian, ubuntu-plucky]
 
 #############################################################################
 # Tarball related tools
@@ -145,9 +144,10 @@ systemd-sysv                    [kira]
 
 #############################################################################
 # Development tools in our devshell
+# (and in images that runs the tests)
 #############################################################################
 
-clang                           [devshell]
+clang                           [devshell, tarball, centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 dirmngr                         [devshell]
 gdb                             [devshell]
 gdbserver                       [devshell]
@@ -162,6 +162,7 @@ linux-perf                      [devshell]
 locales                         [devshell]
 lsof                            [devshell]
 netcat-openbsd                  [devshell]
+net-snmp                        [almalinux, centos, fedora, rocky, rhel]
 python3-dev                     [devshell]
 python3-dbg                     [devshell]
 python3-dbg                     [devshell]
@@ -169,10 +170,11 @@ strace                          [devshell]
 valgrind                        [devshell]
 openssh-client                  [devshell]
 astyle                          [devshell]
-snmptrapd                       [devshell]
+snmptrapd                       [devshel, ubuntu, debian]
 dwarves                         [devshell]
 jq                              [devshell]
 curl                            [devshell]
+tzdata-legacy                   [ubuntu-noble, ubuntu-plucky, debian-trixie]
 
 #############################################################################
 # Functional tests in the devshell
