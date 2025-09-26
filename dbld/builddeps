@@ -147,18 +147,18 @@ function filter_pip_packages_by_platform_and_python_version {
 
 function add_copr_repo {
 
-    # NOTE: we are removing dnf/yum plugins after enabling copr as they
+    # NOTE: we are removing dnf plugins after enabling copr as they
     # install a couple of Python dependencies which then conflict with our
     # PIP installation later.
     case "${OS_DISTRIBUTION}" in
         centos|almalinux)
-            yum copr enable -y czanik/syslog-ng-githead
+            dnf copr enable -y czanik/syslog-ng-githead
             case "${OS_DISTRIBUTION_CODE_NAME}" in
                 8)
-                    yum config-manager --set-enabled powertools
+                    dnf config-manager --set-enabled powertools
                     ;;
                 9|stream9|stream10)
-                    yum config-manager --set-enabled crb
+                    dnf config-manager --set-enabled crb
                     ;;
                 esac
             ;;
