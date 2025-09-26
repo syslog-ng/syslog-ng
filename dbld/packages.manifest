@@ -178,8 +178,13 @@ curl                            [devshell]
 tzdata-legacy                   [ubuntu-noble, ubuntu-plucky, debian-trixie]
 
 #############################################################################
-# Functional tests in the devshell
+# Test requirements in devshell (and other platforms)
 #############################################################################
 
+# Functional test requirements
 sqlite3                         [devshell]
 libdbd-sqlite3                  [devshell]
+
+# Compression test requirements (qpdf provides zlib-flate)
+gzip                            [devshell, centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+qpdf                            [devshell, centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
