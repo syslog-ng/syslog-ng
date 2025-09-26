@@ -14,9 +14,9 @@ endif()
 
 find_package(Curl)
 
-if (NOT Curl_FOUND)
-  message(FATAL_ERROR "cURL support for cloud-auth() enabled, but libcurl not found")
-endif ()
+if(NOT Curl_FOUND)
+  message(FATAL_ERROR "Cloud Auth module was explicitly enabled, but the required libcurl dependency could not be found")
+endif()
 
 set(CLOUD_AUTH_CPP_SOURCES
   cloud-auth.c
@@ -41,9 +41,9 @@ add_module(
   TARGET cloud-auth-cpp
   SOURCES ${CLOUD_AUTH_CPP_SOURCES}
   INCLUDES ${PROJECT_SOURCE_DIR}
-           ${PROJECT_SOURCE_DIR}/modules/cloud-auth
-           ${PROJECT_SOURCE_DIR}/modules/cloud-auth/jwt-cpp/include
-           ${Curl_INCLUDE_DIR}
+  ${PROJECT_SOURCE_DIR}/modules/cloud-auth
+  ${PROJECT_SOURCE_DIR}/modules/cloud-auth/jwt-cpp/include
+  ${Curl_INCLUDE_DIR}
   DEPENDS ${Curl_LIBRARIES}
   LIBRARY_TYPE STATIC
 )
@@ -53,6 +53,6 @@ add_module(
   GRAMMAR cloud-auth-grammar
   DEPENDS cloud-auth-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}
-           ${PROJECT_SOURCE_DIR}/modules/cloud-auth
+  ${PROJECT_SOURCE_DIR}/modules/cloud-auth
   SOURCES ${OTEL_SOURCES}
 )

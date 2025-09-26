@@ -17,7 +17,7 @@ RUN /dbld/builddeps update_packages
 RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps add_epel_repo
 RUN /dbld/builddeps add_copr_repo
-RUN /dbld/builddeps install_yum_packages
+RUN /dbld/builddeps install_dnf_packages
 RUN /dbld/builddeps install_rpm_build_deps
 
 RUN /dbld/builddeps install_criterion

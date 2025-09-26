@@ -22,7 +22,7 @@
 #############################################################################
 
 find_package(PkgConfig)
-pkg_check_modules(LIBBPF QUIET libbpf>=1.0.1)
+pkg_check_modules(LIBBPF libbpf>=1.0.1)
 
 if (LIBBPF_FOUND)
   find_program(BPF_CC clang)
@@ -30,6 +30,7 @@ if (LIBBPF_FOUND)
 
   if ((NOT BPF_CC) OR (NOT BPFTOOL))
     set(LIBBPF_FOUND FALSE)
+    message(STATUS "bpftool is not found")
   else ()
     execute_process(COMMAND ${BPF_CC} -print-file-name=include OUTPUT_VARIABLE CLANG_INCLUDES OUTPUT_STRIP_TRAILING_WHITESPACE)
     pkg_get_variable(LIBBPF_INCLUDE_DIRS_RAW libbpf includedir)

@@ -35,6 +35,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     strategy:
+      fail-fast: false
       matrix:
         image:
           # dbld docker images only
@@ -49,8 +50,8 @@ jobs:
           - rocky-9
           - ubuntu-focal
           - devshell
-          - kira
           - tarball
+          - kira
           # dbld docker image + binary packages
           - debian-bullseye
           - debian-bookworm
@@ -73,14 +74,11 @@ jobs:
           - ubuntu-22.04
           - ubuntu-22.04-arm
         exclude:
-          # we need only arm builder for the outputs bellow
+          # we need arm builder only for the outputs bellow
           - platform: ubuntu-22.04-arm
         include:
-          # arm64 docker images with binary syslog-ng installation
+          # arm64 images for creating binary syslog-ng package
           - image: debian-bookworm
-            platform: ubuntu-22.04-arm
-            arch: arm64
-          - image: debian-trixie
             platform: ubuntu-22.04-arm
             arch: arm64
           - image: ubuntu-noble
@@ -98,14 +96,14 @@ jobs:
           - image: rhel-10
             platform: ubuntu-22.04-arm
             arch: arm64
-          - image: rocky-9
+          # arm64 images for creating binary syslog-ng package + docker image with syslog-ng binary installed
+          - image: debian-trixie
             platform: ubuntu-22.04-arm
             arch: arm64
           # devshell docker image for arm64 (devshell must be debian stable based)
           - image: devshell
             platform: ubuntu-22.04-arm
             arch: arm64
-      fail-fast: false
 
     steps:
       - name: Checkout source code
@@ -121,7 +119,7 @@ jobs:
           . .github/workflows/gh-tools.sh
           gh_export CONTAINER_REGISTRY CONTAINER_ARCH CONTAINER_NAME_SUFFIX
 
-      - name: Build the images
+      - name: Build the image
         run: dbld/rules image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX} JENKINS_URL=${RUNNER_ENVIRONMENT}
 
       - name: Should we upload the images?

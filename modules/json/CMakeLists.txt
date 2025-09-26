@@ -1,24 +1,28 @@
-if (NOT DEFINED ENABLE_JSON OR ENABLE_JSON)
+if(NOT DEFINED ENABLE_JSON OR ENABLE_JSON)
   external_or_find_package(JSONC)
 endif()
 
 module_switch(ENABLE_JSON "Enable JSON plugin" JSONC_FOUND)
-if (NOT ENABLE_JSON)
+
+if(ENABLE_JSON AND NOT JSONC_FOUND)
+  message(FATAL_ERROR "JSON module was explicitly enabled, but the required jsonc dependency could not be found")
+endif()
+
+if(NOT ENABLE_JSON)
   return()
 endif()
 
 set(JSON_SOURCES
-    format-json.c
-    format-json.h
-    json-parser.c
-    json-parser.h
-    json-parser-parser.c
-    json-parser-parser.h
-    dot-notation.c
-    dot-notation.h
-    json-plugin.c
+  format-json.c
+  format-json.h
+  json-parser.c
+  json-parser.h
+  json-parser-parser.c
+  json-parser-parser.h
+  dot-notation.c
+  dot-notation.h
+  json-plugin.c
 )
-
 
 add_module(
   TARGET json-plugin
