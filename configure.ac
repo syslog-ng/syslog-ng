@@ -429,8 +429,8 @@ AC_ARG_ENABLE(afsnmp,
     , enable_afsnmp="auto")
 
 AC_ARG_ENABLE(stackdump,
-    AS_HELP_STRING([--disable-stackdump], [Disable stackdump support]),
-    , enable_stackdump="auto")
+    AS_HELP_STRING([--enable-stackdump], [Enable stackdump support (default: no)]),
+    , enable_stackdump="no")
 
 AC_ARG_ENABLE(all-modules,
     AS_HELP_STRING([--enable-all-modules], [Forcibly enable all modules. (default: auto)]),
@@ -1747,19 +1747,24 @@ SAFE_C_CHECK_END
 dnl ***************************************************************************
 dnl libunwind headers/libraries
 dnl ***************************************************************************
+if test "x$enable_stackdump" = "xauto" || test "$enable_stackdump" = "yes"; then
+    dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+    SAFE_C_CHECK_BEGIN
 
-dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
-SAFE_C_CHECK_BEGIN
+    PKG_CHECK_MODULES(LIBUNWIND, libunwind >= 1.6.2, enable_libunwind="yes", enable_libunwind="no")
 
-PKG_CHECK_MODULES(LIBUNWIND, libunwind >= 1.6.2, enable_libunwind="yes", enable_libunwind="no")
-
-if test "$enable_stackdump" = "yes" && test "$enable_libunwind" = "no"; then
-    AC_MSG_ERROR([Could not find libunwind, and stackdump support was explicitly enabled.])
+    if test "$enable_stackdump" = "yes" && test "$enable_libunwind" = "no"; then
+        AC_MSG_ERROR([Could not find libunwind, and stackdump support was explicitly enabled.])
+    fi
+    SAFE_C_CHECK_END
 fi
 
 dnl ***************************************************************************
 dnl libesmtp headers/libraries
 dnl ***************************************************************************
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
     libesmtp="yes"
     if test "x$with_libesmtp" != "xyes" && test "x$with_libesmtp" != "x"; then
@@ -1791,6 +1796,7 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
 fi
 
 SAFE_C_CHECK_END
+
 
 dnl ***************************************************************************
 dnl libmqtt headers/libraries
@@ -2523,27 +2529,27 @@ fi
 MODULE_DEPS_LIBS="\$(top_builddir)/lib/libsyslog-ng.la"
 
 if test "x$linking_mode" = "xdynamic"; then
-	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $DL_LIBS $LIBUNWIND_LIBS"
+	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $DL_LIBS $LIBUNWIND_LIBS $JSON_LIBS"
 
 	if test "x$with_ivykis" = "xinternal"; then
 		# when using the internal ivykis, we're linking it statically into libsyslog-ng.so
 
 		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS $JSON_LIBS"
+		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
 	else
 		# otherwise everything needs to link against libivykis.so
 
 		SYSLOGNG_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
 
 		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $JSON_LIBS"
+		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
 	fi
 
 	# syslog-ng binary is linked with the default link command (e.g. libtool)
 	SYSLOGNG_LINK='$(LINK)'
 else
-	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $EVTLOG_NO_LIBTOOL_LIBS $SECRETSTORAGE_NO_LIBTOOL_LIBS $LD_START_STATIC -Wl,${WHOLE_ARCHIVE_OPT} $GLIB_LIBS $PCRE2_LIBS $REGEX_LIBS  -Wl,${NO_WHOLE_ARCHIVE_OPT} $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS $LIBUNWIND_LIBS"
-	TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $IVYKIS_LIBS $DL_LIBS"
+	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $EVTLOG_NO_LIBTOOL_LIBS $SECRETSTORAGE_NO_LIBTOOL_LIBS $LD_START_STATIC -Wl,${WHOLE_ARCHIVE_OPT} $GLIB_LIBS $PCRE2_LIBS $REGEX_LIBS  -Wl,${NO_WHOLE_ARCHIVE_OPT} $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS $LIBUNWIND_LIBS $JSON_LIBS"
+	TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $IVYKIS_LIBS $DL_LIBS $JSON_LIBS"
 	CORE_DEPS_LIBS=""
 
 	# bypass libtool in case we want to do mixed linking because it
