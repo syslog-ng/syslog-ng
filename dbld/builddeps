@@ -11,6 +11,18 @@ ZYPPER_INSTALL="zypper -n install"
 set -e
 set -x
 
+function hashfile() {
+    FILE="$1"
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "${FILE}" | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "${FILE}" | awk '{print $1}'
+    else
+        echo "Do not know how to create a file hash (no sha256sum, shasum found)!"
+        exit 1
+    fi
+}
+
 function update_packages() {
     case "${OS_DISTRIBUTION}" in
         centos|almalinux)
@@ -89,8 +101,9 @@ function install_dbld_dependencies()
 
 function install_criterion() {
     CRITERION_VERSION=2.3.3
+    HASH="8c85e1fcdb9a39b82bee50394bedfe74a0c839ffff129ddfc6fb73b11adafa29"
 
-    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2 criterion/${CRITERION_VERSION}/criterion.tar.bz2
+    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2 criterion/${CRITERION_VERSION}/criterion.tar.bz2 "${HASH}"
     cd /tmp/
     tar xvf /tmp/criterion.tar.bz2
     cd /tmp/criterion-v${CRITERION_VERSION}
@@ -108,7 +121,9 @@ function set_jvm_paths() {
 
 function install_gradle {
     GRADLE_VERSION=4.10
-    download_target "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" /tmp/gradle.zip gradle/${GRADLE_VERSION}/gradle.zip
+    HASH="248cfd92104ce12c5431ddb8309cf713fe58de8e330c63176543320022f59f18"
+
+    download_target "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" /tmp/gradle.zip gradle/${GRADLE_VERSION}/gradle.zip "${HASH}"
     mkdir -p /opt/gradle
     unzip -d /opt/gradle /tmp/gradle.zip
     rm -rf /tmp/gradle.zip
@@ -119,7 +134,9 @@ function install_gradle {
 
 function install_pip2 {
     PIP_VERSION=2.7
-    download_target "https://bootstrap.pypa.io/pip/${PIP_VERSION}/get-pip.py" get-pip.py pip/${PIP_VERSION}/get-pip.py
+    HASH="40ee07eac6674b8d60fce2bbabc148cf0e2f1408c167683f110fd608b8d6f416"
+
+    download_target "https://bootstrap.pypa.io/pip/${PIP_VERSION}/get-pip.py" get-pip.py pip/${PIP_VERSION}/get-pip.py "${HASH}"
     python2 get-pip.py
 }
 
@@ -128,10 +145,11 @@ function download_target()
     TARGET=$1
     OUTPUT=$2
     FALLBACK_PATH=$3
+    HASH=$4
 
     # NOTE: Any new fallback packages must be uploaded to this repo, do not forget to maintain if needed!
     #       Keep it version organized!
-    OSE_GIT_DOWNLOAD_REPO="https://github.com/syslog-ng/syslog-ng-deps/raw/main"
+    OSE_GIT_DOWNLOAD_REPO="https://github.com/syslog-ng/syslog-ng-deps/raw/refs/heads/main"
 
     if ! curl --location --insecure --fail "$TARGET" --output "$OUTPUT"; then
         if [ -n "$FALLBACK_PATH" ]; then
@@ -142,6 +160,13 @@ function download_target()
             echo "Download failed and no fallback specified."
             return 1
         fi
+    fi
+    CURR_HASH=$(hashfile "${OUTPUT}")
+    if [ "${HASH}" = "${CURR_HASH}" ]; then
+        echo "Downloaded file hash matches"
+    else
+        echo "Downloaded file hash does not match"
+        return 2
     fi
 }
 
@@ -302,8 +327,10 @@ function install_perf {
 
 function install_bison_from_source {
     BISON_VERSION=3.7.6
+    HASH="69dc0bb46ea8fc307d4ca1e0b61c8c355eb207d0b0c69f4f8462328e74d7b9ea"
+
     cd /tmp
-    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz
+    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz "${HASH}"
     tar xvfz /tmp/bison-${BISON_VERSION}.tar.gz
     cd /tmp/bison-${BISON_VERSION}
     ./configure --prefix=/usr/local --disable-nls
