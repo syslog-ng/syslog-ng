@@ -24,6 +24,8 @@ jobs:
         compiler: [ {cpp: clang++, c: clang}, {cpp: g++, c: gcc} ]
         macports-version: [2.10.1]
         exclude:
+          # Excluded just to speed up the testing matrix, as clang is the default compiler on macOS
+          # and it is used for development too on an everyday basis, on arm64.
           - version: 14
             compiler: {cpp: clang++, c: clang}
           # FIXME: temp exclude of failed linking again with cmake + g++ against GRPC dependenncies

@@ -22,40 +22,35 @@
  *
  */
 #include "stackdump.h"
+
+#if SYSLOG_NG_ENABLE_STACKDUMP
+
 #include "console.h"
 
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
-
-#if SYSLOG_NG_ENABLE_STACKDUMP
-
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 #include <dlfcn.h>
 
-/* this is Linux only for now */
-#ifdef __linux__
-#include <link.h>
-
-#define _STRUCT_MCONTEXT struct sigcontext
 
 static void
 _stackdump_print_stack(gpointer stack_pointer)
 {
-  guint8 *p = stack_pointer;
+  guint8 *p = (guint8 *) stack_pointer;
 
   for (gint i = 0; i < 16; i++)
     {
-      gchar line[51] = {0};
+      gchar line[64] = {0};  /* plenty of room for 16 bytes in hex */
       for (gint j = 0; j < 8; j++)
         {
-          sprintf(&line[j*3], "%02x ", (guint) *(p+j));
+          g_snprintf(&line[j*3], sizeof(line) - j*3, "%02x ", (guint) *(p+j));
         }
       line[8*3] = ' ';
       for (gint j = 8; j < 16; j++)
         {
-          sprintf(&line[j*3 + 1], "%02x ", (guint) *(p+j));
+          g_snprintf(&line[j*3 + 1], sizeof(line) - (j*3 + 1), "%02x ", (guint) *(p+j));
         }
 
       console_printf("Stack %p: %s", p, line);
@@ -63,13 +58,22 @@ _stackdump_print_stack(gpointer stack_pointer)
     }
 }
 
+#ifdef __linux__
+/****************************************************************************
+ * Linux
+ ****************************************************************************/
+
+#include <link.h>
+#include <ucontext.h>
+
+#define _STRUCT_MCONTEXT mcontext_t
+
 static void
 _stackdump_print_backtrace(void)
 {
   void *bt[256];
-  gint count;
+  gint count = unw_backtrace(bt, 256);
 
-  count = unw_backtrace(bt, 256);
   console_printf("Backtrace dump, count=%d", count);
   for (gint i = 0; i < count; i++)
     {
@@ -96,33 +100,12 @@ _stackdump_print_backtrace(void)
     }
 }
 
-#elif defined(__APPLE__)
-#define _XOPEN_SOURCE 1
-#include <ucontext.h>
-
-static void
-_stackdump_print_stack(gpointer stack_pointer)
-{
-}
-
-static void
-_stackdump_print_backtrace(void)
-{
-}
-
-#endif
-
 #ifdef __x86_64__
 /****************************************************************************
- *
- *
  * x86_64 support
- *
- *
  ****************************************************************************/
-
 void
-_stackdump_print_registers(struct sigcontext *p)
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
 {
   console_printf(
     "Registers: "
@@ -131,20 +114,17 @@ _stackdump_print_registers(struct sigcontext *p)
     "r12=%016lx r13=%016lx r14=%016lx r15=%016lx rip=%016lx",
     p->rax, p->rbx, p->rcx, p->rdx, p->rsi, p->rdi, p->rbp, p->rsp, p->r8, p->r9, p->r10, p->r11, p->r12, p->r13, p->r14,
     p->r15, p->rip);
+
   _stackdump_print_stack((gpointer) p->rsp);
 }
 
-#elif __aarch64__
+#elif defined(__aarch64__)
 /****************************************************************************
- *
- *
  * arm_64 support
- *
- *
  ****************************************************************************/
 
 void
-_stackdump_print_registers(struct sigcontext *p)
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
 {
   console_printf(
     "Registers: "
@@ -166,41 +146,157 @@ _stackdump_print_registers(struct sigcontext *p)
 
 #elif defined(__x86__)
 /****************************************************************************
- *
- *
  * i386 support
- *
- *
  ****************************************************************************/
 
 void
-_stackdump_print_registers(struct sigcontext *p)
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
 {
   console_printf(
     "Registers: eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx ebp=%08lx esp=%08lx eip=%08lx",
     p->eax, p->ebx, p->ecx, p->edx, p->esi, p->edi, p->ebp, p->esp, p->eip);
+
   _stackdump_print_stack((gpointer) p->esp);
 }
 
 #else
 /****************************************************************************
- *
- *
  * unsupported platform
- *
- *
  ****************************************************************************/
-
 static void
-_stackdump_print_registers(struct sigcontext *p)
+
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
 {
+  (void)p;
+  console_printf("This is an unsupported architecture for stackdump :(");
 }
 
 #endif
 
+#elif defined(__APPLE__)
+/****************************************************************************
+ * macOS
+ ****************************************************************************/
+
+#define _XOPEN_SOURCE 1
+#include <ucontext.h>
+#include <execinfo.h>
+
+static void
+_stackdump_print_backtrace(void)
+{
+  void *bt[256];
+  gint count = backtrace(bt, 256);
+
+  console_printf("Backtrace dump, count=%d", count);
+
+  for (gint i = 0; i < count; i++)
+    {
+      Dl_info dlinfo;
+      if (!dladdr(bt[i], &dlinfo))
+        console_printf("[%d]: %p", i, bt[i]);
+      else
+        {
+          if (dlinfo.dli_sname == NULL || dlinfo.dli_sname[0] == '\0')
+            console_printf("[%d]: %s [%p]", i, dlinfo.dli_fname ? dlinfo.dli_fname : "?", bt[i]);
+          else
+            console_printf("[%d]: %s(%s) [%p]", i, dlinfo.dli_fname ? dlinfo.dli_fname : "?", dlinfo.dli_sname, bt[i]);
+        }
+    }
+}
+
+#ifdef __x86_64__
+/****************************************************************************
+ * x86_64 support
+ ****************************************************************************/
+
+void
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
+{
+  console_printf(
+    "Registers: rax=%016llx rbx=%016llx rcx=%016llx rdx=%016llx "
+    "rsi=%016llx rdi=%016llx rbp=%016llx rsp=%016llx "
+    "r8=%016llx r9=%016llx r10=%016llx r11=%016llx "
+    "r12=%016llx r13=%016llx r14=%016llx r15=%016llx rip=%016llx",
+    p->__ss.__rax, p->__ss.__rbx, p->__ss.__rcx, p->__ss.__rdx,
+    p->__ss.__rsi, p->__ss.__rdi, p->__ss.__rbp, p->__ss.__rsp,
+    p->__ss.__r8, p->__ss.__r9, p->__ss.__r10, p->__ss.__r11,
+    p->__ss.__r12, p->__ss.__r13, p->__ss.__r14, p->__ss.__r15,
+    p->__ss.__rip);
+
+  _stackdump_print_stack((gpointer)p->__ss.__rsp);
+}
+
+#elif defined(__aarch64__)
+/****************************************************************************
+ * arm_64 support
+ ****************************************************************************/
+
+void
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
+{
+  console_printf(
+    "Registers: "
+    "x0=%016llx x1=%016llx x2=%016llx x3=%016llx x4=%016llx x5=%016llx "
+    "x6=%016llx x7=%016llx x8=%016llx x9=%016llx x10=%016llx x11=%016llx "
+    "x12=%016llx x13=%016llx x14=%016llx x15=%016llx x16=%016llx x17=%016llx "
+    "x18=%016llx x19=%016llx x20=%016llx x21=%016llx x22=%016llx x23=%016llx "
+    "x24=%016llx x25=%016llx x26=%016llx x27=%016llx x28=%016llx fp=%016llx "
+    "lr=%016llx sp=%016llx pc=%016llx cpsr=%08x",
+    p->__ss.__x[0], p->__ss.__x[1], p->__ss.__x[2], p->__ss.__x[3],
+    p->__ss.__x[4], p->__ss.__x[5], p->__ss.__x[6], p->__ss.__x[7],
+    p->__ss.__x[8], p->__ss.__x[9], p->__ss.__x[10], p->__ss.__x[11],
+    p->__ss.__x[12], p->__ss.__x[13], p->__ss.__x[14], p->__ss.__x[15],
+    p->__ss.__x[16], p->__ss.__x[17], p->__ss.__x[18], p->__ss.__x[19],
+    p->__ss.__x[20], p->__ss.__x[21], p->__ss.__x[22], p->__ss.__x[23],
+    p->__ss.__x[24], p->__ss.__x[25], p->__ss.__x[26], p->__ss.__x[27],
+    p->__ss.__x[28], p->__ss.__fp, p->__ss.__lr, p->__ss.__sp,
+    p->__ss.__pc, p->__ss.__cpsr);
+
+  _stackdump_print_stack((gpointer)p->__ss.__sp);
+}
+
+#elif defined(__x86__)
+/****************************************************************************
+ * i386 support
+ ****************************************************************************/
+
+void
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
+{
+  console_printf(
+    "Registers: eax=%08x ebx=%08x ecx=%08x edx=%08x "
+    "esi=%08x edi=%08x ebp=%08x esp=%08x eip=%08x",
+    p->__ss.__eax, p->__ss.__ebx, p->__ss.__ecx, p->__ss.__edx,
+    p->__ss.__esi, p->__ss.__edi, p->__ss.__ebp, p->__ss.__esp, p->__ss.__eip);
+
+  _stackdump_print_stack((gpointer)p->__ss.__esp);
+}
+
+#else
+/****************************************************************************
+ * unsupported platform
+ ****************************************************************************/
+static void
+
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
+{
+  (void)p;
+  console_printf("This is an unsupported architecture for stackdump :(");
+}
+
+#endif
+
+#else
+/****************************************************************************
+ * unsupported OS
+ ****************************************************************************/
+
+#error "This is an unsupported OS for stackdump currenty :("
+#endif
 
 static inline void
-_stackdump_log(struct sigcontext *p)
+_stackdump_log(_STRUCT_MCONTEXT *p)
 {
   /* the order is important here, even if it might be illogical.  The
    * backtrace function is the most fragile (as backtrace_symbols() may
@@ -214,7 +310,7 @@ _stackdump_log(struct sigcontext *p)
 static void
 _fatal_signal_handler(int signo, siginfo_t *info, void *uc)
 {
-  struct ucontext_t *ucontext = (struct ucontext_t *) uc;
+  ucontext_t *ucontext = (ucontext_t *) uc;
   _STRUCT_MCONTEXT  *p = (_STRUCT_MCONTEXT *) &ucontext->uc_mcontext;
   struct sigaction act;
 
@@ -224,6 +320,7 @@ _fatal_signal_handler(int signo, siginfo_t *info, void *uc)
 
   console_printf("Fatal signal received, stackdump follows, signal=%d", signo);
   _stackdump_log(p);
+
   /* let's get a stacktrace as well */
   kill(getpid(), signo);
 }
