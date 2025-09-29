@@ -99,6 +99,36 @@ function install_dbld_dependencies()
     esac
 }
 
+function download_target()
+{
+    TARGET=$1
+    OUTPUT=$2
+    FALLBACK_PATH=$3
+    HASH=$4
+
+    # NOTE: Any new fallback packages must be uploaded to this repo, do not forget to maintain if needed!
+    #       Keep it version organized!
+    OSE_GIT_DOWNLOAD_REPO="https://github.com/syslog-ng/syslog-ng-deps/raw/refs/heads/main"
+
+    if ! curl --location --insecure --fail "$TARGET" --output "$OUTPUT"; then
+        if [ -n "$FALLBACK_PATH" ]; then
+            FALLBACK_URL="${OSE_GIT_DOWNLOAD_REPO}/${FALLBACK_PATH}"
+            echo "Primary download failed, trying fallback: $FALLBACK_URL"
+            curl --location --insecure --fail "$FALLBACK_URL" --output "$OUTPUT"
+        else
+            echo "Download failed and no fallback specified."
+            return 1
+        fi
+    fi
+    CURR_HASH=$(hashfile "${OUTPUT}")
+    if [ "${HASH}" = "${CURR_HASH}" ]; then
+        echo "Downloaded file hash matches"
+    else
+        echo "Downloaded file hash does not match"
+        return 2
+    fi
+}
+
 function install_criterion() {
     CRITERION_VERSION=2.3.3
     HASH="8c85e1fcdb9a39b82bee50394bedfe74a0c839ffff129ddfc6fb73b11adafa29"
@@ -140,34 +170,16 @@ function install_pip2 {
     python2 get-pip.py
 }
 
-function download_target()
-{
-    TARGET=$1
-    OUTPUT=$2
-    FALLBACK_PATH=$3
-    HASH=$4
+function install_bison_from_source {
+    BISON_VERSION=3.7.6
+    HASH="69dc0bb46ea8fc307d4ca1e0b61c8c355eb207d0b0c69f4f8462328e74d7b9ea"
 
-    # NOTE: Any new fallback packages must be uploaded to this repo, do not forget to maintain if needed!
-    #       Keep it version organized!
-    OSE_GIT_DOWNLOAD_REPO="https://github.com/syslog-ng/syslog-ng-deps/raw/refs/heads/main"
-
-    if ! curl --location --insecure --fail "$TARGET" --output "$OUTPUT"; then
-        if [ -n "$FALLBACK_PATH" ]; then
-            FALLBACK_URL="${OSE_GIT_DOWNLOAD_REPO}/${FALLBACK_PATH}"
-            echo "Primary download failed, trying fallback: $FALLBACK_URL"
-            curl --location --insecure --fail "$FALLBACK_URL" --output "$OUTPUT"
-        else
-            echo "Download failed and no fallback specified."
-            return 1
-        fi
-    fi
-    CURR_HASH=$(hashfile "${OUTPUT}")
-    if [ "${HASH}" = "${CURR_HASH}" ]; then
-        echo "Downloaded file hash matches"
-    else
-        echo "Downloaded file hash does not match"
-        return 2
-    fi
+    cd /tmp
+    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz "${HASH}"
+    tar xvfz /tmp/bison-${BISON_VERSION}.tar.gz
+    cd /tmp/bison-${BISON_VERSION}
+    ./configure --prefix=/usr/local --disable-nls
+    make && make install
 }
 
 function filter_packages_by_platform {
@@ -323,18 +335,6 @@ function install_perf {
             apt-cache search linux-tools | grep 'linux-tools-.*-generic' | cut -d" " -f1 | tail -n1 | cut -d"-" -f1-4 | xargs $APT_INSTALL
             ;;
     esac
-}
-
-function install_bison_from_source {
-    BISON_VERSION=3.7.6
-    HASH="69dc0bb46ea8fc307d4ca1e0b61c8c355eb207d0b0c69f4f8462328e74d7b9ea"
-
-    cd /tmp
-    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz "${HASH}"
-    tar xvfz /tmp/bison-${BISON_VERSION}.tar.gz
-    cd /tmp/bison-${BISON_VERSION}
-    ./configure --prefix=/usr/local --disable-nls
-    make && make install
 }
 
 
