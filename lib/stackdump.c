@@ -163,22 +163,20 @@ _stackdump_print_registers(_STRUCT_MCONTEXT *p)
 /****************************************************************************
  * unsupported platform
  ****************************************************************************/
-static void
-
-_stackdump_print_registers(_STRUCT_MCONTEXT *p)
-{
-  (void)p;
-  console_printf("This is an unsupported architecture for stackdump :(");
-}
-
+#error "This is an unsupported architecture for stackdump currenty :("
 #endif
 
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(__FreeBSD__)
 /****************************************************************************
- * macOS
+ * macOS / FreeBSD
  ****************************************************************************/
 
+#if defined(__APPLE__)
 #define _XOPEN_SOURCE 1
+#else
+#include <inttypes.h>
+#define _STRUCT_MCONTEXT mcontext_t
+#endif
 #include <ucontext.h>
 #include <execinfo.h>
 
@@ -204,6 +202,11 @@ _stackdump_print_backtrace(void)
         }
     }
 }
+
+#if defined(__APPLE__)
+/****************************************************************************
+ * macOS
+ ****************************************************************************/
 
 #ifdef __x86_64__
 /****************************************************************************
@@ -277,23 +280,100 @@ _stackdump_print_registers(_STRUCT_MCONTEXT *p)
 /****************************************************************************
  * unsupported platform
  ****************************************************************************/
-static void
+#error "This is an unsupported architecture for stackdump currenty :("
+#endif
 
+#elif defined(__FreeBSD__)
+/****************************************************************************
+ * FreeBSD
+ ****************************************************************************/
+
+#ifdef __x86_64__
+/****************************************************************************
+ * x86_64 support
+ ****************************************************************************/
+
+void
 _stackdump_print_registers(_STRUCT_MCONTEXT *p)
 {
-  (void)p;
-  console_printf("This is an unsupported architecture for stackdump :(");
+  console_printf(
+    "Registers: rax=%016llx rbx=%016llx rcx=%016llx rdx=%016llx "
+    "rsi=%016llx rdi=%016llx rbp=%016llx rsp=%016llx "
+    "r8=%016llx r9=%016llx r10=%016llx r11=%016llx "
+    "r12=%016llx r13=%016llx r14=%016llx r15=%016llx rip=%016llx",
+    p->mc_rax, p->mc_rbx, p->mc_rcx, p->mc_rdx,
+    p->mc_rsi, p->mc_rdi, p->mc_rbp, p->mc_rsp,
+    p->mc_r8, p->mc_r9, p->mc_r10, p->mc_r11,
+    p->mc_r12, p->mc_r13, p->mc_r14, p->mc_r15,
+    p->mc_rip);
+
+  _stackdump_print_stack((gpointer)p->mc_rsp);
 }
 
-#endif
+#elif __aarch64__
+/****************************************************************************
+ * arm_64 support
+ ****************************************************************************/
+
+void
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
+{
+  console_printf(
+    "Registers: "
+    "x0=%016" PRIx64 " x1=%016" PRIx64 " x2=%016" PRIx64 " x3=%016" PRIx64
+    " x4=%016" PRIx64 " x5=%016" PRIx64 " x6=%016" PRIx64 " x7=%016" PRIx64
+    " x8=%016" PRIx64 " x9=%016" PRIx64 " x10=%016" PRIx64 " x11=%016" PRIx64
+    " x12=%016" PRIx64 " x13=%016" PRIx64 " x14=%016" PRIx64 " x15=%016" PRIx64
+    " x16=%016" PRIx64 " x17=%016" PRIx64 " x18=%016" PRIx64 " x19=%016" PRIx64
+    " x20=%016" PRIx64 " x21=%016" PRIx64 " x22=%016" PRIx64 " x23=%016" PRIx64
+    " x24=%016" PRIx64 " x25=%016" PRIx64 " x26=%016" PRIx64 " x27=%016" PRIx64
+    " x28=%016" PRIx64 " x29=%016" PRIx64 " fp=%016" PRIx64 " lr=%016" PRIx64
+    " sp=%016" PRIx64 " pc=%016" PRIx64 " cpsr=%08" PRIx32,
+    p->mc_gpregs.gp_x[0], p->mc_gpregs.gp_x[1], p->mc_gpregs.gp_x[2], p->mc_gpregs.gp_x[3],
+    p->mc_gpregs.gp_x[4], p->mc_gpregs.gp_x[5], p->mc_gpregs.gp_x[6], p->mc_gpregs.gp_x[7],
+    p->mc_gpregs.gp_x[8], p->mc_gpregs.gp_x[9], p->mc_gpregs.gp_x[10], p->mc_gpregs.gp_x[11],
+    p->mc_gpregs.gp_x[12], p->mc_gpregs.gp_x[13], p->mc_gpregs.gp_x[14], p->mc_gpregs.gp_x[15],
+    p->mc_gpregs.gp_x[16], p->mc_gpregs.gp_x[17], p->mc_gpregs.gp_x[18], p->mc_gpregs.gp_x[19],
+    p->mc_gpregs.gp_x[20], p->mc_gpregs.gp_x[21], p->mc_gpregs.gp_x[22], p->mc_gpregs.gp_x[23],
+    p->mc_gpregs.gp_x[24], p->mc_gpregs.gp_x[25], p->mc_gpregs.gp_x[26], p->mc_gpregs.gp_x[27],
+    p->mc_gpregs.gp_x[28], p->mc_gpregs.gp_x[29], p->mc_gpregs.gp_lr,
+    p->mc_gpregs.gp_sp, p->mc_gpregs.gp_elr, p->mc_gpregs.gp_spsr);
+
+  _stackdump_print_stack((gpointer)p->mc_gpregs.gp_sp);
+}
+
+#elif defined(__x86__)
+/****************************************************************************
+ * i386 support
+ ****************************************************************************/
+
+void
+_stackdump_print_registers(_STRUCT_MCONTEXT *p)
+{
+  console_printf(
+    "Registers: eax=%08x ebx=%08x ecx=%08x edx=%08x "
+    "esi=%08x edi=%08x ebp=%08x esp=%08x eip=%08x",
+    p->mc_eax, p->mc_ebx, p->mc_ecx, p->mc_edx,
+    p->mc_esi, p->mc_edi, p->mc_ebp, p->mc_esp, p->mc_eip);
+
+  _stackdump_print_stack((gpointer)p->mc_esp);
+}
 
 #else
 /****************************************************************************
+ * unsupported platform
+ ****************************************************************************/
+#error "This is an unsupported architecture for stackdump currenty :("
+#endif
+
+#endif // #elif defined(__FreeBSD__)
+
+#else // #elif defined(__APPLE__) || defined(__FreeBSD__)
+/****************************************************************************
  * unsupported OS
  ****************************************************************************/
-
 #error "This is an unsupported OS for stackdump currenty :("
-#endif
+#endif // OS variants
 
 static inline void
 _stackdump_log(_STRUCT_MCONTEXT *p)
