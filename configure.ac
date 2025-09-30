@@ -429,8 +429,8 @@ AC_ARG_ENABLE(afsnmp,
     , enable_afsnmp="auto")
 
 AC_ARG_ENABLE(stackdump,
-    AS_HELP_STRING([--enable-stackdump], [Enable stackdump support (default: no)]),
-    , enable_stackdump="no")
+    AS_HELP_STRING([--enable-stackdump], [Enable stackdump support (Linux, macOS, FreeBSD only) (default: auto)]),
+    , enable_stackdump="auto")
 
 AC_ARG_ENABLE(all-modules,
     AS_HELP_STRING([--enable-all-modules], [Forcibly enable all modules. (default: auto)]),
@@ -1747,6 +1747,16 @@ SAFE_C_CHECK_END
 dnl ***************************************************************************
 dnl libunwind headers/libraries
 dnl ***************************************************************************
+if test "x$enable_stackdump" = "xyes"; then
+  case "$host_os" in
+    linux* | freebsd* | darwin*)
+      # currently supported
+      ;;
+    *)
+      AC_MSG_ERROR([--enable-stackdump is only supported on Linux, macOS, or FreeBSD currently])
+      ;;
+  esac
+fi
 if test "x$enable_stackdump" = "xauto" || test "$enable_stackdump" = "yes"; then
     dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
     SAFE_C_CHECK_BEGIN
