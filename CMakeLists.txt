@@ -397,7 +397,7 @@ option(ENABLE_MEMTRACE "Enable memtrace" 0)
 set(SYSLOG_NG_ENABLE_MEMTRACE ${ENABLE_MEMTRACE})
 
 # TODO: This one does not seem to be used at all, add the missing configure option handling if needed in the future
-if(DEFINED ENABLE_PERF)
+if(ENABLE_PERF)
   message(FATAL_ERROR "ENABLE_PERF was explicitly enabled, but the cmake build system does not support it currently.")
 endif()
 set(ENABLE_PERF OFF)
