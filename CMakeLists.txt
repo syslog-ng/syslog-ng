@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
 # use, i.e. don't skip the full RPATH for the build tree
-set(CMAKE_SKIP_BUILD_RPATH  FALSE)
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
 # when building, don't use the install RPATH already
 # (but later on when installing)
@@ -30,7 +30,7 @@ include(module_switch)
 include(FindGperf)
 
 option(ENABLE_CPP "Enable C++" ON)
-if (ENABLE_CPP)
+if(ENABLE_CPP)
   enable_language(CXX)
   set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard")
   set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "C++ standard is a requirement")
@@ -41,6 +41,10 @@ endif()
 if(APPLE)
   module_switch(ENABLE_DARWIN_OSL "Enable OSLog" ON)
   option(ENABLE_OBJC "Enable ObjC" ${ENABLE_DARWIN_OSL})
+else()
+  if(ENABLE_DARWIN_OSL)
+    message(FATAL_ERROR "OSLog module enabled, but it is a macOS only feature")
+  endif()
 endif()
 
 if(ENABLE_OBJC)
@@ -53,8 +57,8 @@ if(ENABLE_OBJC)
 endif()
 
 # FIXME: This does not handle multiple sub-modules, must be made recursive and smarter later
-#        Also it should be moved to a separate file
-#        We have only one such module now (ivykis), so it is not a big problem currently
+# Also it should be moved to a separate file
+# We have only one such module now (ivykis), so it is not a big problem currently
 if("${IVYKIS_SOURCE}" STREQUAL "internal" OR "${IVYKIS_SOURCE}}" STREQUAL "auto" OR "${IVYKIS_SOURCE}}" STREQUAL "AUTO")
   find_package(Git QUIET)
 
@@ -105,7 +109,7 @@ set(LIBDIR "\${exec_prefix}/lib")
 set(INCLUDEDIR "\${prefix}/include")
 set(TOOLSDIR "\${datadir}/syslog-ng/tools")
 
-set (LOGGEN_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/syslog-ng/loggen")
+set(LOGGEN_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/syslog-ng/loggen")
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
   set(SYSLOG_NG_ENABLE_DEBUG ON)
@@ -125,24 +129,28 @@ add_definitions(-D_GNU_SOURCE=1)
 add_definitions(-D_LARGEFILE64_SOURCE=1)
 
 include(CheckSockaddrStorage)
-if (HAVE_STRUCT_SOCKADDR_STORAGE)
+if(HAVE_STRUCT_SOCKADDR_STORAGE)
   set(SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE 1)
 endif()
 
 include(CheckCreds)
-if (HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED)
+if(HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED)
   set(SYSLOG_NG_HAVE_STRUCT_UCRED 1)
 endif()
-check_struct_member ("struct msghdr" "msg_control" "sys/types.h;sys/socket.h" SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
+check_struct_member("struct msghdr" "msg_control" "sys/types.h;sys/socket.h" SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
 
 include(CheckIPv6)
+if(NOT HAVE_IPV6 AND ENABLE_IPV6)
+  message(FATAL_ERROR "IPV6 is enabled, but IPV6 support cannot be found")
+endif()
+
 module_switch(ENABLE_IPV6 "Enable IPv6" HAVE_IPV6)
 set(SYSLOG_NG_ENABLE_IPV6 ${ENABLE_IPV6})
 
-check_symbol_exists(TCP_KEEPIDLE  "sys/socket.h;netinet/in.h;netinet/tcp.h" HAVE_TCP_KEEPIDLE)
+check_symbol_exists(TCP_KEEPIDLE "sys/socket.h;netinet/in.h;netinet/tcp.h" HAVE_TCP_KEEPIDLE)
 check_symbol_exists(TCP_KEEPINTVL "sys/socket.h;netinet/in.h;netinet/tcp.h" HAVE_TCP_KEEPINTVL)
-check_symbol_exists(TCP_KEEPCNT   "sys/socket.h;netinet/in.h;netinet/tcp.h" HAVE_TCP_KEEPCNT)
-if (HAVE_TCP_KEEPIDLE AND HAVE_TCP_KEEPINTVL AND HAVE_TCP_KEEPCNT)
+check_symbol_exists(TCP_KEEPCNT "sys/socket.h;netinet/in.h;netinet/tcp.h" HAVE_TCP_KEEPCNT)
+if(HAVE_TCP_KEEPIDLE AND HAVE_TCP_KEEPINTVL AND HAVE_TCP_KEEPCNT)
   set(SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS 1)
 endif()
 
@@ -153,29 +161,28 @@ set(SYSLOG_NG_ENABLE_FORCED_SERVER_MODE ${ENABLE_FORCED_SERVER_MODE})
 
 option(ENV_LD_LIBRARY_PATH "Set LD_LIBRARY_PATH during runtime to the value given" "")
 if(NOT DEFINED ENABLE_ENV_WRAPPER)
-  set (ENABLE_ENV_WRAPPER OFF)
-  if (ENV_LD_LIBRARY_PATH)
-    set (ENABLE_ENV_WRAPPER ON)
-  endif ()
-endif ()
+  set(ENABLE_ENV_WRAPPER OFF)
+  if(ENV_LD_LIBRARY_PATH)
+    set(ENABLE_ENV_WRAPPER ON)
+  endif()
+endif()
 set(SYSLOG_NG_ENABLE_ENV_WRAPPER ${ENABLE_ENV_WRAPPER})
 
 option(WITH_COMPILE_DATE "Include compile date in binary" ON)
-if (WITH_COMPILE_DATE)
+if(WITH_COMPILE_DATE)
   set(SYSLOG_NG_WITH_COMPILE_DATE 1)
 endif()
 
 set(CMAKE_REQUIRED_DEFINITIONS "-D_LARGEFILE64_SOURCE=1")
 set(CMAKE_EXTRA_INCLUDE_FILES "fcntl.h")
 check_type_size(O_LARGEFILE O_LARGEFILE)
-if (HAVE_O_LARGEFILE)
+if(HAVE_O_LARGEFILE)
   set(SYSLOG_NG_HAVE_O_LARGEFILE 1)
 endif()
 
 check_c_source_compiles("
 #include <pthread.h>
 __thread int a; int main() { a=0; }" SYSLOG_NG_HAVE_THREAD_KEYWORD)
-
 
 check_symbol_exists(strtoll stdlib.h SYSLOG_NG_HAVE_STRTOLL)
 check_symbol_exists(strnlen string.h SYSLOG_NG_HAVE_STRNLEN)
@@ -236,15 +243,15 @@ int main(void) {
 }
 " SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF)
 
-if ((UTMPX_HAS_UT_TYPE AND UTMPX_HAS_UT_USER) OR (UTMPX_HAS_UT_TYPE AND UTMP_HAS_UT_USER))
+if((UTMPX_HAS_UT_TYPE AND UTMPX_HAS_UT_USER) OR(UTMPX_HAS_UT_TYPE AND UTMP_HAS_UT_USER))
   set(SYSLOG_NG_HAVE_MODERN_UTMP 1)
 endif()
 
 check_symbol_exists(SO_MEMINFO "sys/socket.h" SYSLOG_NG_HAVE_SO_MEMINFO)
 check_include_file("linux/sock_diag.h" SYSLOG_NG_HAVE_LINUX_SOCK_DIAG_H)
-set (SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS ${SYSLOG_NG_HAVE_SO_MEMINFO})
-if (NOT DEFINED SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS)
-  set (SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS OFF)
+set(SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS ${SYSLOG_NG_HAVE_SO_MEMINFO})
+if(NOT DEFINED SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS)
+  set(SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS OFF)
 endif()
 
 set(WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.g. /usr)")
@@ -271,29 +278,21 @@ check_symbol_exists(g_canonicalize_filename "glib.h" SYSLOG_NG_HAVE_G_CANONICALI
 #
 # Best of both worlds: we set to 2.68 if we have that version, so we
 # get clang to compile our code, otherwise we set it to 2.32.
-if (PC_GLIB_VERSION VERSION_GREATER_EQUAL "2.68")
+if(PC_GLIB_VERSION VERSION_GREATER_EQUAL "2.68")
   set_target_properties(GLib::GLib PROPERTIES
-        INTERFACE_COMPILE_DEFINITIONS "GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_68")
+    INTERFACE_COMPILE_DEFINITIONS "GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_68")
 
 else()
   set_target_properties(GLib::GLib PROPERTIES
-        INTERFACE_COMPILE_DEFINITIONS "GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32")
+    INTERFACE_COMPILE_DEFINITIONS "GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32")
 endif()
 
-find_package(RabbitMQ)
-if (RabbitMQ_FOUND)
-  set(CMAKE_REQUIRED_INCLUDES ${RabbitMQ_INCLUDE_DIR})
-  set(CMAKE_REQUIRED_LIBRARIES ${RabbitMQ_LIBRARY})
-  check_include_file("rabbitmq-c/tcp_socket.h" SYSLOG_NG_HAVE_RABBITMQ_C_TCP_SOCKET_H)
-  check_symbol_exists(amqp_ssl_socket_set_verify_peer "amqp.h;amqp_ssl_socket.h" SYSLOG_NG_HAVE_AMQP_SSL_SOCKET_SET_VERIFY_PEER)
-endif()
-
-set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
-set (IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path/AUTO)")
+set(SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
+set(IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path/AUTO)")
 external_or_find_package(IVYKIS REQUIRED)
 set(IVYKIS_LIBRARIES ${IVYKIS_LIBRARY} CACHE STRING "IVYKIS libraries path")
-if((NOT IVYKIS_INTERNAL) AND (IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
-  set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 0)
+if((NOT IVYKIS_INTERNAL) AND(IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
+  set(SYSLOG_NG_USE_CONST_IVYKIS_MOCK 0)
 elseif(IVYKIS_INTERNAL)
   # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
   find_package(uring)
@@ -308,7 +307,6 @@ find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(WRAP)
-find_package(Inotify)
 find_package(LIBCAP)
 find_package(LIBNET)
 
@@ -320,9 +318,9 @@ module_switch(ENABLE_JOURNALD "Enable systemd-journal" Libsystemd_FOUND)
 set(WITH_SYSTEMD_JOURNAL "system" CACHE STRING "Link against the system supplied or the wrapper library")
 set_property(CACHE WITH_SYSTEMD_JOURNAL PROPERTY STRINGS system wrapper)
 
-if (ENABLE_JOURNALD)
-  if (WITH_SYSTEMD_JOURNAL STREQUAL "system" AND NOT Libsystemd_FOUND)
-    message(FATAL_ERROR "systemd library not found")
+if(ENABLE_JOURNALD)
+  if(WITH_SYSTEMD_JOURNAL STREQUAL "system" AND NOT Libsystemd_FOUND)
+    message(FATAL_ERROR "systemd-journal module is enabled, but the required systemd library dependency could not be found")
   endif()
 
   # TODO: Add the missing configure option handling like it has for autotools
@@ -330,39 +328,43 @@ if (ENABLE_JOURNALD)
     message(FATAL_ERROR "ENABLE_SYSTEMD is defined, but the cmake build system does not support it currently.")
   endif()
   set(ENABLE_SYSTEMD ON)
-  if (WITH_SYSTEMD_JOURNAL STREQUAL "system")
-    if (SYSTEMD_WITH_NAMESPACE_LIBRARIES STREQUAL "systemd")
-       set(SYSLOG_NG_HAVE_JOURNAL_NAMESPACES 1)
-       message(STATUS "Have journal namespaces")
+  if(WITH_SYSTEMD_JOURNAL STREQUAL "system")
+    if(SYSTEMD_WITH_NAMESPACE_LIBRARIES STREQUAL "systemd")
+      set(SYSLOG_NG_HAVE_JOURNAL_NAMESPACES 1)
+      message(STATUS "Have journal namespaces")
     endif()
     set(SYSLOG_NG_SYSTEMD_JOURNAL_MODE SYSLOG_NG_JOURNALD_SYSTEM)
-  elseif (WITH_SYSTEMD_JOURNAL STREQUAL "wrapper")
+  elseif(WITH_SYSTEMD_JOURNAL STREQUAL "wrapper")
     set(SYSLOG_NG_SYSTEMD_JOURNAL_MODE SYSLOG_NG_JOURNALD_OPTIONAL)
   endif()
 else()
   set(ENABLE_SYSTEMD OFF)
   set(SYSLOG_NG_SYSTEMD_JOURNAL_MODE SYSLOG_NG_JOURNALD_OFF)
 endif()
-set (SYSLOG_NG_ENABLE_SYSTEMD ${ENABLE_SYSTEMD})
+set(SYSLOG_NG_ENABLE_SYSTEMD ${ENABLE_SYSTEMD})
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-if (Inotify_FOUND)
-  set(SYSLOG_NG_HAVE_INOTIFY 1)
+# Use only one of them if both are present, like on FreeBSD, where the inotify wrapper started to be distributed.
+# Prioritize kqueue, as inotify is just a wrapper around it if both are present.
+check_function_exists(kqueue SYSLOG_NG_HAVE_KQUEUE)
+if(NOT SYSLOG_NG_HAVE_KQUEUE)
+  find_package(Inotify)
+  if(Inotify_FOUND)
+    set(SYSLOG_NG_HAVE_INOTIFY 1)
+  endif()
 endif()
 
-check_function_exists(kqueue SYSLOG_NG_HAVE_KQUEUE)
-
-set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
+set(PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library")
 
 if("${PYTHON_VERSION}" STREQUAL "AUTO" OR "${PYTHON_VERSION}" STREQUAL "auto")
   find_package(PythonInterp EXACT 3)
   find_package(PythonLibs EXACT 3)
-else ()
+else()
   find_package(PythonInterp EXACT "${PYTHON_VERSION}" REQUIRED)
   find_package(PythonLibs EXACT "${PYTHON_VERSION}" REQUIRED)
-endif ()
+endif()
 
 MESSAGE(STATUS "Detected pythonlib version: ${PYTHONLIBS_VERSION_STRING}")
 include(python_build_venv)
@@ -372,9 +374,8 @@ openssl_set_defines()
 
 pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 
-option (ENABLE_TCP_WRAPPER "Enable TCP wrapper support" ${WRAP_FOUND})
-set (SYSLOG_NG_ENABLE_TCP_WRAPPER ${ENABLE_TCP_WRAPPER})
-
+option(ENABLE_TCP_WRAPPER "Enable TCP wrapper support" ${WRAP_FOUND})
+set(SYSLOG_NG_ENABLE_TCP_WRAPPER ${ENABLE_TCP_WRAPPER})
 
 # OS specific other comile/linker options might be needed
 if(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
@@ -403,14 +404,13 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "AIX")
   # the main program, even if there is a proper -llibname option.
   add_link_options(-Wl,-brtl)
 
-  # NOTE: There is no common, global LDFLAGS implementation for modules in cmake, but hhe currently produced modules are loadable .a modules now already
-  #set(MODULE_LDFLAGS "-avoid-version -module")
-
+# NOTE: There is no common, global LDFLAGS implementation for modules in cmake, but hhe currently produced modules are loadable .a modules now already
+# set(MODULE_LDFLAGS "-avoid-version -module")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   # NOTE: These are not needed in cmake, 1st should be explicitly set in CMakeLists.txt and not set by default, the 2nd is controlled by add_library(foo SHARED/STATIC...)
-  #set(MODULE_LDFLAGS "-avoid-version -dylib")
+  # set(MODULE_LDFLAGS "-avoid-version -dylib")
   # NOTE: BUILD_WITH_INSTALL_RPATH/SKIP_BUILD_RPATH controls this on macOS
-  #TEST_NO_INSTALL_FLAG="-no-fast-install"
+  # TEST_NO_INSTALL_FLAG="-no-fast-install"
 
   # NOTE: This is now seems to be an Apple/Xcode "only" issue, but probably much better a clang one, so later we might want to add this globally
   # XCode15 new linker has some issues (e.g. https://developer.apple.com/forums/thread/737707)
@@ -464,48 +464,46 @@ else()
 endif()
 
 if(ENABLE_LINUX_CAPS AND NOT PC_LIBCAP_FOUND)
-  message(FATAL_ERROR "ENABLE_LINUX_CAPS is defined, but the POSIX capabilities library could not be found.")
+  message(FATAL_ERROR "ENABLE_LINUX_CAPS was explicitly enabled, but the required POSIX capabilities library dependency could not be found.")
 endif()
-option (ENABLE_LINUX_CAPS "Enable memtrace" ${PC_LIBCAP_FOUND})
+option(ENABLE_LINUX_CAPS "Enable memtrace" ${PC_LIBCAP_FOUND})
 set(SYSLOG_NG_ENABLE_LINUX_CAPS ${ENABLE_LINUX_CAPS})
 
-option (ENABLE_MEMTRACE "Enable memtrace" 0)
-set (SYSLOG_NG_ENABLE_MEMTRACE ${ENABLE_MEMTRACE})
+option(ENABLE_MEMTRACE "Enable memtrace" 0)
+set(SYSLOG_NG_ENABLE_MEMTRACE ${ENABLE_MEMTRACE})
 
 # TODO: This one does not seem to be used at all, add the missing configure option handling if needed in the future
-if (DEFINED ENABLE_PERF)
-  message (FATAL_ERROR "ENABLE_PERF is defined, but the cmake build system does not support it currently.")
-endif ()
-set (ENABLE_PERF OFF)
-set (SYSLOG_NG_ENABLE_PERF ${ENABLE_PERF})
+if(DEFINED ENABLE_PERF)
+  message(FATAL_ERROR "ENABLE_PERF was explicitly enabled, but the cmake build system does not support it currently.")
+endif()
+set(ENABLE_PERF OFF)
+set(SYSLOG_NG_ENABLE_PERF ${ENABLE_PERF})
 
 option(ENABLE_STACKDUMP "Enable stackdump using libunwind" OFF)
-if (ENABLE_STACKDUMP)
-  if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    message (FATAL_ERROR "ENABLE_STACKDUMP is defined, but it is only supported on Linux currently.")
-  endif ()
-  find_package (LIBUNWIND)
-  if (NOT LIBUNWIND_FOUND)
-    message (FATAL_ERROR "ENABLE_STACKDUMP is defined, but the libunwind library could not be found.")
-  endif ()
-  set (CMAKE_REQUIRED_INCLUDES ${LIBUNWIND_INCLUDE_DIR})
-  if (NOT APPLE)
-    set (CMAKE_REQUIRED_LIBRARIES ${LIBUNWIND_LIBRARY})
-  endif ()
-endif ()
-set (SYSLOG_NG_ENABLE_STACKDUMP ${ENABLE_STACKDUMP})
+if(ENABLE_STACKDUMP)
+  if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(FATAL_ERROR "ENABLE_STACKDUMP is not turned OFF, but it is only supported on Linux currently.")
+  endif()
+  find_package(LIBUNWIND)
+  if(NOT LIBUNWIND_FOUND)
+    message(FATAL_ERROR "ENABLE_STACKDUMP was explicitly enabled, but the required libunwind library dependency could not be found")
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES ${LIBUNWIND_INCLUDE_DIR})
+  set(CMAKE_REQUIRED_LIBRARIES ${LIBUNWIND_LIBRARY})
+endif()
+set(SYSLOG_NG_ENABLE_STACKDUMP ${ENABLE_STACKDUMP})
 
-if (WITH_GETTEXT)
-    set(CMAKE_PREFIX_PATH ${WITH_GETTEXT})
-    find_package(Gettext REQUIRED QUIET)
-    set(CMAKE_PREFIX_PATH "")
+if(WITH_GETTEXT)
+  set(CMAKE_PREFIX_PATH ${WITH_GETTEXT})
+  find_package(Gettext REQUIRED QUIET)
+  set(CMAKE_PREFIX_PATH "")
 else()
-    find_package(Gettext REQUIRED QUIET)
+  find_package(Gettext REQUIRED QUIET)
 endif()
 
 set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/eventlog/src")
 
-add_custom_target(style-check  COMMAND ${PROJECT_SOURCE_DIR}/scripts/style-checker.sh check  ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+add_custom_target(style-check COMMAND ${PROJECT_SOURCE_DIR}/scripts/style-checker.sh check ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 add_custom_target(style-format COMMAND ${PROJECT_SOURCE_DIR}/scripts/style-checker.sh format ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 add_custom_target(check-commits
   COMMAND ${PROJECT_SOURCE_DIR}/tests/commits/check.sh
@@ -518,13 +516,13 @@ set_target_properties(check-copyright PROPERTIES
   "copyright-run.log;copyright-err.log")
 
 option(BUILD_TESTING "Enable unit tests" ON)
-if (BUILD_TESTING)
-  find_package (criterion)
+if(BUILD_TESTING)
+  find_package(criterion)
 endif()
 
 include(add_tests)
-if (BUILD_TESTING)
-  if (NOT CRITERION_FOUND)
+if(BUILD_TESTING)
+  if(NOT CRITERION_FOUND)
     message(FATAL_ERROR "BUILD_TESTING is enabled (by default, or explicitely) without criterion detected! You can turn off testing via the -DBUILD_TESTING=OFF cmake option.")
   else()
     set(CTEST_ENVIRONMENT
@@ -537,7 +535,7 @@ if (BUILD_TESTING)
     include(CTest)
 
     # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking soution
-    if (APPLE)
+    if(APPLE)
       SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-flat_namespace")
     endif()
 
@@ -556,7 +554,7 @@ set(ACCEPTABLE_WARNINGS
   -Wno-variadic-macros)
 
 option(ENABLE_EXTRA_WARNINGS "Enable extra warnings" ON)
-if (ENABLE_EXTRA_WARNINGS)
+if(ENABLE_EXTRA_WARNINGS)
   set(EXTRA_WARNINGS
     $<$<COMPILE_LANGUAGE:C>:-Wimplicit-function-declaration>
     $<$<COMPILE_LANGUAGE:C>:-Wnested-externs>
@@ -579,47 +577,47 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wfloat-conversion
     $<$<COMPILE_LANGUAGE:C>:-Wbad-function-cast>)
 
-  if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     set(EXTRA_WARNINGS
       ${EXTRA_WARNINGS}
-      )
+    )
   else()
     set(EXTRA_WARNINGS
       $<$<COMPILE_LANGUAGE:C>:-Wold-style-declaration>
       -Wunused-but-set-parameter
       $<$<COMPILE_LANGUAGE:C>:-Woverride-init>
       ${EXTRA_WARNINGS}
-      )
+    )
   endif()
 endif()
 
-add_compile_options (${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
+add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
 
-option (ENABLE_FORCE_GNU99 "Enforce C99 with gnu extensions" OFF)
-if (ENABLE_FORCE_GNU99)
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-endif ()
+option(ENABLE_FORCE_GNU99 "Enforce C99 with gnu extensions" OFF)
+if(ENABLE_FORCE_GNU99)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+endif()
 
-option (ENABLE_GPROF "Enable gcc profiling" OFF)
-if (ENABLE_GPROF)
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-endif ()
-set (SYSLOG_NG_ENABLE_GCOV ${ENABLE_GPROF})
+option(ENABLE_GPROF "Enable gcc profiling" OFF)
+if(ENABLE_GPROF)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+endif()
+set(SYSLOG_NG_ENABLE_GCOV ${ENABLE_GPROF})
 
-option (ENABLE_GCOV "Enable code coverage analysis (like gcov) support" OFF)
-if (ENABLE_GCOV)
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
-endif ()
-set (SYSLOG_NG_ENABLE_GPROF ${ENABLE_GCOV})
+option(ENABLE_GCOV "Enable code coverage analysis (like gcov) support" OFF)
+if(ENABLE_GCOV)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+endif()
+set(SYSLOG_NG_ENABLE_GPROF ${ENABLE_GCOV})
 
 # Sanatizer configuration
 set(SANITIZER "OFF" CACHE STRING "Enable clang sanitizer")
 set_property(CACHE SANITIZER PROPERTY STRINGS OFF address thread undefined address-all)
-if (SANITIZER)
+if(SANITIZER)
   SET(SANITIZE_MODE "${SANITIZER}")
-  if (SANITIZER MATCHES address-all)
+  if(SANITIZER MATCHES address-all)
     SET(SANITIZE_MODE "address")
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize-address-use-after-scope")
   endif()
@@ -628,7 +626,6 @@ if (SANITIZER)
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=${SANITIZE_MODE}")
   endif()
 endif()
-
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 

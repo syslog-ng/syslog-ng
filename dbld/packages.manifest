@@ -28,6 +28,7 @@ sudo                            [centos, almalinux, fedora, debian, opensuse, rh
 # Essential build tools not explicitly referenced from
 # Build-Depends/BuildRequires
 #############################################################################
+
 build-essential                 [debian, ubuntu]
 debhelper                       [debian, ubuntu]
 devscripts                      [debian, ubuntu]
@@ -36,7 +37,7 @@ dh-exec                         [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
 equivs                          [debian, ubuntu]
 gmake                           [opensuse]
-gperf                           [fedora, opensuse, rocky]
+gperf                           [centos, almalinux, fedora, opensuse, rhel, rocky]
 libdistro-info-perl             [debian, ubuntu]
 libtool                         [opensuse, rhel, rocky]
 make                            [centos, almalinux, fedora, rhel, rocky]
@@ -46,18 +47,13 @@ which                           [fedora, opensuse, rhel, rocky]
 #############################################################################
 # eBPF related tools
 #############################################################################
-clang                           [devshell, tarball]
-libbpf-dev                      [devshell, tarball]
-bpftool                         [devshell, tarball]
+
+libbpf-dev                      [devshell, tarball, debian, ubuntu-plucky]
+bpftool                         [devshell, tarball, debian, ubuntu-plucky]
 
 #############################################################################
 # Tarball related tools
 #############################################################################
-
-# docbook to generate man pages
-docbook-xsl                     [devshell, tarball]
-docbook-style-xsl               [fedora, rocky]
-docbook-xsl-stylesheets         [opensuse]
 
 #############################################################################
 # Build environment dependencies that are not strictly required by syslog-ng
@@ -80,7 +76,7 @@ ccache                          [centos, almalinux, fedora, debian, opensuse, ub
 #############################################################################
 
 autoconf                        [centos, almalinux, fedora, opensuse, rhel, rocky]
-autoconf-archive                [centos, fedora, opensuse, rhel, rocky]
+autoconf-archive                [centos, almalinux, fedora, opensuse, rhel, rocky]
 automake                        [centos, almalinux, fedora, opensuse, rhel, rocky]
 
 #############################################################################
@@ -147,10 +143,11 @@ systemd-sysv                    [kira]
 
 
 #############################################################################
-# Development tools in our devshell.
+# Development tools in our devshell
+# (and in images that runs the tests)
 #############################################################################
 
-clang                           [devshell]
+clang                           [devshell, tarball, centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 dirmngr                         [devshell]
 gdb                             [devshell]
 gdbserver                       [devshell]
@@ -165,6 +162,7 @@ linux-perf                      [devshell]
 locales                         [devshell]
 lsof                            [devshell]
 netcat-openbsd                  [devshell]
+net-snmp                        [almalinux, centos, fedora, rocky, rhel]
 python3-dev                     [devshell]
 python3-dbg                     [devshell]
 python3-dbg                     [devshell]
@@ -172,10 +170,11 @@ strace                          [devshell]
 valgrind                        [devshell]
 openssh-client                  [devshell]
 astyle                          [devshell]
-snmptrapd                       [devshell]
+snmptrapd                       [devshel, ubuntu, debian]
 dwarves                         [devshell]
 jq                              [devshell]
 curl                            [devshell]
+tzdata-legacy                   [ubuntu-noble, ubuntu-plucky, debian-trixie]
 
 #############################################################################
 # Functional tests in the devshell

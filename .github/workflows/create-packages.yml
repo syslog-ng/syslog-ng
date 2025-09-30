@@ -59,15 +59,6 @@ jobs:
       matrix:
         distro: ${{ fromJson(inputs.distros) }}
         arch: [amd64, arm64]
-        exclude:
-          - distro: debian-bullseye
-            arch: arm64
-          - distro: debian-sid
-            arch: arm64
-          - distro: debian-testing
-            arch: arm64
-          - distro: ubuntu-jammy
-            arch: arm64
         # add suffix mapping rules via include
         include:
           - arch: arm64

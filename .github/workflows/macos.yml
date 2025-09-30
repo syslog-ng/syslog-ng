@@ -1,8 +1,10 @@
 name: macOS
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
+    branches: [ "develop", "master" ]
   schedule:
     - cron: '00 21 * * *'
 
@@ -254,7 +256,7 @@ jobs:
         run: |
           ./autogen.sh
 
-      - name: configure
+      - name: autotools configure
         if: matrix.build-tool == 'autotools'
         run: |
           ./configure ${CONFIGURE_FLAGS}
@@ -267,8 +269,10 @@ jobs:
       - name: cmake install
         if: matrix.build-tool == 'cmake'
         run: |
+          set -e
+
           cmake --build ./build -j ${THREADS} --target install
-          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -V
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV 2>&1 |sort
 
       - name: cmake check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
@@ -287,7 +291,7 @@ jobs:
               make V=1; \
               return $S; \
             }
-          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -V
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV 2>&1 |sort
 
       - name: make check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)

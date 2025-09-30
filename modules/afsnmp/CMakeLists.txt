@@ -1,30 +1,30 @@
-if (NOT DEFINED ENABLE_AFSNMP OR ENABLE_AFSNMP)
+if(NOT DEFINED ENABLE_AFSNMP OR ENABLE_AFSNMP)
   find_package(NETSNMP)
 endif()
 
 module_switch(ENABLE_AFSNMP "Enable afsnmp module" NETSNMP_FOUND)
 
-if (NOT ENABLE_AFSNMP)
-  return ()
+if(ENABLE_AFSNMP AND NOT NETSNMP_FOUND)
+  message(FATAL_ERROR "SNMP module was explicitly enabled, but the required Net-SNMP dependency could not be found")
 endif()
 
-if (NOT NETSNMP_FOUND)
-  message(FATAL_ERROR "SNMP module enabled, but Net-SNMP not found")
+if(NOT ENABLE_AFSNMP)
+  return()
 endif()
 
 set(afsnmp_SOURCES
-    "afsnmpdest.h"
-    "afsnmpdest.c"
-    "afsnmp-parser.h"
-    "afsnmp-parser.c"
-    "afsnmp-plugin.c"
-    "snmptrapd-header-parser.h"
-    "snmptrapd-header-parser.c"
-    "snmptrapd-nv-context.h"
-    "snmptrapd-parser.h"
-    "snmptrapd-parser.c"
-    "varbindlist-scanner.h"
-    "varbindlist-scanner.c"
+  "afsnmpdest.h"
+  "afsnmpdest.c"
+  "afsnmp-parser.h"
+  "afsnmp-parser.c"
+  "afsnmp-plugin.c"
+  "snmptrapd-header-parser.h"
+  "snmptrapd-header-parser.c"
+  "snmptrapd-nv-context.h"
+  "snmptrapd-parser.h"
+  "snmptrapd-parser.c"
+  "varbindlist-scanner.h"
+  "varbindlist-scanner.c"
 )
 
 add_module(
@@ -34,7 +34,6 @@ add_module(
   SOURCES ${afsnmp_SOURCES}
 )
 
-set_target_properties(afsnmp PROPERTIES COMPILE_FLAGS ${NETSNMP_CFLAGS})
+set_target_properties(afsnmp PROPERTIES COMPILE_FLAGS "${NETSNMP_CFLAGS} -fPIC")
 
 add_test_subdirectory(tests)
-

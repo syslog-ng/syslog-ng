@@ -53,25 +53,24 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/logrotate.h \
 	modules/affile/logrotate.c
 
-if HAVE_INOTIFY
-  modules_affile_libaffile_la_SOURCES +=      \
-  modules/affile/directory-monitor-inotify.h  \
-  modules/affile/directory-monitor-inotify.c
-else
-  EXTRA_DIST +=                               \
-  modules/affile/directory-monitor-inotify.h  \
-  modules/affile/directory-monitor-inotify.c
-endif
-
+# Use only one of them if both are present, like on FreeBSD, where the inotify wrapper started to be distributed.
+# Prioritize kqueue, as inotify is just a wrapper around it if both are present.
 if HAVE_KQUEUE
-  modules_affile_libaffile_la_SOURCES +=      \
-  modules/affile/directory-monitor-kqueue.h  \
-  modules/affile/directory-monitor-kqueue.c
+modules_affile_libaffile_la_SOURCES += \
+	modules/affile/directory-monitor-kqueue.h \
+	modules/affile/directory-monitor-kqueue.c
 else
-  EXTRA_DIST +=                               \
-  modules/affile/directory-monitor-kqueue.h  \
-  modules/affile/directory-monitor-kqueue.c
+if HAVE_INOTIFY
+modules_affile_libaffile_la_SOURCES += \
+	modules/affile/directory-monitor-inotify.h \
+	modules/affile/directory-monitor-inotify.c
 endif
+endif
+EXTRA_DIST += \
+	modules/affile/directory-monitor-inotify.h \
+	modules/affile/directory-monitor-inotify.c \
+	modules/affile/directory-monitor-kqueue.h \
+	modules/affile/directory-monitor-kqueue.c
 
 BUILT_SOURCES				+= 			\
 	modules/affile/affile-grammar.y				\

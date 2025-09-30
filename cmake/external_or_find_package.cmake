@@ -23,7 +23,7 @@
 #############################################################################
 
 # -----------------------------------------------------------------------------
-# NOTE: The usage of the name external in the file names and the internal 
+# NOTE: The usage of the name external in the file names and the internal
 #       variables are confusing here, as this tries to discover the internal
 #       version of the given lib.
 #       For legacy reasons I've kept it as it is.
@@ -76,7 +76,7 @@ function(external_or_find_package LIB_NAME)
       unset(${LIB_NAME}_INTERNAL)
     else()
       if (${EXTERNAL_OR_FIND_PACKAGE_REQUIRED})
-          message(FATAL_ERROR "Library ${LIB_NAME} is mandatory but NOTFOUND")
+          message(FATAL_ERROR "Library ${LIB_NAME} is mandatory, but NOTFOUND")
       else()
           message(STATUS "Library ${LIB_NAME} is NOTFOUND")
       endif()
