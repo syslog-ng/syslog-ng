@@ -10,8 +10,8 @@ on:
         required: true
         type: choice
         options:
-          - stable
           - nightly
+          - stable
 
 jobs:
   pre-check:
@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Validate tag
         run: |
-          if [[ "${{ github.ref }}" != refs/tags/syslog-ng-* ]]; then
+          if [[ "${{ github.ref }}" != refs/tags/syslog-ng-* ]] && [[ "${{ inputs.pkg-type }}" != "nightly" ]]; then
             echo "Please start the workflow on a 'syslog-ng-*' tag"
             false
           fi
