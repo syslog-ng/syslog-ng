@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
  * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2025 Istvan Hoffmann <hofione@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,14 +45,10 @@ _stackdump_print_stack(gpointer stack_pointer)
     {
       gchar line[64] = {0};  /* plenty of room for 16 bytes in hex */
       for (gint j = 0; j < 8; j++)
-        {
-          g_snprintf(&line[j*3], sizeof(line) - j*3, "%02x ", (guint) *(p+j));
-        }
+        g_snprintf(&line[j*3], sizeof(line) - j*3, "%02x ", (guint) *(p+j));
       line[8*3] = ' ';
       for (gint j = 8; j < 16; j++)
-        {
-          g_snprintf(&line[j*3 + 1], sizeof(line) - (j*3 + 1), "%02x ", (guint) *(p+j));
-        }
+        g_snprintf(&line[j*3 + 1], sizeof(line) - (j*3 + 1), "%02x ", (guint) *(p+j));
 
       console_printf("Stack %p: %s", p, line);
       p += 16;
@@ -81,9 +78,7 @@ _stackdump_print_backtrace(void)
       struct link_map *linkmap;
 
       if (!dladdr1(bt[i], &dlinfo, (void **) &linkmap, RTLD_DL_LINKMAP))
-        {
-          console_printf("[%d]: %p", i, bt[i]);
-        }
+        console_printf("[%d]: %p", i, bt[i]);
       else
         {
           if (dlinfo.dli_sname == NULL || dlinfo.dli_sname[0] == '\0')
@@ -121,7 +116,6 @@ _stackdump_print_backtrace(void)
   gint count = backtrace(bt, 256);
 
   console_printf("Backtrace dump, count=%d", count);
-
   for (gint i = 0; i < count; i++)
     {
       Dl_info dlinfo;
@@ -130,9 +124,24 @@ _stackdump_print_backtrace(void)
       else
         {
           if (dlinfo.dli_sname == NULL || dlinfo.dli_sname[0] == '\0')
-            console_printf("[%d]: %s [%p]", i, dlinfo.dli_fname ? dlinfo.dli_fname : "?", bt[i]);
+            {
+              ptrdiff_t addr_rel_to_base = (char *) bt[i] - (char *) dlinfo.dli_fbase;
+              console_printf("[%d]: %s(+0x%lx) [%p]",
+                             i,
+                             dlinfo.dli_fname ? dlinfo.dli_fname : "?",
+                             (unsigned long) addr_rel_to_base,
+                             bt[i]);
+            }
           else
-            console_printf("[%d]: %s(%s) [%p]", i, dlinfo.dli_fname ? dlinfo.dli_fname : "?", dlinfo.dli_sname, bt[i]);
+            {
+              ptrdiff_t addr_rel_to_sym = (char *) bt[i] - (char *) dlinfo.dli_saddr;
+              console_printf("[%d]: %s(%s+0x%lx) [%p]",
+                             i,
+                             dlinfo.dli_fname ? dlinfo.dli_fname : "?",
+                             dlinfo.dli_sname,
+                             (unsigned long) addr_rel_to_sym,
+                             bt[i]);
+            }
         }
     }
 }
