@@ -1,4 +1,5 @@
 module_switch(ENABLE_STARDATE "Enable stardate")
+
 if (NOT ENABLE_STARDATE)
   return()
 endif()

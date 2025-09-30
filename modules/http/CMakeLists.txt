@@ -1,44 +1,45 @@
-if (NOT DEFINED ENABLE_CURL OR ENABLE_CURL)
+if(NOT DEFINED ENABLE_CURL OR ENABLE_CURL)
   find_package(Curl)
 endif()
 
 set(SYSLOG_NG_HAVE_ZLIB 0 CACHE BOOL "Zlib support" FORCE)
 
 module_switch(ENABLE_CURL "Enable http destination" Curl_FOUND)
-if (NOT ENABLE_CURL)
-  return ()
-endif ()
 
-if (NOT Curl_FOUND)
-  message(FATAL_ERROR "HTTP module enabled, but libcurl not found")
-endif ()
+if(ENABLE_CURL AND NOT Curl_FOUND)
+  message(FATAL_ERROR "HTTP module was explicitly enabled, but the required libcurl dependency could not be found")
+endif()
+
+if(NOT ENABLE_CURL)
+  return()
+endif()
 
 find_package(ZLIB)
 # TODO: We need a proper FindZLIB.cmake here it seems
-#       e.g. on macOS ZLIB_FOUND is not defined after find_package(), use now the presented ZLIB_INCLUDE_DIR string as well
-if (ZLIB_FOUND OR (DEFINED ZLIB_INCLUDE_DIR AND NOT ZLIB_INCLUDE_DIR STREQUAL ""))
+# e.g. on macOS ZLIB_FOUND is not defined after find_package(), use now the presented ZLIB_INCLUDE_DIR string as well
+if(ZLIB_FOUND OR(DEFINED ZLIB_INCLUDE_DIR AND NOT ZLIB_INCLUDE_DIR STREQUAL ""))
   set(SYSLOG_NG_HAVE_ZLIB 1 CACHE BOOL "Zlib support" FORCE)
 endif()
 
 set(HTTP_DESTINATION_SOURCES
-    http.h
-    http.c
-    http-worker.h
-    http-worker.c
-    http-loadbalancer.h
-    http-loadbalancer.c
-    http-curl-header-list.h
-    http-curl-header-list.c
-    http-parser.c
-    http-parser.h
-    http-plugin.c
-    response-handler.h
-    response-handler.c
-    http-signals.h
-    autodetect-ca-location.h
-    autodetect-ca-location.c
-    compression.h
-    compression.c
+  http.h
+  http.c
+  http-worker.h
+  http-worker.c
+  http-loadbalancer.h
+  http-loadbalancer.c
+  http-curl-header-list.h
+  http-curl-header-list.c
+  http-parser.c
+  http-parser.h
+  http-plugin.c
+  response-handler.h
+  response-handler.c
+  http-signals.h
+  autodetect-ca-location.h
+  autodetect-ca-location.c
+  compression.h
+  compression.c
 )
 
 set(HTTP_MODULE_DEV_HEADERS
@@ -49,13 +50,13 @@ add_module(
   TARGET http
   GRAMMAR http-grammar
   INCLUDES ${Curl_INCLUDE_DIR}
-           ${ZLIB_INCLUDE_DIRS}
+  ${ZLIB_INCLUDE_DIRS}
   DEPENDS ${Curl_LIBRARIES}
-          ${ZLIB_LIBRARIES}
+  ${ZLIB_LIBRARIES}
   SOURCES ${HTTP_DESTINATION_SOURCES}
 )
 
-function (curl_detect_compile_option NAME)
+function(curl_detect_compile_option NAME)
   set(CMAKE_REQUIRED_INCLUDES "${Curl_INCLUDE_DIR}")
   set(CMAKE_EXTRA_INCLUDE_FILES "curl/curl.h")
   string(TOUPPER ${NAME} NAME_CAPITAL)
@@ -64,7 +65,7 @@ function (curl_detect_compile_option NAME)
   if(SYSLOG_NG_HAVE_DECL_${NAME_CAPITAL})
     set(SYSLOG_NG_HAVE_DECL_${NAME_CAPITAL} 1 CACHE INTERNAL "")
   endif()
-endfunction ()
+endfunction()
 
 curl_detect_compile_option(CURL_SSLVERSION_TLSv1_0)
 curl_detect_compile_option(CURL_SSLVERSION_TLSv1_1)

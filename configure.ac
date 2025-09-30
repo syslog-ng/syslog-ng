@@ -429,8 +429,8 @@ AC_ARG_ENABLE(afsnmp,
     , enable_afsnmp="auto")
 
 AC_ARG_ENABLE(stackdump,
-    AS_HELP_STRING([--disable-stackdump], [Disable stackdump support]),
-    , enable_stackdump="auto")
+    AS_HELP_STRING([--enable-stackdump], [Enable stackdump support (default: no)]),
+    , enable_stackdump="no")
 
 AC_ARG_ENABLE(all-modules,
     AS_HELP_STRING([--enable-all-modules], [Forcibly enable all modules. (default: auto)]),
@@ -509,7 +509,7 @@ dnl     $3 = override macro name (optional)
 dnl ============================================================
 AC_DEFUN([CHECK_AND_DEFINE],
 [
-    AC_MSG_NOTICE([Checking $target_kind $2 $3])
+    dnl AC_MSG_NOTICE([Checking $target_kind $2 $3])
 
     dnl Figure out what we are checking
     m4_case([$1],
@@ -521,19 +521,19 @@ AC_DEFUN([CHECK_AND_DEFINE],
 
     dnl Safely copy the cached result into shell var "cacheval"
     AS_VAR_COPY([cacheval], [$cachevar])
-    AC_MSG_NOTICE([ -> cache var: $cachevar = $cacheval])
+    dnl AC_MSG_NOTICE([ -> cache var: $cachevar = $cacheval])
 
     m4_ifval([$3],
         [
             dnl override define name provided
-            AC_MSG_NOTICE([ -> define (override): $3])
+            dnl AC_MSG_NOTICE([ -> define (override): $3])
             AS_IF([test "x$cacheval" = "xyes"],
                 [AC_DEFINE([$3], [1], [Define if $2 is present])],
                 [AC_DEFINE([$3], [0], [Define if $2 is present])])
         ],
         [
             dnl default define name
-            AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]))
+            dnl AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]))
             AS_IF([test "x$cacheval" = "xyes"],
                 [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [1], [Define if $2 is present])],
                 [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [0], [Define if $2 is present])])
@@ -602,8 +602,8 @@ dnl ============================================================
 dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
 AC_DEFUN([CHECK_HEADERS_AND_DEFINE],
 [
-    m4_foreach([_hdr], m4_split([$1]), [
-        CHECK_HEADER_AND_DEFINE(m4_normalize(_hdr))
+    m4_foreach([_hdr], m4_split(m4_normalize([$1])), [
+        CHECK_HEADER_AND_DEFINE(_hdr)
     ])
 ])
 
@@ -629,8 +629,8 @@ dnl ============================================================
 dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
 AC_DEFUN([CHECK_FUNCS_AND_DEFINE],
 [
-    m4_foreach([_func], m4_split([$1]), [
-        CHECK_FUNC_AND_DEFINE(m4_normalize(_func))
+    m4_foreach([_func], m4_split(m4_normalize([$1])), [
+        CHECK_FUNC_AND_DEFINE(_func)
     ])
 ])
 
@@ -1191,7 +1191,6 @@ AC_CHECK_LIB(regex, regexec, REGEX_LIBS="-lregex")
 AC_CHECK_LIB(resolv, res_init, RESOLV_LIBS="-lresolv")
 
 CHECK_FUNCS_AND_DEFINE([
-    kqueue
     fmemopen
     getutent
     memrchr
@@ -1212,9 +1211,21 @@ CHECK_FUNCS_AND_DEFINE([
     strnlen
     getline
     strtok_r
-    inotify_init
     getrandom
 ])
+dnl Use only one of them if both are present, like on FreeBSD, where the inotify wrapper started to be distributed.
+dnl Prioritize kqueue, as inotify is just a wrapper around it if both are present.
+AC_CHECK_FUNCS([kqueue inotify_init])
+if test "x$ac_cv_func_kqueue" = xyes; then
+  have_kqueue=yes
+  have_inotify=no
+elif test "x$ac_cv_func_inotify_init" = xyes; then
+  have_kqueue=no
+  have_inotify=yes
+else
+  have_kqueue=no
+  have_inotify=no
+fi
 
 dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
 SAFE_C_CHECK_BEGIN
@@ -1736,19 +1747,24 @@ SAFE_C_CHECK_END
 dnl ***************************************************************************
 dnl libunwind headers/libraries
 dnl ***************************************************************************
+if test "x$enable_stackdump" = "xauto" || test "$enable_stackdump" = "yes"; then
+    dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+    SAFE_C_CHECK_BEGIN
 
-dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
-SAFE_C_CHECK_BEGIN
+    PKG_CHECK_MODULES(LIBUNWIND, libunwind >= 1.6.2, enable_libunwind="yes", enable_libunwind="no")
 
-PKG_CHECK_MODULES(LIBUNWIND, libunwind >= 1.6.2, enable_libunwind="yes", enable_libunwind="no")
-
-if test "$enable_stackdump" = "yes" && test "$enable_libunwind" = "no"; then
-    AC_MSG_ERROR([Could not find libunwind, and stackdump support was explicitly enabled.])
+    if test "$enable_stackdump" = "yes" && test "$enable_libunwind" = "no"; then
+        AC_MSG_ERROR([Could not find libunwind, and stackdump support was explicitly enabled.])
+    fi
+    SAFE_C_CHECK_END
 fi
 
 dnl ***************************************************************************
 dnl libesmtp headers/libraries
 dnl ***************************************************************************
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
+SAFE_C_CHECK_BEGIN
+
 if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
     libesmtp="yes"
     if test "x$with_libesmtp" != "xyes" && test "x$with_libesmtp" != "x"; then
@@ -1780,6 +1796,7 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
 fi
 
 SAFE_C_CHECK_END
+
 
 dnl ***************************************************************************
 dnl libmqtt headers/libraries
@@ -2512,27 +2529,27 @@ fi
 MODULE_DEPS_LIBS="\$(top_builddir)/lib/libsyslog-ng.la"
 
 if test "x$linking_mode" = "xdynamic"; then
-	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $DL_LIBS $LIBUNWIND_LIBS"
+	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $DL_LIBS $LIBUNWIND_LIBS $JSON_LIBS"
 
 	if test "x$with_ivykis" = "xinternal"; then
 		# when using the internal ivykis, we're linking it statically into libsyslog-ng.so
 
 		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS $JSON_LIBS"
+		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
 	else
 		# otherwise everything needs to link against libivykis.so
 
 		SYSLOGNG_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
 
 		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $JSON_LIBS"
+		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
 	fi
 
 	# syslog-ng binary is linked with the default link command (e.g. libtool)
 	SYSLOGNG_LINK='$(LINK)'
 else
-	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $EVTLOG_NO_LIBTOOL_LIBS $SECRETSTORAGE_NO_LIBTOOL_LIBS $LD_START_STATIC -Wl,${WHOLE_ARCHIVE_OPT} $GLIB_LIBS $PCRE2_LIBS $REGEX_LIBS  -Wl,${NO_WHOLE_ARCHIVE_OPT} $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS $LIBUNWIND_LIBS"
-	TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $IVYKIS_LIBS $DL_LIBS"
+	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $EVTLOG_NO_LIBTOOL_LIBS $SECRETSTORAGE_NO_LIBTOOL_LIBS $LD_START_STATIC -Wl,${WHOLE_ARCHIVE_OPT} $GLIB_LIBS $PCRE2_LIBS $REGEX_LIBS  -Wl,${NO_WHOLE_ARCHIVE_OPT} $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS $LIBUNWIND_LIBS $JSON_LIBS"
+	TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $IVYKIS_LIBS $DL_LIBS $JSON_LIBS"
 	CORE_DEPS_LIBS=""
 
 	# bypass libtool in case we want to do mixed linking because it
@@ -2617,8 +2634,8 @@ AC_DEFINE_UNQUOTED(ENABLE_KAFKA, `enable_value $enable_kafka`, [Enable kafka sup
 AC_DEFINE_UNQUOTED(ENABLE_CPP, `enable_value $enable_cpp`, [Enable C++ support])
 AC_DEFINE_UNQUOTED(ENABLE_STACKDUMP, `enable_value $enable_stackdump`, [Enable stackdump using libunwind])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
-AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
-AC_DEFINE_UNQUOTED(HAVE_KQUEUE, `enable_value $ac_cv_func_kqueue`, [Have kqueue])
+AC_DEFINE_UNQUOTED([HAVE_KQUEUE], [`enable_value $have_kqueue`], [Have kqueue])
+AC_DEFINE_UNQUOTED([HAVE_INOTIFY], [`enable_value $have_inotify`], [Have inotify])
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
 dnl WARNING
@@ -2672,8 +2689,8 @@ AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
 AM_CONDITIONAL(ENABLE_EXAMPLE_MODULES, [test "$enable_example_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_SANITIZER, [test "$with_sanitizer" != "no"])
 AM_CONDITIONAL(ENABLE_DEBUG, [test "$enable_debug" != "no"])
-AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
-AM_CONDITIONAL([HAVE_KQUEUE], [test x$ac_cv_func_kqueue = xyes])
+AM_CONDITIONAL([HAVE_KQUEUE], [test "x$have_kqueue" = xyes])
+AM_CONDITIONAL([HAVE_INOTIFY], [test "x$have_inotify" = xyes])
 AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL([HAVE_JAVAH], [test -n "$JAVAH_BIN"])

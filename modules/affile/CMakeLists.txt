@@ -52,15 +52,17 @@ set(AFFILE_SOURCES
   "logrotate.c"
 )
 
-if(SYSLOG_NG_HAVE_INOTIFY)
+# Use only one of them if both are present, like on FreeBSD, where the inotify wrapper started to be distributed.
+# Prioritize kqueue, as inotify is just a wrapper around it if both are present.
+if(SYSLOG_NG_HAVE_KQUEUE)
+list(APPEND AFFILE_SOURCES
+  "directory-monitor-kqueue.h"
+  "directory-monitor-kqueue.c"
+)
+elseif(SYSLOG_NG_HAVE_INOTIFY)
   list(APPEND AFFILE_SOURCES
     "directory-monitor-inotify.h"
     "directory-monitor-inotify.c"
-  )
-elseif(SYSLOG_NG_HAVE_KQUEUE)
-  list(APPEND AFFILE_SOURCES
-    "directory-monitor-kqueue.h"
-    "directory-monitor-kqueue.c"
   )
 endif ()
 

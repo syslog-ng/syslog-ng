@@ -1,16 +1,16 @@
-if (NOT DEFINED ENABLE_GEOIP2 OR ENABLE_GEOIP2)
+if(NOT DEFINED ENABLE_GEOIP2 OR ENABLE_GEOIP2)
   find_package(LIBMAXMINDDB)
 endif()
 
 module_switch(ENABLE_GEOIP2 "Enable geoip2 parser and template function" LIBMAXMINDDB_FOUND)
 
-if (NOT ENABLE_GEOIP2)
-  return ()
-endif ()
+if(ENABLE_GEOIP2 AND NOT LIBMAXMINDDB_FOUND)
+  message(FATAL_ERROR "GeIP2 module was explicitly enabled, but the required libmaxminddb dependency could not be found")
+endif()
 
-if (NOT LIBMAXMINDDB_FOUND)
-  message(FATAL_ERROR "GeIP2 module is enabled but libmaxminddb not found.")
-endif ()
+if(NOT ENABLE_GEOIP2)
+  return()
+endif()
 
 set(GEOIP2_SOURCES
   geoip-parser.c

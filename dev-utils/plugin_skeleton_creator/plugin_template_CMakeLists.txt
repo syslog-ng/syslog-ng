@@ -1,4 +1,5 @@
 module_switch(ENABLE_@PLUGIN_NAME_USUC@ "Enable @PLUGIN_NAME@")
+
 if (NOT ENABLE_@PLUGIN_NAME_USUC@)
   return()
 endif()

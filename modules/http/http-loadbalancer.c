@@ -27,12 +27,15 @@
 #include <string.h>
 #include "compat/curl.h"
 
+#if SYSLOG_NG_CURL_FULLY_SUPPORTS_URL_PARSING
+
 #define HTTP_URL_FORMAT_ERROR http_url_format_error_quark()
 
 static GQuark http_url_format_error_quark(void)
 {
   return g_quark_from_static_string("http_url_format_error_quark");
 }
+#endif // #if SYSLOG_NG_CURL_FULLY_SUPPORTS_URL_PARSING
 
 enum HttpUrlFormatError
 {
