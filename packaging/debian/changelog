@@ -1,3 +1,9 @@
+syslog-ng (4.10.1-1) unstable; urgency=medium
+
+  * New upstream release 4.10.1
+
+ -- github-actions <41898282+github-actions@users.noreply.github.com>  Tue, 30 Sep 2025 08:33:21 +0000
+
 syslog-ng (4.10.0-1) unstable; urgency=medium
 
   * New upstream release 4.10.0
