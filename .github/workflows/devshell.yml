@@ -164,9 +164,10 @@ jobs:
             build-tool: cmake
             cc: clang
           # Currently testing i386 in devshell only
+          # NOTE: We use ubuntu-latest (x86_64) because GitHub has no i386 builder support anymore
           - platform: ubuntu-latest
             image:
-              name: debian-bookworm
+              name: devshell
               arch_suffix: '-i386'
             build-tool: cmake
             cc: gcc

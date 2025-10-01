@@ -10,7 +10,6 @@ BUILDER_IMAGES=	\
 	fedora-rawhide	\
 	debian-bullseye	\
 	debian-bookworm	\
-	debian-bookworm-i386	\
 	debian-bookworm-arm64	\
 	debian-trixie \
 	debian-trixie-arm64 \
@@ -33,7 +32,7 @@ BUILDER_IMAGES=	\
 	kira	\
 	tarball
 
-IMAGES=${BUILDER_IMAGES} devshell devshell-arm64
+IMAGES=${BUILDER_IMAGES} devshell devshell-arm64 devshell-i386
 DEFAULT_IMAGE ?= ubuntu-noble
 TARBALL_IMAGE ?= tarball
 DEFAULT_DEB_IMAGE=ubuntu-noble

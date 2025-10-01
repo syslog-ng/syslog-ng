@@ -109,7 +109,7 @@ jobs:
             platform: ubuntu-22.04-arm
             arch: arm64
           # a special one, the single i386 test only image
-          - image: debian-bookworm
+          - image: devshell
             platform: ubuntu-22.04
             arch: i386
 
