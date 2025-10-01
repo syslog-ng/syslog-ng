@@ -24,6 +24,12 @@
 #   customize a build in cases where an optional feature is not available
 #   there.
 #
+#   NOTE: every platform that has a control file must be enumertated here
+#         as run_build_command_with_build_manifest_parameters in functions.sh
+#         will only use the control file content if the platform can be found here
+#         so, add all platforms here always, even if no special env-list or
+#         commandline-options line is needed
+#
 
 # kafka support needs librdkafka >= 1.0.0, which is only available on ubuntu-bionic
 # on Debian we don't build java and use Python3 _after_ buster
@@ -44,6 +50,6 @@ ubuntu-plucky		python3,notzdatalegacy
 fedora				python3
 almalinux			python3
 centos				python3
-rhel				  python3
-rocky				  python3,sql
-opensuse  		python3,sql
+rhel				python3
+rocky				python3,sql
+opensuse			python3,sql

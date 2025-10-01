@@ -163,6 +163,13 @@ jobs:
               arch_suffix: '-arm64'
             build-tool: cmake
             cc: clang
+          # Currently testing i386 in devshell only
+          - platform: ubuntu-latest
+            image:
+              name: debian-bookworm
+              arch_suffix: '-i386'
+            build-tool: cmake
+            cc: gcc
 
     steps:
       - name: Checkout syslog-ng source
