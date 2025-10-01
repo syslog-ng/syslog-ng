@@ -322,7 +322,7 @@ AC_ARG_WITH(libpaho-mqtt,
     AS_HELP_STRING([--with-libpaho-mqtt=DIR], [use libpaho-mqtt library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(grpc,
-    AS_HELP_STRING([--enable-grpc], [Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, Pub/Sub, ClickHouse) (default: auto)]),
+    AS_HELP_STRING([--enable-grpc], [Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, Pub/Sub, ClickHouse) (requires C++17) (default: auto)]),
     , enable_grpc="auto")
 
 AC_ARG_WITH(protoc,
@@ -665,8 +665,8 @@ if test "x$ac_cv_prog_cc_c99" = "xno"; then
 	AC_MSG_ERROR([C99 standard compliant C compiler required. Try GCC 3.x or later.])
 fi
 
-# Turned out that even the latest gcc has no proper support of the required ObjC version
-# Once gcc was able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
+dnl Turned out that even the latest gcc has no proper support of the required ObjC version
+dnl Once gcc was able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
 AC_PROG_OBJC([$OBJC clang])
 AC_PROG_YACC
 AM_PROG_LEX
@@ -685,29 +685,29 @@ if test "${PYTHON}" = ":"; then
 fi
 AM_CONDITIONAL([HAVE_PYTHON_INTERPRETER], [test "$PYTHON" != :])
 
-# This one is useful for checking the available compilers
-# AC_MSG_RESULT(gcc = $(which gcc) - g++ = $(which g++) - clang = $(which clang))
-# AC_MSG_RESULT(Paths: gcc = $(ls -Al $(which gcc)) - g++ = $(ls -Al $(which g++)) - clang = $(ls -Al $(which clang)))
-# AC_MSG_RESULT($(gcc -v))
-# AC_MSG_RESULT($(g++ -v))
-# AC_MSG_RESULT($(clang -v))
-# AC_MSG_RESULT(C++ compilers to be used $CPP_COMPILER)
+dnl ***************************************************************************
+dnl C++ support
+dnl NOTE: on macOS brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
+dnl       correctly the c++14 and c++17 support of clang currently, you might want to get the latest one from the git repo
+dnl       wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4
 AC_PROG_CXX([$CPP_COMPILER])
 
-# NOTE: on macOS brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
-#       correctly the c++14 and c++17 support of clang currently, you might want to get the latest one from the git repo
-#       wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4
 if test "x$enable_cpp" = "xyes"; then
-        AX_CXX_COMPILE_STDCXX(14,, mandatory)
-        AX_CXX_COMPILE_STDCXX(17,, optional)
+    # Require at least C++14 (fail if not available)
+    AX_CXX_COMPILE_STDCXX([14], [noext], [mandatory])
+    # Try to upgrade to C++17 if the compiler supports it
+    AX_CXX_COMPILE_STDCXX([17], [noext], [optional])
+
 elif test "x$enable_cpp" = "xauto"; then
-        AX_CXX_COMPILE_STDCXX(14,, optional)
-        if test "x$HAVE_CXX14" = "x1"; then
-                enable_cpp=yes
-        else
-                enable_cpp=no
-        fi
-        AX_CXX_COMPILE_STDCXX(17,, optional)
+    # Prefer C++14, but don't fail if it's missing
+    AX_CXX_COMPILE_STDCXX([14], [noext], [optional])
+    if test "x$HAVE_CXX14" = "x1"; then
+        enable_cpp=yes
+        # Try to upgrade to C++17 if available
+        AX_CXX_COMPILE_STDCXX([17], [noext], [optional])
+    else
+        enable_cpp=no
+    fi
 fi
 
 dnl ***************************************************************************
@@ -1885,6 +1885,11 @@ Recommended fix:
             enable_grpc=no
         fi
     fi
+fi
+
+if ! test "x$enable_grpc" = "xno"; then
+    # gRPC requires at least C++17
+    AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory])
 fi
 
 # ProtoBuf libraries

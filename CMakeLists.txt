@@ -29,15 +29,7 @@ include(add_module)
 include(module_switch)
 include(FindGperf)
 
-option(ENABLE_CPP "Enable C++" ON)
-
-if(ENABLE_CPP)
-  enable_language(CXX)
-  set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard")
-  set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "C++ standard is a requirement")
-  set(CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "C++ compiler specific extensions")
-  set(SYSLOG_NG_ENABLE_CPP ${ENABLE_CPP})
-endif()
+include(enable_cpp)
 
 if(APPLE)
   module_switch(ENABLE_DARWIN_OSL "Enable OSLog" ON)

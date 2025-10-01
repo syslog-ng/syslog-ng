@@ -1,4 +1,5 @@
 # Copyright (c) 2022 One Identity
+# Copyright (c) 2025 Istvan Hoffmann <hofione@gmail.com>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -256,7 +257,7 @@ function(print_config_summary)
   _print_compilers_info("${_variableNames}" "${_compilersInfo}")
 
   _print_separator("Compilation")
-  list(APPEND _compilationOptions "CMAKE_BUILD_TYPE" "^ENABLE_CPP" "ENABLE_EXTRA_WARNINGS" "ENABLE_FORCE_GNU99" "ENV_LD_LIBRARY_PATH")
+  list(APPEND _compilationOptions "CMAKE_BUILD_TYPE" "CXX_STANDARD_USED" "^ENABLE_CPP" "ENABLE_EXTRA_WARNINGS" "ENABLE_FORCE_GNU99" "ENV_LD_LIBRARY_PATH")
 
   if(APPLE)
     list(APPEND _compilationOptions "FORCE_CLASSIC_LINKING")

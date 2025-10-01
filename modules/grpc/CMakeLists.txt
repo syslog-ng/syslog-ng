@@ -70,7 +70,7 @@ if (NOT DEFINED ENABLE_GRPC OR ENABLE_GRPC)
   endif()
 endif()
 
-module_switch(ENABLE_GRPC "Enable GRPC" GRPC_DEPS_FOUND)
+module_switch(ENABLE_GRPC "Enable GRPC (requires C++17)" GRPC_DEPS_FOUND)
 
 if (ENABLE_GRPC)
   set (CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard" FORCE)
