@@ -23,7 +23,13 @@
 #
 # ############################################################################
 
-set(ENABLE_STACKDUMP "AUTO" CACHE STRING "Enable stackdump using libunwind (Linux, macOS, FreeBSD only): ON, OFF, AUTO")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux|Darwin|FreeBSD")
+  set(stackdump_default "AUTO")
+else()
+  set(stackdump_default "OFF")
+endif()
+
+set(ENABLE_STACKDUMP "${stackdump_default}" CACHE STRING "Enable stackdump using libunwind (Linux, macOS, FreeBSD only): ON, OFF, AUTO")
 set_property(CACHE ENABLE_STACKDUMP PROPERTY STRINGS AUTO ON OFF)
 message(STATUS "Checking stackdump support")
 
@@ -58,6 +64,7 @@ endif()
 
 if(SYSLOG_NG_ENABLE_STACKDUMP)
   set(CMAKE_REQUIRED_INCLUDES ${LIBUNWIND_INCLUDE_DIR})
+
   if(NOT APPLE)
     set(CMAKE_REQUIRED_LIBRARIES ${LIBUNWIND_LIBRARY})
   endif()
