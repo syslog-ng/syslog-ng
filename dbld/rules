@@ -10,6 +10,7 @@ BUILDER_IMAGES=	\
 	fedora-rawhide	\
 	debian-bullseye	\
 	debian-bookworm	\
+	debian-bookworm-i386	\
 	debian-bookworm-arm64	\
 	debian-trixie \
 	debian-trixie-arm64 \
@@ -243,6 +244,7 @@ image-%:
 	BASE_IMAGE=$*; \
 	BASE_IMAGE=$${BASE_IMAGE%-amd64}; \
 	BASE_IMAGE=$${BASE_IMAGE%-arm64}; \
+	BASE_IMAGE=$${BASE_IMAGE%-i386}; \
 	DOCKERFILE=$(DBLD_DIR)/images/$${BASE_IMAGE}.dockerfile; \
 	JENKINS_URL=$${JENKINS_URL%-}; \
 	$(DBLD_DIR)/prepare-image-build $*; \
