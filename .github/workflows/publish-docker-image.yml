@@ -7,6 +7,13 @@ on:
       pkg-type:
         required: true
         type: string  # stable / nightly
+      pkg-version:
+        required: false
+        type: string # <MAJOR>.<MINOR>.<PATCH>
+      pkg-push:
+        required: false
+        type: boolean
+        default: true
     secrets:
       dockerhub-username:
         required: true
@@ -47,8 +54,8 @@ jobs:
           username: ${{ secrets.dockerhub-username }}
           password: ${{ secrets.dockerhub-password }}
 
-      - name: Extract metadata (syslog-ng version) for Docker
-        if: inputs.pkg-type == 'stable'
+      - name: Extract metadata (syslog-ng version) from current TAG for Docker
+        if: inputs.pkg-type == 'stable' && inputs.pkg-version == ''
         id: stable-tags
         uses: docker/metadata-action@v3
         with:
@@ -56,11 +63,24 @@ jobs:
           tags: type=match,pattern=syslog-ng-(.*),group=1
           sep-tags: ','
 
+      - name: Extract metadata (syslog-ng version) from the given version TAG for Docker
+        if: inputs.pkg-type == 'stable' && inputs.pkg-version != ''
+        id: stable-tags-versioned
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.DOCKER_IMAGE_NAME }}
+          tags: type=match,pattern=syslog-ng-(.*),group=1,value=syslog-ng-${{ inputs.pkg-version }}
+          sep-tags: ','
+
       - name: Compose Docker image tags
         id: tags
         run: |
           if [[ '${{ inputs.pkg-type }}' = 'stable' ]]; then
-            TAGS='${{ steps.stable-tags.outputs.tags }}'
+            if [[ '${{ inputs.pkg-version }}' != '' ]]; then
+              TAGS='${{ steps.stable-tags-versioned.outputs.tags }}'
+            else
+              TAGS='${{ steps.stable-tags.outputs.tags }}'
+            fi
           elif [[ '${{ inputs.pkg-type }}' = 'nightly' ]]; then
             TAGS="${DOCKER_IMAGE_NAME}:nightly"
           else
@@ -108,7 +128,7 @@ jobs:
           # now generating these in the ${SRC_ROOT}/docker/Dockerfile based on the runner architecture (platforms: linux/amd64,linux/arm64)
           #build-args: PKG_TYPE=${{ inputs.pkg-type }} CONTAINER_ARCH= CONTAINER_NAME_SUFFIX=
           build-args: PKG_TYPE=${{ inputs.pkg-type }}
-          push: true
+          push: ${{ inputs.pkg-push }}
 
       - name: Scan docker image on CVEs (CRITICAL,HIGH to a sarif file) # https://aquasecurity.github.io/trivy/v0.54/docs/
         uses: aquasecurity/trivy-action@master
@@ -128,7 +148,8 @@ jobs:
           image-ref: ${{ steps.tags.outputs.CVE_INPUT }}
 
           format: 'table'
-          dependency-tree: true
+          # TODO: replaced by https://github.com/aquasecurity/trivy-action/tree/master/?tab=readme-ov-file#using-trivy-to-generate-sbom ?!?
+          #dependency-tree: true
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
         env:
           # Use the most reliable and quicker AWS ECR location for trivy DBs
@@ -136,6 +157,7 @@ jobs:
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:1
 
       - name: Upload Trivy scan sarif file results to GitHub Security tab
+        if: ${{ inputs.pkg-push != false }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
