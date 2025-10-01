@@ -10,8 +10,17 @@ on:
         required: true
         type: choice
         options:
-          - stable
           - nightly
+          - stable
+      pkg-version:
+        description: Version (<MAJOR>.<MINOR>.<PATCH>)
+        required: false
+        type: string
+      pkg-push:
+        description: Push to docker
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   pre-check:
@@ -19,8 +28,8 @@ jobs:
     steps:
       - name: Validate tag
         run: |
-          if [[ "${{ github.ref }}" != refs/tags/syslog-ng-* ]]; then
-            echo "Please start the workflow on a 'syslog-ng-*' tag"
+          if [[ "${{ github.ref }}" != refs/tags/syslog-ng-* ]] && [[ "${{ inputs.pkg-type }}" != "nightly" ]] && [[ "${{ inputs.pkg-version }}" == "" ]]; then
+            echo "Please start the workflow on a 'syslog-ng-*' tag or provide an exact version number"
             false
           fi
 
@@ -29,6 +38,8 @@ jobs:
     uses: ./.github/workflows/publish-docker-image.yml
     with:
       pkg-type: ${{ inputs.pkg-type }}
+      pkg-version: ${{ inputs.pkg-version }}
+      pkg-push: ${{ inputs.pkg-push }}
     secrets:
       dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
       dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}
