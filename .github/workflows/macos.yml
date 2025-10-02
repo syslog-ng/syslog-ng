@@ -51,7 +51,7 @@ jobs:
         run: |
           find /usr/local/bin/ -lname "*Python.framework*" -delete
 
-     # Compose cache keys dynamically
+      # Compose cache keys dynamically
       - name: Compose cache keys
         run: |
           echo "HOMEBREW_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}" >> $GITHUB_ENV
@@ -77,17 +77,21 @@ jobs:
       #       One drawback is the size of the cache image that is ~4GB (not compressed) with the current Brewfile package list.
       - name: Install Homebrew dependencies
         run: |
-          if [ "${{ runner.arch }}" = "ARM64" ]; then
-            brew update --auto-update
-          else
+          if [ "${{ runner.arch }}" = "ARM64" ] || [ "${{ github.event_name }}" = "schedule" ]; then
             if [ "${{ github.event_name }}" = "schedule" ]; then
               echo "Scheduled run → forcing brew update"
-              brew update --auto-update
-            else
-              echo "Non-scheduled run → skipping brew update"
-              export HOMEBREW_NO_AUTO_UPDATE=1
-              export HOMEBREW_NO_INSTALL_CLEANUP=1
             fi
+            # temp: to avoid openssl@1.1 and openssl@3 conflicts on some runners
+            brew unlink openssl@1.1 || true
+            brew unlink openssl@3 || true
+            rm -f /opt/homebrew/bin/openssl
+            rm -f /Users/runner/Library/Caches/Homebrew/Backup/bin/openssl
+
+            brew update --auto-update
+          else
+            echo "Non-scheduled run → skipping brew update"
+            export HOMEBREW_NO_AUTO_UPDATE=1
+            export HOMEBREW_NO_INSTALL_CLEANUP=1
           fi
           brew bundle --force --file=contrib/Brewfile
 
