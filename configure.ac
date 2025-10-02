@@ -1499,8 +1499,8 @@ PKG_CHECK_MODULES(OPENSSL,
                 AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
 
 if test -n "$OPENSSL_LIBS" -a "$linking_mode" != "dynamic"; then
-        dnl required for openssl, but only when linking statically
-        AC_CHECK_LIB(z, inflate, ZLIB_LIBS="-lz")
+    dnl required for openssl, but only when linking statically
+    AC_CHECK_LIB(z, inflate, ZLIB_LIBS="-lz")
 
     dnl Remove -ldl as it cannot be linked statically on some platforms, it will be present in DL_LIBS
     OPENSSL_LIBS=`echo $OPENSSL_LIBS | tr ' ' '\n' | egrep -v "^-ldld?$" | tr '\n' ' '`
@@ -1987,6 +1987,8 @@ dnl ***************************************************************************
 dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
 SAFE_C_CHECK_BEGIN
 
+CHECK_HEADER_AND_DEFINE([zlib.h], [HAVE_ZLIB])
+
 if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
     libcurl="yes"
     if test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "x"; then
@@ -2018,11 +2020,14 @@ if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
                         [], [],
                         [[#include <curl/curl.h>]])
         CFLAGS=$CFLAGS_SAVE
+
+        if test "x$HAVE_ZLIB" = "x1"; then
+            AC_CHECK_LIB([z], [deflate], [ZLIB_LIBS="-lz"; AC_SUBST([ZLIB_LIBS])], [HAVE_ZLIB=0])
+        fi
     fi
 else
     enable_http="no"
 fi
-CHECK_HEADER_AND_DEFINE([zlib.h], [HAVE_ZLIB])
 
 SAFE_C_CHECK_END
 
