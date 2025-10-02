@@ -3,9 +3,9 @@ name: CI @ devshell
 on:
   pull_request:
   push:
-    branches: [ "develop", "master" ]
+    branches: ["develop", "master"]
   schedule:
-    - cron: '00 21 * * *'
+    - cron: "00 21 * * *"
   workflow_dispatch:
     inputs:
       use_all:
@@ -16,7 +16,6 @@ on:
 jobs:
   general:
     runs-on: ${{ matrix.platform }}
-    name: ${{ matrix.image.name }}-${{ matrix.build-tool }}-${{ matrix.cc }}${{ matrix.image.arch_suffix != '' && matrix.image.arch_suffix || '-X86-64' }}
     container:
       image: ghcr.io/syslog-ng/dbld-${{ matrix.image.name }}${{ matrix.image.arch_suffix }}:latest
       options: --privileged --ulimit core=-1
@@ -26,7 +25,7 @@ jobs:
       matrix:
         build-tool: [autotools, cmake]
         cc: [gcc, clang]
-        platform: [ ubuntu-24.04-arm, ubuntu-latest]
+        platform: [ubuntu-24.04-arm, ubuntu-latest]
         image:
           # We test building in dbld docker images only that have no binary packages, or docker installations
           # OS varians that have binary packages or docker installations will be built by the 'Nghtly release'
@@ -64,53 +63,53 @@ jobs:
           # ---------------------------------------------------------------------------------------------------
           - name: almalinux-8
             # grpc/protobuf is presented, but configure cannot find protobuf
-            configure_flags: '--disable-sql --disable-grpc --disable-ebpf --with-python=3.9'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_GRPC=OFF -DENABLE_EBPF=OFF -DPYTHON_VERSION=3.9'
+            configure_flags: "--disable-sql --disable-grpc --disable-ebpf --with-python=3.9"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_GRPC=OFF -DENABLE_EBPF=OFF -DPYTHON_VERSION=3.9"
           - name: almalinux-9
             # grpc is presented, but does not compile
-            configure_flags: '--disable-sql --disable-grpc'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_GRPC=OFF'
+            configure_flags: "--disable-sql --disable-grpc"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_GRPC=OFF"
           - name: almalinux-10
-            configure_flags: '--disable-sql --disable-mqtt'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF'
+            configure_flags: "--disable-sql --disable-mqtt"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_MQTT=OFF"
           - name: centos-stream9
             # grpc is presented, but does not compile
-            configure_flags: '--disable-sql --disable-mqtt --disable-grpc'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF -DENABLE_GRPC=OFF'
+            configure_flags: "--disable-sql --disable-mqtt --disable-grpc"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_MQTT=OFF -DENABLE_GRPC=OFF"
           - name: centos-stream10
-            configure_flags: '--disable-sql --disable-mqtt'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF'
+            configure_flags: "--disable-sql --disable-mqtt"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_MQTT=OFF"
           - name: fedora-latest
-            configure_flags: '--disable-stackdump'
-            cmake_configure_flags: '-DENABLE_STACKDUMP=OFF'
+            configure_flags: "--disable-stackdump"
+            cmake_configure_flags: "-DENABLE_STACKDUMP=OFF"
           - name: fedora-rawhide
           # TODO: We still need to implement install_rpm_build_deps for opensuse
           #- name: opensuse-tumbleweed
           - name: rocky-9
           - name: ubuntu-focal
             # too old ebpf
-            configure_flags: '--disable-ebpf'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+            configure_flags: "--disable-ebpf"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF"
           # --------------------------------------------------------------------
           - name: debian-bullseye
             # too old ebpf
-            configure_flags: '--disable-ebpf'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+            configure_flags: "--disable-ebpf"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF"
           - name: debian-bookworm
           - name: debian-testing
           - name: debian-sid
           - name: ubuntu-jammy
             # too old ebpf
-            configure_flags: '--disable-ebpf'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+            configure_flags: "--disable-ebpf"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF"
           - name: ubuntu-noble
             # no bpftool ?!?
-            configure_flags: '--disable-ebpf'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+            configure_flags: "--disable-ebpf"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF"
           - name: ubuntu-plucky
           - name: rhel-8
-            configure_flags: '--disable-ebpf --with-python=3.9'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF -DPYTHON_VERSION=3.9'
+            configure_flags: "--disable-ebpf --with-python=3.9"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF -DPYTHON_VERSION=3.9"
           - name: rhel-9
           - name: rhel-10
           # --------------------------------------------------------------------
@@ -118,9 +117,9 @@ jobs:
           # --------------------------------------------------------------------
           - name: devshell
             # Now only for devsell we support -Werror, all other none-packaged targets are just best efforts
-            cflags: '-Werror'
-            configure_flags: '--enable-stackdump'
-            cmake_configure_flags: '-DENABLE_STACKDUMP=ON'
+            cflags: "-Werror"
+            configure_flags: "--enable-stackdump"
+            cmake_configure_flags: "-DENABLE_STACKDUMP=ON"
           # --------------------------------------------------------------------
         exclude:
           - platform: ubuntu-24.04-arm
@@ -142,25 +141,25 @@ jobs:
           - platform: ubuntu-24.04-arm
             image:
               name: devshell
-              arch_suffix: '-arm64'
+              arch_suffix: "-arm64"
             build-tool: autotools
             cc: gcc
           - platform: ubuntu-24.04-arm
             image:
               name: devshell
-              arch_suffix: '-arm64'
+              arch_suffix: "-arm64"
             build-tool: autotools
             cc: clang
           - platform: ubuntu-24.04-arm
             image:
               name: devshell
-              arch_suffix: '-arm64'
+              arch_suffix: "-arm64"
             build-tool: cmake
             cc: gcc
           - platform: ubuntu-24.04-arm
             image:
               name: devshell
-              arch_suffix: '-arm64'
+              arch_suffix: "-arm64"
             build-tool: cmake
             cc: clang
 
