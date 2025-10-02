@@ -882,10 +882,10 @@ case "$ostype" in
         # without it, it refuses to link an .so in if there's no reference from
         # the main program, even if there is a proper -llibname option.
 		LDFLAGS="$LDFLAGS -Wl,-brtl"
-		MODULE_LDFLAGS="-avoid-version -module"
+		MODULE_LDFLAGS="-avoid-version -module -no-undefined"
 		;;
 	Darwin)
-		MODULE_LDFLAGS="-avoid-version -dylib"
+		MODULE_LDFLAGS="-avoid-version -dylib -no-undefined"
         TEST_NO_INSTALL_FLAG="-no-fast-install"
         # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking solution
         if test "x$enable_tests" = "xyes"; then
