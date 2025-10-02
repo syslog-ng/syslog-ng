@@ -536,17 +536,30 @@ AC_DEFUN([CHECK_AND_DEFINE],
     m4_ifval([$3],
         [
             dnl override define name provided
-            dnl AC_MSG_NOTICE([ -> define (override): $3])
             AS_IF([test "x$cacheval" = "xyes"],
-                [AC_DEFINE([$3], [1], [Define if $2 is present])],
-                [AC_DEFINE([$3], [0], [Define if $2 is present])])
+                [
+                  AC_DEFINE([$3], [1], [Define if $2 is present])
+                  eval $3=1
+                ],
+                [
+                  AC_DEFINE([$3], [0], [Define if $2 is present])
+                  eval $3=0
+                ])
+            dnl AC_MSG_NOTICE([ -> define (override): $3] [= ${$3}])
         ],
         [
             dnl default define name
-            dnl AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]))
+            define_name=HAVE_[]AS_TR_CPP([$2])
             AS_IF([test "x$cacheval" = "xyes"],
-                [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [1], [Define if $2 is present])],
-                [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [0], [Define if $2 is present])])
+                [
+                  AC_DEFINE(HAVE_[]AS_TR_CPP([$2]), [1], [Define if $2 is present])
+                  eval $define_name=1
+                ],
+                [
+                  AC_DEFINE(HAVE_[]AS_TR_CPP([$2]), [0], [Define if $2 is present])
+                  eval $define_name=0
+                ])
+            dnl AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]) [= ${HAVE_[]AS_TR_CPP([$2])]})
         ])
 ])
 
