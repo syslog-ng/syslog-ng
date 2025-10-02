@@ -28,9 +28,6 @@ jobs:
           # and it is used for development too on an everyday basis, on arm64.
           - version: 14
             compiler: {cpp: clang++, c: clang}
-          # FIXME: temp exclude of failed linking again with cmake + g++ against GRPC dependenncies
-          - compiler: {cpp: g++, c: gcc}
-            build-tool: cmake
       fail-fast: false
 
     runs-on: macOS-${{ matrix.version }}
@@ -274,6 +271,10 @@ jobs:
       - name: cmake configure
         if: matrix.build-tool == 'cmake'
         run: |
+          # FIXME: temp exclude of failed linking again with cmake + g++ against GRPC dependenncies
+          if [ $CC = g+cc ]; then
+            CMAKE_CONFIGURE_FLAGS="${CMAKE_CONFIGURE_FLAGS} -DENABLE_GRPC=OFF"
+          fi
           cmake --install-prefix "${SYSLOG_NG_INSTALL_DIR}" -B build . ${CMAKE_CONFIGURE_FLAGS}
 
       - name: cmake install
