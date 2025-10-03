@@ -21,13 +21,6 @@
 #
 # ############################################################################
 
-string(ASCII 27 Esc)
-set(Red "${Esc}[31m")
-set(Green "${Esc}[32m")
-set(Yellow "${Esc}[33m")
-set(Blue "${Esc}[34m")
-set(ResetFG "${Esc}[39m")
-
 set(_maxHeaderLen 43)
 set(_maxSummaryLineLen 36)
 set(_orig_maxSummaryLineLen "${_maxSummaryLineLen}")

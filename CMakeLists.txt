@@ -21,6 +21,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE 1)
 set(BISON_FLAGS "-Wno-other -Werror=conflicts-sr -Werror=conflicts-rr -Wcounterexamples")
 set(BISON_BUILT_SOURCE_CFLAGS "-Wno-unused-but-set-variable")
 
+include(common_helpers)
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(ExternalProject)
