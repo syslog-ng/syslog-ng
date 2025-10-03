@@ -918,7 +918,7 @@ case "$ostype" in
         fi
         # Expose the modern, RFC 3542 IPv6 socket API instead of the deprecated RFC 2292 one
 		CFLAGS="$CFLAGS -D__APPLE_USE_RFC_3542"
-    ;;
+        ;;
 	OSF1)
 		CFLAGS="${CFLAGS} -D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -D_OSF_SOURCE -D_POSIX_C_SOURCE"
 		;;
@@ -2906,16 +2906,49 @@ print_config_line() {
 }
 
 
+# Function to centered heading with dashes
+print_heading() {
+    text="$1"
+    total_len=43  # fixed total width
+
+    if test -z "$text"; then
+        # Empty caption: full line of dashes
+        printf '%*s\n' "$total_len" '' | tr ' ' -
+        return
+    fi
+
+    # Caption with one space padding
+    caption=" $text "
+    text_len=${#caption}
+
+    # If caption longer than total_len, print caption as-is
+    if test "$text_len" -ge "$total_len"; then
+        echo "$caption"
+        return
+    fi
+
+    # Compute dashes on left and right
+    dash_total=$(( total_len - text_len ))
+    dash_left=$(( dash_total / 2 ))
+    dash_right=$(( dash_total - dash_left ))
+
+    # Build line
+    line="$(printf '%*s' "$dash_left" '' | tr ' ' -)$caption$(printf '%*s' "$dash_right" '' | tr ' ' -)"
+    echo "$line"
+}
+
+# Print configuration summary
 echo
+print_heading ""
 echo "syslog-ng Open Source Edition $PACKAGE_VERSION configured"
 
-echo "Edition settings:"
+print_heading "Edition settings"
 print_config_line "Release type" "$RELEASE_TYPE"
 print_config_line "Pretty version" "$BROCHURE_VERSION"
 print_config_line "Combined vers." "$COMBINED_VERSION"
 print_config_line "Package name" "$PACKAGE_NAME"
 
-echo "Compiler options:"
+print_heading "Compiler options"
 print_config_line "compiler" "$CC - $($CC -v 2>&1 | grep -i ' version ') - $(command -v $CC)"
 print_config_line "compiler options" "$CFLAGS $CPPFLAGS"
 print_config_line "ObjC compiler" "$OBJC - $($OBJC -v 2>&1 | grep -i ' version ') - $(command -v $OBJC)"
@@ -2932,14 +2965,14 @@ fi
 print_config_line "embedded crypto" "${with_embedded_crypto:=no}"
 print_config_line "__thread keyword" "${ac_cv_have_tls:=no}"
 
-echo "Test dependencies:"
+print_heading "Test dependencies"
 print_config_line "Criterion" "${with_criterion:=no}"
 print_config_line "Unit tests" "${enable_tests:=no}"
 
-echo "Submodules:"
+print_heading "Submodules"
 print_config_line "ivykis" "$with_ivykis"
 
-echo "Features:"
+print_heading "Features"
 print_config_line "Forced server mode" "${enable_forced_server_mode:=yes}"
 print_config_line "Debug symbols" "${enable_debug:=no}"
 print_config_line "GCC profiling" "${enable_gprof:=no}"
@@ -2954,14 +2987,14 @@ print_config_line "systemd-journal support" "${with_systemd_journal:=no}"
 print_config_line "JSON support" "$with_jsonc"
 print_config_line "stackdump support" "${enable_stackdump:=no}"
 
-echo "Build options:"
+print_heading "Build options"
 print_config_line "Enable manual pages" "${enable_manpages:=no}"
 print_config_line "Install manual pages" "${enable_manpages_install:=no}"
 if test "x$enable_manpages" = "xyes" -o "x$enable_manpages_install" = "xyes"; then
     print_config_line "Using manual pages" "$with_manpages"
 fi
 
-echo "Modules:"
+print_heading "Modules"
 print_config_line "Module search path" "$module_path"
 print_config_line "Sun STREAMS support (module)" "${enable_sun_streams:=no}"
 print_config_line "Darwin OSL support (module)" "${enable_darwin_osl:=no}"
@@ -2989,3 +3022,4 @@ print_config_line "afsnmp module" "${enable_afsnmp:=no}"
 print_config_line "eBPF module" "${enable_ebpf:=no}"
 print_config_line "native bindings" "${enable_native:=no}"
 print_config_line "Example modules" "${enable_example_modules:=yes}"
+print_heading ""
