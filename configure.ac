@@ -2864,80 +2864,117 @@ AC_OUTPUT(dist.conf
 	  scripts/syslog-ng-update-virtualenv
           )
 
+# Function to print a line with colorized value and optional warning
+# Arguments: 1 = label, 2 = value, 3 = optional warning string
+print_config_line() {
+    local label="$1"
+    local value="$2"
+    local warn_str="$3"
+
+    # Default to blue
+    local color_code=4
+    if test -t 1; then  # stdout is a TTY
+        case "$value" in
+            yes*|YES*|true*|TRUE*)
+                color_code=2  # green
+                ;;
+            no*|NO*|false*|FALSE*)
+                color_code=1  # red
+                ;;
+            *)
+                color_code=4  # blue
+                ;;
+        esac
+    fi
+
+    if test -t 1 && test -n "$warn_str"; then
+        # Color warning yellow
+        warn_str=" ($(tput setaf 3)$warn_str$(tput sgr0))"
+    fi
+
+    printf "  %-30s : %s%s\n" "$label" "$(tput setaf $color_code)$value$(tput sgr0)" "$warn_str"
+}
+
 echo
 echo "syslog-ng Open Source Edition $PACKAGE_VERSION configured"
-echo " Edition settings:"
-echo "  Release type                : $RELEASE_TYPE"
-echo "  Pretty version              : $BROCHURE_VERSION"
-echo "  Combined vers.              : $COMBINED_VERSION"
-echo "  Package name                : $PACKAGE_NAME"
-echo " Compiler options:"
-echo "  compiler                    : $CC - $($CC -v 2>&1 | grep -i ' version ') - $(command -v $CC)"
-echo "  compiler options            : $CFLAGS $CPPFLAGS"
-echo "  ObjC compiler               : $OBJC - $($OBJC -v 2>&1 | grep -i ' version ') - $(command -v $OBJC)"
-echo "  C++ enabled                 : ${enable_cpp:=no}"
+
+echo "Edition settings:"
+print_config_line "Release type" "$RELEASE_TYPE"
+print_config_line "Pretty version" "$BROCHURE_VERSION"
+print_config_line "Combined vers." "$COMBINED_VERSION"
+print_config_line "Package name" "$PACKAGE_NAME"
+
+echo "Compiler options:"
+print_config_line "compiler" "$CC - $($CC -v 2>&1 | grep -i ' version ') - $(command -v $CC)"
+print_config_line "compiler options" "$CFLAGS $CPPFLAGS"
+print_config_line "ObjC compiler" "$OBJC - $($OBJC -v 2>&1 | grep -i ' version ') - $(command -v $OBJC)"
+print_config_line "C++ enabled" "${enable_cpp:=no}"
 if test "x$enable_cpp" = "xyes"; then
-echo "  C++ compiler                : $CXX - $($CXX -v 2>&1 | grep -i ' version ') - $(command -v $CXX)"
-echo "  C++ compiler options        : $CXXFLAGS"
+    print_config_line "C++ compiler" "$CXX - $($CXX -v 2>&1 | grep -i ' version ') - $(command -v $CXX)"
+    print_config_line "C++ compiler options" "$CXXFLAGS"
 fi
-echo "  linker flags                : $LDFLAGS $LIBS"
-echo "  prefix                      : $prefix"
-echo "  linking mode                : $linking_mode"
+print_config_line "linker flags" "$LDFLAGS $LIBS"
+print_config_line "prefix" "$prefix"
 if test $ostype = "Darwin"; then
-echo "  classic linking mode        : ${enable_force_classic_linking:=no}"
+    print_config_line "classic linking mode" "${enable_force_classic_linking:=no}"
 fi
-echo "  embedded crypto             : ${with_embedded_crypto:=no}"
-echo "  __thread keyword            : ${ac_cv_have_tls:=no}"
-echo " Test dependencies:"
-echo "  Criterion                   : ${with_criterion:=no}"
-echo "  Unit tests                  : ${enable_tests:=no}"
-echo " Submodules:"
-echo "  ivykis                      : $with_ivykis"
-echo " Features:"
-echo "  Forced server mode          : ${enable_forced_server_mode:=yes}"
-echo "  Debug symbols               : ${enable_debug:=no}"
-echo "  GCC profiling               : ${enable_gprof:=no}"
-echo "  Memtrace                    : ${enable_memtrace:=no}"
-echo "  IPV6 support                : ${enable_ipv6:=no}"
-echo "  spoof-source support        : ${enable_spoof_source:=no}"
-echo "  tcp-wrapper support         : ${enable_tcp_wrapper:=no}"
-echo "  Linux capability support    : ${has_linux_caps:=no}"
-echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
-echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
-echo "  systemd-journal support     : ${with_systemd_journal:=no}"
-echo "  JSON support                : $with_jsonc"
-echo "  stackdump support           : ${enable_stackdump:=no}"
-echo " Build options:"
-echo "  Enable manual pages         : ${enable_manpages:=no}"
-echo "  Install manual pages        : ${enable_manpages_install:=no}"
+print_config_line "embedded crypto" "${with_embedded_crypto:=no}"
+print_config_line "__thread keyword" "${ac_cv_have_tls:=no}"
+
+echo "Test dependencies:"
+print_config_line "Criterion" "${with_criterion:=no}"
+print_config_line "Unit tests" "${enable_tests:=no}"
+
+echo "Submodules:"
+print_config_line "ivykis" "$with_ivykis"
+
+echo "Features:"
+print_config_line "Forced server mode" "${enable_forced_server_mode:=yes}"
+print_config_line "Debug symbols" "${enable_debug:=no}"
+print_config_line "GCC profiling" "${enable_gprof:=no}"
+print_config_line "Memtrace" "${enable_memtrace:=no}"
+print_config_line "IPV6 support" "${enable_ipv6:=no}"
+print_config_line "spoof-source support" "${enable_spoof_source:=no}"
+print_config_line "tcp-wrapper support" "${enable_tcp_wrapper:=no}"
+print_config_line "Linux capability support" "${has_linux_caps:=no}"
+print_config_line "Env wrapper support" "${enable_env_wrapper:=no}"
+print_config_line "systemd support" "${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
+print_config_line "systemd-journal support" "${with_systemd_journal:=no}"
+print_config_line "JSON support" "$with_jsonc"
+print_config_line "stackdump support" "${enable_stackdump:=no}"
+
+echo "Build options:"
+print_config_line "Enable manual pages" "${enable_manpages:=no}"
+print_config_line "Install manual pages" "${enable_manpages_install:=no}"
 if test "x$enable_manpages" = "xyes" -o "x$enable_manpages_install" = "xyes"; then
-echo "  Using manual pages          : ${with_manpages}"
+    print_config_line "Using manual pages" "$with_manpages"
 fi
-echo " Modules:"
-echo "  Module search path          : ${module_path}"
-echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
-echo "  Darwin OSL support (module) : ${enable_darwin_osl:=no}"
-echo "  OpenBSD syslog (module)     : ${enable_openbsd_system_source:=no}"
-echo "  SQL support (module)        : ${enable_sql:=no}"
-echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
-echo "  MongoDB destination (module): ${enable_mongodb:=no} (${mongo_version_str})"
-echo "  JSON support (module)       : ${enable_json:=no}"
-echo "  SMTP support (module)       : ${enable_smtp:=no}"
-echo "  HTTP support (module)       : ${enable_http:=no}"
-echo "  AMQP destination (module)   : ${enable_amqp:=no}"
-echo "  STOMP destination (module)  : ${enable_stomp:=no}"
-echo "  MQTT (module)               : ${enable_mqtt:=no}"
-echo "  GRPC (module)               : ${enable_grpc:=no}${grpc_warning_str}"
-echo "  Cloud Auth (module)         : ${enable_cloud_auth:=no}"
-echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
-echo "  Redis support (module)      : ${enable_redis:=no}"
-echo "  Kafka support (module)      : ${enable_kafka:=no}"
-echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${riemann_micros:=no}"
-echo "  Python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none}, packages: ${with_python_packages})"
-echo "  Python modules              : ${enable_python_modules:=no}"
-echo "  Java                        : ${enable_java:=no}"
-echo "  Java modules                : ${enable_java_modules:=no}"
-echo "  afsnmp module               : ${enable_afsnmp:=no}"
-echo "  eBPF module                 : ${enable_ebpf:=no}"
-echo "  native bindings             : ${enable_native:=no}"
-echo "  Example modules             : ${enable_example_modules:=yes}"
+
+echo "Modules:"
+print_config_line "Module search path" "$module_path"
+print_config_line "Sun STREAMS support (module)" "${enable_sun_streams:=no}"
+print_config_line "Darwin OSL support (module)" "${enable_darwin_osl:=no}"
+print_config_line "OpenBSD syslog (module)" "${enable_openbsd_system_source:=no}"
+print_config_line "SQL support (module)" "${enable_sql:=no}"
+print_config_line "PACCT module (EXPERIMENTAL)" "${enable_pacct:=no}"
+print_config_line "MongoDB destination (module)" "${enable_mongodb:=no} (${mongo_version_str})"
+print_config_line "JSON support (module)" "${enable_json:=no}"
+print_config_line "SMTP support (module)" "${enable_smtp:=no}"
+print_config_line "HTTP support (module)" "${enable_http:=no}"
+print_config_line "AMQP destination (module)" "${enable_amqp:=no}"
+print_config_line "STOMP destination (module)" "${enable_stomp:=no}"
+print_config_line "MQTT (module)" "${enable_mqtt:=no}"
+print_config_line "GRPC (module)" "${enable_grpc:=no}" "$grpc_warning_str"
+print_config_line "Cloud Auth (module)" "${enable_cloud_auth:=no}"
+print_config_line "GEOIP2 support (module)" "${enable_geoip2:=no}"
+print_config_line "Redis support (module)" "${enable_redis:=no}"
+print_config_line "Kafka support (module)" "${enable_kafka:=no}"
+print_config_line "Riemann destination (module)" "${enable_riemann:=no}, microseconds: ${riemann_micros:=no}"
+print_config_line "Python" "${enable_python:=no} (pkg-config package: ${with_python:=none}, packages: ${with_python_packages})"
+print_config_line "Python modules" "${enable_python_modules:=no}"
+print_config_line "Java" "${enable_java:=no}"
+print_config_line "Java modules" "${enable_java_modules:=no}"
+print_config_line "afsnmp module" "${enable_afsnmp:=no}"
+print_config_line "eBPF module" "${enable_ebpf:=no}"
+print_config_line "native bindings" "${enable_native:=no}"
+print_config_line "Example modules" "${enable_example_modules:=yes}"
