@@ -37,6 +37,17 @@ AC_CONFIG_SRCDIR([syslog-ng/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+# ANSI color codes
+AC_CONFIG_COMMANDS_PRE([
+    ESC=$(printf '\033')          # ASCII ESC
+    LBRACKET=$(printf '\x5B')     # ASCII square bracket
+    color_red="${ESC}${LBRACKET}31m"
+    color_green="${ESC}${LBRACKET}32m"
+    color_yellow="${ESC}${LBRACKET}33m"
+    color_blue="${ESC}${LBRACKET}34m"
+    color_reset="${ESC}${LBRACKET}0m"
+    export color_red color_green color_yellow color_blue color_reset
+])
 
 dnl ***************************************************************************
 dnl Helper macros
@@ -608,6 +619,11 @@ AC_ARG_ENABLE(native,
 AC_ARG_ENABLE(afsnmp,
     AS_HELP_STRING([--enable-afsnmp], [Enable afsnmp module (default: auto)]),
     , enable_afsnmp="auto")
+
+AC_ARG_ENABLE([colored-log],
+    AS_HELP_STRING([--enable-colored-log], [Enable colorized output in configure summary (default: no)]),
+    [enable_colored_log=yes],
+    [enable_colored_log=no])
 
 dnl Determine default based on OS
 osname=`uname -s 2>/dev/null` || osname=unknown
@@ -2871,29 +2887,24 @@ print_config_line() {
     local value="$2"
     local warn_str="$3"
 
-    # Default to blue
-    local color_code=4
-    if test -t 1; then  # stdout is a TTY
+    if test "x$enable_colored_log" = "xyes"; then
+        local color_code=$color_blue
         case "$value" in
-            yes*|YES*|true*|TRUE*)
-                color_code=2  # green
-                ;;
-            no*|NO*|false*|FALSE*)
-                color_code=1  # red
-                ;;
-            *)
-                color_code=4  # blue
-                ;;
+            yes*|YES*|true*|TRUE*) color_code=$color_green ;;
+            no*|NO*|false*|FALSE*) color_code=$color_red ;;
+            # for syntax highlighting do not go crazy
         esac
-    fi
 
-    if test -t 1 && test -n "$warn_str"; then
-        # Color warning yellow
-        warn_str=" ($(tput setaf 3)$warn_str$(tput sgr0))"
-    fi
+        if test -n "$warn_str"; then
+            warn_str=" (${color_yellow}${warn_str}${color_reset})"
+        fi
 
-    printf "  %-30s : %s%s\n" "$label" "$(tput setaf $color_code)$value$(tput sgr0)" "$warn_str"
+        printf "  %-30s : %b%s\n" "$label" "${color_code}${value}${color_reset}" "$warn_str"
+    else
+        printf "  %-30s : %s%s\n" "$label" "$value" "$warn_str"
+    fi
 }
+
 
 echo
 echo "syslog-ng Open Source Edition $PACKAGE_VERSION configured"
