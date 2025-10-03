@@ -428,9 +428,19 @@ AC_ARG_ENABLE(afsnmp,
     AS_HELP_STRING([--enable-afsnmp], [Enable afsnmp module (default: auto)]),
     , enable_afsnmp="auto")
 
+dnl Determine default based on OS
+osname=`uname -s 2>/dev/null` || osname=unknown
+case "$osname" in
+    Linux*|linux*|Darwin*|darwin*|FreeBSD*)
+        stackdump_default="auto"
+        ;;
+    *)
+        stackdump_default="no"
+        ;;
+esac
 AC_ARG_ENABLE(stackdump,
-    AS_HELP_STRING([--enable-stackdump], [Enable stackdump support (default: no)]),
-    , enable_stackdump="no")
+    AS_HELP_STRING([--enable-stackdump], [Enable stackdump support (Linux, macOS, FreeBSD only) (default: $stackdump_default)]),
+    , enable_stackdump="$stackdump_default")
 
 AC_ARG_ENABLE(all-modules,
     AS_HELP_STRING([--enable-all-modules], [Forcibly enable all modules. (default: auto)]),
@@ -1747,11 +1757,28 @@ SAFE_C_CHECK_END
 dnl ***************************************************************************
 dnl libunwind headers/libraries
 dnl ***************************************************************************
+if test "x$enable_stackdump" = "xyes"; then
+  case "$host_os" in
+    linux* | freebsd* | darwin*)
+      # currently supported
+      ;;
+    *)
+      AC_MSG_ERROR([--enable-stackdump is only supported on Linux, macOS, or FreeBSD currently])
+      ;;
+  esac
+fi
 if test "x$enable_stackdump" = "xauto" || test "$enable_stackdump" = "yes"; then
     dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
     SAFE_C_CHECK_BEGIN
 
-    PKG_CHECK_MODULES(LIBUNWIND, libunwind >= 1.6.2, enable_libunwind="yes", enable_libunwind="no")
+    AS_CASE([$host_os],
+    [darwin*], [
+        dnl macOS: system libunwind (no .pc file, headers only)
+        AC_CHECK_HEADER([libunwind.h], [enable_libunwind="yes"], [enable_libunwind="no"])
+    ],
+    [*], [
+        PKG_CHECK_MODULES([LIBUNWIND], [libunwind >= 1.6.2], [enable_libunwind="yes"], [enable_libunwind="no"])
+    ])
 
     if test "$enable_stackdump" = "yes" && test "$enable_libunwind" = "no"; then
         AC_MSG_ERROR([Could not find libunwind, and stackdump support was explicitly enabled.])

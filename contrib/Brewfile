@@ -32,3 +32,5 @@ brew "riemann-client"
 brew "grpc"
 
 brew "criterion"
+
+brew "libunwind-headers"

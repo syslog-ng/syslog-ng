@@ -18,6 +18,7 @@ function _map_env_null()
 function image_platform_base() {
     local BASE=${IMAGE_PLATFORM%-amd64}
     BASE=${BASE%-arm64}
+    BASE=${BASE%-i386}
     echo ${BASE}
 }
 

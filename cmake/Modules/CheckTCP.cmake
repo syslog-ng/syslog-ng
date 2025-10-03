@@ -1,4 +1,4 @@
-#############################################################################
+# ############################################################################
 # Copyright (c) 2016 Balabit
 #
 # This library is free software; you can redistribute it and/or
@@ -19,14 +19,12 @@
 # OpenSSL libraries as published by the OpenSSL project. See the file
 # COPYING for details.
 #
-#############################################################################
+# ############################################################################
 
-include (CheckTypeSize)
+check_symbol_exists(TCP_KEEPIDLE "sys/socket.h;netinet/in.h;netinet/tcp.h" HAVE_TCP_KEEPIDLE)
+check_symbol_exists(TCP_KEEPINTVL "sys/socket.h;netinet/in.h;netinet/tcp.h" HAVE_TCP_KEEPINTVL)
+check_symbol_exists(TCP_KEEPCNT "sys/socket.h;netinet/in.h;netinet/tcp.h" HAVE_TCP_KEEPCNT)
 
-set (CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
-check_type_size ("struct sockaddr_storage" STRUCT_SOCKADDR_STORAGE)
-set (CMAKE_EXTRA_INCLUDE_FILES)
-
-if(HAVE_STRUCT_SOCKADDR_STORAGE)
-  set(SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE 1)
+if(HAVE_TCP_KEEPIDLE AND HAVE_TCP_KEEPINTVL AND HAVE_TCP_KEEPCNT)
+    set(SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS 1)
 endif()

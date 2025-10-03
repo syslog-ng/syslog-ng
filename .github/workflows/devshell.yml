@@ -85,8 +85,6 @@ jobs:
             configure_flags: '--disable-sql --disable-mqtt'
             cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF'
           - name: fedora-latest
-            configure_flags: '--disable-stackdump'
-            cmake_configure_flags: '-DENABLE_STACKDUMP=OFF'
           - name: fedora-rawhide
           # TODO: We still need to implement install_rpm_build_deps for opensuse
           #- name: opensuse-tumbleweed
@@ -123,8 +121,6 @@ jobs:
           - name: devshell
             # Now only for devsell we support -Werror, all other none-packaged targets are just best efforts
             cflags: '-Werror'
-            configure_flags: '--enable-stackdump'
-            cmake_configure_flags: '-DENABLE_STACKDUMP=ON'
           # --------------------------------------------------------------------
         exclude:
           - platform: ubuntu-24.04-arm
@@ -167,6 +163,14 @@ jobs:
               arch_suffix: '-arm64'
             build-tool: cmake
             cc: clang
+          # Currently testing i386 in devshell only
+          # NOTE: We use ubuntu-latest (x86_64) because GitHub has no i386 builder support anymore
+          - platform: ubuntu-latest
+            image:
+              name: devshell
+              arch_suffix: '-i386'
+            build-tool: cmake
+            cc: gcc
 
     steps:
       - name: Checkout syslog-ng source
@@ -206,6 +210,7 @@ jobs:
             --with-ivykis=internal
             --disable-java
             --disable-java-modules
+            --enable-stackdump
             ${{ matrix.image.configure_flags }}
           "
           CMAKE_CONFIGURE_FLAGS="
@@ -219,6 +224,7 @@ jobs:
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
             -DENABLE_EBPF=ON
+            -DENABLE_STACKDUMP=ON
             ${{ matrix.image.cmake_configure_flags }}
           "
           gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CFLAGS CXXFLAGS CONFIGURE_FLAGS CMAKE_CONFIGURE_FLAGS
