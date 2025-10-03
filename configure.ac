@@ -37,6 +37,187 @@ AC_CONFIG_SRCDIR([syslog-ng/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+
+dnl ***************************************************************************
+dnl Helper macros
+dnl
+dnl FIXME: Moving these to separate m4 files (e.g. m4/safe_c_check.m4) fails during configure
+dnl             ../configure: line 29338: SAFE_C_CHECK_END: command not found
+dnl ============================================================
+
+dnl ============================================================
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE - if needed
+dnl Save compiler/linker flags
+dnl ============================================================
+m4_define([SAFE_C_CHECK_BEGIN], [dnl
+   CFLAGS_SAVE="$CFLAGS"
+   CPPFLAGS_SAVE="$CPPFLAGS"
+   LIBS_SAVE="$LIBS"
+   LDFLAGS_SAVE="$LDFLAGS"
+   AC_LANG_PUSH([C])
+])dnl
+
+dnl ============================================================
+dnl Restore compiler/linker flags
+dnl ============================================================
+m4_define([SAFE_C_CHECK_END], [dnl
+  AC_LANG_POP([C])
+  CFLAGS="$CFLAGS_SAVE"
+  CPPFLAGS="$CPPFLAGS_SAVE"
+  LIBS="$LIBS_SAVE"
+  LDFLAGS="$LDFLAGS_SAVE"
+])dnl
+
+dnl ============================================================
+dnl Generic HAVE checker to have a one step AC_CHECK_XXX check and
+dnl AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
+dnl functionalyty
+dnl Usage CHECK_AND_DEFINE([checker_func], [target_to_check], [HAVE_XXX_name_override])
+dnl     $1 = checker func [AC_CHECK_HEADERS or AC_CHECK_FUNCS] (mandatory)
+dnl     $2 = target (header/func to check, mandatory)
+dnl     $3 = override macro name (optional)
+dnl ============================================================
+AC_DEFUN([CHECK_AND_DEFINE],
+[
+    dnl AC_MSG_NOTICE([Checking $target_kind $2 $3])
+
+    dnl Figure out what we are checking
+    m4_case([$1],
+        [AC_CHECK_HEADERS], [target_kind="header"; cachevar=ac_cv_header_[]AS_TR_SH([$2])],
+        [AC_CHECK_FUNCS],   [target_kind="function"; cachevar=ac_cv_func_[]AS_TR_SH([$2])],
+        [m4_fatal([Unsupported checker macro $1 passed to CHECK_AND_DEFINE])])
+
+    $1([$2])
+
+    dnl Safely copy the cached result into shell var "cacheval"
+    AS_VAR_COPY([cacheval], [$cachevar])
+    dnl AC_MSG_NOTICE([ -> cache var: $cachevar = $cacheval])
+
+    m4_ifval([$3],
+        [
+            dnl override define name provided
+            AS_IF([test "x$cacheval" = "xyes"],
+                [
+                  AC_DEFINE([$3], [1], [Define if $2 is present])
+                  eval $3=1
+                ],
+                [
+                  AC_DEFINE([$3], [0], [Define if $2 is present])
+                  eval $3=0
+                ])
+            dnl AC_MSG_NOTICE([ -> define (override): $3] [= ${$3}])
+        ],
+        [
+            dnl default define name
+            define_name=HAVE_[]AS_TR_CPP([$2])
+            AS_IF([test "x$cacheval" = "xyes"],
+                [
+                  AC_DEFINE(HAVE_[]AS_TR_CPP([$2]), [1], [Define if $2 is present])
+                  eval $define_name=1
+                ],
+                [
+                  AC_DEFINE(HAVE_[]AS_TR_CPP([$2]), [0], [Define if $2 is present])
+                  eval $define_name=0
+                ])
+            dnl AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]) [= ${HAVE_[]AS_TR_CPP([$2])]})
+        ])
+])
+
+dnl ============================================================
+dnl
+dnl NOTE: This one is crazy
+dnl       Take care: Never use AC_CHECK_HEADER or AC_CHECK_HEADERS alone.
+dnl       The first one will NOT propagate the cached results to AX_PREFIX_CONFIG_H at all,
+dnl       while the latter does, but defines it in the produced config.h only if its value is 1.
+dnl       Otherwise, it just leaves a comment like:
+dnl            /* Define to 1 if you have the <door.h> header file. */
+dnl            /* #undef HAVE_DOOR_H */
+dnl
+dnl       So, if for any reason AC_CHECK_HEADER must be used, then an additional AC_DEFINE is required,
+dnl       for example:
+dnl            AC_CHECK_HEADER(dlfcn.h)
+dnl            AS_IF([test "x$ac_cv_header_dlfcn_h" = "xyes"],
+dnl                [AC_DEFINE([HAVE_DLFCN_H], [1], [Define if dlfcn.h is present])],
+dnl                [AC_DEFINE([HAVE_DLFCN_H], [0], [Define if dlfcn.h is present])])
+dnl
+dnl       This is necessary because we do not use the standard config.h. Instead, we use:
+dnl            AC_CONFIG_HEADERS(config.h)
+dnl            AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
+dnl       The latter adds the SYSLOG_NG_ prefix to all HAVE_XXX macro names. However,
+dnl       in this case, only the macro names with explicit AC_DEFINE pairs are processed.
+dnl
+dnl       In CMake builds, the middle steps are missing: there is no config.h produced.
+dnl       As mentioned above, we use syslog-ng-config.h, which is the only one we have
+dnl       in those builds.
+dnl
+dnl       So, to build consistently with both build systems:
+dnl           - use AC_CHECK_HEADERS, not AC_CHECK_HEADER, for values that should go into
+dnl             syslog-ng-config.h and can be used in any source file
+dnl           - add AC_DEFINE for BOTH cases of the required HAVE_XXX macro names
+dnl           - use syslog-ng-config.h, never config.h directly (especially since we have
+dnl             other config.h files that could cause additional confusion)
+dnl           - DO NOT use HAVE_XXX, always use the SYSLOG_NG_HAVE_XXX variants
+dnl           - use only cmakedefine01 (YES/NO) SYSLOG_NG_HAVE_XXX defines for boolean switches
+dnl             in syslog-ng-config.h.in, never the plain cmakedefine version
+dnl           - use #if SYSLOG_NG_HAVE_XXX instead of #ifdef SYSLOG_NG_HAVE_XXX
+dnl             (as the latter will always fail if not defined correctly somewhere)
+dnl
+dnl       These rules will guarantee proper switch defines in both the Autotools and CMake builds.
+dnl
+dnl ============================================================
+dnl DO NOT USE AC_CHECK_HEADERS or AC_CHECK_HEADER alone if not needed
+dnl
+dnl Use: CHECK_HEADER_AND_DEFINE or CHECK_HEADERS_AND_DEFINE imstead
+dnl ============================================================
+dnl
+dnl One step AC_CHECK_HEADERS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
+dnl for the given header
+dnl Usage CHECK_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
+dnl ============================================================
+AC_DEFUN([CHECK_HEADER_AND_DEFINE],
+[
+    CHECK_AND_DEFINE([AC_CHECK_HEADERS], [$1], [$2])
+])
+
+dnl ============================================================
+dnl Calls CHECK_HEADER_AND_DEFINE for each header
+dnl Usage CHECK_HEADERS_AND_DEFINE([header1 header2 …])
+dnl ============================================================
+dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
+AC_DEFUN([CHECK_HEADERS_AND_DEFINE],
+[
+    m4_foreach([_hdr], m4_split(m4_normalize([$1])), [
+        CHECK_HEADER_AND_DEFINE(_hdr)
+    ])
+])
+
+dnl NOTE: Same is true here like above described for CHECK_HEADER_AND_DEFINE
+dnl ============================================================
+dnl DO NOT USE AC_CHECK_FUNCS or AC_CHECK_FUNC alone if not needed
+dnl
+dnl Use: CHECK_FUNC_AND_DEFINE or CHECK_FUNCS_AND_DEFINE imstead
+dnl ============================================================
+dnl One step AC_CHECK_FUNCS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
+dnl for the given func
+dnl Usage CHECK_FUNC_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
+dnl ============================================================
+AC_DEFUN([CHECK_FUNC_AND_DEFINE],
+[
+    CHECK_AND_DEFINE([AC_CHECK_FUNCS], [$1], [$2])
+])
+
+dnl ============================================================
+dnl Calls CHECK_FUNC_AND_DEFINE for each function
+dnl Usage CHECK_FUNCS_AND_DEFINE([function1 function2 …])
+dnl ============================================================
+dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
+AC_DEFUN([CHECK_FUNCS_AND_DEFINE],
+[
+    m4_foreach([_func], m4_split(m4_normalize([$1])), [
+        CHECK_FUNC_AND_DEFINE(_func)
+    ])
+])
+
 dnl ***************************************************************************
 dnl dependencies
 
@@ -478,184 +659,6 @@ patheval()
         done
         echo $OLD
 }
-
-dnl ***************************************************************************
-dnl Helper macros
-dnl
-dnl FIXME: Moving these to separate m4 files (e.g. m4/safe_c_check.m4) fails during configure
-dnl             ../configure: line 29338: SAFE_C_CHECK_END: command not found
-dnl
-dnl ============================================================
-dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE - if needed
-dnl Save compiler/linker flags
-dnl ============================================================
-m4_define([SAFE_C_CHECK_BEGIN], [dnl
-   CFLAGS_SAVE="$CFLAGS"
-   CPPFLAGS_SAVE="$CPPFLAGS"
-   LIBS_SAVE="$LIBS"
-   LDFLAGS_SAVE="$LDFLAGS"
-   AC_LANG_PUSH([C])
-])dnl
-
-dnl ============================================================
-dnl Restore compiler/linker flags
-dnl ============================================================
-m4_define([SAFE_C_CHECK_END], [dnl
-  AC_LANG_POP([C])
-  CFLAGS="$CFLAGS_SAVE"
-  CPPFLAGS="$CPPFLAGS_SAVE"
-  LIBS="$LIBS_SAVE"
-  LDFLAGS="$LDFLAGS_SAVE"
-])dnl
-
-dnl ============================================================
-dnl Generic HAVE checker to have a one step AC_CHECK_XXX check and
-dnl AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
-dnl functionalyty
-dnl Usage CHECK_AND_DEFINE([checker_func], [target_to_check], [HAVE_XXX_name_override])
-dnl     $1 = checker func [AC_CHECK_HEADERS or AC_CHECK_FUNCS] (mandatory)
-dnl     $2 = target (header/func to check, mandatory)
-dnl     $3 = override macro name (optional)
-dnl ============================================================
-AC_DEFUN([CHECK_AND_DEFINE],
-[
-    dnl AC_MSG_NOTICE([Checking $target_kind $2 $3])
-
-    dnl Figure out what we are checking
-    m4_case([$1],
-        [AC_CHECK_HEADERS], [target_kind="header"; cachevar=ac_cv_header_[]AS_TR_SH([$2])],
-        [AC_CHECK_FUNCS],   [target_kind="function"; cachevar=ac_cv_func_[]AS_TR_SH([$2])],
-        [m4_fatal([Unsupported checker macro $1 passed to CHECK_AND_DEFINE])])
-
-    $1([$2])
-
-    dnl Safely copy the cached result into shell var "cacheval"
-    AS_VAR_COPY([cacheval], [$cachevar])
-    dnl AC_MSG_NOTICE([ -> cache var: $cachevar = $cacheval])
-
-    m4_ifval([$3],
-        [
-            dnl override define name provided
-            AS_IF([test "x$cacheval" = "xyes"],
-                [
-                  AC_DEFINE([$3], [1], [Define if $2 is present])
-                  eval $3=1
-                ],
-                [
-                  AC_DEFINE([$3], [0], [Define if $2 is present])
-                  eval $3=0
-                ])
-            dnl AC_MSG_NOTICE([ -> define (override): $3] [= ${$3}])
-        ],
-        [
-            dnl default define name
-            define_name=HAVE_[]AS_TR_CPP([$2])
-            AS_IF([test "x$cacheval" = "xyes"],
-                [
-                  AC_DEFINE(HAVE_[]AS_TR_CPP([$2]), [1], [Define if $2 is present])
-                  eval $define_name=1
-                ],
-                [
-                  AC_DEFINE(HAVE_[]AS_TR_CPP([$2]), [0], [Define if $2 is present])
-                  eval $define_name=0
-                ])
-            dnl AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]) [= ${HAVE_[]AS_TR_CPP([$2])]})
-        ])
-])
-
-dnl
-dnl NOTE: This one is crazy
-dnl       Take care: Never use AC_CHECK_HEADER or AC_CHECK_HEADERS alone.
-dnl       The first one will NOT propagate the cached results to AX_PREFIX_CONFIG_H at all,
-dnl       while the latter does, but defines it in the produced config.h only if its value is 1.
-dnl       Otherwise, it just leaves a comment like:
-dnl            /* Define to 1 if you have the <door.h> header file. */
-dnl            /* #undef HAVE_DOOR_H */
-dnl
-dnl       So, if for any reason AC_CHECK_HEADER must be used, then an additional AC_DEFINE is required,
-dnl       for example:
-dnl            AC_CHECK_HEADER(dlfcn.h)
-dnl            AS_IF([test "x$ac_cv_header_dlfcn_h" = "xyes"],
-dnl                [AC_DEFINE([HAVE_DLFCN_H], [1], [Define if dlfcn.h is present])],
-dnl                [AC_DEFINE([HAVE_DLFCN_H], [0], [Define if dlfcn.h is present])])
-dnl
-dnl       This is necessary because we do not use the standard config.h. Instead, we use:
-dnl            AC_CONFIG_HEADERS(config.h)
-dnl            AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
-dnl       The latter adds the SYSLOG_NG_ prefix to all HAVE_XXX macro names. However,
-dnl       in this case, only the macro names with explicit AC_DEFINE pairs are processed.
-dnl
-dnl       In CMake builds, the middle steps are missing: there is no config.h produced.
-dnl       As mentioned above, we use syslog-ng-config.h, which is the only one we have
-dnl       in those builds.
-dnl
-dnl       So, to build consistently with both build systems:
-dnl           - use AC_CHECK_HEADERS, not AC_CHECK_HEADER, for values that should go into
-dnl             syslog-ng-config.h and can be used in any source file
-dnl           - add AC_DEFINE for BOTH cases of the required HAVE_XXX macro names
-dnl           - use syslog-ng-config.h, never config.h directly (especially since we have
-dnl             other config.h files that could cause additional confusion)
-dnl           - DO NOT use HAVE_XXX, always use the SYSLOG_NG_HAVE_XXX variants
-dnl           - use only cmakedefine01 (YES/NO) SYSLOG_NG_HAVE_XXX defines for boolean switches
-dnl             in syslog-ng-config.h.in, never the plain cmakedefine version
-dnl           - use #if SYSLOG_NG_HAVE_XXX instead of #ifdef SYSLOG_NG_HAVE_XXX
-dnl             (as the latter will always fail if not defined correctly somewhere)
-dnl
-dnl       These rules will guarantee proper switch defines in both the Autotools and CMake builds.
-dnl
-dnl ============================================================
-dnl DO NOT USE AC_CHECK_HEADERS or AC_CHECK_HEADER alone if not needed
-dnl
-dnl Use: CHECK_HEADER_AND_DEFINE or CHECK_HEADERS_AND_DEFINE imstead
-dnl ============================================================
-dnl
-dnl One step AC_CHECK_HEADERS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
-dnl for the given header
-dnl Usage CHECK_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
-dnl ============================================================
-AC_DEFUN([CHECK_HEADER_AND_DEFINE],
-[
-    CHECK_AND_DEFINE([AC_CHECK_HEADERS], [$1], [$2])
-])
-
-dnl ============================================================
-dnl Calls CHECK_HEADER_AND_DEFINE for each header
-dnl Usage CHECK_HEADERS_AND_DEFINE([header1 header2 …])
-dnl ============================================================
-dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
-AC_DEFUN([CHECK_HEADERS_AND_DEFINE],
-[
-    m4_foreach([_hdr], m4_split(m4_normalize([$1])), [
-        CHECK_HEADER_AND_DEFINE(_hdr)
-    ])
-])
-
-dnl NOTE: Same is true here like above described for CHECK_HEADER_AND_DEFINE
-dnl ============================================================
-dnl DO NOT USE AC_CHECK_FUNCS or AC_CHECK_FUNC alone if not needed
-dnl
-dnl Use: CHECK_FUNC_AND_DEFINE or CHECK_FUNCS_AND_DEFINE imstead
-dnl ============================================================
-dnl One step AC_CHECK_FUNCS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
-dnl for the given func
-dnl Usage CHECK_FUNC_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
-dnl ============================================================
-AC_DEFUN([CHECK_FUNC_AND_DEFINE],
-[
-    CHECK_AND_DEFINE([AC_CHECK_FUNCS], [$1], [$2])
-])
-
-dnl ============================================================
-dnl Calls CHECK_FUNC_AND_DEFINE for each function
-dnl Usage CHECK_FUNCS_AND_DEFINE([function1 function2 …])
-dnl ============================================================
-dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
-AC_DEFUN([CHECK_FUNCS_AND_DEFINE],
-[
-    m4_foreach([_func], m4_split(m4_normalize([$1])), [
-        CHECK_FUNC_AND_DEFINE(_func)
-    ])
-])
 
 dnl ***************************************************************************
 dnl Checks for programs.
