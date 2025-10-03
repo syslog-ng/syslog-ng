@@ -1,17 +1,38 @@
+if (NOT ENABLE_CPP AND ENABLE_GRPC)
+  message(FATAL_ERROR "C++ support is mandatory when the GRPC modules are enabled.")
+endif()
 
-set(GRPC_DEPS_FOUND FALSE)
-
-if (NOT DEFINED ENABLE_GRPC OR ENABLE_GRPC)
-  set(GRPC_DEPS_FOUND TRUE)
-
-  if (NOT ENABLE_CPP)
-    if (ENABLE_GRPC)
-      message(FATAL_ERROR "C++ support is mandatory when the GRPC modules are enabled.")
-    endif()
-
-    set(GRPC_DEPS_FOUND FALSE)
+# Default gRPC handling
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT (CMAKE_SYSTEM_NAME STREQUAL "Linux"))
+  if (NOT DEFINED ENABLE_GRPC)
+    set(ENABLE_GRPC_WARNING_STR "auto disabled by using GNU g++ on non-Linux OS, see the configure log above" CACHE INTERNAL "GRPC enable warning")
+    message(STATUS "${Blue}GRPC support is disabled by default on non-Linux GNU toolchains. "
+      "On systems like macOS, the prebuilt dependencies (Protobuf, gRPC, Abseil, etc.) "
+      "are usually built with Clang (libc++), so using GNU g++ (libstdc++) may cause build, "
+      "link, or runtime issues due to library and ABI mismatches. "
+      "If all dependencies were rebuilt with GNU g++, it might work.${ResetFG}"
+    )
+    module_switch(ENABLE_GRPC "Enable GRPC modules (requires C++17)" OFF)
+  elseif (ENABLE_GRPC)
+    set(ENABLE_GRPC_WARNING_STR "WARNING: using GNU g++ on non-Linux may cause ABI/library mismatches, see the configure log above" CACHE INTERNAL "GRPC enable warning")
+    message(WARNING
+      "Building gRPC modules with GNU toolchains on non-Linux systems is unsupported. "
+      "On systems like macOS, the prebuilt dependencies (Protobuf, gRPC, Abseil, etc.) "
+      "are usually built with Clang (libc++), so using GNU g++ (libstdc++) may cause build, "
+      "link, or runtime issues due to library and ABI mismatches. "
+      "If all dependencies were rebuilt with GNU g++, it might work. "
+      "Proceed only if you understand the potential issues."
+    )
   endif()
+endif()
 
+set(GRPC_DEPS_FOUND OFF)
+
+if ((NOT DEFINED ENABLE_GRPC OR ENABLE_GRPC) AND (NOT DEFINED ENABLE_CPP OR ENABLE_CPP))
+  set(GRPC_DEPS_FOUND ON)
+
+  # FIXME: You cannot remove this otherwise unnecessary if condition and the above
+  #        set(GRPC_DEPS_FOUND ON), it causes a strange configure error
   if (GRPC_DEPS_FOUND)
     find_package(Protobuf 3.6.1 QUIET)
 
@@ -20,7 +41,7 @@ if (NOT DEFINED ENABLE_GRPC OR ENABLE_GRPC)
         message(FATAL_ERROR "ProtoBuf libraries not found.")
       endif()
 
-      set(GRPC_DEPS_FOUND FALSE)
+      set(GRPC_DEPS_FOUND OFF)
     else()
       message(STATUS "Found ProtoBuf: ${PROTOBUF_LIBRARIES}")
     endif()
@@ -34,7 +55,7 @@ if (NOT DEFINED ENABLE_GRPC OR ENABLE_GRPC)
         message(FATAL_ERROR "gRPC++ libraries not found.")
       endif()
 
-      set(GRPC_DEPS_FOUND FALSE)
+      set(GRPC_DEPS_FOUND OFF)
     else()
       message(STATUS "Found gRPC++: ${GRPC++_LIBRARIES}")
     endif()
@@ -63,14 +84,14 @@ if (NOT DEFINED ENABLE_GRPC OR ENABLE_GRPC)
         message(FATAL_ERROR "gRPC libraries not found.")
       endif()
 
-      set(GRPC_DEPS_FOUND FALSE)
+      set(GRPC_DEPS_FOUND OFF)
     else()
       message(STATUS "Found gRPC: ${GRPC_LIBRARIES}")
     endif()
   endif()
 endif()
 
-module_switch(ENABLE_GRPC "Enable GRPC (requires C++17)" GRPC_DEPS_FOUND)
+module_switch(ENABLE_GRPC "Enable GRPC modules (requires C++17)" GRPC_DEPS_FOUND)
 
 if (ENABLE_GRPC)
   set (CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard" FORCE)

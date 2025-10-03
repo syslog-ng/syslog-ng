@@ -1881,6 +1881,45 @@ dnl ***************************************************************************
 dnl GRPC headers/libraries
 dnl ***************************************************************************
 
+# Default gRPC enabed handling
+# Auto resolution
+# Only disable by default on non-Linux hosts with GNU g++
+if test "x$enable_grpc" = "xauto"; then
+  case "$host_os" in
+    linux*) ;;  dnl leave as auto on Linux
+    *)
+      case "$CXX" in
+        g++*|*/g++*)
+          enable_grpc=no
+          grpc_warning_str="auto disabled by using GNU g++ on non-Linux OS, see the configure log above"
+          AC_MSG_NOTICE([GRPC support is disabled by default on non-Linux GNU toolchainsg.
+On systems like macOS or FreeBSD, prebuilt dependencies (Protobuf, gRPC, Abseil, etc.) are usually built with Clang (libc++).
+Using GNU g++ (libstdc++) may cause build, link, or runtime issues due to library and ABI mismatches.
+If you rebuilt all dependencies with GNU g++, it might work.])
+          ;;
+      esac
+      ;;
+  esac
+fi
+
+dnl Warn only if explicitly yes with GNU g++ on non-Linux
+if test "x$enable_grpc" = "xyes"; then
+  case "$host_os" in
+    linux*) ;;  # supported
+    *)
+      case "$CXX" in
+        g++*|*/g++*)
+          grpc_warning_str="WARNING: using GNU g++ on non-Linux may cause ABI/library mismatches, see the configure log above"
+          AC_MSG_WARN([Building gRPC modules with GNU toolchains on non-Linux systems is unsupported.
+On systems like macOS or FreeBSD, prebuilt dependencies (Protobuf, gRPC, Abseil, etc.) are usually built with Clang (libc++).
+Using GNU g++ (libstdc++) may cause build, link, or runtime issues due to library and ABI mismatches.
+If you rebuilt all dependencies with GNU g++, it might work. Proceed only if you understand the potential issues.])
+          ;;
+      esac
+      ;;
+  esac
+fi
+
 # C++
 if ! test "x$enable_grpc" = "xno"; then
     if test "x$enable_cpp" = "xno"; then
@@ -2885,7 +2924,7 @@ echo "  HTTP support (module)       : ${enable_http:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  MQTT (module)               : ${enable_mqtt:=no}"
-echo "  GRPC (module)               : ${enable_grpc:=no}"
+echo "  GRPC (module)               : ${enable_grpc:=no}${grpc_warning_str}"
 echo "  Cloud Auth (module)         : ${enable_cloud_auth:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
