@@ -212,6 +212,7 @@ jobs:
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
+            --enable-colored-log
             --enable-extra-warnings
             --enable-debug
             --prefix=${SYSLOG_NG_INSTALL_DIR}
