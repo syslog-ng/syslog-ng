@@ -35,7 +35,7 @@ endif()
 
 find_package(LIBNET)
 
-if(ENABLE_SPOOF_SOURCE STREQUAL "AUTO" OR ENABLE_SPOOF_SOURCE STREQUAL "auto")
+if("${ENABLE_SPOOF_SOURCE}" MATCHES "^(auto|AUTO)$")
   if(LIBNET_FOUND)
     set(SYSLOG_NG_ENABLE_SPOOF_SOURCE ON)
     message(STATUS "  Spoof source support: enabled (AUTO, found libnet)")

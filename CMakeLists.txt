@@ -67,7 +67,7 @@ endif()
 # FIXME: This does not handle multiple sub-modules, must be made recursive and smarter later
 # Also it should be moved to a separate file
 # We have only one such module now (ivykis), so it is not a big problem currently
-if("${IVYKIS_SOURCE}" STREQUAL "internal" OR "${IVYKIS_SOURCE}}" STREQUAL "auto" OR "${IVYKIS_SOURCE}}" STREQUAL "AUTO")
+if("${IVYKIS_SOURCE}" STREQUAL "internal" OR ("${IVYKIS_SOURCE}" MATCHES "^(auto|AUTO)$"))
   find_package(Git QUIET)
 
   if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
@@ -318,7 +318,7 @@ endif()
 
 set(PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library")
 
-if("${PYTHON_VERSION}" STREQUAL "AUTO" OR "${PYTHON_VERSION}" STREQUAL "auto")
+if("${PYTHON_VERSION}" MATCHES "^(auto|AUTO)$")
   find_package(PythonInterp EXACT 3)
   find_package(PythonLibs EXACT 3)
 else()
