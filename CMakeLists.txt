@@ -39,9 +39,21 @@ if(APPLE)
   option(ENABLE_OBJC "Enable ObjC" ${ENABLE_DARWIN_OSL})
 
   if(ENABLE_OBJC)
+    message(STATUS "Checking ObjC support")
+
     # Turned out that even the latest gcc has no proper support of the required ObjC version
     # Once gcc was able to compile our ObjC modules properly this requirement could be removed again
-    set(CMAKE_OBJC_COMPILER clang)
+    if(DEFINED CMAKE_OBJC_COMPILER)
+      message(STATUS "The ObjC compiler is ${CMAKE_OBJC_COMPILER}")
+      get_filename_component(_objc_compiler_name "${CMAKE_OBJC_COMPILER}" NAME)
+      if(NOT (_objc_compiler_name MATCHES "^clang(\\+\\+)?([-]?[0-9]+)?$"))
+        message(WARNING "ObjC support is only available with clang, forcing CMAKE_OBJC_COMPILER=clang")
+        set(CMAKE_OBJC_COMPILER clang)
+      endif()
+    else()
+      set(CMAKE_OBJC_COMPILER clang)
+      message(STATUS "The ObjC compiler is ${CMAKE_OBJC_COMPILER}")
+    endif()
 
     set_property(GLOBAL PROPERTY OBJC_STANDARD 11)
     set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
