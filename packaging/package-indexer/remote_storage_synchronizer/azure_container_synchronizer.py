@@ -219,7 +219,7 @@ class AzureContainerSynchronizer(RemoteStorageSynchronizer):
                 "File differs locally and remotely.",
                 remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
                 local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
-                remote_md5sum=remote_md5.hex(),
+                remote_md5sum=remote_md5.hex() if remote_md5 else "N/A",
                 local_md5sum=local_md5.hex(),
             )
             return FileSyncState.DIFFERENT
