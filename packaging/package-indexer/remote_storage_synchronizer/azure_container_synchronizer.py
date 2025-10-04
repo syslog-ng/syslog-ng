@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+import os
 import mimetypes
 from hashlib import md5
 from pathlib import Path
@@ -102,10 +103,15 @@ class AzureContainerSynchronizer(RemoteStorageSynchronizer):
             blob_data = self.__client.download_blob(relative_file_path)
             blob_data.readinto(downloaded_blob)
 
+        blob_client: BlobClient = self.__client.get_blob_client(relative_file_path)
+        properties = blob_client.get_blob_properties()
+        mtime = properties.last_modified.timestamp()
+        os.utime(str(download_path), times=(mtime, mtime))
+
     def __upload_file(self, relative_file_path: str) -> None:
         local_path = Path(self.local_dir.root_dir, relative_file_path)
-        mimetype = mimetypes.guess_type(local_path.name)[0]
-        content_settings = ContentSettings(content_type = mimetype)
+        mimetype = str(mimetypes.guess_type(local_path.name)[0])
+        content_settings = ContentSettings(content_type=mimetype)
         self._log_info(
             "Uploading file.",
             local_path=str(local_path),
@@ -114,7 +120,9 @@ class AzureContainerSynchronizer(RemoteStorageSynchronizer):
         )
 
         with local_path.open("rb") as local_file_data:
-            self.__client.upload_blob(relative_file_path, local_file_data, overwrite=True, content_settings=content_settings)
+            self.__client.upload_blob(
+                relative_file_path, local_file_data, overwrite=True, content_settings=content_settings
+            )
 
     def __delete_local_file(self, relative_file_path: str) -> None:
         local_file_path = Path(self.local_dir.root_dir, relative_file_path).resolve()
