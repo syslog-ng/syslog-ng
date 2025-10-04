@@ -21,6 +21,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE 1)
 set(BISON_FLAGS "-Wno-other -Werror=conflicts-sr -Werror=conflicts-rr -Wcounterexamples")
 set(BISON_BUILT_SOURCE_CFLAGS "-Wno-unused-but-set-variable")
 
+include(common_helpers)
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(ExternalProject)
@@ -29,38 +30,44 @@ include(add_module)
 include(module_switch)
 include(FindGperf)
 
-option(ENABLE_CPP "Enable C++" ON)
+include(enable_cpp)
 
-if(ENABLE_CPP)
-  enable_language(CXX)
-  set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard")
-  set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "C++ standard is a requirement")
-  set(CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "C++ compiler specific extensions")
-  set(SYSLOG_NG_ENABLE_CPP ${ENABLE_CPP})
-endif()
-
+module_switch(ENABLE_DARWIN_OSL "Enable OSLog" APPLE)
 if(APPLE)
-  module_switch(ENABLE_DARWIN_OSL "Enable OSLog" ON)
+  # Currently the OSLog module is the only one that requires ObjC support
+  # Maintain this depending on the future modules requiring ObjC
   option(ENABLE_OBJC "Enable ObjC" ${ENABLE_DARWIN_OSL})
+
+  if(ENABLE_OBJC)
+    message(STATUS "Checking ObjC support")
+
+    # Turned out that even the latest gcc has no proper support of the required ObjC version
+    # Once gcc was able to compile our ObjC modules properly this requirement could be removed again
+    if(DEFINED CMAKE_OBJC_COMPILER)
+      message(STATUS "The ObjC compiler is ${CMAKE_OBJC_COMPILER}")
+      get_filename_component(_objc_compiler_name "${CMAKE_OBJC_COMPILER}" NAME)
+      if(NOT (_objc_compiler_name MATCHES "^clang(\\+\\+)?([-]?[0-9]+)?$"))
+        message(WARNING "ObjC support is only available with clang, forcing CMAKE_OBJC_COMPILER=clang")
+        set(CMAKE_OBJC_COMPILER clang)
+      endif()
+    else()
+      set(CMAKE_OBJC_COMPILER clang)
+      message(STATUS "The ObjC compiler is ${CMAKE_OBJC_COMPILER}")
+    endif()
+
+    set_property(GLOBAL PROPERTY OBJC_STANDARD 11)
+    set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
+  endif()
 else()
   if(ENABLE_DARWIN_OSL)
     message(FATAL_ERROR "OSLog module enabled, but it is a macOS only feature")
   endif()
 endif()
 
-if(ENABLE_OBJC)
-  # Turned out that even the latest gcc has no proper support of the required ObjC version
-  # Once gcc was able to compile our ObjC modules properly this requirement could be removed again
-  set(CMAKE_OBJC_COMPILER clang)
-
-  set_property(GLOBAL PROPERTY OBJC_STANDARD 11)
-  set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
-endif()
-
 # FIXME: This does not handle multiple sub-modules, must be made recursive and smarter later
 # Also it should be moved to a separate file
 # We have only one such module now (ivykis), so it is not a big problem currently
-if("${IVYKIS_SOURCE}" STREQUAL "internal" OR "${IVYKIS_SOURCE}}" STREQUAL "auto" OR "${IVYKIS_SOURCE}}" STREQUAL "AUTO")
+if("${IVYKIS_SOURCE}" STREQUAL "internal" OR ("${IVYKIS_SOURCE}" MATCHES "^(auto|AUTO)$"))
   find_package(Git QUIET)
 
   if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
@@ -311,7 +318,7 @@ endif()
 
 set(PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library")
 
-if("${PYTHON_VERSION}" STREQUAL "AUTO" OR "${PYTHON_VERSION}" STREQUAL "auto")
+if("${PYTHON_VERSION}" MATCHES "^(auto|AUTO)$")
   find_package(PythonInterp EXACT 3)
   find_package(PythonLibs EXACT 3)
 else()

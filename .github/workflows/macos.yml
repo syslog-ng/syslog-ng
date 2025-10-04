@@ -15,6 +15,7 @@ concurrency:
 jobs:
   general:
     strategy:
+      fail-fast: false
       matrix:
         # https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners
         # 13 - X86_64
@@ -24,14 +25,10 @@ jobs:
         compiler: [ {cpp: clang++, c: clang}, {cpp: g++, c: gcc} ]
         macports-version: [2.10.1]
         exclude:
-          # Excluded just to speed up the testing matrix, as clang is the default compiler on macOS
-          # and it is used for development too on an everyday basis, on arm64.
+          # NOTE: This can be excluded to speed up the testing matrix, as clang is the default compiler on macOS
+          #       and it is used for development too on an everyday basis, on arm64.
           - version: 14
             compiler: {cpp: clang++, c: clang}
-          # FIXME: temp exclude of failed linking again with cmake + g++ against GRPC dependenncies
-          - compiler: {cpp: g++, c: gcc}
-            build-tool: cmake
-      fail-fast: false
 
     runs-on: macOS-${{ matrix.version }}
     name: macOS${{ matrix.version }}-${{ matrix.version == '14' && 'arm64' || 'amd64' }}, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
@@ -215,6 +212,7 @@ jobs:
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
+            --enable-colored-log
             --enable-extra-warnings
             --enable-debug
             --prefix=${SYSLOG_NG_INSTALL_DIR}
@@ -269,11 +267,27 @@ jobs:
       - name: autotools configure
         if: matrix.build-tool == 'autotools'
         run: |
+          # Exclude of failing linking against GRPC dependencies when compiling with g++
+          # g++ uses libstdc++, while grpc is compiled with libc++ on macOS, so the linking fails
+          # with undefined symbols.
+          # The proper solution is to compile grpc from source with g++, but that is way too long
+          # and complicated for a CI job.
+          if [ $CXX = g++ ]; then
+            CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --disable-grpc"
+          fi
           ./configure ${CONFIGURE_FLAGS}
 
       - name: cmake configure
         if: matrix.build-tool == 'cmake'
         run: |
+          # Exclude of failing linking against GRPC dependencies when compiling with g++
+          # g++ uses libstdc++, while grpc is compiled with libc++ on macOS, so the linking fails
+          # with undefined symbols.
+          # The proper solution is to compile grpc from source with g++, but that is way too long
+          # and complicated for a CI job.
+          if [ $CXX = g++ ]; then
+            CMAKE_CONFIGURE_FLAGS="${CMAKE_CONFIGURE_FLAGS} -DENABLE_GRPC=OFF"
+          fi
           cmake --install-prefix "${SYSLOG_NG_INSTALL_DIR}" -B build . ${CMAKE_CONFIGURE_FLAGS}
 
       - name: cmake install
@@ -282,7 +296,19 @@ jobs:
           set -e
 
           cmake --build ./build -j ${THREADS} --target install
-          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV 2>&1 |sort
+
+          echo ""
+          echo "Checking produced installation..."
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV > syslog-ng.unsorted.log 2>&1
+          sort syslog-ng.unsorted.log > syslog-ng.log
+
+          cat syslog-ng.log
+          # Check for failing modules
+          if grep -q "Error opening plugin module;" syslog-ng.log; then
+            echo "Modules failing to load:"
+            grep "Error opening plugin module;" syslog-ng.log
+            exit 1
+          fi
 
       - name: cmake check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
@@ -301,7 +327,19 @@ jobs:
               make V=1; \
               return $S; \
             }
-          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV 2>&1 |sort
+
+          echo ""
+          echo "Checking produced installation..."
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV > syslog-ng.unsorted.log 2>&1
+          sort syslog-ng.unsorted.log > syslog-ng.log
+
+          cat syslog-ng.log
+          # Check for failing modules
+          if grep -q "Error opening plugin module;" syslog-ng.log; then
+            echo "Modules failing to load:"
+            grep "Error opening plugin module;" syslog-ng.log
+            exit 1
+          fi
 
       - name: make check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)

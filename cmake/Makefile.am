@@ -36,6 +36,7 @@ EXTRA_DIST +=	\
 	cmake/Modules/GenerateYFromYm.cmake	\
 	cmake/Modules/LibFindMacros.cmake	\
 	cmake/Modules/ProtobufGenerateCpp.cmake	\
+	cmake/enable_cpp.cmake \
 	cmake/enable_spoof_source.cmake \
 	cmake/enable_stackdump.cmake \
 	cmake/enable_systemd.cmake \
