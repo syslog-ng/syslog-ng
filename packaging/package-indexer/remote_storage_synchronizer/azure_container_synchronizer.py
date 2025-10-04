@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+import os
 import mimetypes
 from hashlib import md5
 from pathlib import Path
@@ -101,6 +102,11 @@ class AzureContainerSynchronizer(RemoteStorageSynchronizer):
         with download_path.open("wb") as downloaded_blob:
             blob_data = self.__client.download_blob(relative_file_path)
             blob_data.readinto(downloaded_blob)
+
+        blob_client: BlobClient = self.__client.get_blob_client(relative_file_path)
+        properties = blob_client.get_blob_properties()
+        mtime = properties.last_modified.timestamp()
+        os.utime(str(download_path), times=(mtime, mtime))
 
     def __upload_file(self, relative_file_path: str) -> None:
         local_path = Path(self.local_dir.root_dir, relative_file_path)
