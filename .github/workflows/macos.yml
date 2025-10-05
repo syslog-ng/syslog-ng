@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [ "develop", "master" ]
+    branches: ["develop", "master"]
   schedule:
-    - cron: '00 21 * * *'
+    - cron: "00 21 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -18,18 +18,19 @@ jobs:
       fail-fast: false
       matrix:
         # https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners
-        # 13 - X86_64
-        # 14 or latest - Arm64 M1
-        version: [13, 14]
-        build-tool: [ autotools, cmake ]
-        compiler: [ {cpp: clang++, c: clang}, {cpp: g++, c: gcc} ]
-        macports-version: [2.10.1]
+        # 13, 14-intel - X86_64
+        # 14, 15 or latest, 26 - Arm64 M1
+        version: [14, 15, 15-intel, 26]
+        build-tool: [autotools, cmake]
+        compiler: [{ cpp: clang++, c: clang }, { cpp: g++, c: gcc }]
+        macports-version: [2.11.5]
+        use-brew-cache: [false]
+        use-ports-cache: [true]
         exclude:
-          # NOTE: This can be excluded to speed up the testing matrix, as clang is the default compiler on macOS
+          # NOTE: This can be excluded to speed up the testing matrix, as clang is the default compiler on macOS 26
           #       and it is used for development too on an everyday basis, on arm64.
-          - version: 14
-            compiler: {cpp: clang++, c: clang}
-
+          - version: 26
+            compiler: { cpp: clang++, c: clang }
     runs-on: macOS-${{ matrix.version }}
     name: macOS${{ matrix.version }}-${{ matrix.version == '14' && 'arm64' || 'amd64' }}, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
     env:
@@ -46,11 +47,12 @@ jobs:
         run: |
           sudo xcode-select -s /Applications/Xcode_15.2.app
 
-      - name: Unlinking preinstalled Python (workaround)
-              # The python@3 brew package has to be installed and linked system-wide (it's a dependency of glib and syslog-ng)
-              # The macos-13 GitHub runner has Python preinstalled as a pkg, this prevents linking the python@3
-              # brew package, even when linking is forced. `brew "python@3", link: true, force: true`
-              # also, brew cannot update the links even these cretated by itself for an earlier python version
+      - name:
+          Unlinking preinstalled Python (workaround)
+          # The python@3 brew package has to be installed and linked system-wide (it's a dependency of glib and syslog-ng)
+          # The macos-13 GitHub runner has Python preinstalled as a pkg, this prevents linking the python@3
+          # brew package, even when linking is forced. `brew "python@3", link: true, force: true`
+          # also, brew cannot update the links even these cretated by itself for an earlier python version
         run: |
           find /usr/local/bin/ -lname "*Python.framework*" -delete
 
@@ -67,6 +69,7 @@ jobs:
       # Restore Homebrew dependencies from cache
       # The cache update is automatic as a "Post" step at the job end
       - name: Cache Homebrew dependencies
+        if: matrix.use-brew-cache
         uses: actions/cache@v3
         with:
           path: /Users/runner/Library/Caches/Homebrew
@@ -84,12 +87,6 @@ jobs:
             if [ "${{ github.event_name }}" = "schedule" ]; then
               echo "Scheduled run → forcing brew update"
             fi
-            # temp: to avoid openssl@1.1 and openssl@3 conflicts on some runners
-            brew unlink openssl@1.1 || true
-            brew unlink openssl@3 || true
-            rm -f /opt/homebrew/bin/openssl
-            rm -f /Users/runner/Library/Caches/Homebrew/Backup/bin/openssl
-
             brew update --auto-update
           else
             echo "Non-scheduled run → skipping brew update"
@@ -102,6 +99,7 @@ jobs:
       # Restore MacPorts user/group info from separate cache
       # The cache update is automatic as a "Post" step at the job end
       - name: Cache MacPorts user/group info
+        if: matrix.use-ports-cache
         id: macports-user-info-restore
         uses: actions/cache@v3
         with:
@@ -112,6 +110,7 @@ jobs:
       # Restore MacPorts self-made archive from cache (if available)
       # NOTE: We cannot use the built-in restore, as that can not work as root; we handle extraction manually
       - name: Cache MacPorts archive
+        if: matrix.use-ports-cache
         uses: actions/cache@v3
         with:
           path: ${{ env.MACPORTS_ARCHIVE_FILE }}
@@ -160,8 +159,16 @@ jobs:
             sudo chown -R macports:macports /opt/local
           else
             echo "Cache missing — installing MacPorts..."
-            OS_NAME=$([[ ${{ matrix.version }} -eq 13 ]] && echo "Ventura" || echo "Sonoma")
-            MACPORTS_PKG_NAME=MacPorts-${{ matrix.macports-version }}-${{ matrix.version }}-${OS_NAME}.pkg
+            RAW_VERSION="${{ matrix.version }}"
+            MAJOR_VERSION="${RAW_VERSION%%-*}"
+            case "$MAJOR_VERSION" in
+              13) OS_NAME="Ventura" ;;
+              14) OS_NAME="Sonoma" ;;
+              15) OS_NAME="Sequoia" ;;
+              26) OS_NAME="Tahoe" ;;
+              *)  OS_NAME="Unknown" ;;
+            esac
+            MACPORTS_PKG_NAME=MacPorts-${{ matrix.macports-version }}-${MAJOR_VERSION}-${OS_NAME}.pkg
             MACPORTS_URL=https://github.com/macports/macports-base/releases/download/v${{ matrix.macports-version }}/${MACPORTS_PKG_NAME}
 
             wget "$MACPORTS_URL" -O "$MACPORTS_ARCHIVE_DIR/$MACPORTS_PKG_NAME"
@@ -312,7 +319,7 @@ jobs:
 
       - name: cmake check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
-        if: matrix.build-tool == 'cmake' && matrix.version != 14
+        if: matrix.build-tool == 'cmake' && matrix.version == '15-intel'
         run: |
           cmake --build ./build -j ${THREADS} --target check
 
@@ -343,7 +350,7 @@ jobs:
 
       - name: make check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
-        if: matrix.build-tool == 'autotools' && matrix.version != 14
+        if: matrix.build-tool == 'autotools' && matrix.version == '15-intel'
         run: |
           set -e
 
