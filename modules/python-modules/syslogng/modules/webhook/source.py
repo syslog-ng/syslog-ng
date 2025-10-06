@@ -34,8 +34,6 @@ import signal
 import json
 from typing import Any
 
-signal.signal(signal.SIGINT, signal.SIG_IGN)
-signal.signal(signal.SIGTERM, signal.SIG_IGN)
 WEBHOOK_NV_PREFIX = "webhook."
 WEBHOOK_QUERY_NV_PREFIX = WEBHOOK_NV_PREFIX + "query."
 WEBHOOK_HEADERS_KEY = WEBHOOK_NV_PREFIX + "headers"
