@@ -45,7 +45,7 @@ endif()
 
 find_package(LIBUNWIND)
 
-if(ENABLE_STACKDUMP STREQUAL "AUTO" OR ENABLE_STACKDUMP STREQUAL "auto")
+if("${ENABLE_STACKDUMP}" MATCHES "^(auto|AUTO)$")
   if(LIBUNWIND_FOUND)
     set(SYSLOG_NG_ENABLE_STACKDUMP ON)
     message(STATUS "  Stackdump support: enabled (AUTO, found libunwind)")

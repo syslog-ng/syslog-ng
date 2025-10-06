@@ -1,4 +1,5 @@
 # Copyright (c) 2022 One Identity
+# Copyright (c) 2025 Istvan Hoffmann <hofione@gmail.com>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -19,13 +20,6 @@
 # COPYING for details.
 #
 # ############################################################################
-
-string(ASCII 27 Esc)
-set(Red "${Esc}[31m")
-set(Green "${Esc}[32m")
-set(Yellow "${Esc}[33m")
-set(Blue "${Esc}[34m")
-set(ResetFG "${Esc}[39m")
 
 set(_maxHeaderLen 43)
 set(_maxSummaryLineLen 36)
@@ -111,6 +105,10 @@ function(_print_summary_line _variableName _variableValue _maxVarNameLen)
     set(_versionVar "${_variableName}_INFO_STR")
     if(DEFINED ${_versionVar})
       set(_extraString " (${${_versionVar}})")
+    endif()
+    set(_versionVar "${_variableName}_WARNING_STR")
+    if(DEFINED ${_versionVar})
+      set(_extraString " (${Yellow}${${_versionVar}}${Blue})")
     endif()
   endif()
 
@@ -252,7 +250,7 @@ function(print_config_summary)
   _print_compilers_info("${_variableNames}" "${_compilersInfo}")
 
   _print_separator("Compilation")
-  list(APPEND _compilationOptions "CMAKE_BUILD_TYPE" "^ENABLE_CPP" "ENABLE_EXTRA_WARNINGS" "ENABLE_FORCE_GNU99" "ENV_LD_LIBRARY_PATH")
+  list(APPEND _compilationOptions "CMAKE_BUILD_TYPE" "CXX_STANDARD_USED" "^ENABLE_CPP" "ENABLE_EXTRA_WARNINGS" "ENABLE_FORCE_GNU99" "ENV_LD_LIBRARY_PATH")
 
   if(APPLE)
     list(APPEND _compilationOptions "FORCE_CLASSIC_LINKING")
@@ -289,7 +287,7 @@ function(print_config_summary)
 
   _print_separator("Modules")
   list(APPEND _modulesOptions "^ENABLE_")
-  list(APPEND _modulesExcludeOptions "${_compilationOptions}" "${_featuresOptions}" "^ENABLE_.*_INFO_STR$" "^ENABLE_MANPAGES" "^ENABLE_SPOOF_SOURCE")
+  list(APPEND _modulesExcludeOptions "${_compilationOptions}" "${_featuresOptions}" "^ENABLE_.*_INFO_STR$" "^ENABLE_.*_WARNING_STR$" "^ENABLE_MANPAGES" "^ENABLE_SPOOF_SOURCE")
   _print_options("${_variableNames}" "${_modulesOptions}" "${_modulesExcludeOptions}")
 
   _print_separator("")

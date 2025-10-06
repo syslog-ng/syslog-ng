@@ -23,33 +23,9 @@
 #
 # ############################################################################
 
-set(ENABLE_SPOOF_SOURCE "AUTO" CACHE STRING "Enable spoof source support: ON, OFF, AUTO")
-set_property(CACHE ENABLE_SPOOF_SOURCE PROPERTY STRINGS AUTO ON OFF)
-message(STATUS "Checking Spoof source support")
-
-if(ENABLE_SPOOF_SOURCE STREQUAL "OFF")
-  set(SYSLOG_NG_ENABLE_SPOOF_SOURCE OFF)
-  message(STATUS "  Spoof source support: disabled (forced OFF)")
-  return()
-endif()
-
-find_package(LIBNET)
-
-if("${ENABLE_SPOOF_SOURCE}" MATCHES "^(auto|AUTO)$")
-  if(LIBNET_FOUND)
-    set(SYSLOG_NG_ENABLE_SPOOF_SOURCE ON)
-    message(STATUS "  Spoof source support: enabled (AUTO, found libnet)")
-  else()
-    set(SYSLOG_NG_ENABLE_SPOOF_SOURCE OFF)
-    message(STATUS "  Spoof source support: disabled (AUTO, libnet not found)")
-  endif()
-elseif(ENABLE_SPOOF_SOURCE STREQUAL "ON")
-  if(NOT LIBNET_FOUND)
-    message(FATAL_ERROR "Could not find libnet, and spoof source support was explicitly enabled.")
-  endif()
-
-  set(SYSLOG_NG_ENABLE_SPOOF_SOURCE ON)
-  message(STATUS "  Spoof source support: enabled (forced ON)")
-else()
-  message(FATAL_ERROR "Invalid value (${ENABLE_SPOOF_SOURCE}) for ENABLE_SPOOF_SOURCE (must be ON, OFF, or AUTO)")
-endif()
+string(ASCII 27 Esc)
+set(Red "${Esc}[31m")
+set(Green "${Esc}[32m")
+set(Yellow "${Esc}[33m")
+set(Blue "${Esc}[34m")
+set(ResetFG "${Esc}[39m")
