@@ -10,7 +10,7 @@ brew "glib"
 brew "ivykis"
 brew "json-c"
 brew "libtool"
-brew "openssl@3", link: true, force: true
+brew "openssl@3"
 brew "pcre2"
 brew "pkgconf"
 
