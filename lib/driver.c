@@ -307,8 +307,14 @@ log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q)
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
   /* we only save the LogQueue instance if it contains data */
-  if (q->persist_name && log_queue_keep_on_reload(q) > 0)
+  if (q->persist_name && log_queue_keep_on_reload(q))
     {
+      /* TAKE CARE: Depending on the queue type, and the driver, marking the queue abandoned here might be important, as its counters
+       *    - might already be maintained in a stop like step, all data at this point might be flushed, and the queues are emptied
+       *    - might be altered again later on (e.g. during state restoration)
+       * see logqueue.c:_unregister_shared_counters(), log_queue_mark_as_abandoned() or diskq.c:_release_queue() for more details
+       */
+
       cfg_persist_config_add(cfg, q->persist_name, q, (GDestroyNotify) log_queue_unref);
     }
   else
