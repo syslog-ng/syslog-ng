@@ -306,22 +306,43 @@ _unregister_shared_counters(LogQueue *self)
   {
     if (self->metrics.shared.output_events_sc_key)
       {
-        log_queue_queued_messages_sub(self, stats_counter_get(self->metrics.owned.queued_messages));
+        /* I do not like this either at all
+         *    - TODO: maintaining the counters silently is not a good idea, but breaking this inherited behavior
+         *      would be a huge BC breaker now, we might want to change this in the future
+         *    - but, we need to avoid that the counters are adjusted when the queue is freed for queues that are persisted
+         *      and can be restored later, otherwise the counters might be screwed up
+         *    - another temp solution could be to make _unregister_counters() public and call it manually when we are sure
+         *      the queue is not going to be used anymore, but that would be error-prone
+         *    - yet another solution could be to look up living references to the same queue, and only if there are none, we
+         *      would let adjust the counters, but that one would be quite expensive, and even more complex
+         */
+        if (FALSE == self->abandoned)
+          {
+            log_queue_queued_messages_sub(self, stats_counter_get(self->metrics.owned.queued_messages));
+            g_assert(stats_counter_get(self->metrics.owned.queued_messages) == 0);
+          }
         stats_unregister_counter(self->metrics.shared.output_events_sc_key, SC_TYPE_QUEUED,
                                  &self->metrics.shared.queued_messages);
         stats_unregister_counter(self->metrics.shared.output_events_sc_key, SC_TYPE_DROPPED,
                                  &self->metrics.shared.dropped_messages);
 
         stats_cluster_key_free(self->metrics.shared.output_events_sc_key);
+        self->metrics.shared.output_events_sc_key = NULL;
       }
 
     if (self->metrics.shared.memory_usage_sc_key)
       {
-        log_queue_memory_usage_sub(self, stats_counter_get(self->metrics.owned.memory_usage));
+        // See the comment above
+        if (FALSE == self->abandoned)
+          {
+            log_queue_memory_usage_sub(self, stats_counter_get(self->metrics.owned.memory_usage));
+            g_assert(stats_counter_get(self->metrics.owned.memory_usage) == 0);
+          }
         stats_unregister_counter(self->metrics.shared.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
                                  &self->metrics.shared.memory_usage);
 
         stats_cluster_key_free(self->metrics.shared.memory_usage_sc_key);
+        self->metrics.shared.memory_usage_sc_key = NULL;
       }
   }
   stats_unlock();
@@ -334,18 +355,22 @@ _unregister_owned_counters(LogQueue *self)
   {
     if (self->metrics.owned.events_sc_key)
       {
+        g_assert(self->abandoned || stats_counter_get(self->metrics.owned.queued_messages) == 0);
         stats_unregister_counter(self->metrics.owned.events_sc_key, SC_TYPE_SINGLE_VALUE,
                                  &self->metrics.owned.queued_messages);
 
         stats_cluster_key_free(self->metrics.owned.events_sc_key);
+        self->metrics.owned.events_sc_key = NULL;
       }
 
     if (self->metrics.owned.memory_usage_sc_key)
       {
+        g_assert(self->abandoned || stats_counter_get(self->metrics.owned.memory_usage) == 0);
         stats_unregister_counter(self->metrics.owned.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
                                  &self->metrics.owned.memory_usage);
 
         stats_cluster_key_free(self->metrics.owned.memory_usage_sc_key);
+        self->metrics.owned.memory_usage_sc_key = NULL;
       }
   }
   stats_unlock();
@@ -356,6 +381,24 @@ _unregister_counters(LogQueue *self)
 {
   _unregister_shared_counters(self);
   _unregister_owned_counters(self);
+}
+
+/* https://github.com/syslog-ng/syslog-ng/issues/5351 (and many others)
+ * Using cfg_persist_config_add and similar will take the ownership of the queue, that means
+ * it also will keep a reference on its shared counters.
+ * The queue counters can also be maintained later e.g. during diskq state restoration, (most importantly,
+ * during reloads, especially when keep-alive(yes)), so we need to prevent adjusting them furher
+ * (in _unregister_counters, when the queue is freed),
+ * as that could lead to inconsistent (underflawn) values in the counters.
+ *
+ * TODO: We might want to prevent further modifications of the queue after this is called
+ * (e.g. reject push() calls, counter adjustments, etc.), but that would require quite some changes in the
+ * queueing logic, so for now we just document that this is a one-way operation.
+ */
+inline void
+log_queue_mark_as_abandoned(LogQueue *self)
+{
+  self->abandoned = TRUE;
 }
 
 void

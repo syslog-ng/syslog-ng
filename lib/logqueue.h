@@ -69,6 +69,7 @@ struct _LogQueue
   gchar *persist_name;
 
   LogQueueMetrics metrics;
+  gboolean abandoned;
 
   GMutex lock;
   LogQueuePushNotifyFunc parallel_push_notify;
@@ -218,6 +219,9 @@ void log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel
                                  GDestroyNotify user_data_destroy);
 gboolean log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify,
                                gpointer user_data, GDestroyNotify user_data_destroy);
+
+void log_queue_mark_as_abandoned(LogQueue *self);
+
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name, gint stats_level,
                              StatsClusterKeyBuilder *driver_sck_builder,
                              StatsClusterKeyBuilder *queue_sck_builder);
