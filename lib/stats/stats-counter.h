@@ -27,6 +27,35 @@
 #include "syslog-ng.h"
 #include "atomic-gssize.h"
 
+#if ! defined(USE_CHECKED_COUNTER_OPS)
+# define USE_CHECKED_COUNTER_OPS 1
+#endif
+#if ! defined(CHECKED_COUNTER_ADD)
+# if SYSLOG_NG_ENABLE_DEBUG && USE_CHECKED_COUNTER_OPS
+#  define CHECKED_COUNTER_ADD(old_value_expr, add) \
+    do { \
+        gsize _old = old_value_expr; \
+        gsize _add = add; \
+        g_assert(_old + _add >= _old && "stats counter add overflow!"); \
+    } while (0)
+# else
+#  define CHECKED_COUNTER_ADD(old_value_expr, add) ((void)(old_value_expr))
+# endif
+#endif
+
+#if ! defined(CHECKED_COUNTER_SUB)
+# if SYSLOG_NG_ENABLE_DEBUG && USE_CHECKED_COUNTER_OPS
+#  define CHECKED_COUNTER_SUB(old_value_expr, sub) \
+    do { \
+        gsize _old = old_value_expr; \
+        gsize _sub = sub; \
+        g_assert(_old - _sub <= _old && "stats counter sub underflow!"); \
+    } while (0)
+# else
+#  define CHECKED_COUNTER_SUB(old_value_expr, sub) ((void)(old_value_expr))
+# endif
+#endif
+
 #define STATS_COUNTER_MAX_VALUE G_MAXSIZE
 
 typedef struct _StatsCounterItem
@@ -54,7 +83,7 @@ stats_counter_add(StatsCounterItem *counter, gssize add)
   if (counter)
     {
       g_assert(!stats_counter_read_only(counter));
-      atomic_gssize_add(&counter->value, add);
+      CHECKED_COUNTER_ADD(atomic_gssize_add(&counter->value, add), add);
     }
 }
 
@@ -64,7 +93,7 @@ stats_counter_sub(StatsCounterItem *counter, gssize sub)
   if (counter)
     {
       g_assert(!stats_counter_read_only(counter));
-      atomic_gssize_sub(&counter->value, sub);
+      CHECKED_COUNTER_SUB(atomic_gssize_sub(&counter->value, sub), sub);
     }
 }
 
@@ -74,7 +103,7 @@ stats_counter_inc(StatsCounterItem *counter)
   if (counter)
     {
       g_assert(!stats_counter_read_only(counter));
-      atomic_gssize_inc(&counter->value);
+      CHECKED_COUNTER_ADD(atomic_gssize_inc(&counter->value), 1);
     }
 }
 
@@ -84,7 +113,7 @@ stats_counter_dec(StatsCounterItem *counter)
   if (counter)
     {
       g_assert(!stats_counter_read_only(counter));
-      atomic_gssize_dec(&counter->value);
+      CHECKED_COUNTER_SUB(atomic_gssize_dec(&counter->value), 1);
     }
 }
 
