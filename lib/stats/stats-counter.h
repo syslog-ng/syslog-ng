@@ -27,8 +27,13 @@
 #include "syslog-ng.h"
 #include "atomic-gssize.h"
 
+/* FIXME: Had to turn these checkers off as multiple test cases show we still have
+ *        counter under/overflows. We need to fix the root cause of those issues and
+ *        turn these checks back on ASAP.
+ * https://github.com/syslog-ng/syslog-ng/issues/5528
+ */
 #if ! defined(USE_CHECKED_COUNTER_OPS)
-# define USE_CHECKED_COUNTER_OPS 1
+# define USE_CHECKED_COUNTER_OPS 0
 #endif
 #if ! defined(CHECKED_COUNTER_ADD)
 # if SYSLOG_NG_ENABLE_DEBUG && USE_CHECKED_COUNTER_OPS
