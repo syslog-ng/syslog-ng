@@ -25,7 +25,7 @@
 import logging
 
 try:
-    from _syslogng import InternalHandler, TRACE
+    from _syslogng import InternalHandler, TRACE, Logger
 
 except ImportError:
     import warnings
@@ -33,8 +33,9 @@ except ImportError:
                   "thus some of the functionality is not available. "
                   "Defining fake classes for those exported by the underlying syslog-ng code")
 
-    TRACE = logging.DEBUG // 2
     InternalHandler = logging.NullHandler
+    TRACE = logging.DEBUG // 2
+    Logger = logging.Logger
 
 
 class InternalLogger(logging.Logger):
@@ -44,11 +45,9 @@ class InternalLogger(logging.Logger):
 
 
 if InternalHandler is not logging.NullHandler:
-    logging.addLevelName(TRACE, "TRACE")
     logging.setLoggerClass(InternalLogger)
-
     logger = logging.getLogger()
+
     handler = InternalHandler()
-    formatter = logging.Formatter('python-%(name)s: %(message)s')
-    handler.setFormatter(formatter)
+    handler.setFormatter(logging.Formatter('python-%(name)s: %(message)s'))
     logger.addHandler(handler)
