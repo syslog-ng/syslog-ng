@@ -78,17 +78,21 @@ exit:
 
 static void _py_add_logging_level(PyObject* m, const gchar* level_name, glong level_value)
 {
+  PyObject *add_level_function = NULL;
+  PyObject *add_level_retval = NULL;
+
   msg_debug("registering new logging level with addLevelName()", evt_tag_str("level_name", level_name),
             evt_tag_long("level_value", level_value));
 
-  if (!_py_get_attr_or_null(m, "addLevelName"))
+  add_level_function = _py_get_attr_or_null(m, "addLevelName");
+  if (!add_level_function)
     {
       msg_error("failed to add new logging level with addLevelName(): missing method", evt_tag_str("level_name", level_name),
                 evt_tag_long("level_value", level_value));
-      return;
+      goto exit;
     }
 
-  PyObject_CallMethod(m, "addLevelName", "(ls)", level_value, level_name);
+  add_level_retval = PyObject_CallFunction(add_level_function, "(ls)", level_value, level_name);
   if (PyErr_Occurred())
     {
       gchar buf[256];
@@ -97,6 +101,10 @@ static void _py_add_logging_level(PyObject* m, const gchar* level_name, glong le
                     level_value));
       _py_finish_exception_handling();
     }
+
+exit:
+  Py_XDECREF(add_level_function);
+  Py_XDECREF(add_level_retval);
 }
 
 int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds)
@@ -107,7 +115,8 @@ int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds)
   PyObject *init_function = NULL;
 
   logging_module = _py_do_import("logging");
-  if (!logging_module) return -1;
+  if (!logging_module)
+    return ret;
 
   // super(InternalHandler, self)
   super = PyObject_CallFunctionObjArgs(
