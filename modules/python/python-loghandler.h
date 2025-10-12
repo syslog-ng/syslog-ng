@@ -22,11 +22,11 @@
  *
  */
 
-#ifndef _SNG_PYTHON_LOGGER_H
-#define _SNG_PYTHON_LOGGER_H
+#ifndef _SNG_PYTHON_LOGHANDLER_H
+#define _SNG_PYTHON_LOGHANDLER_H
 
 #include "python-module.h"
 
-void py_logger_global_init(void);
+void py_loghandler_global_init(void);
 
 #endif
