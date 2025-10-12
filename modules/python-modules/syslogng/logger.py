@@ -24,6 +24,13 @@
 
 import logging
 
+
+class InternalLogger(logging.Logger):
+    def trace(self, msg, *args, **kwargs):
+        if self.isEnabledFor(TRACE):
+            self._log(TRACE, msg, args, **kwargs)
+
+
 try:
     from _syslogng import InternalHandler, TRACE, Logger
 
@@ -35,13 +42,7 @@ except ImportError:
 
     InternalHandler = logging.NullHandler
     TRACE = logging.DEBUG // 2
-    Logger = logging.Logger
-
-
-class InternalLogger(logging.Logger):
-    def trace(self, msg, *args, **kwargs):
-        if self.isEnabledFor(TRACE):
-            self._log(TRACE, msg, args, **kwargs)
+    Logger = InternalLogger
 
 
 if InternalHandler is not logging.NullHandler:
