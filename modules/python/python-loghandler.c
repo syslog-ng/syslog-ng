@@ -76,38 +76,49 @@ exit:
   return level_value;
 }
 
-static void _py_add_logging_level(PyObject* m, const gchar* level_name, glong level_value) {
-  msg_debug("registering new logging level with addLevelName()", evt_tag_str("level_name", level_name), evt_tag_long("level_value", level_value));
+static void _py_add_logging_level(PyObject* m, const gchar* level_name, glong level_value)
+{
+  msg_debug("registering new logging level with addLevelName()", evt_tag_str("level_name", level_name),
+            evt_tag_long("level_value", level_value));
 
-  if (!_py_get_attr_or_null(m, "addLevelName")) {
-    msg_error("failed to add new logging level with addLevelName(): missing method", evt_tag_str("level_name", level_name), evt_tag_long("level_value", level_value));
-    return;
-  }
+  if (!_py_get_attr_or_null(m, "addLevelName"))
+    {
+      msg_error("failed to add new logging level with addLevelName(): missing method", evt_tag_str("level_name", level_name),
+                evt_tag_long("level_value", level_value));
+      return;
+    }
 
   PyObject_CallMethod(m, "addLevelName", "(ls)", level_value, level_name);
-  if (PyErr_Occurred()) {
-    gchar buf[256];
-    msg_error("failed to add new logging level with addLevelName(): method raised exception", evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))), evt_tag_str("level_name", level_name), evt_tag_long("level_value", level_value));
-    _py_finish_exception_handling();
-  }
+  if (PyErr_Occurred())
+    {
+      gchar buf[256];
+      msg_error("failed to add new logging level with addLevelName(): method raised exception", evt_tag_str("exception",
+                _py_format_exception_text(buf, sizeof(buf))), evt_tag_str("level_name", level_name), evt_tag_long("level_value",
+                    level_value));
+      _py_finish_exception_handling();
+    }
 }
 
-static void _py_set_logging_level_by_value(PyObject* self, glong level_value) {
-  msg_debug("setting new logging level by log level value with setLevel()", evt_tag_long("level_value", level_value));
+int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds)
+{
+  int ret = -1;
+  PyObject *logging_module = NULL;
+  PyObject *super = NULL;
+  PyObject *init_function = NULL;
 
-  if (!_py_get_attr_or_null(self, "setLevel")) {
-    msg_warning("failed to set logging level with setLevel(): missing method");
-  }
-  
-  PyObject_CallMethod(self, "setLevel", "(l)", level_value);
-  if (PyErr_Occurred()) {
-    gchar buf[256];
-    msg_error("failed to set logging level with setLevel(): method raised exception", evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
-  }
-}
+  logging_module = _py_do_import("logging");
+  if (!logging_module) return -1;
 
-int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds) {
+  // super(InternalHandler, self)
+  super = PyObject_CallFunctionObjArgs(
+            (PyObject *)&PySuper_Type, (PyObject *)Py_TYPE(self), self, NULL);
+  if (!super)
+    goto exit;
+
+  init_function = _py_get_attr_or_null(super, "__init__");
+  if (!init_function)
+    goto exit;
+
   glong level_value;
   if (trace_flag)
     level_value = py_log_levels.trace;
@@ -116,8 +127,16 @@ int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds) {
   else
     level_value = py_log_levels.info;
 
-  _py_set_logging_level_by_value(self, level_value);
-  return 0;
+  PyObject *init_ret = PyObject_CallFunction(init_function, "(l)", level_value);
+  ret = init_ret ? 0 : -1;
+
+exit:
+  Py_XDECREF(init_ret);
+  Py_XDECREF(logging_module);
+  Py_XDECREF(super);
+  Py_XDECREF(init_function);
+
+  return ret;
 }
 
 PyObject *py_loghandler_emit(PyObject *self, PyObject *args)
@@ -137,7 +156,7 @@ PyObject *py_loghandler_emit(PyObject *self, PyObject *args)
     goto exit_error;
 
   glong level = _py_fetch_log_level(record, "levelno");
-  if (level < 0) 
+  if (level < 0)
     goto exit_normal;
 
   if (level >= py_log_levels.error)

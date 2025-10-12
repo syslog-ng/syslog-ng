@@ -46,7 +46,7 @@ PyObject *_py_invoke_method_by_name(PyObject *instance, const gchar *method_name
 void _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
                                     const gchar *module);
 void _py_invoke_void_method_by_name_with_options(PyObject *instance, const gchar *method_name,
-                                            const PythonOptions *options, const gchar *class, const gchar *module);
+                                                 const PythonOptions *options, const gchar *class, const gchar *module);
 gboolean _py_invoke_bool_method_by_name_with_options(PyObject *instance, const gchar *method_name,
                                                      const PythonOptions *options, const gchar *class,
                                                      const gchar *module);

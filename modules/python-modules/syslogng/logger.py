@@ -48,7 +48,7 @@ except ImportError:
 if InternalHandler is not logging.NullHandler:
     logging.setLoggerClass(InternalLogger)
     logger = logging.getLogger()
-
     handler = InternalHandler()
+    logger.setLevel(handler.level)
     handler.setFormatter(logging.Formatter('python-%(name)s: %(message)s'))
     logger.addHandler(handler)
