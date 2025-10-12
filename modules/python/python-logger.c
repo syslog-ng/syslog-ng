@@ -24,7 +24,6 @@
 
 #include "python-logger.h"
 
-#include "object.h"
 #include "python-helpers.h"
 #include "messages.h"
 
