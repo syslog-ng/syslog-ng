@@ -129,9 +129,9 @@ int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds)
 
   PyObject *init_ret = PyObject_CallFunction(init_function, "(l)", level_value);
   ret = init_ret ? 0 : -1;
+  Py_DECREF(init_ret);
 
 exit:
-  Py_XDECREF(init_ret);
   Py_XDECREF(logging_module);
   Py_XDECREF(super);
   Py_XDECREF(init_function);
