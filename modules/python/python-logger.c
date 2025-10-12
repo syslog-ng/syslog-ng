@@ -37,6 +37,7 @@ typedef struct _PyLogLevels
 } PyLogLevels;
 
 static PyLogLevels py_log_levels;
+static PyType_Spec py_handler_spec;
 
 glong _py_fetch_log_level(PyObject *obj, const gchar *level)
 {
@@ -73,6 +74,31 @@ glong _py_fetch_log_level(PyObject *obj, const gchar *level)
 exit:
   Py_XDECREF(py_level_value);
   return level_value;
+}
+
+PyObject *py_logger_init(PyObject *self, PyObject *args) {
+  glong level_value;
+  if (trace_flag)
+    level_value = py_log_levels.trace;
+  else if (debug_flag)
+    level_value = py_log_levels.debug;
+  else
+    level_value = py_log_levels.info;
+
+  PythonOptions *options = python_options_new();
+
+  PythonOption *level = python_option_long_new("level", level_value);
+  python_options_add_option(options, level);
+  python_option_unref(level);
+
+  if (!_py_get_attr_or_null(self, "setLevel")) {
+    msg_warning("failed to set logging level with setLevel(): missing method", evt_tag_str("class", py_handler_spec.name), evt_tag_str("module", "_syslogng"));
+  } else {
+    _py_invoke_void_method_by_name_with_options(self, "setLevel", options, py_handler_spec.name, "_syslogng");
+  }
+  
+  python_options_free(options);
+  Py_RETURN_NONE;
 }
 
 PyObject *py_logger_emit(PyObject *self, PyObject *args)
@@ -124,6 +150,7 @@ static PyType_Slot py_handler_slots[] =
 {
   {Py_tp_doc,     "Those messages can be captured by internal() source."},
   {Py_tp_new,     PyType_GenericNew},
+  {Py_tp_init, py_logger_init},
   {Py_tp_dealloc,  py_slng_generic_dealloc},
   {Py_tp_methods, py_handler_methods},
   {0, 0}
