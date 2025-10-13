@@ -32,6 +32,7 @@
 
 GMutex console_lock;
 gboolean using_initial_console = TRUE;
+gboolean console_destroyed = FALSE;
 const gchar *console_prefix;
 gint initial_console_fds[3];
 gint stolen_fds;
@@ -45,7 +46,7 @@ _console_is_initial(void)
 
   /* the lock only serves a memory barrier but is not a real synchronization */
   g_mutex_lock(&console_lock);
-  result = using_initial_console;
+  result = using_initial_console && FALSE == console_destroyed;
   g_mutex_unlock(&console_lock);
   return result;
 }
@@ -212,6 +213,37 @@ console_release(void)
 {
   g_mutex_lock(&console_lock);
   _console_release();
+  g_mutex_unlock(&console_lock);
+}
+
+void
+console_destroy(void)
+{
+  g_mutex_lock(&console_lock);
+
+  if (console_destroyed)
+    goto exit;
+
+  gint devnull_fd = open("/dev/null", O_RDONLY);
+  if (devnull_fd >= 0)
+    {
+      dup2(devnull_fd, STDIN_FILENO);
+      close(devnull_fd);
+    }
+  devnull_fd = open("/dev/null", O_WRONLY);
+  if (devnull_fd >= 0)
+    {
+      dup2(devnull_fd, STDOUT_FILENO);
+      dup2(devnull_fd, STDERR_FILENO);
+      close(devnull_fd);
+    }
+  clearerr(stdin);
+  clearerr(stdout);
+  clearerr(stderr);
+
+  console_destroyed = TRUE;
+
+exit:
   g_mutex_unlock(&console_lock);
 }
 
