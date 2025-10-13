@@ -52,6 +52,7 @@
 #include <stdlib.h>
 #include <iv_work.h>
 #include <openssl/sha.h>
+#include <openssl/evp.h>
 
 #define CONFIG_HASH_LENGTH SHA256_DIGEST_LENGTH
 #define CONFIG_HASH_STR_LENGTH (CONFIG_HASH_LENGTH * 2 + 1)
@@ -662,7 +663,13 @@ cfg_format_id(GlobalConfig *self, GString *id)
 static void
 cfg_hash_config(GlobalConfig *self)
 {
-  SHA256((const guchar *) self->preprocess_config->str, self->preprocess_config->len, self->config_hash);
+  EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
+  if (mdctx) {
+    EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
+    EVP_DigestUpdate(mdctx, self->preprocess_config->str, self->preprocess_config->len);
+    EVP_DigestFinal_ex(mdctx, self->config_hash, NULL);
+    EVP_MD_CTX_free(mdctx);
+  }
 }
 
 gboolean
