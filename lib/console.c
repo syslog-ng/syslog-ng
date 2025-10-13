@@ -36,41 +36,10 @@ const gchar *console_prefix;
 gint initial_console_fds[3];
 gint stolen_fds;
 
-/**
- * console_printf:
- * @fmt: format string
- * @...: arguments to @fmt
- *
- * This function sends a message to the client preferring to use the stderr
- * channel as long as it is available and switching to using syslog() if it
- * isn't. Generally the stderr channell will be available in the startup
- * process and in the beginning of the first startup in the
- * supervisor/daemon processes. Later on the stderr fd will be closed and we
- * have to fall back to using the system log.
- **/
-void
-console_printf(const gchar *fmt, ...)
-{
-  gchar buf[2048];
-  va_list ap;
-
-  va_start(ap, fmt);
-  g_vsnprintf(buf, sizeof(buf), fmt, ap);
-  va_end(ap);
-  if (console_is_initial())
-    fprintf(stderr, "%s: %s\n", console_prefix, buf);
-  else
-    {
-      openlog(console_prefix, LOG_PID, LOG_DAEMON);
-      syslog(LOG_CRIT, "%s\n", buf);
-      closelog();
-    }
-}
-
 
 /* NOTE: this is not synced with any changes and is just an indication whether we already acquired the console */
-gboolean
-console_is_initial(void)
+static gboolean
+_console_is_initial(void)
 {
   gboolean result;
 
@@ -129,6 +98,33 @@ _console_release(void)
       initial_console_fds[2] = -1;
     }
   using_initial_console = TRUE;
+}
+
+/**
+ * This function sends a message to the client preferring to use the stderr
+ * channel as long as it is available and switching to using syslog() if it
+ * isn't. Generally the stderr channell will be available in the startup
+ * process and in the beginning of the first startup in the
+ * supervisor/daemon processes. Later on the stderr fd will be closed and we
+ * have to fall back to using the system log.
+ **/
+void
+console_printf(const gchar *fmt, ...)
+{
+  gchar buf[2048];
+  va_list ap;
+
+  va_start(ap, fmt);
+  g_vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  if (_console_is_initial())
+    fprintf(stderr, "%s: %s\n", console_prefix, buf);
+  else
+    {
+      openlog(console_prefix, LOG_PID, LOG_DAEMON);
+      syslog(LOG_CRIT, "%s\n", buf);
+      closelog();
+    }
 }
 
 /* re-acquire a console after startup using an array of fds */
@@ -208,8 +204,6 @@ exit:
 }
 
 /**
- * console_release:
- *
  * Restore input/output/error. This function is idempotent, can be
  * called any number of times without harm.
  **/
