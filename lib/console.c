@@ -203,7 +203,18 @@ void
 console_release(void)
 {
   g_mutex_lock(&console_lock);
+
+  gint fds_to_restore = stolen_fds;
+
   _console_release();
+
+  GString *stolen_fn_names = _get_fn_names(fds_to_restore);
+  gchar *restore_message_on_orig_console = g_strdup_printf("[Console(%s) restored]\n",
+                                                           stolen_fn_names->str);
+  (void) write(STDOUT_FILENO, restore_message_on_orig_console, strlen(restore_message_on_orig_console));
+  g_free(restore_message_on_orig_console);
+  g_string_free(stolen_fn_names, TRUE);
+
   g_mutex_unlock(&console_lock);
 }
 
