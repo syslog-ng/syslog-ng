@@ -37,6 +37,8 @@ const gchar *console_prefix;
 gint initial_console_fds[3];
 gint stolen_fds;
 
+static const gint std_fds[] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
+static const gint std_fd_count = G_N_ELEMENTS(std_fds);
 
 /* NOTE: this is not synced with any changes and is just an indication whether we already acquired the console */
 static gboolean
@@ -80,24 +82,14 @@ _console_release(void)
   if (using_initial_console)
     return;
 
-  if (initial_console_fds[0] >= 0)
-    {
-      dup2(initial_console_fds[0], STDIN_FILENO);
-      close(initial_console_fds[0]);
-      initial_console_fds[0] = -1;
-    }
-  if (initial_console_fds[1] >= 0)
-    {
-      dup2(initial_console_fds[1], STDOUT_FILENO);
-      close(initial_console_fds[1]);
-      initial_console_fds[1] = -1;
-    }
-  if (initial_console_fds[2] >= 0)
-    {
-      dup2(initial_console_fds[2], STDERR_FILENO);
-      close(initial_console_fds[2]);
-      initial_console_fds[2] = -1;
-    }
+  for (int i = 0; i < std_fd_count; i++)
+    if (initial_console_fds[i] >= 0)
+      {
+        dup2(initial_console_fds[i], std_fds[i]);
+        close(initial_console_fds[i]);
+        initial_console_fds[i] = -1;
+      }
+
   using_initial_console = TRUE;
 }
 
@@ -145,7 +137,6 @@ console_acquire_from_fds(gint fds[3], gint fds_to_steal)
     goto exit;
 
   gboolean failed = FALSE;
-  const gint std_fd_count = G_N_ELEMENTS(initial_console_fds);
   GString *stolen_fn_names = _get_fn_names(fds_to_steal);
   gchar *takeover_message_on_old_console = g_strdup_printf("[Console(%s) taken over, no further output here]\n",
                                                            stolen_fn_names->str);
