@@ -1,6 +1,11 @@
 
 #find -name '*.py'|awk '{ print "\ttests/light/functional_tests/"substr($0,3); }'|sort
 EXTRA_DIST += \
+	tests/light/functional_tests/bindings/python/conftest.py \
+	tests/light/functional_tests/bindings/python/logger/parser.py \
+	tests/light/functional_tests/bindings/python/logger/test_internal_logging.py \
+	tests/light/functional_tests/bindings/python/parser/parser.py \
+	tests/light/functional_tests/bindings/python/parser/test_python_parser.py \
 	tests/light/functional_tests/config_change/test_backtick_substitution.py \
 	tests/light/functional_tests/config_change/test_manipulating_config_between_reload.py \
 	tests/light/functional_tests/config_change/test_python_custom_options.py \

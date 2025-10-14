@@ -93,7 +93,7 @@ py_msg_trace(PyObject *obj, PyObject *args)
 
 int py_logger_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
-  msg_warning("WARNING: " VERSION_4_0 " deprecates usage of Logger class. Use logging facilities to log your messages.");
+  msg_warning("WARNING: " VERSION_4_0 " deprecates usage of Logger class. Use default python logging facilities instead");
   return 0;
 }
 

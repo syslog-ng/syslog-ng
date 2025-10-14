@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2019 Balabit
- * Copyright (c) 2019 Kokan
+ * Copyright (c) 2025 Narkhov Evgeny <evgenynarkhov2@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

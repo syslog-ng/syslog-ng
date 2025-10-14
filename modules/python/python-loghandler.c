@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2019 Balabit
- * Copyright (c) 2019 Kokan
+ * Copyright (c) 2025 Narkhov Evgeny <evgenynarkhov2@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -221,8 +220,6 @@ void py_loghandler_global_init(void)
   if (!logging_module)
     goto exit;
 
-  // Handler class is fetched here only to be assigned as tp_base later (which
-  // expects strong reference), so cleanup of this pointer os not required.
   PyObject *handler = PyObject_GetAttrString(logging_module, "Handler");
   if (!handler)
     {
