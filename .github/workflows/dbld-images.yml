@@ -29,6 +29,10 @@ on:
         required: false
         default: "false"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: build (${{ matrix.image }}-${{ matrix.arch }})
@@ -104,6 +108,10 @@ jobs:
           - image: devshell
             platform: ubuntu-22.04-arm
             arch: arm64
+          # a special one, the single i386 test only image
+          - image: devshell
+            platform: ubuntu-22.04
+            arch: i386
 
     steps:
       - name: Checkout source code
@@ -114,7 +122,7 @@ jobs:
           CONTAINER_REGISTRY="ghcr.io/${{ github.repository_owner }}"
           CONTAINER_REGISTRY="$(echo "$CONTAINER_REGISTRY" | tr '[:upper:]' '[:lower:]')"
           CONTAINER_ARCH=${{ matrix.arch }}
-          CONTAINER_NAME_SUFFIX="$([ ${{ matrix.arch }} = amd64 ] && echo '' || echo '-arm64')"
+          CONTAINER_NAME_SUFFIX="$([ ${{ matrix.arch }} = amd64 ] && echo '' || echo '-${{ matrix.arch }}')"
 
           . .github/workflows/gh-tools.sh
           gh_export CONTAINER_REGISTRY CONTAINER_ARCH CONTAINER_NAME_SUFFIX

@@ -32,7 +32,7 @@ BUILDER_IMAGES=	\
 	kira	\
 	tarball
 
-IMAGES=${BUILDER_IMAGES} devshell devshell-arm64
+IMAGES=${BUILDER_IMAGES} devshell devshell-arm64 devshell-i386
 DEFAULT_IMAGE ?= ubuntu-noble
 TARBALL_IMAGE ?= tarball
 DEFAULT_DEB_IMAGE=ubuntu-noble
@@ -243,6 +243,7 @@ image-%:
 	BASE_IMAGE=$*; \
 	BASE_IMAGE=$${BASE_IMAGE%-amd64}; \
 	BASE_IMAGE=$${BASE_IMAGE%-arm64}; \
+	BASE_IMAGE=$${BASE_IMAGE%-i386}; \
 	DOCKERFILE=$(DBLD_DIR)/images/$${BASE_IMAGE}.dockerfile; \
 	JENKINS_URL=$${JENKINS_URL%-}; \
 	$(DBLD_DIR)/prepare-image-build $*; \

@@ -207,6 +207,8 @@ scratch_buffers_allocator_deinit(void)
                   evt_tag_long("bytes", scratch_buffers_bytes_reported));
     }
 
+  /* apply possibly pending stat updates before removing our values */
+  scratch_buffers_update_stats();
   /* remove our values from stats */
   stats_counter_sub(stats_scratch_buffers_count, scratch_buffers->len);
   stats_counter_sub(stats_scratch_buffers_bytes, scratch_buffers_bytes_reported);

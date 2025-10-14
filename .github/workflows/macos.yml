@@ -4,29 +4,33 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [ "develop", "master" ]
+    branches: ["develop", "master"]
   schedule:
-    - cron: '00 21 * * *'
+    - cron: "00 21 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   general:
     strategy:
+      fail-fast: false
       matrix:
         # https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners
-        # 13 - X86_64
-        # 14 or latest - Arm64 M1
-        version: [13, 14]
-        build-tool: [ autotools, cmake ]
-        compiler: [ {cpp: clang++, c: clang}, {cpp: g++, c: gcc} ]
-        macports-version: [2.10.1]
+        # 13, 14-intel - X86_64
+        # 14, 15 or latest, 26 - Arm64 M1
+        version: [14, 15, 15-intel, 26]
+        build-tool: [autotools, cmake]
+        compiler: [{ cpp: clang++, c: clang }, { cpp: g++, c: gcc }]
+        macports-version: [2.11.5]
+        use-brew-cache: [false]
+        use-ports-cache: [true]
         exclude:
-          - version: 14
-            compiler: {cpp: clang++, c: clang}
-          # FIXME: temp exclude of failed linking again with cmake + g++ against GRPC dependenncies
-          - compiler: {cpp: g++, c: gcc}
-            build-tool: cmake
-      fail-fast: false
-
+          # NOTE: This can be excluded to speed up the testing matrix, as clang is the default compiler on macOS 26
+          #       and it is used for development too on an everyday basis, on arm64.
+          - version: 26
+            compiler: { cpp: clang++, c: clang }
     runs-on: macOS-${{ matrix.version }}
     name: macOS${{ matrix.version }}-${{ matrix.version == '14' && 'arm64' || 'amd64' }}, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
     env:
@@ -43,15 +47,16 @@ jobs:
         run: |
           sudo xcode-select -s /Applications/Xcode_15.2.app
 
-      - name: Unlinking preinstalled Python (workaround)
-              # The python@3 brew package has to be installed and linked system-wide (it's a dependency of glib and syslog-ng)
-              # The macos-13 GitHub runner has Python preinstalled as a pkg, this prevents linking the python@3
-              # brew package, even when linking is forced. `brew "python@3", link: true, force: true`
-              # also, brew cannot update the links even these cretated by itself for an earlier python version
+      - name:
+          Unlinking preinstalled Python (workaround)
+          # The python@3 brew package has to be installed and linked system-wide (it's a dependency of glib and syslog-ng)
+          # The macos-13 GitHub runner has Python preinstalled as a pkg, this prevents linking the python@3
+          # brew package, even when linking is forced. `brew "python@3", link: true, force: true`
+          # also, brew cannot update the links even these cretated by itself for an earlier python version
         run: |
           find /usr/local/bin/ -lname "*Python.framework*" -delete
 
-     # Compose cache keys dynamically
+      # Compose cache keys dynamically
       - name: Compose cache keys
         run: |
           echo "HOMEBREW_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-homebrew-${{ runner.arch }}-${{ hashFiles('contrib/Brewfile') }}" >> $GITHUB_ENV
@@ -64,6 +69,7 @@ jobs:
       # Restore Homebrew dependencies from cache
       # The cache update is automatic as a "Post" step at the job end
       - name: Cache Homebrew dependencies
+        if: matrix.use-brew-cache
         uses: actions/cache@v3
         with:
           path: /Users/runner/Library/Caches/Homebrew
@@ -77,17 +83,15 @@ jobs:
       #       One drawback is the size of the cache image that is ~4GB (not compressed) with the current Brewfile package list.
       - name: Install Homebrew dependencies
         run: |
-          if [ "${{ runner.arch }}" = "ARM64" ]; then
-            brew update --auto-update
-          else
+          if [ "${{ runner.arch }}" = "ARM64" ] || [ "${{ github.event_name }}" = "schedule" ]; then
             if [ "${{ github.event_name }}" = "schedule" ]; then
               echo "Scheduled run → forcing brew update"
-              brew update --auto-update
-            else
-              echo "Non-scheduled run → skipping brew update"
-              export HOMEBREW_NO_AUTO_UPDATE=1
-              export HOMEBREW_NO_INSTALL_CLEANUP=1
             fi
+            brew update --auto-update
+          else
+            echo "Non-scheduled run → skipping brew update"
+            export HOMEBREW_NO_AUTO_UPDATE=1
+            export HOMEBREW_NO_INSTALL_CLEANUP=1
           fi
           brew bundle --force --file=contrib/Brewfile
 
@@ -95,6 +99,7 @@ jobs:
       # Restore MacPorts user/group info from separate cache
       # The cache update is automatic as a "Post" step at the job end
       - name: Cache MacPorts user/group info
+        if: matrix.use-ports-cache
         id: macports-user-info-restore
         uses: actions/cache@v3
         with:
@@ -105,6 +110,7 @@ jobs:
       # Restore MacPorts self-made archive from cache (if available)
       # NOTE: We cannot use the built-in restore, as that can not work as root; we handle extraction manually
       - name: Cache MacPorts archive
+        if: matrix.use-ports-cache
         uses: actions/cache@v3
         with:
           path: ${{ env.MACPORTS_ARCHIVE_FILE }}
@@ -153,8 +159,16 @@ jobs:
             sudo chown -R macports:macports /opt/local
           else
             echo "Cache missing — installing MacPorts..."
-            OS_NAME=$([[ ${{ matrix.version }} -eq 13 ]] && echo "Ventura" || echo "Sonoma")
-            MACPORTS_PKG_NAME=MacPorts-${{ matrix.macports-version }}-${{ matrix.version }}-${OS_NAME}.pkg
+            RAW_VERSION="${{ matrix.version }}"
+            MAJOR_VERSION="${RAW_VERSION%%-*}"
+            case "$MAJOR_VERSION" in
+              13) OS_NAME="Ventura" ;;
+              14) OS_NAME="Sonoma" ;;
+              15) OS_NAME="Sequoia" ;;
+              26) OS_NAME="Tahoe" ;;
+              *)  OS_NAME="Unknown" ;;
+            esac
+            MACPORTS_PKG_NAME=MacPorts-${{ matrix.macports-version }}-${MAJOR_VERSION}-${OS_NAME}.pkg
             MACPORTS_URL=https://github.com/macports/macports-base/releases/download/v${{ matrix.macports-version }}/${MACPORTS_PKG_NAME}
 
             wget "$MACPORTS_URL" -O "$MACPORTS_ARCHIVE_DIR/$MACPORTS_PKG_NAME"
@@ -205,6 +219,7 @@ jobs:
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
+            --enable-colored-log
             --enable-extra-warnings
             --enable-debug
             --prefix=${SYSLOG_NG_INSTALL_DIR}
@@ -259,11 +274,27 @@ jobs:
       - name: autotools configure
         if: matrix.build-tool == 'autotools'
         run: |
+          # Exclude of failing linking against GRPC dependencies when compiling with g++
+          # g++ uses libstdc++, while grpc is compiled with libc++ on macOS, so the linking fails
+          # with undefined symbols.
+          # The proper solution is to compile grpc from source with g++, but that is way too long
+          # and complicated for a CI job.
+          if [ $CXX = g++ ]; then
+            CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --disable-grpc"
+          fi
           ./configure ${CONFIGURE_FLAGS}
 
       - name: cmake configure
         if: matrix.build-tool == 'cmake'
         run: |
+          # Exclude of failing linking against GRPC dependencies when compiling with g++
+          # g++ uses libstdc++, while grpc is compiled with libc++ on macOS, so the linking fails
+          # with undefined symbols.
+          # The proper solution is to compile grpc from source with g++, but that is way too long
+          # and complicated for a CI job.
+          if [ $CXX = g++ ]; then
+            CMAKE_CONFIGURE_FLAGS="${CMAKE_CONFIGURE_FLAGS} -DENABLE_GRPC=OFF"
+          fi
           cmake --install-prefix "${SYSLOG_NG_INSTALL_DIR}" -B build . ${CMAKE_CONFIGURE_FLAGS}
 
       - name: cmake install
@@ -272,11 +303,23 @@ jobs:
           set -e
 
           cmake --build ./build -j ${THREADS} --target install
-          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV 2>&1 |sort
+
+          echo ""
+          echo "Checking produced installation..."
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV > syslog-ng.unsorted.log 2>&1
+          sort syslog-ng.unsorted.log > syslog-ng.log
+
+          cat syslog-ng.log
+          # Check for failing modules
+          if grep -q "Error opening plugin module;" syslog-ng.log; then
+            echo "Modules failing to load:"
+            grep "Error opening plugin module;" syslog-ng.log
+            exit 1
+          fi
 
       - name: cmake check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
-        if: matrix.build-tool == 'cmake' && matrix.version != 14
+        if: matrix.build-tool == 'cmake' && matrix.version == '15-intel'
         run: |
           cmake --build ./build -j ${THREADS} --target check
 
@@ -291,11 +334,23 @@ jobs:
               make V=1; \
               return $S; \
             }
-          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV 2>&1 |sort
+
+          echo ""
+          echo "Checking produced installation..."
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -FdevtV > syslog-ng.unsorted.log 2>&1
+          sort syslog-ng.unsorted.log > syslog-ng.log
+
+          cat syslog-ng.log
+          # Check for failing modules
+          if grep -q "Error opening plugin module;" syslog-ng.log; then
+            echo "Modules failing to load:"
+            grep "Error opening plugin module;" syslog-ng.log
+            exit 1
+          fi
 
       - name: make check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
-        if: matrix.build-tool == 'autotools' && matrix.version != 14
+        if: matrix.build-tool == 'autotools' && matrix.version == '15-intel'
         run: |
           set -e
 

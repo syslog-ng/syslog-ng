@@ -399,13 +399,15 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 0);
   cr_assert_eq(stats_counter_get(queue_2->metrics.owned.queued_messages), 0);
 
-  stats_cluster_key_builder_free(driver_sck_builder);
-  stats_cluster_key_builder_free(queue_sck_builder);
   log_queue_disk_stop(queue_1, &persistent);
   log_queue_disk_stop(queue_2, &persistent);
   log_queue_unref(queue_1);
   log_queue_unref(queue_2);
   disk_queue_options_destroy(&options);
+
+  stats_cluster_key_builder_free(driver_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+
   unlink(filename_1);
   unlink(filename_1_corrupted);
   unlink(filename_2);

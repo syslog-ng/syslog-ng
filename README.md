@@ -172,20 +172,20 @@ The packages and the APT repository are provided "as is" without warranty of any
 
 syslog-ng packages are released for the following distribution versions:
 
-| Distro version | sources.list component name | Arch |
-|---|---|---|
-| Ubuntu 25.04 | ubuntu-plucky | x86-64 |
-| Ubuntu 25.04 | ubuntu-plucky-arm64 | arm64 |
-| Ubuntu 24.04 | ubuntu-noble | x86-64 |
-| Ubuntu 24.04 | ubuntu-noble-arm64 | arm64 |
-| Ubuntu 22.04 | ubuntu-jammy | x86-64 |
-| Debian 13 | debian-trixie | x86-64 |
-| Debian 13 | debian-trixie-arm64 | arm64 |
-| Debian 12 | debian-bookworm | x86-64 |
-| Debian 12 | debian-bookworm-arm64 | arm64 |
-| Debian 11 | debian-bullseye | x86-64 |
-| Debian Unstable | debian-sid | x86-64 |
-| Debian Testing | debian-testing | x86-64 |
+| Distro version | sources.list component name | Arch | stable | nightly |
+|---|---|---|---|---|
+| Ubuntu 25.04    | ubuntu-plucky         | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/ubuntu-plucky/binary-amd64/)         | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/ubuntu-plucky/binary-amd64/) |
+| Ubuntu 25.04    | ubuntu-plucky-arm64   | arm64  | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/ubuntu-plucky-arm64/binary-arm64/)   | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/ubuntu-plucky-arm64/binary-arm64/) |
+| Ubuntu 24.04    | ubuntu-noble          | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/ubuntu-noble/binary-amd64/)          | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/ubuntu-noble/binary-amd64/) |
+| Ubuntu 24.04    | ubuntu-noble-arm64    | arm64  | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/ubuntu-noble-arm64/binary-arm64/)    | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/ubuntu-noble-arm64/binary-arm64/) |
+| Ubuntu 22.04    | ubuntu-jammy          | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/ubuntu-jammy/binary-amd64/)          | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/ubuntu-jammy/binary-amd64/) |
+| Debian 13       | debian-trixie         | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-trixie/binary-amd64/)         | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-trixie/binary-amd64/) |
+| Debian 13       | debian-trixie-arm64   | arm64  | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-trixie-arm64/binary-arm64/)   | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-trixie-arm64/binary-arm64/) |
+| Debian 12       | debian-bookworm       | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-bookworm/binary-amd64/)       | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-bookworm/binary-amd64/) |
+| Debian 12       | debian-bookworm-arm64 | arm64  | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-bookworm-arm64/binary-arm64/) | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-bookworm-arm64/binary-arm64/) |
+| Debian 11       | debian-bullseye       | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-bullseye/binary-amd64/)       | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-bullseye/binary-amd64/) |
+| Debian Unstable | debian-sid            | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-sid/binary-amd64/)            | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-sid/binary-amd64/) |
+| Debian Testing  | debian-testing        | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-testing/binary-amd64/)        | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-testing/binary-amd64/) |
 
 #### Adding the APT repository
 
@@ -255,14 +255,14 @@ The packages and the DNF repository are provided "as is" without warranty of any
 
 syslog-ng packages are released for the following distribution versions:
 
-| Distro version | sources.list component name | Arch |
-|---|---|---|
-| RHEL 8 | rhel8 | x86-64 |
-| RHEL 8 | rhel8-arm64 | arm64 |
-| RHEL 9 | rhel9 | x86-64 |
-| RHEL 9 | rhel9-arm64 | arm64 |
-| RHEL 10 | rhel10 | x86-64 |
-| RHEL 10 | rhel10-arm64 | arm64 |
+| Distro version | sources.list component name | Arch | stable | nightly |
+|---|---|---|---|---|
+| RHEL 8  | rhel8        | x86-64 | [stable](https://ose-repo.syslog-ng.com/yum/stable/rhel-8/x86_64/)   | [nightly](https://ose-repo.syslog-ng.com/yum/nightly/rhel-8/x86_64/) |
+| RHEL 8  | rhel8-arm64  | arm64  | [stable](https://ose-repo.syslog-ng.com/yum/stable/rhel-8/aarch64/)  | [nightly](https://ose-repo.syslog-ng.com/yum/nightly/rhel-8/aarch64/) |
+| RHEL 9  | rhel9        | x86-64 | [stable](https://ose-repo.syslog-ng.com/yum/stable/rhel-9/x86_64/)   | [nightly](https://ose-repo.syslog-ng.com/yum/nightly/rhel-9/x86_64/) |
+| RHEL 9  | rhel9-arm64  | arm64  | [stable](https://ose-repo.syslog-ng.com/yum/stable/rhel-9/aarch64/)  | [nightly](https://ose-repo.syslog-ng.com/yum/nightly/rhel-9/aarch64/) |
+| RHEL 10 | rhel10       | x86-64 | [stable](https://ose-repo.syslog-ng.com/yum/stable/rhel-10/x86_64/)  | [nightly](https://ose-repo.syslog-ng.com/yum/nightly/rhel-10/x86_64/) |
+| RHEL 10 | rhel10-arm64 | arm64  | [stable](https://ose-repo.syslog-ng.com/yum/stable/rhel-10/aarch64/) | [nightly](https://ose-repo.syslog-ng.com/yum/nightly/rhel-10/aarch64/) |
 
 #### Adding the DNF repository
 

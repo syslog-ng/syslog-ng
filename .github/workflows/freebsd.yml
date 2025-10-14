@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: '00 21 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   general:
     strategy:
@@ -55,6 +59,7 @@ jobs:
           # -DIVYKIS_SOURCE=internal is switched to system temporally as of https://github.com/buytenh/ivykis/pulls
           CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
+            --enable-colored-log
             --enable-extra-warnings
             --enable-debug
             --prefix=${SYSLOG_NG_INSTALL_DIR}
