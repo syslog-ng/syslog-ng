@@ -113,6 +113,7 @@ pkginclude_HEADERS			+= \
 	lib/cfg-walker.h		\
 	lib/cfg-persist.h		\
 	lib/children.h			\
+	lib/crypto-utils.h	\
 	lib/crypto.h			\
 	lib/dnscache.h			\
 	lib/driver.h			\
@@ -213,6 +214,8 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/cfg-tree.c			\
 	lib/cfg-walker.c		\
 	lib/cfg-persist.c		\
+	lib/crypto.c			\
+	lib/crypto-utils.c	\
 	lib/children.c			\
 	lib/dnscache.c			\
 	lib/driver.c			\
@@ -274,7 +277,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/syslog-names.c		\
 	lib/string-list.c		\
 	lib/ringbuffer.c		\
-	lib/crypto.c			\
 	lib/uuid.c			\
 	lib/userdb.c			\
 	lib/utf8utils.c			\
