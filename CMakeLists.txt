@@ -16,6 +16,11 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 project(syslog-ng C)
 
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # normalize once → POSIX form for file/grep/sed
+    set(WIN_BUILD)
+endif()
+
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
 set(CMAKE_POSITION_INDEPENDENT_CODE 1)
 set(BISON_FLAGS "-Wno-other -Werror=conflicts-sr -Werror=conflicts-rr -Wcounterexamples")
@@ -298,6 +303,9 @@ find_package(FLEX REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(WRAP)
 find_package(LIBCAP)
+if (WIN_BUILD)
+  find_package(LIBNET REQUIRED)
+endif()
 
 include(enable_systemd)
 
