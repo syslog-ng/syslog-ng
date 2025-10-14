@@ -27,8 +27,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <syslog.h>
 #include <errno.h>
+
+#ifndef _WIN32
+  #include <syslog.h>
+#else
+  #include "compat/syslog.h"
+#endif
 
 GMutex console_lock;
 gboolean using_initial_console = TRUE;

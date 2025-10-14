@@ -23,11 +23,21 @@
 #define THREAD_UTILS_H_INCLUDED
 
 #include "syslog-ng.h"
-#include <pthread.h>
 
 #ifdef _WIN32
+/* Avoid pulling old winsock.h and min/max macros */
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>            /* DWORD, HANDLE, THREAD_TERMINATE, CloseHandle */
+#include <processthreadsapi.h>  /* OpenThread, GetCurrentThreadId */
+#include <stdint.h>             /* uintptr_t for the cast */
 typedef DWORD ThreadId;
 #else
+#include <pthread.h>
 typedef pthread_t ThreadId;
 #endif
 
@@ -57,7 +67,13 @@ thread_cancel(ThreadId tid)
 #ifndef _WIN32
   pthread_cancel(tid);
 #else
-  TerminateThread(tid, 0);
+  /* Convert thread ID -> HANDLE, then terminate */
+  HANDLE h = OpenThread(THREAD_TERMINATE, FALSE, (DWORD)(uintptr_t)tid);
+  if (h)
+    {
+      TerminateThread(h, 0);
+      CloseHandle(h);
+    }
 #endif
 }
 

@@ -35,7 +35,7 @@
 #include "plugin-types.h"
 
 #include <string.h>
-#include <glob.h>
+#include "compat/glob.h"
 #include <sys/stat.h>
 
 /* include header for generated lexer */

@@ -30,6 +30,11 @@
 #include <stdlib.h>
 #include "str-utils.h"
 
+/* put near the top, after includes */
+#if defined(_WIN32) && defined(ERROR)
+  #undef ERROR
+#endif
+
 extern int main_debug;
 
 /* defined in the parser */

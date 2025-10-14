@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "transport/transport-aux-data.h"
+#include "compat/uio.h"
 
 typedef enum _LogTransportIOCond
 {

@@ -28,9 +28,10 @@
 #include "tls-support.h"
 
 #include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include "compat/socket.h"
+#ifndef _WIN32
+  #include <netinet/in.h>
+#endif
 #include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>

@@ -61,6 +61,14 @@
 # endif
 #endif
 
+/* On Windows, prefer a plain integer-constant for preprocessor use. */
+#if defined(_WIN32)
+  #include <stdint.h>
+  #define STATS_COUNTER_MAX_VALUE UINT64_MAX
+#else
+  #define STATS_COUNTER_MAX_VALUE G_MAXSIZE
+#endif
+
 #define STATS_COUNTER_MAX_VALUE G_MAXSIZE
 
 typedef struct _StatsCounterItem

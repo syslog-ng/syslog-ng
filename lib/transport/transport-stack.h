@@ -26,6 +26,7 @@
 #define TRANSPORT_STACK_H_INCLUDED
 
 #include "transport/logtransport.h"
+#include "compat/uio.h"
 
 typedef struct _LogTransportFactory LogTransportFactory;
 

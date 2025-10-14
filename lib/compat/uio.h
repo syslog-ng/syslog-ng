@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2010 Balabit
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,18 +21,10 @@
  *
  */
 
-#ifndef ALARMS_H_INCLUDED
-#define ALARMS_H_INCLUDED
+#pragma once
+#if defined(_WIN32)
+#include <stddef.h>
 
-#include "syslog-ng.h"
-#include "compat/alarm.h"
-
-void alarm_set(int timeout);
-void alarm_cancel(void);
-gboolean alarm_has_fired(void);
-
-void alarm_init(void);
-
+struct iovec { void *iov_base; size_t iov_len; };
 
 #endif
-

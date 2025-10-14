@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2010 Balabit
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,18 +21,15 @@
  *
  */
 
-#ifndef ALARMS_H_INCLUDED
-#define ALARMS_H_INCLUDED
+#pragma once
 
-#include "syslog-ng.h"
-#include "compat/alarm.h"
-
-void alarm_set(int timeout);
-void alarm_cancel(void);
-gboolean alarm_has_fired(void);
-
-void alarm_init(void);
-
-
+#if defined(_WIN32)
+/* Minimal stub: do nothing, return 0 (no previous alarm) */
+static inline unsigned int alarm(unsigned int seconds)
+{
+  (void)seconds;
+  return 0;
+}
+#else
+# include <unistd.h>   /* alarm() on POSIX */
 #endif
-
