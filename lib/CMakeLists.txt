@@ -94,6 +94,7 @@ set (LIB_HEADERS
     cfg-persist.h
     children.h
     crypto.h
+    crypto-utils.h
     dnscache.h
     driver.h
     dynamic-window-pool.h
@@ -195,6 +196,8 @@ set(LIB_SOURCES
     cfg-walker.c
     cfg-persist.c
     children.c
+    crypto.c
+    crypto-utils.c
     dnscache.c
     driver.c
     dynamic-window.c
@@ -255,7 +258,6 @@ set(LIB_SOURCES
     syslog-names.c
     string-list.c
     ringbuffer.c
-    crypto.c
     uuid.c
     userdb.c
     utf8utils.c

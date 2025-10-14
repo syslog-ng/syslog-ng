@@ -34,3 +34,10 @@ else()
 endif()
 unset (CMAKE_EXTRA_INCLUDE_FILES)
 unset (CMAKE_REQUIRED_DEFINITIONS)
+
+if(NOT HAVE_IPV6 AND ENABLE_IPV6)
+    message(FATAL_ERROR "IPV6 is enabled, but IPV6 support cannot be found")
+endif()
+
+module_switch(ENABLE_IPV6 "Enable IPv6" HAVE_IPV6)
+set(SYSLOG_NG_ENABLE_IPV6 ${ENABLE_IPV6})

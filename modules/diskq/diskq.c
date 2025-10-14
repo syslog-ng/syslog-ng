@@ -184,6 +184,12 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
 
   if (queue->persist_name)
     {
+      /* abandoning the queue here, as its counters
+       *    - are already maintained in stop, all data at this point are flushed, the queues are emptied
+       *    - might be altered again later on (e.g. during diskq state restoration)
+       */
+      log_queue_mark_as_abandoned(queue);
+
       cfg_persist_config_add(cfg, queue->persist_name, queue, (GDestroyNotify) log_queue_unref);
     }
   else

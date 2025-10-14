@@ -28,7 +28,7 @@
 #include "str-format.h"
 #include "plugin-types.h"
 #include "compat/openssl_support.h"
-#include <openssl/evp.h>
+#include "crypto-utils.h"
 
 static void
 tf_uuid(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
@@ -125,27 +125,6 @@ tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   return TRUE;
 }
 
-static guint
-_hash(const EVP_MD *md, GString *const *argv, gint argc, guchar *hash, guint hash_size)
-{
-  gint i;
-  guint md_len;
-  DECLARE_EVP_MD_CTX(mdctx);
-  EVP_MD_CTX_init(mdctx);
-  EVP_DigestInit_ex(mdctx, md, NULL);
-
-  for (i = 0; i < argc; i++)
-    {
-      EVP_DigestUpdate(mdctx, argv[i]->str, argv[i]->len);
-    }
-
-  EVP_DigestFinal_ex(mdctx, hash, &md_len);
-  EVP_MD_CTX_cleanup(mdctx);
-  EVP_MD_CTX_destroy(mdctx);
-
-  return md_len;
-}
-
 static void
 tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
              LogMessageValueType *type)
@@ -158,7 +137,7 @@ tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
 
   *type = LM_VT_STRING;
   argc = state->super.argc;
-  md_len = _hash(state->md, args->argv, argc, hash, sizeof(hash));
+  md_len = compose_hash(state->md, args->argv, argc, hash);
   // we fetch the entire hash in a hex format otherwise we cannot truncate at
   // odd character numbers
   format_hex_string(hash, md_len, hash_str, sizeof(hash_str));

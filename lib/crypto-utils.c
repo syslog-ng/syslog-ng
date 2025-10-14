@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2002-2012 Balabit
+ * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
- * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2025 One Identity LLC.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,18 +22,24 @@
  * COPYING for details.
  *
  */
-#ifndef SYSLOG_NG_CONSOLE_H_INCLUDED
-#define SYSLOG_NG_CONSOLE_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "crypto-utils.h"
+#include "compat/openssl_support.h"
 
-void console_printf(const gchar *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+guint
+compose_hash(const EVP_MD *md, GString *const *argv, gint argc, guchar *hash)
+{
+  DECLARE_EVP_MD_CTX(mdctx);
+  EVP_MD_CTX_init(mdctx);
+  EVP_DigestInit_ex(mdctx, md, NULL);
 
-gboolean console_acquire_from_fds(gint fds[3], gint fds_to_steal);
-void console_release(void);
-void console_destroy(void);
+  for (gint i = 0; i < argc; i++)
+    EVP_DigestUpdate(mdctx, argv[i]->str, argv[i]->len);
 
-void console_global_init(const gchar *console_prefix);
-void console_global_deinit(void);
+  guint md_len;
+  EVP_DigestFinal_ex(mdctx, hash, &md_len);
+  EVP_MD_CTX_cleanup(mdctx);
+  EVP_MD_CTX_destroy(mdctx);
 
-#endif
+  return md_len;
+}

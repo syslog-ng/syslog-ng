@@ -29,3 +29,9 @@ check_type_size ("struct ucred" STRUCT_UCRED)
 check_type_size ("struct cmsgcred" STRUCT_CMSGCRED)
 unset (CMAKE_EXTRA_INCLUDE_FILES)
 unset (CMAKE_REQUIRED_DEFINITIONS)
+
+if(HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED)
+  set(SYSLOG_NG_HAVE_STRUCT_UCRED 1)
+endif()
+
+check_struct_member("struct msghdr" "msg_control" "sys/types.h;sys/socket.h" SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)

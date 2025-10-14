@@ -1,5 +1,7 @@
-#############################################################################
-# Copyright (c) 2016 Balabit
+# ############################################################################
+# Copyright (c) 2017 Balabit
+# Copyright (c) 2022 One Identity
+# Copyright (c) 2025 Istvan Hoffmann <hofione@gmail.com>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -19,14 +21,11 @@
 # OpenSSL libraries as published by the OpenSSL project. See the file
 # COPYING for details.
 #
-#############################################################################
+# ############################################################################
 
-include (CheckTypeSize)
-
-set (CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
-check_type_size ("struct sockaddr_storage" STRUCT_SOCKADDR_STORAGE)
-set (CMAKE_EXTRA_INCLUDE_FILES)
-
-if(HAVE_STRUCT_SOCKADDR_STORAGE)
-  set(SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE 1)
-endif()
+string(ASCII 27 Esc)
+set(Red "${Esc}[31m")
+set(Green "${Esc}[32m")
+set(Yellow "${Esc}[33m")
+set(Blue "${Esc}[34m")
+set(ResetFG "${Esc}[39m")

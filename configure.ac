@@ -37,6 +37,198 @@ AC_CONFIG_SRCDIR([syslog-ng/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+# ANSI color codes
+AC_CONFIG_COMMANDS_PRE([
+    ESC=$(printf '\033')          # ASCII ESC
+    LBRACKET=$(printf '\x5B')     # ASCII square bracket
+    color_red="${ESC}${LBRACKET}31m"
+    color_green="${ESC}${LBRACKET}32m"
+    color_yellow="${ESC}${LBRACKET}33m"
+    color_blue="${ESC}${LBRACKET}34m"
+    color_reset="${ESC}${LBRACKET}0m"
+    export color_red color_green color_yellow color_blue color_reset
+])
+
+dnl ***************************************************************************
+dnl Helper macros
+dnl
+dnl FIXME: Moving these to separate m4 files (e.g. m4/safe_c_check.m4) fails during configure
+dnl             ../configure: line 29338: SAFE_C_CHECK_END: command not found
+dnl ============================================================
+
+dnl ============================================================
+dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE - if needed
+dnl Save compiler/linker flags
+dnl ============================================================
+m4_define([SAFE_C_CHECK_BEGIN], [dnl
+   CFLAGS_SAVE="$CFLAGS"
+   CPPFLAGS_SAVE="$CPPFLAGS"
+   LIBS_SAVE="$LIBS"
+   LDFLAGS_SAVE="$LDFLAGS"
+   AC_LANG_PUSH([C])
+])dnl
+
+dnl ============================================================
+dnl Restore compiler/linker flags
+dnl ============================================================
+m4_define([SAFE_C_CHECK_END], [dnl
+  AC_LANG_POP([C])
+  CFLAGS="$CFLAGS_SAVE"
+  CPPFLAGS="$CPPFLAGS_SAVE"
+  LIBS="$LIBS_SAVE"
+  LDFLAGS="$LDFLAGS_SAVE"
+])dnl
+
+dnl ============================================================
+dnl Generic HAVE checker to have a one step AC_CHECK_XXX check and
+dnl AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
+dnl functionalyty
+dnl Usage CHECK_AND_DEFINE([checker_func], [target_to_check], [HAVE_XXX_name_override])
+dnl     $1 = checker func [AC_CHECK_HEADERS or AC_CHECK_FUNCS] (mandatory)
+dnl     $2 = target (header/func to check, mandatory)
+dnl     $3 = override macro name (optional)
+dnl ============================================================
+AC_DEFUN([CHECK_AND_DEFINE],
+[
+    dnl AC_MSG_NOTICE([Checking $target_kind $2 $3])
+
+    dnl Figure out what we are checking
+    m4_case([$1],
+        [AC_CHECK_HEADERS], [target_kind="header"; cachevar=ac_cv_header_[]AS_TR_SH([$2])],
+        [AC_CHECK_FUNCS],   [target_kind="function"; cachevar=ac_cv_func_[]AS_TR_SH([$2])],
+        [m4_fatal([Unsupported checker macro $1 passed to CHECK_AND_DEFINE])])
+
+    $1([$2])
+
+    dnl Safely copy the cached result into shell var "cacheval"
+    AS_VAR_COPY([cacheval], [$cachevar])
+    dnl AC_MSG_NOTICE([ -> cache var: $cachevar = $cacheval])
+
+    m4_ifval([$3],
+        [
+            dnl override define name provided
+            AS_IF([test "x$cacheval" = "xyes"],
+                [
+                  AC_DEFINE([$3], [1], [Define if $2 is present])
+                  eval $3=1
+                ],
+                [
+                  AC_DEFINE([$3], [0], [Define if $2 is present])
+                  eval $3=0
+                ])
+            dnl AC_MSG_NOTICE([ -> define (override): $3] [= ${$3}])
+        ],
+        [
+            dnl default define name
+            define_name=HAVE_[]AS_TR_CPP([$2])
+            AS_IF([test "x$cacheval" = "xyes"],
+                [
+                  AC_DEFINE(HAVE_[]AS_TR_CPP([$2]), [1], [Define if $2 is present])
+                  eval $define_name=1
+                ],
+                [
+                  AC_DEFINE(HAVE_[]AS_TR_CPP([$2]), [0], [Define if $2 is present])
+                  eval $define_name=0
+                ])
+            dnl AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]) [= ${HAVE_[]AS_TR_CPP([$2])]})
+        ])
+])
+
+dnl ============================================================
+dnl
+dnl NOTE: This one is crazy
+dnl       Take care: Never use AC_CHECK_HEADER or AC_CHECK_HEADERS alone.
+dnl       The first one will NOT propagate the cached results to AX_PREFIX_CONFIG_H at all,
+dnl       while the latter does, but defines it in the produced config.h only if its value is 1.
+dnl       Otherwise, it just leaves a comment like:
+dnl            /* Define to 1 if you have the <door.h> header file. */
+dnl            /* #undef HAVE_DOOR_H */
+dnl
+dnl       So, if for any reason AC_CHECK_HEADER must be used, then an additional AC_DEFINE is required,
+dnl       for example:
+dnl            AC_CHECK_HEADER(dlfcn.h)
+dnl            AS_IF([test "x$ac_cv_header_dlfcn_h" = "xyes"],
+dnl                [AC_DEFINE([HAVE_DLFCN_H], [1], [Define if dlfcn.h is present])],
+dnl                [AC_DEFINE([HAVE_DLFCN_H], [0], [Define if dlfcn.h is present])])
+dnl
+dnl       This is necessary because we do not use the standard config.h. Instead, we use:
+dnl            AC_CONFIG_HEADERS(config.h)
+dnl            AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
+dnl       The latter adds the SYSLOG_NG_ prefix to all HAVE_XXX macro names. However,
+dnl       in this case, only the macro names with explicit AC_DEFINE pairs are processed.
+dnl
+dnl       In CMake builds, the middle steps are missing: there is no config.h produced.
+dnl       As mentioned above, we use syslog-ng-config.h, which is the only one we have
+dnl       in those builds.
+dnl
+dnl       So, to build consistently with both build systems:
+dnl           - use AC_CHECK_HEADERS, not AC_CHECK_HEADER, for values that should go into
+dnl             syslog-ng-config.h and can be used in any source file
+dnl           - add AC_DEFINE for BOTH cases of the required HAVE_XXX macro names
+dnl           - use syslog-ng-config.h, never config.h directly (especially since we have
+dnl             other config.h files that could cause additional confusion)
+dnl           - DO NOT use HAVE_XXX, always use the SYSLOG_NG_HAVE_XXX variants
+dnl           - use only cmakedefine01 (YES/NO) SYSLOG_NG_HAVE_XXX defines for boolean switches
+dnl             in syslog-ng-config.h.in, never the plain cmakedefine version
+dnl           - use #if SYSLOG_NG_HAVE_XXX instead of #ifdef SYSLOG_NG_HAVE_XXX
+dnl             (as the latter will always fail if not defined correctly somewhere)
+dnl
+dnl       These rules will guarantee proper switch defines in both the Autotools and CMake builds.
+dnl
+dnl ============================================================
+dnl DO NOT USE AC_CHECK_HEADERS or AC_CHECK_HEADER alone if not needed
+dnl
+dnl Use: CHECK_HEADER_AND_DEFINE or CHECK_HEADERS_AND_DEFINE imstead
+dnl ============================================================
+dnl
+dnl One step AC_CHECK_HEADERS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
+dnl for the given header
+dnl Usage CHECK_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
+dnl ============================================================
+AC_DEFUN([CHECK_HEADER_AND_DEFINE],
+[
+    CHECK_AND_DEFINE([AC_CHECK_HEADERS], [$1], [$2])
+])
+
+dnl ============================================================
+dnl Calls CHECK_HEADER_AND_DEFINE for each header
+dnl Usage CHECK_HEADERS_AND_DEFINE([header1 header2 …])
+dnl ============================================================
+dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
+AC_DEFUN([CHECK_HEADERS_AND_DEFINE],
+[
+    m4_foreach([_hdr], m4_split(m4_normalize([$1])), [
+        CHECK_HEADER_AND_DEFINE(_hdr)
+    ])
+])
+
+dnl NOTE: Same is true here like above described for CHECK_HEADER_AND_DEFINE
+dnl ============================================================
+dnl DO NOT USE AC_CHECK_FUNCS or AC_CHECK_FUNC alone if not needed
+dnl
+dnl Use: CHECK_FUNC_AND_DEFINE or CHECK_FUNCS_AND_DEFINE imstead
+dnl ============================================================
+dnl One step AC_CHECK_FUNCS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
+dnl for the given func
+dnl Usage CHECK_FUNC_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
+dnl ============================================================
+AC_DEFUN([CHECK_FUNC_AND_DEFINE],
+[
+    CHECK_AND_DEFINE([AC_CHECK_FUNCS], [$1], [$2])
+])
+
+dnl ============================================================
+dnl Calls CHECK_FUNC_AND_DEFINE for each function
+dnl Usage CHECK_FUNCS_AND_DEFINE([function1 function2 …])
+dnl ============================================================
+dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
+AC_DEFUN([CHECK_FUNCS_AND_DEFINE],
+[
+    m4_foreach([_func], m4_split(m4_normalize([$1])), [
+        CHECK_FUNC_AND_DEFINE(_func)
+    ])
+])
+
 dnl ***************************************************************************
 dnl dependencies
 
@@ -322,7 +514,7 @@ AC_ARG_WITH(libpaho-mqtt,
     AS_HELP_STRING([--with-libpaho-mqtt=DIR], [use libpaho-mqtt library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(grpc,
-    AS_HELP_STRING([--enable-grpc], [Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, Pub/Sub, ClickHouse) (default: auto)]),
+    AS_HELP_STRING([--enable-grpc], [Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, Pub/Sub, ClickHouse) (requires C++17) (default: auto)]),
     , enable_grpc="auto")
 
 AC_ARG_WITH(protoc,
@@ -428,9 +620,24 @@ AC_ARG_ENABLE(afsnmp,
     AS_HELP_STRING([--enable-afsnmp], [Enable afsnmp module (default: auto)]),
     , enable_afsnmp="auto")
 
+AC_ARG_ENABLE([colored-log],
+    AS_HELP_STRING([--enable-colored-log], [Enable colorized output in configure summary (default: no)]),
+    [enable_colored_log=yes],
+    [enable_colored_log=no])
+
+dnl Determine default based on OS
+osname=`uname -s 2>/dev/null` || osname=unknown
+case "$osname" in
+    Linux*|linux*|Darwin*|darwin*|FreeBSD*)
+        stackdump_default="auto"
+        ;;
+    *)
+        stackdump_default="no"
+        ;;
+esac
 AC_ARG_ENABLE(stackdump,
-    AS_HELP_STRING([--enable-stackdump], [Enable stackdump support (default: no)]),
-    , enable_stackdump="no")
+    AS_HELP_STRING([--enable-stackdump], [Enable stackdump support (Linux, macOS, FreeBSD only) (default: $stackdump_default)]),
+    , enable_stackdump="$stackdump_default")
 
 AC_ARG_ENABLE(all-modules,
     AS_HELP_STRING([--enable-all-modules], [Forcibly enable all modules. (default: auto)]),
@@ -470,171 +677,6 @@ patheval()
 }
 
 dnl ***************************************************************************
-dnl Helper macros
-dnl
-dnl FIXME: Moving these to separate m4 files (e.g. m4/safe_c_check.m4) fails during configure
-dnl             ../configure: line 29338: SAFE_C_CHECK_END: command not found
-dnl
-dnl ============================================================
-dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE - if needed
-dnl Save compiler/linker flags
-dnl ============================================================
-m4_define([SAFE_C_CHECK_BEGIN], [dnl
-   CFLAGS_SAVE="$CFLAGS"
-   CPPFLAGS_SAVE="$CPPFLAGS"
-   LIBS_SAVE="$LIBS"
-   LDFLAGS_SAVE="$LDFLAGS"
-   AC_LANG_PUSH([C])
-])dnl
-
-dnl ============================================================
-dnl Restore compiler/linker flags
-dnl ============================================================
-m4_define([SAFE_C_CHECK_END], [dnl
-  AC_LANG_POP([C])
-  CFLAGS="$CFLAGS_SAVE"
-  CPPFLAGS="$CPPFLAGS_SAVE"
-  LIBS="$LIBS_SAVE"
-  LDFLAGS="$LDFLAGS_SAVE"
-])dnl
-
-dnl ============================================================
-dnl Generic HAVE checker to have a one step AC_CHECK_XXX check and
-dnl AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
-dnl functionalyty
-dnl Usage CHECK_AND_DEFINE([checker_func], [target_to_check], [HAVE_XXX_name_override])
-dnl     $1 = checker func [AC_CHECK_HEADERS or AC_CHECK_FUNCS] (mandatory)
-dnl     $2 = target (header/func to check, mandatory)
-dnl     $3 = override macro name (optional)
-dnl ============================================================
-AC_DEFUN([CHECK_AND_DEFINE],
-[
-    dnl AC_MSG_NOTICE([Checking $target_kind $2 $3])
-
-    dnl Figure out what we are checking
-    m4_case([$1],
-        [AC_CHECK_HEADERS], [target_kind="header"; cachevar=ac_cv_header_[]AS_TR_SH([$2])],
-        [AC_CHECK_FUNCS],   [target_kind="function"; cachevar=ac_cv_func_[]AS_TR_SH([$2])],
-        [m4_fatal([Unsupported checker macro $1 passed to CHECK_AND_DEFINE])])
-
-    $1([$2])
-
-    dnl Safely copy the cached result into shell var "cacheval"
-    AS_VAR_COPY([cacheval], [$cachevar])
-    dnl AC_MSG_NOTICE([ -> cache var: $cachevar = $cacheval])
-
-    m4_ifval([$3],
-        [
-            dnl override define name provided
-            dnl AC_MSG_NOTICE([ -> define (override): $3])
-            AS_IF([test "x$cacheval" = "xyes"],
-                [AC_DEFINE([$3], [1], [Define if $2 is present])],
-                [AC_DEFINE([$3], [0], [Define if $2 is present])])
-        ],
-        [
-            dnl default define name
-            dnl AC_MSG_NOTICE([ -> define (default): HAVE_]AS_TR_CPP([$2]))
-            AS_IF([test "x$cacheval" = "xyes"],
-                [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [1], [Define if $2 is present])],
-                [AC_DEFINE(AS_TR_CPP([HAVE_$2]), [0], [Define if $2 is present])])
-        ])
-])
-
-dnl
-dnl NOTE: This one is crazy
-dnl       Take care: Never use AC_CHECK_HEADER or AC_CHECK_HEADERS alone.
-dnl       The first one will NOT propagate the cached results to AX_PREFIX_CONFIG_H at all,
-dnl       while the latter does, but defines it in the produced config.h only if its value is 1.
-dnl       Otherwise, it just leaves a comment like:
-dnl            /* Define to 1 if you have the <door.h> header file. */
-dnl            /* #undef HAVE_DOOR_H */
-dnl
-dnl       So, if for any reason AC_CHECK_HEADER must be used, then an additional AC_DEFINE is required,
-dnl       for example:
-dnl            AC_CHECK_HEADER(dlfcn.h)
-dnl            AS_IF([test "x$ac_cv_header_dlfcn_h" = "xyes"],
-dnl                [AC_DEFINE([HAVE_DLFCN_H], [1], [Define if dlfcn.h is present])],
-dnl                [AC_DEFINE([HAVE_DLFCN_H], [0], [Define if dlfcn.h is present])])
-dnl
-dnl       This is necessary because we do not use the standard config.h. Instead, we use:
-dnl            AC_CONFIG_HEADERS(config.h)
-dnl            AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
-dnl       The latter adds the SYSLOG_NG_ prefix to all HAVE_XXX macro names. However,
-dnl       in this case, only the macro names with explicit AC_DEFINE pairs are processed.
-dnl
-dnl       In CMake builds, the middle steps are missing: there is no config.h produced.
-dnl       As mentioned above, we use syslog-ng-config.h, which is the only one we have
-dnl       in those builds.
-dnl
-dnl       So, to build consistently with both build systems:
-dnl           - use AC_CHECK_HEADERS, not AC_CHECK_HEADER, for values that should go into
-dnl             syslog-ng-config.h and can be used in any source file
-dnl           - add AC_DEFINE for BOTH cases of the required HAVE_XXX macro names
-dnl           - use syslog-ng-config.h, never config.h directly (especially since we have
-dnl             other config.h files that could cause additional confusion)
-dnl           - DO NOT use HAVE_XXX, always use the SYSLOG_NG_HAVE_XXX variants
-dnl           - use only cmakedefine01 (YES/NO) SYSLOG_NG_HAVE_XXX defines for boolean switches
-dnl             in syslog-ng-config.h.in, never the plain cmakedefine version
-dnl           - use #if SYSLOG_NG_HAVE_XXX instead of #ifdef SYSLOG_NG_HAVE_XXX
-dnl             (as the latter will always fail if not defined correctly somewhere)
-dnl
-dnl       These rules will guarantee proper switch defines in both the Autotools and CMake builds.
-dnl
-dnl ============================================================
-dnl DO NOT USE AC_CHECK_HEADERS or AC_CHECK_HEADER alone if not needed
-dnl
-dnl Use: CHECK_HEADER_AND_DEFINE or CHECK_HEADERS_AND_DEFINE imstead
-dnl ============================================================
-dnl
-dnl One step AC_CHECK_HEADERS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
-dnl for the given header
-dnl Usage CHECK_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
-dnl ============================================================
-AC_DEFUN([CHECK_HEADER_AND_DEFINE],
-[
-    CHECK_AND_DEFINE([AC_CHECK_HEADERS], [$1], [$2])
-])
-
-dnl ============================================================
-dnl Calls CHECK_HEADER_AND_DEFINE for each header
-dnl Usage CHECK_HEADERS_AND_DEFINE([header1 header2 …])
-dnl ============================================================
-dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
-AC_DEFUN([CHECK_HEADERS_AND_DEFINE],
-[
-    m4_foreach([_hdr], m4_split(m4_normalize([$1])), [
-        CHECK_HEADER_AND_DEFINE(_hdr)
-    ])
-])
-
-dnl NOTE: Same is true here like above described for CHECK_HEADER_AND_DEFINE
-dnl ============================================================
-dnl DO NOT USE AC_CHECK_FUNCS or AC_CHECK_FUNC alone if not needed
-dnl
-dnl Use: CHECK_FUNC_AND_DEFINE or CHECK_FUNCS_AND_DEFINE imstead
-dnl ============================================================
-dnl One step AC_CHECK_FUNCS and AC_DEFINE HAVE_ 1, AC_DEFINE HAVE_ 0
-dnl for the given func
-dnl Usage CHECK_FUNC_AND_DEFINE([target_to_check], [HAVE_XXX_name_override])
-dnl ============================================================
-AC_DEFUN([CHECK_FUNC_AND_DEFINE],
-[
-    CHECK_AND_DEFINE([AC_CHECK_FUNCS], [$1], [$2])
-])
-
-dnl ============================================================
-dnl Calls CHECK_FUNC_AND_DEFINE for each function
-dnl Usage CHECK_FUNCS_AND_DEFINE([function1 function2 …])
-dnl ============================================================
-dnl FIXME: trim correclty the whitespaces, \n, etc. if it is multi line list
-AC_DEFUN([CHECK_FUNCS_AND_DEFINE],
-[
-    m4_foreach([_func], m4_split(m4_normalize([$1])), [
-        CHECK_FUNC_AND_DEFINE(_func)
-    ])
-])
-
-dnl ***************************************************************************
 dnl Checks for programs.
 
 # Do not mix the used compilers or you might have to deal with further libtool issues
@@ -655,8 +697,8 @@ if test "x$ac_cv_prog_cc_c99" = "xno"; then
 	AC_MSG_ERROR([C99 standard compliant C compiler required. Try GCC 3.x or later.])
 fi
 
-# Turned out that even the latest gcc has no proper support of the required ObjC version
-# Once gcc was able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
+dnl Turned out that even the latest gcc has no proper support of the required ObjC version
+dnl Once gcc was able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
 AC_PROG_OBJC([$OBJC clang])
 AC_PROG_YACC
 AM_PROG_LEX
@@ -675,29 +717,29 @@ if test "${PYTHON}" = ":"; then
 fi
 AM_CONDITIONAL([HAVE_PYTHON_INTERPRETER], [test "$PYTHON" != :])
 
-# This one is useful for checking the available compilers
-# AC_MSG_RESULT(gcc = $(which gcc) - g++ = $(which g++) - clang = $(which clang))
-# AC_MSG_RESULT(Paths: gcc = $(ls -Al $(which gcc)) - g++ = $(ls -Al $(which g++)) - clang = $(ls -Al $(which clang)))
-# AC_MSG_RESULT($(gcc -v))
-# AC_MSG_RESULT($(g++ -v))
-# AC_MSG_RESULT($(clang -v))
-# AC_MSG_RESULT(C++ compilers to be used $CPP_COMPILER)
+dnl ***************************************************************************
+dnl C++ support
+dnl NOTE: on macOS brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
+dnl       correctly the c++14 and c++17 support of clang currently, you might want to get the latest one from the git repo
+dnl       wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4
 AC_PROG_CXX([$CPP_COMPILER])
 
-# NOTE: on macOS brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
-#       correctly the c++14 and c++17 support of clang currently, you might want to get the latest one from the git repo
-#       wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4
 if test "x$enable_cpp" = "xyes"; then
-        AX_CXX_COMPILE_STDCXX(14,, mandatory)
-        AX_CXX_COMPILE_STDCXX(17,, optional)
+    # Require at least C++14 (fail if not available)
+    AX_CXX_COMPILE_STDCXX([14], [noext], [mandatory])
+    # Try to upgrade to C++17 if the compiler supports it
+    AX_CXX_COMPILE_STDCXX([17], [noext], [optional])
+
 elif test "x$enable_cpp" = "xauto"; then
-        AX_CXX_COMPILE_STDCXX(14,, optional)
-        if test "x$HAVE_CXX14" = "x1"; then
-                enable_cpp=yes
-        else
-                enable_cpp=no
-        fi
-        AX_CXX_COMPILE_STDCXX(17,, optional)
+    # Prefer C++14, but don't fail if it's missing
+    AX_CXX_COMPILE_STDCXX([14], [noext], [optional])
+    if test "x$HAVE_CXX14" = "x1"; then
+        enable_cpp=yes
+        # Try to upgrade to C++17 if available
+        AX_CXX_COMPILE_STDCXX([17], [noext], [optional])
+    else
+        enable_cpp=no
+    fi
 fi
 
 dnl ***************************************************************************
@@ -859,10 +901,10 @@ case "$ostype" in
         # without it, it refuses to link an .so in if there's no reference from
         # the main program, even if there is a proper -llibname option.
 		LDFLAGS="$LDFLAGS -Wl,-brtl"
-		MODULE_LDFLAGS="-avoid-version -module"
+		MODULE_LDFLAGS="-avoid-version -module -no-undefined"
 		;;
 	Darwin)
-		MODULE_LDFLAGS="-avoid-version -dylib"
+		MODULE_LDFLAGS="-avoid-version -dylib -no-undefined"
         TEST_NO_INSTALL_FLAG="-no-fast-install"
         # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking solution
         if test "x$enable_tests" = "xyes"; then
@@ -876,7 +918,7 @@ case "$ostype" in
         fi
         # Expose the modern, RFC 3542 IPv6 socket API instead of the deprecated RFC 2292 one
 		CFLAGS="$CFLAGS -D__APPLE_USE_RFC_3542"
-    ;;
+        ;;
 	OSF1)
 		CFLAGS="${CFLAGS} -D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -D_OSF_SOURCE -D_POSIX_C_SOURCE"
 		;;
@@ -1476,8 +1518,8 @@ PKG_CHECK_MODULES(OPENSSL,
                 AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
 
 if test -n "$OPENSSL_LIBS" -a "$linking_mode" != "dynamic"; then
-        dnl required for openssl, but only when linking statically
-        AC_CHECK_LIB(z, inflate, ZLIB_LIBS="-lz")
+    dnl required for openssl, but only when linking statically
+    AC_CHECK_LIB(z, inflate, ZLIB_LIBS="-lz")
 
     dnl Remove -ldl as it cannot be linked statically on some platforms, it will be present in DL_LIBS
     OPENSSL_LIBS=`echo $OPENSSL_LIBS | tr ' ' '\n' | egrep -v "^-ldld?$" | tr '\n' ' '`
@@ -1747,11 +1789,28 @@ SAFE_C_CHECK_END
 dnl ***************************************************************************
 dnl libunwind headers/libraries
 dnl ***************************************************************************
+if test "x$enable_stackdump" = "xyes"; then
+  case "$host_os" in
+    linux* | freebsd* | darwin*)
+      # currently supported
+      ;;
+    *)
+      AC_MSG_ERROR([--enable-stackdump is only supported on Linux, macOS, or FreeBSD currently])
+      ;;
+  esac
+fi
 if test "x$enable_stackdump" = "xauto" || test "$enable_stackdump" = "yes"; then
     dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
     SAFE_C_CHECK_BEGIN
 
-    PKG_CHECK_MODULES(LIBUNWIND, libunwind >= 1.6.2, enable_libunwind="yes", enable_libunwind="no")
+    AS_CASE([$host_os],
+    [darwin*], [
+        dnl macOS: system libunwind (no .pc file, headers only)
+        AC_CHECK_HEADER([libunwind.h], [enable_libunwind="yes"], [enable_libunwind="no"])
+    ],
+    [*], [
+        PKG_CHECK_MODULES([LIBUNWIND], [libunwind >= 1.6.2], [enable_libunwind="yes"], [enable_libunwind="no"])
+    ])
 
     if test "$enable_stackdump" = "yes" && test "$enable_libunwind" = "no"; then
         AC_MSG_ERROR([Could not find libunwind, and stackdump support was explicitly enabled.])
@@ -1841,6 +1900,45 @@ dnl ***************************************************************************
 dnl GRPC headers/libraries
 dnl ***************************************************************************
 
+# Default gRPC enabed handling
+# Auto resolution
+# Only disable by default on non-Linux hosts with GNU g++
+if test "x$enable_grpc" = "xauto"; then
+  case "$host_os" in
+    linux*) ;;  dnl leave as auto on Linux
+    *)
+      case "$CXX" in
+        g++*|*/g++*)
+          enable_grpc=no
+          grpc_warning_str="auto disabled by using GNU g++ on non-Linux OS, see the configure log above"
+          AC_MSG_NOTICE([GRPC support is disabled by default on non-Linux GNU toolchainsg.
+On systems like macOS or FreeBSD, prebuilt dependencies (Protobuf, gRPC, Abseil, etc.) are usually built with Clang (libc++).
+Using GNU g++ (libstdc++) may cause build, link, or runtime issues due to library and ABI mismatches.
+If you rebuilt all dependencies with GNU g++, it might work.])
+          ;;
+      esac
+      ;;
+  esac
+fi
+
+dnl Warn only if explicitly yes with GNU g++ on non-Linux
+if test "x$enable_grpc" = "xyes"; then
+  case "$host_os" in
+    linux*) ;;  # supported
+    *)
+      case "$CXX" in
+        g++*|*/g++*)
+          grpc_warning_str="WARNING: using GNU g++ on non-Linux may cause ABI/library mismatches, see the configure log above"
+          AC_MSG_WARN([Building gRPC modules with GNU toolchains on non-Linux systems is unsupported.
+On systems like macOS or FreeBSD, prebuilt dependencies (Protobuf, gRPC, Abseil, etc.) are usually built with Clang (libc++).
+Using GNU g++ (libstdc++) may cause build, link, or runtime issues due to library and ABI mismatches.
+If you rebuilt all dependencies with GNU g++, it might work. Proceed only if you understand the potential issues.])
+          ;;
+      esac
+      ;;
+  esac
+fi
+
 # C++
 if ! test "x$enable_grpc" = "xno"; then
     if test "x$enable_cpp" = "xno"; then
@@ -1858,6 +1956,11 @@ Recommended fix:
             enable_grpc=no
         fi
     fi
+fi
+
+if ! test "x$enable_grpc" = "xno"; then
+    # gRPC requires at least C++17
+    AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory])
 fi
 
 # ProtoBuf libraries
@@ -1942,6 +2045,8 @@ dnl ***************************************************************************
 dnl You can always use the saved ones - CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE between SAFE_C_CHECK_BEGIN/SAFE_C_CHECK_END if needed
 SAFE_C_CHECK_BEGIN
 
+CHECK_HEADER_AND_DEFINE([zlib.h], [HAVE_ZLIB])
+
 if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
     libcurl="yes"
     if test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "x"; then
@@ -1973,11 +2078,14 @@ if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
                         [], [],
                         [[#include <curl/curl.h>]])
         CFLAGS=$CFLAGS_SAVE
+
+        if test "x$HAVE_ZLIB" = "x1"; then
+            AC_CHECK_LIB([z], [deflate], [ZLIB_LIBS="-lz"; AC_SUBST([ZLIB_LIBS])], [HAVE_ZLIB=0])
+        fi
     fi
 else
     enable_http="no"
 fi
-CHECK_HEADER_AND_DEFINE([zlib.h], [HAVE_ZLIB])
 
 SAFE_C_CHECK_END
 
@@ -2772,80 +2880,146 @@ AC_OUTPUT(dist.conf
 	  scripts/syslog-ng-update-virtualenv
           )
 
+# Function to print a line with colorized value and optional warning
+# Arguments: 1 = label, 2 = value, 3 = optional warning string
+print_config_line() {
+    local label="$1"
+    local value="$2"
+    local warn_str="$3"
+
+    if test "x$enable_colored_log" = "xyes"; then
+        local color_code=$color_blue
+        case "$value" in
+            yes*|YES*|true*|TRUE*) color_code=$color_green ;;
+            no*|NO*|false*|FALSE*) color_code=$color_red ;;
+            # for syntax highlighting do not go crazy
+        esac
+
+        if test -n "$warn_str"; then
+            warn_str=" (${color_yellow}${warn_str}${color_reset})"
+        fi
+
+        printf "  %-30s : %b%s\n" "$label" "${color_code}${value}${color_reset}" "$warn_str"
+    else
+        printf "  %-30s : %s%s\n" "$label" "$value" "$warn_str"
+    fi
+}
+
+
+# Function to centered heading with dashes
+print_heading() {
+    text="$1"
+    total_len=43  # fixed total width
+
+    if test -z "$text"; then
+        # Empty caption: full line of dashes
+        printf '%*s\n' "$total_len" '' | tr ' ' -
+        return
+    fi
+
+    # Caption with one space padding
+    caption=" $text "
+    text_len=${#caption}
+
+    # If caption longer than total_len, print caption as-is
+    if test "$text_len" -ge "$total_len"; then
+        echo "$caption"
+        return
+    fi
+
+    # Compute dashes on left and right
+    dash_total=$(( total_len - text_len ))
+    dash_left=$(( dash_total / 2 ))
+    dash_right=$(( dash_total - dash_left ))
+
+    # Build line
+    line="$(printf '%*s' "$dash_left" '' | tr ' ' -)$caption$(printf '%*s' "$dash_right" '' | tr ' ' -)"
+    echo "$line"
+}
+
+# Print configuration summary
 echo
+print_heading ""
 echo "syslog-ng Open Source Edition $PACKAGE_VERSION configured"
-echo " Edition settings:"
-echo "  Release type                : $RELEASE_TYPE"
-echo "  Pretty version              : $BROCHURE_VERSION"
-echo "  Combined vers.              : $COMBINED_VERSION"
-echo "  Package name                : $PACKAGE_NAME"
-echo " Compiler options:"
-echo "  compiler                    : $CC - $($CC -v 2>&1 | grep -i ' version ') - $(command -v $CC)"
-echo "  compiler options            : $CFLAGS $CPPFLAGS"
-echo "  ObjC compiler               : $OBJC - $($OBJC -v 2>&1 | grep -i ' version ') - $(command -v $OBJC)"
-echo "  C++ enabled                 : ${enable_cpp:=no}"
+
+print_heading "Edition settings"
+print_config_line "Release type" "$RELEASE_TYPE"
+print_config_line "Pretty version" "$BROCHURE_VERSION"
+print_config_line "Combined vers." "$COMBINED_VERSION"
+print_config_line "Package name" "$PACKAGE_NAME"
+
+print_heading "Compiler options"
+print_config_line "compiler" "$CC - $($CC -v 2>&1 | grep -i ' version ') - $(command -v $CC)"
+print_config_line "compiler options" "$CFLAGS $CPPFLAGS"
+print_config_line "ObjC compiler" "$OBJC - $($OBJC -v 2>&1 | grep -i ' version ') - $(command -v $OBJC)"
+print_config_line "C++ enabled" "${enable_cpp:=no}"
 if test "x$enable_cpp" = "xyes"; then
-echo "  C++ compiler                : $CXX - $($CXX -v 2>&1 | grep -i ' version ') - $(command -v $CXX)"
-echo "  C++ compiler options        : $CXXFLAGS"
+    print_config_line "C++ compiler" "$CXX - $($CXX -v 2>&1 | grep -i ' version ') - $(command -v $CXX)"
+    print_config_line "C++ compiler options" "$CXXFLAGS"
 fi
-echo "  linker flags                : $LDFLAGS $LIBS"
-echo "  prefix                      : $prefix"
-echo "  linking mode                : $linking_mode"
+print_config_line "linker flags" "$LDFLAGS $LIBS"
+print_config_line "prefix" "$prefix"
 if test $ostype = "Darwin"; then
-echo "  classic linking mode        : ${enable_force_classic_linking:=no}"
+    print_config_line "classic linking mode" "${enable_force_classic_linking:=no}"
 fi
-echo "  embedded crypto             : ${with_embedded_crypto:=no}"
-echo "  __thread keyword            : ${ac_cv_have_tls:=no}"
-echo " Test dependencies:"
-echo "  Criterion                   : ${with_criterion:=no}"
-echo "  Unit tests                  : ${enable_tests:=no}"
-echo " Submodules:"
-echo "  ivykis                      : $with_ivykis"
-echo " Features:"
-echo "  Forced server mode          : ${enable_forced_server_mode:=yes}"
-echo "  Debug symbols               : ${enable_debug:=no}"
-echo "  GCC profiling               : ${enable_gprof:=no}"
-echo "  Memtrace                    : ${enable_memtrace:=no}"
-echo "  IPV6 support                : ${enable_ipv6:=no}"
-echo "  spoof-source support        : ${enable_spoof_source:=no}"
-echo "  tcp-wrapper support         : ${enable_tcp_wrapper:=no}"
-echo "  Linux capability support    : ${has_linux_caps:=no}"
-echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
-echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
-echo "  systemd-journal support     : ${with_systemd_journal:=no}"
-echo "  JSON support                : $with_jsonc"
-echo "  stackdump support           : ${enable_stackdump:=no}"
-echo " Build options:"
-echo "  Enable manual pages         : ${enable_manpages:=no}"
-echo "  Install manual pages        : ${enable_manpages_install:=no}"
+print_config_line "embedded crypto" "${with_embedded_crypto:=no}"
+print_config_line "__thread keyword" "${ac_cv_have_tls:=no}"
+
+print_heading "Test dependencies"
+print_config_line "Criterion" "${with_criterion:=no}"
+print_config_line "Unit tests" "${enable_tests:=no}"
+
+print_heading "Submodules"
+print_config_line "ivykis" "$with_ivykis"
+
+print_heading "Features"
+print_config_line "Forced server mode" "${enable_forced_server_mode:=yes}"
+print_config_line "Debug symbols" "${enable_debug:=no}"
+print_config_line "GCC profiling" "${enable_gprof:=no}"
+print_config_line "Memtrace" "${enable_memtrace:=no}"
+print_config_line "IPV6 support" "${enable_ipv6:=no}"
+print_config_line "spoof-source support" "${enable_spoof_source:=no}"
+print_config_line "tcp-wrapper support" "${enable_tcp_wrapper:=no}"
+print_config_line "Linux capability support" "${has_linux_caps:=no}"
+print_config_line "Env wrapper support" "${enable_env_wrapper:=no}"
+print_config_line "systemd support" "${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
+print_config_line "systemd-journal support" "${with_systemd_journal:=no}"
+print_config_line "JSON support" "$with_jsonc"
+print_config_line "stackdump support" "${enable_stackdump:=no}"
+
+print_heading "Build options"
+print_config_line "Enable manual pages" "${enable_manpages:=no}"
+print_config_line "Install manual pages" "${enable_manpages_install:=no}"
 if test "x$enable_manpages" = "xyes" -o "x$enable_manpages_install" = "xyes"; then
-echo "  Using manual pages          : ${with_manpages}"
+    print_config_line "Using manual pages" "$with_manpages"
 fi
-echo " Modules:"
-echo "  Module search path          : ${module_path}"
-echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
-echo "  Darwin OSL support (module) : ${enable_darwin_osl:=no}"
-echo "  OpenBSD syslog (module)     : ${enable_openbsd_system_source:=no}"
-echo "  SQL support (module)        : ${enable_sql:=no}"
-echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
-echo "  MongoDB destination (module): ${enable_mongodb:=no} (${mongo_version_str})"
-echo "  JSON support (module)       : ${enable_json:=no}"
-echo "  SMTP support (module)       : ${enable_smtp:=no}"
-echo "  HTTP support (module)       : ${enable_http:=no}"
-echo "  AMQP destination (module)   : ${enable_amqp:=no}"
-echo "  STOMP destination (module)  : ${enable_stomp:=no}"
-echo "  MQTT (module)               : ${enable_mqtt:=no}"
-echo "  GRPC (module)               : ${enable_grpc:=no}"
-echo "  Cloud Auth (module)         : ${enable_cloud_auth:=no}"
-echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
-echo "  Redis support (module)      : ${enable_redis:=no}"
-echo "  Kafka support (module)      : ${enable_kafka:=no}"
-echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${riemann_micros:=no}"
-echo "  Python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none}, packages: ${with_python_packages})"
-echo "  Python modules              : ${enable_python_modules:=no}"
-echo "  Java                        : ${enable_java:=no}"
-echo "  Java modules                : ${enable_java_modules:=no}"
-echo "  afsnmp module               : ${enable_afsnmp:=no}"
-echo "  eBPF module                 : ${enable_ebpf:=no}"
-echo "  native bindings             : ${enable_native:=no}"
-echo "  Example modules             : ${enable_example_modules:=yes}"
+
+print_heading "Modules"
+print_config_line "Module search path" "$module_path"
+print_config_line "Sun STREAMS support (module)" "${enable_sun_streams:=no}"
+print_config_line "Darwin OSL support (module)" "${enable_darwin_osl:=no}"
+print_config_line "OpenBSD syslog (module)" "${enable_openbsd_system_source:=no}"
+print_config_line "SQL support (module)" "${enable_sql:=no}"
+print_config_line "PACCT module (EXPERIMENTAL)" "${enable_pacct:=no}"
+print_config_line "MongoDB destination (module)" "${enable_mongodb:=no} (${mongo_version_str})"
+print_config_line "JSON support (module)" "${enable_json:=no}"
+print_config_line "SMTP support (module)" "${enable_smtp:=no}"
+print_config_line "HTTP support (module)" "${enable_http:=no}"
+print_config_line "AMQP destination (module)" "${enable_amqp:=no}"
+print_config_line "STOMP destination (module)" "${enable_stomp:=no}"
+print_config_line "MQTT (module)" "${enable_mqtt:=no}"
+print_config_line "GRPC (module)" "${enable_grpc:=no}" "$grpc_warning_str"
+print_config_line "Cloud Auth (module)" "${enable_cloud_auth:=no}"
+print_config_line "GEOIP2 support (module)" "${enable_geoip2:=no}"
+print_config_line "Redis support (module)" "${enable_redis:=no}"
+print_config_line "Kafka support (module)" "${enable_kafka:=no}"
+print_config_line "Riemann destination (module)" "${enable_riemann:=no}, microseconds: ${riemann_micros:=no}"
+print_config_line "Python" "${enable_python:=no} (pkg-config package: ${with_python:=none}, packages: ${with_python_packages})"
+print_config_line "Python modules" "${enable_python_modules:=no}"
+print_config_line "Java" "${enable_java:=no}"
+print_config_line "Java modules" "${enable_java_modules:=no}"
+print_config_line "afsnmp module" "${enable_afsnmp:=no}"
+print_config_line "eBPF module" "${enable_ebpf:=no}"
+print_config_line "native bindings" "${enable_native:=no}"
+print_config_line "Example modules" "${enable_example_modules:=yes}"
+print_heading ""
