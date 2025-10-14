@@ -42,8 +42,12 @@
  */
 #include "evt_internals.h"
 
+#if defined(_WIN32)
+  #include "../compat/syslog.h"
+#else
+  #include <syslog.h>
+#endif
 #include <stdlib.h>
-#include <syslog.h>
 #include <string.h>
 
 /* local method implementation */
