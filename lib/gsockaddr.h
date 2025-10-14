@@ -29,9 +29,11 @@
 #include "atomic.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <compat/socket.h>
 #include <compat/un.h>
-#include <netinet/in.h>
+#ifndef _WIN32
+#include <netinet/in.h>   /* POSIX only; Windows gets this via compat/socket.h */
+#endif
 
 /* sockaddr public interface */
 

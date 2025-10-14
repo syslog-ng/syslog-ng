@@ -23,6 +23,15 @@
 #ifndef COMPAT_UN_H_INCLUDED
 #define COMPAT_UN_H_INCLUDED 1
 
+#if defined(_WIN32)
+
+  #ifndef SUN_LEN
+  # include <string.h>
+  # define SUN_LEN(ptr) ((socklen_t)(sizeof(*(ptr)) - sizeof((ptr)->sun_path) + strlen((ptr)->sun_path)))
+  #endif
+
+#else /* POSIX */
+
 #include <sys/un.h>
 
 /*
@@ -34,4 +43,6 @@
 #define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) + strlen ((ptr)->sun_path))
 #endif
 
-#endif
+#endif /* SYS_CHECK */
+
+#endif /* COMPAT_UN_H_INCLUDED */
