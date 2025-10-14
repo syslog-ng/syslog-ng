@@ -1,4 +1,4 @@
-4.10.1
+4.10.2
 ======
 
 syslog-ng provides [RPM](https://github.com/syslog-ng/syslog-ng#rhel) and [DEB](https://github.com/syslog-ng/syslog-ng#debianubuntu) package repositories for Ubuntu, Debian, and RHEL, for both amd64 and arm64 architectures.
@@ -7,18 +7,18 @@ We also provide ready-to-test binaries in [Docker containers](https://hub.docker
 
 For more details, visit our [Documentation Center](https://syslog-ng.github.io/)
 
-## Highlights
-
-Version 4.10.1 is a bugfix release, not needed by most users. It fixes the syslog-ng container and platform support in some less common situations.
+Version 4.10.2 is a bugfix release, and resolves the following issues.
 
 ## Bugfixes
 
-- You can now compile syslog-ng on FreeBSD 15 again.\
-  ([#5506](https://github.com/syslog-ng/syslog-ng/pull/5506))
-- The syslog-ng container has Python support working again.\
-  ([#5488](https://github.com/syslog-ng/syslog-ng/pull/5488))
-- Stackdump support compiles only on glibc Linux systems, but 	it also used to be enabled on others when libunwind was present. 	This problem affected embedded Linux systems using alternative libc 	implementations like OpenWRT and Gentoo in some cases. It is now 	turned off by default, therefore it needs to be explicitly enabled.\
-  ([#5506](https://github.com/syslog-ng/syslog-ng/pull/5506))
+- Queued stats values of destinations could still contain weird values.\
+  ([#5527](https://github.com/syslog-ng/syslog-ng/pull/5527))
+- Unclosed standard file handlers could cause a hang when syslog-ng was started as a daemon.\
+  ([#5532](https://github.com/syslog-ng/syslog-ng/pull/5532))
+- The WebHook Python module could hang syslog-ng when started by systemd and `systemctl stop syslog-ng` was requested.\
+  ([#5522](https://github.com/syslog-ng/syslog-ng/pull/5522))
+- Our installer packages now include static index web pages and are browsable via [RPM](https://ose-repo.syslog-ng.com/yum/) and [DEB](https://ose-repo.syslog-ng.com/apt/).\
+  ([#5517](https://github.com/syslog-ng/syslog-ng/pull/5517), [#5518](https://github.com/syslog-ng/syslog-ng/pull/5518), [#5520](https://github.com/syslog-ng/syslog-ng/pull/5520))
 
 ## Credits
 
@@ -31,4 +31,4 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Hofi, Kovacs Gergo Ferenc, Bruno Marinier, Josef Schlehofer
+Vivek Anand, Hofi, @gotyaoi, Kovacs Gergo Ferenc, Tamas Pal, @Tinkiter
