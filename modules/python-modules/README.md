@@ -134,7 +134,7 @@ from syslogng import LogDestination
 
 class MyDestination(LogDestination):
     def send(self, msg):
-	return True
+	    return True
 
 ```
 
