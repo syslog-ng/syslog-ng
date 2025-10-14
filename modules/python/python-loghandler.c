@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2025 One Identity
  * Copyright (c) 2025 Narkhov Evgeny <evgenynarkhov2@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -75,7 +76,7 @@ exit:
   return level_value;
 }
 
-static void _py_add_logging_level(PyObject* m, const gchar* level_name, glong level_value)
+static void _py_add_logging_level(PyObject *m, const gchar* level_name, glong level_value)
 {
   PyObject *add_level_function = NULL;
   PyObject *add_level_retval = NULL;

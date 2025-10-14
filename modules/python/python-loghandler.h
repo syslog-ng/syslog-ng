@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2025 One Identity
  * Copyright (c) 2025 Narkhov Evgeny <evgenynarkhov2@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
