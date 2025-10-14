@@ -398,7 +398,28 @@ set_target_properties(syslog-ng
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
     SOVERSION ${SYSLOG_NG_VERSION})
 
-gperf_generate(severity-aliases.table ${CMAKE_CURRENT_BINARY_DIR}/severity-aliases.h syslog-ng)
+
+# severity-aliases.h generation
+if (WIN32)
+  set(BASH "C:/msys64/usr/bin/bash.exe")
+  set(SEVERITY_IN    "${CMAKE_SOURCE_DIR}/lib/severity-aliases.table")
+  set(SEVERITY_CLEAN "${CMAKE_CURRENT_BINARY_DIR}/severity-aliases.clean.table")
+
+  add_custom_command(
+    OUTPUT  ${SEVERITY_CLEAN}
+    COMMAND ${BASH} -lc "sed 's/\\r$//' '${SEVERITY_IN}' > '${SEVERITY_CLEAN}'"
+    DEPENDS ${SEVERITY_IN}
+    VERBATIM)
+
+  # Reuse the existing macro, but feed it the cleaned file
+  gperf_generate(${SEVERITY_CLEAN}
+                 ${CMAKE_CURRENT_BINARY_DIR}/severity-aliases.h
+                 syslog-ng)
+else()
+  gperf_generate(severity-aliases.table
+                 ${CMAKE_CURRENT_BINARY_DIR}/severity-aliases.h
+                 syslog-ng)
+endif()
 
 if (${IVYKIS_INTERNAL})
    add_dependencies(syslog-ng IVYKIS)
