@@ -31,6 +31,9 @@ int kafka_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword kafka_keywords[] =
 {
+  { "kafka",          KW_KAFKA },
+  { "kafka_c",        KW_KAFKA_C },   /* compatibility with old incubator naming */
+
   { "topic",          KW_TOPIC },
   { "fallback_topic", KW_FALLBACK_TOPIC},
 
@@ -44,7 +47,6 @@ static CfgLexerKeyword kafka_keywords[] =
   { "sync_send",      KW_SYNC_SEND},
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
   { "poll_timeout",   KW_POLL_TIMEOUT },
-  { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
   { NULL }
 };
 

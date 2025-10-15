@@ -56,6 +56,7 @@
 %type <ptr> kafka_property
 
 %token KW_KAFKA
+%token KW_KAFKA_C
 %token KW_TOPIC
 %token KW_FALLBACK_TOPIC
 %token KW_CONFIG
@@ -68,11 +69,16 @@
 %%
 
 start
-        : LL_CONTEXT_DESTINATION KW_KAFKA
-          {
+        : LL_CONTEXT_DESTINATION kafka_keyword
+        {
             last_driver = *instance = kafka_dd_new(configuration);
-          }
-          '(' _inner_dest_context_push kafka_options _inner_dest_context_pop ')' { YYACCEPT; }
+        }
+        '(' _inner_dest_context_push kafka_options _inner_dest_context_pop ')' { YYACCEPT; }
+        ;
+
+kafka_keyword
+        : KW_KAFKA
+        | KW_KAFKA_C
         ;
 
 kafka_options
@@ -89,7 +95,7 @@ kafka_option
         {
             kafka_dd_set_fallback_topic(last_driver, $3);
             free($3);
-        } 
+        }
         | KW_CONFIG '(' kafka_properties ')'
         {
             kafka_dd_merge_config(last_driver, $3);
@@ -102,11 +108,11 @@ kafka_option
         {
             kafka_dd_set_message_ref(last_driver, $3);
         }
-	| KW_FLUSH_TIMEOUT_ON_SHUTDOWN '(' nonnegative_integer ')'    { kafka_dd_set_flush_timeout_on_shutdown(last_driver, $3); }
-	| KW_FLUSH_TIMEOUT_ON_RELOAD '(' nonnegative_integer ')'      { kafka_dd_set_flush_timeout_on_reload(last_driver, $3); }
+        | KW_FLUSH_TIMEOUT_ON_SHUTDOWN '(' nonnegative_integer ')'    { kafka_dd_set_flush_timeout_on_shutdown(last_driver, $3); }
+        | KW_FLUSH_TIMEOUT_ON_RELOAD '(' nonnegative_integer ')'      { kafka_dd_set_flush_timeout_on_reload(last_driver, $3); }
         | KW_POLL_TIMEOUT '(' nonnegative_integer ')'                 { kafka_dd_set_poll_timeout(last_driver, $3); }
-	| KW_BOOTSTRAP_SERVERS '(' string ')'                         { kafka_dd_set_bootstrap_servers(last_driver, $3); free($3); }
-	| KW_SYNC_SEND '(' yesno ')'                                  { kafka_dd_set_transaction_commit(last_driver, $3); }
+        | KW_BOOTSTRAP_SERVERS '(' string ')'                         { kafka_dd_set_bootstrap_servers(last_driver, $3); free($3); }
+        | KW_SYNC_SEND '(' yesno ')'                                  { kafka_dd_set_transaction_commit(last_driver, $3); }
         | threaded_dest_driver_general_option
         | threaded_dest_driver_batch_option
         | threaded_dest_driver_workers_option
@@ -114,21 +120,21 @@ kafka_option
         ;
 
 kafka_properties
-	:
-	{
-		static CfgLexerKeyword empty_keywords[] = {{ CFG_KEYWORD_STOP }};
-		cfg_lexer_push_context(lexer, LL_CONTEXT_CONFIG, empty_keywords, "kafka_config_block");
-	}
-	kafka_properties_list
-	{
-		cfg_lexer_pop_context(lexer);
-		$$ = $2;
-	}
-	;
+        :
+        {
+            static CfgLexerKeyword empty_keywords[] = {{ CFG_KEYWORD_STOP }};
+            cfg_lexer_push_context(lexer, LL_CONTEXT_CONFIG, empty_keywords, "kafka_config_block");
+        }
+        kafka_properties_list
+        {
+            cfg_lexer_pop_context(lexer);
+            $$ = $2;
+        }
+        ;
 
 kafka_properties_list
-        : kafka_property kafka_properties_list			{ $$ = g_list_prepend($2, $1); }
-        |							{ $$ = NULL; }
+        : kafka_property kafka_properties_list  { $$ = g_list_prepend($2, $1); }
+        |                                       { $$ = NULL; }
         ;
 
 kafka_property

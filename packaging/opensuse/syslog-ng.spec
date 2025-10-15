@@ -617,10 +617,6 @@ ln -sf %{_sbindir}/syslog-ng %{buildroot}/sbin/
 rm %{buildroot}/usr/bin/update-patterndb
 
 rm %{buildroot}%{_datadir}/syslog-ng/include/scl/hdfs/plugin.conf
-rm %{buildroot}%{_datadir}/syslog-ng/include/scl/kafka/kafka.conf
-rmdir %{buildroot}%{_datadir}/syslog-ng/include/scl/kafka
-
-
 
 # create ghosts
 install -d -m755 %{buildroot}%{syslog_ng_rundir}
