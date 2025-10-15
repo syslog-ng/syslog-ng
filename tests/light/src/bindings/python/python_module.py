@@ -45,6 +45,8 @@ class DummyPythonModule(object):
 
         if file.stem in self.files:
             raise FileExistsError("the file %s cannot be copied since it clashes with %s under %s" % (file, file.stem, self.files[file.stem]))
+
+        self.files[file.stem] = file
         copy_file(file, (self.module_path / file.stem).with_suffix(".py"))
 
     def replace_file(self, file: Path, stem: str):
