@@ -284,7 +284,7 @@ report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, 
 
   if (in_main_grammar)
     fprintf(stderr, "\nsyslog-ng documentation: %s\n"
-                    "contact: %s\n", PRODUCT_DOCUMENTATION, PRODUCT_CONTACT);
+            "contact: %s\n\n", PRODUCT_DOCUMENTATION, PRODUCT_CONTACT);
 
 }
 
