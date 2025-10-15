@@ -110,7 +110,9 @@ class AzureContainerSynchronizer(RemoteStorageSynchronizer):
 
     def __upload_file(self, relative_file_path: str) -> None:
         local_path = Path(self.local_dir.root_dir, relative_file_path)
-        mimetype = str(mimetypes.guess_type(local_path.name)[0])
+        mimetype = mimetypes.guess_type(local_path.name)[0]
+        if mimetype is None:
+            mimetype = "application/octet-stream"
         content_settings = ContentSettings(content_type=mimetype)
         self._log_info(
             "Uploading file.",
