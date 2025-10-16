@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2012 Balabit
  * Copyright (c) 2012 Balazs Scheidler <bazsi@balabit.hu>
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

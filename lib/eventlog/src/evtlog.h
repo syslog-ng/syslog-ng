@@ -1,6 +1,7 @@
 /*
  * Event Logging API
  * Copyright (c) 2003 BalaBit IT Ltd.
+ * Copyright (c) 2025 One Identity
  * All rights reserved.
  * Author: Balazs Scheidler
  *

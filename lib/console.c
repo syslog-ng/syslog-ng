@@ -3,6 +3,7 @@
  * Copyright (c) 1998-2012 Balázs Scheidler
  * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
  * Copyright (c) 2025 Hofi <hofione@gmail.com>
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

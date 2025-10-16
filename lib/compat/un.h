@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2002-2018 Balabit
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +43,7 @@
   #if __has_include(<afunix.h>)
     #include <afunix.h>
   #endif
-  
+
   #ifndef SUN_LEN
     #include <string.h>
     #define SUN_LEN(ptr) ((size_t)(((struct sockaddr_un *)0)->sun_path) + strlen((ptr)->sun_path))
