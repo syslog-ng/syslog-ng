@@ -28,8 +28,7 @@
 #include "messages.h"
 #include "dnscache.h"
 
-#include <unistd.h>
-#include <arpa/inet.h>
+#include "compat/socket.h"
 #include <string.h>
 
 static gchar local_hostname_fqdn[256];
@@ -63,7 +62,11 @@ extract_domain_from_fqdn(const gchar *hostname)
   return NULL;
 }
 
-#include "hostname-unix.c"
+#ifndef _WIN32
+  #include "hostname-unix.c"
+#else
+  #include "hostname-windows.c"
+#endif
 
 static void
 validate_hostname_cache(void)

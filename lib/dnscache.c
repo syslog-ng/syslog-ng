@@ -29,9 +29,6 @@
 
 #include <sys/types.h>
 #include "compat/socket.h"
-#ifndef _WIN32
-  #include <netinet/in.h>
-#endif
 #include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>

@@ -25,6 +25,8 @@
 /* NOTE: this file is included directly into hostname.c so the set of
  * includes here only add system dependent headers and not the full set
  */
+#ifndef _WIN32
+
 #include <netdb.h>
 
 static struct hostent *
@@ -72,3 +74,5 @@ get_local_fqdn_hostname_from_dns(void)
 
   return NULL;
 }
+
+#endif

@@ -25,7 +25,7 @@
 #include "gsocket.h"
 
 #include <errno.h>
-#include <arpa/inet.h>
+#include "compat/socket.h"
 
 /**
  * g_inet_ntoa:
