@@ -27,10 +27,10 @@
 #include "messages.h"
 
 #ifndef _WIN32
-  #include <unistd.h>
-  #include <signal.h>
+#include <unistd.h>
+#include <signal.h>
 #else
-  #include <windows.h>
+#include <windows.h>
 #endif
 
 #include <string.h>
@@ -55,7 +55,8 @@ static HANDLE g_alarm_timer = NULL;
 static VOID CALLBACK
 _alarm_callback(PVOID ctx, BOOLEAN fired)
 {
-  (void)ctx; (void)fired;
+  (void)ctx;
+  (void)fired;
   sig_alarm_received = TRUE;
   alarm_pending = FALSE;
 }

@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
- #pragma once
+#pragma once
 
 #include <stddef.h>
 

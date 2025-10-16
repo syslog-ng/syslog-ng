@@ -42,13 +42,13 @@
 #define __EVTLOG_H_INCLUDED
 
 #if defined(_WIN32) || defined(_MSC_VER)
-  #include "../compat/syslog.h"
+#include "../compat/syslog.h"
 #else
-  #include <syslog.h>
-  #include <sys/types.h>
-  #include <sys/socket.h>
-  #include <netinet/in.h>
-  #include <arpa/inet.h>
+#include <syslog.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #endif
 #include <stdarg.h>
 #include <glib.h>

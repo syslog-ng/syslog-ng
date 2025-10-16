@@ -21,7 +21,7 @@
  *
  */
 
- 
+
 /* NOTE: this file is included directly into hostname.c so the set of
  * includes here only add system dependent headers and not the full set
  */
@@ -57,13 +57,14 @@ _extract_fqdn_from_addrinfo(struct addrinfo *res)
     return g_strdup(res->ai_canonname);
 
   /* 2) fallback: reverse lookup first address and require dot */
-  if (res && res->ai_addr) {
-    char fqdn[NI_MAXHOST] = {0};
-    if (getnameinfo(res->ai_addr, (socklen_t)res->ai_addrlen,
-                    fqdn, sizeof(fqdn), NULL, 0, NI_NAMEREQD) == 0 &&
-        strchr(fqdn, '.'))
-      return g_strdup(fqdn);
-  }
+  if (res && res->ai_addr)
+    {
+      char fqdn[NI_MAXHOST] = {0};
+      if (getnameinfo(res->ai_addr, (socklen_t)res->ai_addrlen,
+                      fqdn, sizeof(fqdn), NULL, 0, NI_NAMEREQD) == 0 &&
+          strchr(fqdn, '.'))
+        return g_strdup(fqdn);
+    }
   return NULL;
 }
 

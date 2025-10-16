@@ -23,29 +23,30 @@
 
 #pragma once
 #if !defined(_WIN32)
-  #include <glob.h>
+#include <glob.h>
 #else
-  #include <stddef.h>
+#include <stddef.h>
 
-  typedef struct {
-    size_t gl_pathc;   /* # of matched paths */
-    char **gl_pathv;   /* vector of paths (NULL-terminated not required here) */
-    size_t gl_offs;    /* ignored by our shim */
-  } glob_t;
+typedef struct
+{
+  size_t gl_pathc;   /* # of matched paths */
+  char **gl_pathv;   /* vector of paths (NULL-terminated not required here) */
+  size_t gl_offs;    /* ignored by our shim */
+} glob_t;
 
-  /* flags we (partially) support */
-  #define GLOB_ERR      0x01
-  #define GLOB_MARK     0x02   /* append '/' to directories */
-  #define GLOB_NOSORT   0x04   /* don't sort */
-  #define GLOB_NOCHECK  0x08   /* if no match, return pattern itself */
-  #define GLOB_APPEND   0x10   /* append to existing gl_pathv (basic support) */
-  #define GLOB_DOOFFS   0x20   /* ignored */
+/* flags we (partially) support */
+#define GLOB_ERR      0x01
+#define GLOB_MARK     0x02   /* append '/' to directories */
+#define GLOB_NOSORT   0x04   /* don't sort */
+#define GLOB_NOCHECK  0x08   /* if no match, return pattern itself */
+#define GLOB_APPEND   0x10   /* append to existing gl_pathv (basic support) */
+#define GLOB_DOOFFS   0x20   /* ignored */
 
-  /* return codes */
-  #define GLOB_NOSPACE  1
-  #define GLOB_ABORTED  2
-  #define GLOB_NOMATCH  3
+/* return codes */
+#define GLOB_NOSPACE  1
+#define GLOB_ABORTED  2
+#define GLOB_NOMATCH  3
 
-  int glob(const char *pattern, int flags, int (*errfunc)(const char *, int), glob_t *pglob);
-  void globfree(glob_t *pglob);
+int glob(const char *pattern, int flags, int (*errfunc)(const char *, int), glob_t *pglob);
+void globfree(glob_t *pglob);
 #endif

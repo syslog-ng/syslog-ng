@@ -31,9 +31,9 @@
 #include <errno.h>
 
 #ifndef _WIN32
-  #include <syslog.h>
+#include <syslog.h>
 #else
-  #include "compat/syslog.h"
+#include "compat/syslog.h"
 #endif
 
 GMutex console_lock;

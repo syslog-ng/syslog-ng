@@ -64,9 +64,9 @@ extract_domain_from_fqdn(const gchar *hostname)
 }
 
 #ifndef _WIN32
-  #include "hostname-unix.c"
+#include "hostname-unix.c"
 #else
-  #include "hostname-windows.c"
+#include "hostname-windows.c"
 #endif
 
 static void

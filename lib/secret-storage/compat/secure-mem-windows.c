@@ -50,7 +50,8 @@ secure_mem_mmap_anon_rw(gsize len)
 gboolean
 secure_mem_exclude_from_core_dump(gpointer area, gsize len)
 {
-  (void)area; (void)len;
+  (void)area;
+  (void)len;
   return TRUE;
 }
 

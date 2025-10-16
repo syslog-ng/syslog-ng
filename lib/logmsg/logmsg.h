@@ -38,10 +38,10 @@
 #include <sys/types.h>
 #include <compat/socket.h>
 #ifndef _WIN32
-  #include <netinet/in.h>   /* POSIX only; Windows gets this via compat/socket.h */
-  #include <sys/time.h>
+#include <netinet/in.h>   /* POSIX only; Windows gets this via compat/socket.h */
+#include <sys/time.h>
 #else
-  #include "compat/time.h"
+#include "compat/time.h"
 #endif
 #include <iv_list.h>
 

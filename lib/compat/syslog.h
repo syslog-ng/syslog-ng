@@ -66,9 +66,10 @@
 
 #define INTERNAL_NOPRI 0x10        /* the "no priority" priority */
 #define        INTERNAL_MARK        LOG_MAKEPRI(LOG_NFACILITIES, 0)
-typedef struct _code {
-        char        *c_name;
-        int        c_val;
+typedef struct _code
+{
+  char        *c_name;
+  int        c_val;
 } CODE;
 
 extern const CODE prioritynames[];

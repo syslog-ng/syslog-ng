@@ -24,7 +24,7 @@
 #pragma once
 
 //#if defined(_WIN32)
-  #include "secure-mem-windows.h"
+#include "secure-mem-windows.h"
 // #else
 //   #include "secure-mem-posix.h"
 // #endif

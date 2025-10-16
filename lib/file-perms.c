@@ -34,13 +34,13 @@
 #include <errno.h>
 
 #ifndef _WIN32
-  #include <unistd.h>
+#include <unistd.h>
 #else
-  #include <windows.h>
-  #include <io.h>
-  #include <direct.h>
-  typedef int uid_t;      /* stubs for API parity */
-  typedef int gid_t;
+#include <windows.h>
+#include <io.h>
+#include <direct.h>
+typedef int uid_t;      /* stubs for API parity */
+typedef int gid_t;
 #endif
 
 #define DONTCHANGE -2

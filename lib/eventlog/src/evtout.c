@@ -44,9 +44,9 @@
 #include "evt_internals.h"
 
 #if defined(_WIN32)
-  #include "../compat/syslog.h"
+#include "../compat/syslog.h"
 #else
-  #include <syslog.h>
+#include <syslog.h>
 #endif
 #include <stdlib.h>
 #include <string.h>
