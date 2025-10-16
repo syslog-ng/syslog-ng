@@ -249,14 +249,27 @@ static LogThreadedFetchResult
 _fetch(LogThreadedSourceWorker *worker)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
-  gboolean fetchedEnough = (self->options.fetch_limit && self->curr_fetch_in_run > self->options.fetch_limit);
-  OSLogEntry *nextLogEntry = (fetchedEnough ? nil :[self->osLogSource fetchNextEntry]);
+  gboolean fetchedEnough = (self->options.fetch_limit && self->curr_fetch_in_run >= self->options.fetch_limit);
+  OSLogEntry *nextLogEntry = (fetchedEnough ? nil : [self->osLogSource fetchNextEntry]);
 
   if (nextLogEntry == nil)
     {
-      msg_trace(nextLogEntry ? "darwinosl: Fetch limit reached" : "darwinosl: No more log data currently");
+      msg_trace(fetchedEnough ? "darwinosl: Fetch limit reached" : "darwinosl: No more log data currently");
       msg_debug("darwinosl: Fetched logs in this run", evt_tag_long("fetch_count", (long) self->curr_fetch_in_run));
-      LogThreadedFetchResult result = {THREADED_FETCH_NO_DATA, NULL};
+
+      log_threaded_source_worker_close_batch(worker);
+      /*
+         TODO: Dual return code is needed due to an actual macOS API bug https://openradar.appspot.com/radar?id=5597032077066240, as
+               interrupting the reading from an open cursor would lead to unclosed enumerator threads with
+               an unreleased OSLogEntry item array in each.
+               Once the issue is fixed we can simplify this again to just use THREADED_FETCH_NO_DATA.
+          So, now THREADED_FETCH_TRY_AGAIN means, continue reading (after iteration_sleep_time ellapsed)
+              and THREADED_FETCH_NO_DATA means, close and reopen the store (after fetch_retry_delay elapsed)
+        */
+      LogThreadedFetchResult result = {fetchedEnough ? THREADED_FETCH_TRY_AGAIN : THREADED_FETCH_NO_DATA, NULL};
+      /* this will not be needed either once the above mentioned issue is fixed */
+      self->curr_fetch_in_run = 0;
+
       return result;
     }
 
@@ -345,7 +358,7 @@ _run(LogThreadedSourceWorker *worker)
               LogThreadedFetchResult res = _fetch(worker);
               if (res.result == THREADED_FETCH_SUCCESS)
                 _send(worker, res.msg);
-              else
+              else if (res.result != THREADED_FETCH_TRY_AGAIN) /* See _fetch for meanng of THREADED_FETCH_TRY_AGAIN */
                 break;
             }
             _sleep(self, iteration_sleep_time);
@@ -569,6 +582,9 @@ darwinosl_sd_set_log_fetch_limit(LogDriver *s, guint new_value)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
   self->options.fetch_limit = new_value;
+
+  // We use our batch handling if fetch_limit is set
+  self->super.auto_close_batches = (self->options.fetch_limit == 0);
 }
 
 gboolean
