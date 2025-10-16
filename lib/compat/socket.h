@@ -63,6 +63,7 @@ typedef int socklen_t;
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 #if ! SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage

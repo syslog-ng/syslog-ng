@@ -23,7 +23,8 @@ compatinclude_HEADERS		= 	\
 	lib/compat/cpp-start.h	\
 	lib/compat/cpp-end.h	\
 	lib/compat/curl.h	\
-	lib/compat/inttypes.h
+	lib/compat/inttypes.h	\
+	lib/compat/gprocess-compat.h
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\

@@ -31,23 +31,15 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/ioctl.h>
 #include <time.h>
-#include <sys/resource.h>
-#include <sys/wait.h>
 #include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <termios.h>
-#include <signal.h>
 
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <pwd.h>
-#include <grp.h>
+#include "compat/gprocess-compat.h"
 
 #if SYSLOG_NG_ENABLE_LINUX_CAPS
 # include <sys/capability.h>
@@ -108,7 +100,7 @@ static cap_value_t cap_syslog;
 #ifdef __APPLE__
 #include <crt_externs.h>
 #define environ (*_NSGetEnviron())
-#else
+#elif !defined(_WIN32)
 extern char **environ;
 #endif
 
@@ -1104,6 +1096,8 @@ g_process_setproctitle(const gchar *proc_title)
  * Supervise process, returns only in the context of the daemon process, the
  * supervisor process exits here.
  **/
+#ifndef _WIN32
+
 static void
 g_process_perform_supervise(void)
 {
@@ -1303,6 +1297,17 @@ g_process_perform_supervise(void)
   exit(0);
 }
 
+#else  /* _WIN32 */
+
+gboolean
+g_process_perform_supervise(void)
+{
+  /* No fork/exec/signals on Windows in this port: run inline */
+  msg_warning("Process supervision is not supported on Windows; running in-process");
+  return TRUE;
+}
+
+#endif
 
 static void
 g_process_setup_fatal_signal_handler(void)
@@ -1329,6 +1334,8 @@ g_process_start(void)
       exit(1);
     }
 
+#ifndef _WIN32
+  /* ---------- POSIX path (unchanged) ---------- */
   if (process_opts.mode == G_PM_BACKGROUND)
     {
       /* no supervisor, sends result to startup process directly */
@@ -1414,14 +1421,36 @@ g_process_start(void)
       g_assert_not_reached();
     }
 
+#else
+  /* ---------- Windows fallback (no fork, no supervisor) ---------- */
+
+  if (process_opts.mode == G_PM_BACKGROUND || process_opts.mode == G_PM_SAFE_BACKGROUND)
+    {
+      msg_warning("Background/safe-background mode is not supported on Windows; running in foreground");
+      process_kind = G_PK_DAEMON;
+      /* pipes are not needed; g_process_perform_startup/supervise are POSIX-only */
+    }
+  else if (process_opts.mode == G_PM_FOREGROUND)
+    {
+      process_kind = G_PK_DAEMON;
+    }
+  else
+    {
+      g_assert_not_reached();
+    }
+
+#endif /* _WIN32 */
+
   g_process_setup_fatal_signal_handler();
 
+#ifndef _WIN32
   /* daemon process, we should return to the caller to perform work */
   /* Only call setsid() for backgrounded processes. */
   if (process_opts.mode != G_PM_FOREGROUND)
     {
       setsid();
     }
+#endif /* _WIN32 */
 
   /* NOTE: we need to signal the parent in case of errors from this point.
    * This is accomplished by writing the appropriate exit code to
