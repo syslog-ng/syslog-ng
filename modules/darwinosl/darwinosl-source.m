@@ -246,8 +246,9 @@ _close_osl(DarwinOSLogSourceDriver *self)
 
 /* runs in a dedicated thread */
 static LogThreadedFetchResult
-_fetch(DarwinOSLogSourceDriver *self)
+_fetch(LogThreadedSourceWorker *worker)
 {
+  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
   gboolean fetchedEnough = (self->options.fetch_limit && self->curr_fetch_in_run > self->options.fetch_limit);
   OSLogEntry *nextLogEntry = (fetchedEnough ? nil :[self->osLogSource fetchNextEntry]);
 
@@ -271,8 +272,7 @@ _fetch(DarwinOSLogSourceDriver *self)
   self->log_source_position.log_position = [nextLogEntry.date timeIntervalSince1970];
   self->log_source_position.last_msg_hash = g_str_hash(log_string);
 
-  LogSource *worker = (LogSource *) self->super.workers[0];
-  Bookmark *bookmark = ack_tracker_request_bookmark(worker->ack_tracker);
+  Bookmark *bookmark = ack_tracker_request_bookmark(worker->super.ack_tracker);
   darwinosl_source_persist_fill_bookmark(self->log_source_persist, bookmark, self->log_source_position);
   msg_trace("darwinosl: Bookmark created",
             evt_tag_printf("position", "%.6f", self->log_source_position.log_position),
@@ -342,7 +342,7 @@ _run(LogThreadedSourceWorker *worker)
           {
             @autoreleasepool
             {
-              LogThreadedFetchResult res = _fetch(self);
+              LogThreadedFetchResult res = _fetch(worker);
               if (res.result == THREADED_FETCH_SUCCESS)
                 _send(worker, res.msg);
               else
