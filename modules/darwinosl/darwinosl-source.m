@@ -329,15 +329,16 @@ _run(LogThreadedSourceWorker *worker)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
   const gdouble iteration_sleep_time = 1.0 / self->options.fetch_delay;
+  gboolean exit_requested = FALSE;
 
-  while (FALSE == g_atomic_counter_get(&self->exit_requested))
+  while (FALSE == (exit_requested = g_atomic_counter_get(&self->exit_requested)))
     {
       @autoreleasepool
       {
         if (FALSE == _open_osl(self))
           break;
 
-        while (FALSE == g_atomic_counter_get(&self->exit_requested))
+        while (FALSE == (exit_requested = g_atomic_counter_get(&self->exit_requested)))
           {
             @autoreleasepool
             {
@@ -352,7 +353,7 @@ _run(LogThreadedSourceWorker *worker)
 
         _close_osl(self);
       }
-      if (self->options.fetch_retry_delay)
+      if (FALSE == exit_requested && self->options.fetch_retry_delay)
         _sleep(self, self->options.fetch_retry_delay);
     }
 }
