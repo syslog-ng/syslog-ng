@@ -23,8 +23,8 @@
 
 #pragma once
 
-//#if defined(_WIN32)
+#if defined(_WIN32)
 #include "secure-mem-windows.h"
-// #else
-//   #include "secure-mem-posix.h"
-// #endif
+#else
+#include "secure-mem-posix.h"
+#endif

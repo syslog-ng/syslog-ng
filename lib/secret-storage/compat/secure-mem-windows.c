@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-//#if defined (_WIN32)
+#if defined (_WIN32)
 
 #include "secure-mem-windows.h"
 #define WIN32_LEAN_AND_MEAN
@@ -84,4 +84,4 @@ secure_mem_zero(volatile void *p, gsize len)
   SecureZeroMemory((PVOID)p, (SIZE_T)len);
 }
 
-//#endif
+#endif
