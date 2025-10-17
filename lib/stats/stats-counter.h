@@ -70,8 +70,6 @@
 #define STATS_COUNTER_MAX_VALUE G_MAXSIZE
 #endif
 
-#define STATS_COUNTER_MAX_VALUE G_MAXSIZE
-
 typedef struct _StatsCounterItem
 {
   union
