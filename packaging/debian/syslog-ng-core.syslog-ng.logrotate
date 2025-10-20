@@ -7,7 +7,7 @@
 	delaycompress
 	compress
 	postrotate
-		syslog-ng-ctl reload > /dev/null
+		syslog-ng-ctl reopen > /dev/null
 	endscript
 }
 
@@ -33,6 +33,6 @@
 	delaycompress
 	sharedscripts
 	postrotate
-		syslog-ng-ctl reload > /dev/null
+		syslog-ng-ctl reopen > /dev/null
 	endscript
 }
