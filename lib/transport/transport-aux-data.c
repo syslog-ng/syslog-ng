@@ -23,7 +23,7 @@
 #include "transport-aux-data.h"
 #include "messages.h"
 
-#include <sys/uio.h>
+#include "compat/uio.h"
 
 void
 log_transport_aux_data_add_nv_pair(LogTransportAuxData *self, const gchar *name, const gchar *value)

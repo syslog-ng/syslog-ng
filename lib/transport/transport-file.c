@@ -25,7 +25,7 @@
 
 #include <errno.h>
 #include <unistd.h>
-#include <sys/uio.h>
+#include "compat/uio.h"
 
 gssize
 log_transport_file_read_method(LogTransport *self, gpointer buf, gsize buflen, LogTransportAuxData *aux)

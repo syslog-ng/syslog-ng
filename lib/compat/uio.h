@@ -31,4 +31,8 @@ struct iovec
   size_t iov_len;
 };
 
+#else
+
+#include <sys/uio.h>
+
 #endif

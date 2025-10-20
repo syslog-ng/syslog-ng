@@ -210,9 +210,10 @@ file_perm_options_apply_file(const FilePermOptions *self, const gchar *path)
 gboolean
 file_perm_options_apply_symlink(const FilePermOptions *self, const gchar *path)
 {
+  gboolean result = TRUE;
 #ifdef _WIN32
   /* no fchown/fchmod; treat as success */
-  return TRUE;
+  return result;
 #elif defined(_MSC_VER)
   gboolean result = TRUE;
 
@@ -220,8 +221,8 @@ file_perm_options_apply_symlink(const FilePermOptions *self, const gchar *path)
     result = FALSE;
   if (self->file_gid >= 0 && lchown(path, -1, (gid_t) self->file_gid) < 0)
     result = FALSE;
-  return result;
 #endif
+  return result;
 }
 
 gboolean
@@ -246,21 +247,19 @@ file_perm_options_apply_dir(const FilePermOptions *self, const gchar *path)
 gboolean
 file_perm_options_apply_fd(const FilePermOptions *self, gint fd)
 {
+  gboolean result = TRUE;
 #ifdef _WIN32
   /* no fchown/fchmod; treat as success */
-  return TRUE;
+  return result;
 #elif defined(_MSC_VER)
-  gboolean result = TRUE;
-
   if (self->file_uid >= 0 && fchown(fd, (uid_t) self->file_uid, -1) < 0)
     result = FALSE;
   if (self->file_gid >= 0 && fchown(fd, -1, (gid_t) self->file_gid) < 0)
     result = FALSE;
   if (self->file_perm >= 0 && fchmod(fd, (mode_t) self->file_perm) < 0)
     result = FALSE;
-
-  return result;
 #endif
+  return result;
 }
 
 static gboolean
