@@ -42,7 +42,7 @@
 
 #include "evt_internals.h"
 
-#include "../compat/socket.h"
+#include "compat/socket.h"
 
 #include <stdio.h>
 #include <stdlib.h>

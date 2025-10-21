@@ -6,13 +6,11 @@ add_library(eventlog SHARED
   src/evtstr.c
   src/evtsyslog.c
   src/evttags.c
-  compat/syslog.c
+  src/compat/syslog.c
 )
 
 target_include_directories(eventlog
   SYSTEM
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/compat
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )

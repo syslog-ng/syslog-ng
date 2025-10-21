@@ -1,4 +1,4 @@
-#include <syslog.h>
+#include "compat/syslog.h"
 
 #ifdef EVENTLOG_SYSLOG_MACROS
 #include <evtlog.h>

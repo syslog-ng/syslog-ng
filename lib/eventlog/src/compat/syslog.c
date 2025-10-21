@@ -23,6 +23,7 @@
 #include "syslog.h"
 
 #if defined(_WIN32)
+
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -136,4 +137,5 @@ void closelog(void)
   g_options = 0;
   g_facility = LOG_USER;
 }
+
 #endif /* _WIN32 */

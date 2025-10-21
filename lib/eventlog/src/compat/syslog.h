@@ -22,6 +22,8 @@
  */
 #pragma once
 
+#if defined(_WIN32)
+
 #include <stdarg.h>
 
 /* Priorities */
@@ -96,3 +98,9 @@ extern const CODE facilitynames[];
 void openlog(const char *ident, int option, int facility);
 void syslog(int priority, const char *fmt, ...);
 void closelog(void);
+
+#else
+
+#include <syslog.h>
+
+#endif
