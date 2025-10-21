@@ -27,7 +27,8 @@ compatinclude_HEADERS		= 	\
 	lib/compat/gprocess-compat.h	\
 	lib/compat/uio.h	\
 	lib/compat/syslog.h	\
-	lib/compat/alarm.h
+	lib/compat/alarm.h	\
+	lib/compat/glob.h
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\
@@ -43,6 +44,7 @@ compat_sources			= 	\
 	lib/compat/openssl_support.c	\
 	lib/compat/getent-sun.c		\
 	lib/compat/getent-openbsd.c	\
-	lib/compat/getent-generic.c
+	lib/compat/getent-generic.c	\
+	lib/compat/glob-win.c
 
 include lib/compat/tests/Makefile.am
