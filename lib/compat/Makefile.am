@@ -25,7 +25,9 @@ compatinclude_HEADERS		= 	\
 	lib/compat/curl.h	\
 	lib/compat/inttypes.h	\
 	lib/compat/gprocess-compat.h	\
-	lib/compat/uio.h
+	lib/compat/uio.h	\
+	lib/compat/syslog.h	\
+	lib/compat/alarm.h
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\

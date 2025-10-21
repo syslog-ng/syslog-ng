@@ -20,6 +20,8 @@ set(COMPAT_HEADERS
     compat/json.h
     compat/inttypes.h
     compat/uio.h
+    compat/syslog.h
+    compat/alarm.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES
