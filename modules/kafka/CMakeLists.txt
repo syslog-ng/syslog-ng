@@ -21,7 +21,9 @@ set(KAFKA_SOURCES
   kafka-parser.c
   kafka-parser.h
   kafka-plugin.c
+  kafka-dest-driver.h
   kafka-dest-driver.c
+  kafka-dest-worker.h
   kafka-dest-worker.c
   kafka-props.c
   kafka-internal.h
