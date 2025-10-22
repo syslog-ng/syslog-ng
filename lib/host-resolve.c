@@ -33,7 +33,13 @@
 #include <iv.h>
 
 #include <string.h>
+
+#ifndef _WIN32
 #include <resolv.h>
+#else
+#include <windns.h>     /* DnsQuery_*, DNS_RECORD, etc. (if you need raw DNS) */
+/* ws2tcpip is already reachable via compat/socket.h for getaddrinfo/getnameinfo */
+#endif
 
 #ifndef AI_V4MAPPED
 #define AI_V4MAPPED 0
@@ -475,7 +481,10 @@ host_resolve_options_destroy(HostResolveOptions *options)
 static void
 _reinit_resolver(gint type, gpointer user_data)
 {
+  /* Windows: no-op; DNS Client service updates automatically. DnsFlushResolverCache() for an immediate refresh can be used.*/
+#ifndef _WIN32
   res_init();
+#endif
 }
 
 void
