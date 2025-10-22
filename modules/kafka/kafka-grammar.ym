@@ -73,7 +73,10 @@ start
         {
             last_driver = *instance = kafka_dd_new(configuration);
         }
-        '(' _inner_dest_context_push kafka_options _inner_dest_context_pop ')' { YYACCEPT; }
+        '(' _inner_dest_context_push kafka_dest_options _inner_dest_context_pop ')'
+        {
+            YYACCEPT;
+        }
         ;
 
 kafka_keyword
@@ -81,38 +84,22 @@ kafka_keyword
         | KW_KAFKA_C
         ;
 
-kafka_options
-        : kafka_option kafka_options
+kafka_dest_options
+        : kafka_dest_option kafka_dest_options
         |
         ;
 
-kafka_option
-        : KW_TOPIC '(' template_content ')'
-        {
-            kafka_dd_set_topic(last_driver, $3);
-        }
-        | KW_FALLBACK_TOPIC '(' string ')'
-        {
-            kafka_dd_set_fallback_topic(last_driver, $3);
-            free($3);
-        }
-        | KW_CONFIG '(' kafka_properties ')'
-        {
-            kafka_dd_merge_config(last_driver, $3);
-        }
-        | KW_KEY '(' template_content ')'
-        {
-            kafka_dd_set_key_ref(last_driver, $3);
-        }
-        | KW_MESSAGE '(' template_name_or_content ')'
-        {
-            kafka_dd_set_message_ref(last_driver, $3);
-        }
-        | KW_FLUSH_TIMEOUT_ON_SHUTDOWN '(' nonnegative_integer ')'    { kafka_dd_set_flush_timeout_on_shutdown(last_driver, $3); }
-        | KW_FLUSH_TIMEOUT_ON_RELOAD '(' nonnegative_integer ')'      { kafka_dd_set_flush_timeout_on_reload(last_driver, $3); }
-        | KW_POLL_TIMEOUT '(' nonnegative_integer ')'                 { kafka_dd_set_poll_timeout(last_driver, $3); }
-        | KW_BOOTSTRAP_SERVERS '(' string ')'                         { kafka_dd_set_bootstrap_servers(last_driver, $3); free($3); }
-        | KW_SYNC_SEND '(' yesno ')'                                  { kafka_dd_set_transaction_commit(last_driver, $3); }
+kafka_dest_option
+        : KW_BOOTSTRAP_SERVERS '(' string ')'                       { kafka_dd_set_bootstrap_servers(last_driver, $3); free($3); }
+        | KW_CONFIG '(' kafka_properties ')'                        { kafka_dd_merge_config(last_driver, $3); }
+        | KW_TOPIC '(' template_content ')'                         { kafka_dd_set_topic(last_driver, $3); }
+        | KW_FALLBACK_TOPIC '(' string ')'                          { kafka_dd_set_fallback_topic(last_driver, $3); free($3); }
+        | KW_KEY '(' template_content ')'                           { kafka_dd_set_key_ref(last_driver, $3); }
+        | KW_MESSAGE '(' template_name_or_content ')'               { kafka_dd_set_message_ref(last_driver, $3); }
+        | KW_FLUSH_TIMEOUT_ON_SHUTDOWN '(' nonnegative_integer ')'  { kafka_dd_set_flush_timeout_on_shutdown(last_driver, $3); }
+        | KW_FLUSH_TIMEOUT_ON_RELOAD '(' nonnegative_integer ')'    { kafka_dd_set_flush_timeout_on_reload(last_driver, $3); }
+        | KW_POLL_TIMEOUT '(' nonnegative_integer ')'               { kafka_dd_set_poll_timeout(last_driver, $3); }
+        | KW_SYNC_SEND '(' yesno ')'                                { kafka_dd_set_transaction_commit(last_driver, $3); }
         | threaded_dest_driver_general_option
         | threaded_dest_driver_batch_option
         | threaded_dest_driver_workers_option

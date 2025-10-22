@@ -24,6 +24,7 @@
  */
 #include "kafka-dest-worker.h"
 #include "kafka-dest-driver.h"
+#include "kafka-internal.h"
 #include "str-utils.h"
 #include "timeutils/misc.h"
 #include <zlib.h>
@@ -55,7 +56,7 @@ kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage 
 
   GError *error = NULL;
 
-  if (kafka_dd_validate_topic_name(self->topic_name_buffer->str, &error))
+  if (kafka_validate_topic_name(self->topic_name_buffer->str, &error))
     {
       return self->topic_name_buffer->str;
     }

@@ -27,6 +27,7 @@
 #include "kafka-dest-driver.h"
 #include "kafka-props.h"
 #include "kafka-dest-worker.h"
+#include "kafka-internal.h"
 
 #include <librdkafka/rdkafka.h>
 #include <stdlib.h>
@@ -164,15 +165,14 @@ _format_persist_name(const LogPipe *d)
 }
 
 void
-_kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg)
+kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg)
 {
   gchar *buf = g_strdup_printf("librdkafka: %s(%d): %s", fac, level, msg);
   msg_event_send(msg_event_create(level, buf, NULL));
   g_free(buf);
 }
 
-
-static gboolean
+gboolean
 _contains_valid_pattern(const gchar *name)
 {
   const gchar *p;
@@ -196,7 +196,7 @@ topic_name_error_quark(void)
 }
 
 gboolean
-kafka_dd_validate_topic_name(const gchar *name, GError **error)
+kafka_validate_topic_name(const gchar *name, GError **error)
 {
   gint len = strlen(name);
 
@@ -242,7 +242,7 @@ _construct_topic(KafkaDestDriver *self, const gchar *name)
 
   GError *error = NULL;
 
-  if (kafka_dd_validate_topic_name(name, &error))
+  if (kafka_validate_topic_name(name, &error))
     {
       return rd_kafka_topic_new(self->kafka, name, NULL);
     }
@@ -313,8 +313,8 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
     }
 }
 
-static gboolean
-_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
+gboolean
+kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
 {
   gchar errbuf[1024];
 
@@ -336,17 +336,10 @@ _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
  * Main thread
  */
 
-
 static gboolean
-_is_property_protected(const gchar *property_name)
+_is_property_protected(const gchar *property_name, gchar **protected_properties, gsize protected_properties_num)
 {
-  static gchar *protected_properties[] =
-  {
-    "bootstrap.servers",
-    "metadata.broker.list",
-  };
-
-  for (gint i = 0; i < G_N_ELEMENTS(protected_properties); i++)
+  for (gint i = 0; i < protected_properties_num; i++)
     {
       if (strcmp(property_name, protected_properties[i]) == 0)
         {
@@ -358,16 +351,17 @@ _is_property_protected(const gchar *property_name)
   return FALSE;
 }
 
-static gboolean
-_apply_config_props(rd_kafka_conf_t *conf, GList *props)
+gboolean
+kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_properties,
+                         gsize protected_properties_num)
 {
   GList *ll;
 
   for (ll = props; ll != NULL; ll = g_list_next(ll))
     {
       KafkaProperty *kp = ll->data;
-      if (!_is_property_protected(kp->name))
-        if (!_conf_set_prop(conf, kp->name, kp->value))
+      if (!_is_property_protected(kp->name, protected_properties, protected_properties_num))
+        if (!kafka_conf_set_prop(conf, kp->name, kp->value))
           return FALSE;
     }
   return TRUE;
@@ -381,20 +375,28 @@ _construct_client(KafkaDestDriver *self)
   gchar errbuf[1024];
 
   conf = rd_kafka_conf_new();
-  if (!_conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers))
+  if (!kafka_conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers))
     return NULL;
-  if (!_conf_set_prop(conf, "topic.partitioner", "murmur2_random"))
+  if (!kafka_conf_set_prop(conf, "topic.partitioner", "murmur2_random"))
     return NULL;
 
   if (self->transaction_commit)
-    _conf_set_prop(conf, "transactional.id",
-                   log_pipe_get_persist_name(&self->super.super.super.super));
+    kafka_conf_set_prop(conf, "transactional.id",
+                        log_pipe_get_persist_name(&self->super.super.super.super));
 
-  if (!_apply_config_props(conf, self->config))
+  static gchar *protected_properties[] =
+  {
+    "bootstrap.servers",
+    "metadata.broker.list",
+  };
+  if (!kafka_apply_config_props(conf, self->config, protected_properties,
+                                G_N_ELEMENTS(protected_properties)))
     return NULL;
-  rd_kafka_conf_set_log_cb(conf, _kafka_log_callback);
+
+  rd_kafka_conf_set_log_cb(conf, kafka_log_callback);
   rd_kafka_conf_set_dr_cb(conf, _kafka_delivery_report_cb);
   rd_kafka_conf_set_opaque(conf, self);
+
   client = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errbuf, sizeof(errbuf));
   if (!client)
     {
@@ -432,7 +434,6 @@ _flush_inflight_messages(KafkaDestDriver *self)
   if (outq_len > 0)
     {
       msg_notice("kafka: shutting down kafka producer, while messages are still in-flight, waiting for messages to flush",
-
                  evt_tag_str("topic", self->topic_name->template_str),
                  evt_tag_str("fallback_topic", self->fallback_topic_name),
                  evt_tag_int("outq_len", outq_len),

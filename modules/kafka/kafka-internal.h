@@ -29,7 +29,26 @@
 #include <librdkafka/rdkafka.h>
 #include "kafka-dest-worker.h"
 
-gchar *kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage *msg);
+#define TOPIC_NAME_ERROR topic_name_error_quark()
+
+typedef enum _KafkaTopicError
+{
+  TOPIC_LENGTH_ZERO,
+  TOPIC_DOT_TWO_DOTS,
+  TOPIC_EXCEEDS_MAX_LENGTH,
+  TOPIC_INVALID_PATTERN,
+} KafkaTopicError;
+
+GQuark topic_name_error_quark(void);
+
+gboolean kafka_validate_topic_name(const gchar *name, GError **error);
+void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
+gboolean kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value);
+gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_properties,
+                                  gsize protected_properties_num);
+
+gboolean _contains_valid_pattern(const gchar *name);
+const gchar *kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage *msg);
 rd_kafka_topic_t *kafka_dest_worker_calculate_topic_from_template(KafkaDestWorker *self, LogMessage *msg);
 rd_kafka_topic_t *kafka_dest_worker_get_literal_topic(KafkaDestWorker *self);
 rd_kafka_topic_t *kafka_dest_worker_calculate_topic(KafkaDestWorker *self, LogMessage *msg);
