@@ -180,11 +180,19 @@ _invoke_worker_exit_callback(WorkerExitNotification *func)
 static void
 _request_all_threads_to_exit(void)
 {
+  /* NOTE: Order is important here too, worker threads loops which rely on main_loop_worker_job_quit() (a.k.a. main_loop_workers_quit)
+   *       must see main_loop_workers_quit set to TRUE before they check it for proper, quick thread exit.
+   *
+   *       This variable is ambiguous in terms of usage, as it is used both for signaling the exit request, and the exited state.
+   *       Probably it would be better to have separate variables for these two states in the future,
+   *       e.g. main_loop_workers_should_quit and main_loop_workers_quit.
+   */
+  main_loop_workers_quit = TRUE;
+
   g_list_foreach(exit_notification_list, (GFunc) _invoke_worker_exit_callback, NULL);
   g_list_foreach(exit_notification_list, (GFunc) g_free, NULL);
   g_list_free(exit_notification_list);
   exit_notification_list = NULL;
-  main_loop_workers_quit = TRUE;
 }
 
 /* Call this function from worker threads, when you start up */
@@ -362,8 +370,22 @@ set_reloading_scheduled(gboolean scheduled)
 static void
 _reenable_worker_jobs(void *s)
 {
-  _invoke_sync_call_actions();
+  /* NOTE: Resetting this before _invoke_sync_call_actions is mandatory here.
+   *       Unfortunately, on config reload, currently, some of the worker thread's startup
+   *       (e.g. log_threaded_source_driver_start_workers) is bound to
+   *       cfg_init/cfg_tree_post_config_init/log_pipe_post_config_init calls, which
+   *       can start the worker threads immediately.
+   *       Worker thread lopps checking main_loop_worker_job_quit() (or main_loop_workers_quit directly)
+   *       will immediately exit again if main_loop_workers_quit is not reset here before the worker threads are started.
+   *       Alternative solution could be to involve checking reloading_scheduled too, but that would be
+   *       less clean, and require further logic changes, or additional exit/runnig state manipulation and query functions.
+   * FIXME: We need to fix this by decoupling worker thread startups from the config init process.
+   *        Worker thread startups should be explicit (e.g. directly triggered after the config is fully read), and not bound to config init logic.
+   */
   main_loop_workers_quit = FALSE;
+
+  _invoke_sync_call_actions();
+
   if (reloading_scheduled)
     msg_notice("Configuration reload finished");
   reloading_scheduled = FALSE;
