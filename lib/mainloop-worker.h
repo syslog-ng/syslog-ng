@@ -82,21 +82,17 @@ gboolean main_loop_worker_is_worker_thread(void);
 void main_loop_worker_sync_call(void (*func)(void *user_data), void *user_data);
 void main_loop_sync_worker_startup_and_teardown(void);
 
+gboolean is_reloading_scheduled(void);
+void set_reloading_scheduled(gboolean scheduled);
+
+gboolean main_loop_worker_job_quit(void);
+
 void main_loop_worker_init(void);
 void main_loop_worker_deinit(void);
 
 gint main_loop_worker_get_max_number_of_threads(void);
 void main_loop_worker_allocate_thread_space(gint num_threads);
 void main_loop_worker_finalize_thread_space(void);
-
-extern volatile gboolean main_loop_workers_quit;
-extern volatile gboolean is_reloading_scheduled;
-
-static inline gboolean
-main_loop_worker_job_quit(void)
-{
-  return main_loop_workers_quit;
-}
 
 static inline void
 main_loop_assert_worker_thread(void)

@@ -54,7 +54,7 @@ GQueue sync_call_actions = G_QUEUE_INIT;
 
 /* cause workers to stop, no new I/O jobs to be submitted */
 volatile gboolean main_loop_workers_quit;
-volatile gboolean is_reloading_scheduled;
+volatile gboolean reloading_scheduled;
 
 /* number of I/O worker jobs running */
 static GAtomicCounter main_loop_jobs_running;
@@ -347,14 +347,32 @@ main_loop_worker_assert_batch_callbacks_were_processed(void)
   g_assert(iv_list_empty(&batch_callbacks));
 }
 
+inline gboolean
+is_reloading_scheduled(void)
+{
+  return reloading_scheduled;
+}
+
+inline void
+set_reloading_scheduled(gboolean scheduled)
+{
+  reloading_scheduled = scheduled;
+}
+
 static void
 _reenable_worker_jobs(void *s)
 {
   _invoke_sync_call_actions();
   main_loop_workers_quit = FALSE;
-  if (is_reloading_scheduled)
+  if (reloading_scheduled)
     msg_notice("Configuration reload finished");
-  is_reloading_scheduled = FALSE;
+  reloading_scheduled = FALSE;
+}
+
+inline gboolean
+main_loop_worker_job_quit(void)
+{
+  return main_loop_workers_quit;
 }
 
 void
