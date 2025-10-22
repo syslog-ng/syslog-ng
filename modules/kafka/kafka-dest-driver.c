@@ -314,6 +314,21 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
 }
 
 gboolean
+kafka_conf_get_prop(const rd_kafka_conf_t *conf, const gchar *name, gchar *dest, size_t *dest_size)
+{
+  rd_kafka_conf_res_t res;
+
+  if ((res = rd_kafka_conf_get(conf, name, dest, dest_size)) != RD_KAFKA_CONF_OK)
+    {
+      msg_error("kafka: error getting librdkafka config property",
+                evt_tag_str("name", name),
+                evt_tag_int("error", res));
+      return FALSE;
+    }
+  return TRUE;
+}
+
+gboolean
 kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
 {
   gchar errbuf[1024];
