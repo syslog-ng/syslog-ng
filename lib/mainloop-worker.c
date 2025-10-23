@@ -158,7 +158,54 @@ typedef struct _WorkerExitNotification
   gpointer user_data;
 } WorkerExitNotification;
 
+typedef struct _ExitCondition
+{
+  GMutex lock;
+  GCond cond;
+} ExitCondition;
+
 static GList *exit_notification_list = NULL;
+static ExitCondition exit_cond;
+
+static void
+_exit_cond_init(void)
+{
+  g_cond_init(&exit_cond.cond);
+  g_mutex_init(&exit_cond.lock);
+}
+
+static void
+_exit_cond_destroy(void)
+{
+  g_cond_clear(&exit_cond.cond);
+  g_mutex_clear(&exit_cond.lock);
+}
+
+static inline void
+_exit_cond_signal(void)
+{
+  g_mutex_lock(&exit_cond.lock);
+  g_cond_broadcast(&exit_cond.cond);
+  g_mutex_unlock(&exit_cond.lock);
+}
+
+void
+main_loop_worker_wait_for_exit(void)
+{
+  g_mutex_lock(&exit_cond.lock);
+  g_cond_wait(&exit_cond.cond, &exit_cond.lock);
+  g_mutex_unlock(&exit_cond.lock);
+}
+
+gboolean
+main_loop_worker_wait_for_exit_until(gdouble wait_time)
+{
+  g_mutex_lock(&exit_cond.lock);
+  gint64 end = g_get_monotonic_time() + (gint64) wait_time * G_USEC_PER_SEC;
+  g_cond_wait_until(&exit_cond.cond, &exit_cond.lock, end);
+  g_mutex_unlock(&exit_cond.lock);
+  return main_loop_workers_quit;
+}
 
 void
 main_loop_worker_register_exit_notification_callback(WorkerExitNotificationFunc func, gpointer user_data)
@@ -188,6 +235,8 @@ _request_all_threads_to_exit(void)
    *       e.g. main_loop_workers_should_quit and main_loop_workers_quit.
    */
   main_loop_workers_quit = TRUE;
+  /* Waiting threads also might rely on main_loop_workers_quit, so signal the exit cond only after setting it */
+  _exit_cond_signal();
 
   g_list_foreach(exit_notification_list, (GFunc) _invoke_worker_exit_callback, NULL);
   g_list_foreach(exit_notification_list, (GFunc) g_free, NULL);
@@ -491,6 +540,7 @@ __pre_init_hook(gint type, gpointer user_data)
 void
 main_loop_worker_init(void)
 {
+  _exit_cond_init();
   IV_TASK_INIT(&main_loop_workers_reenable_jobs_task);
   main_loop_workers_reenable_jobs_task.handler = _reenable_worker_jobs;
   register_application_hook(AH_CONFIG_PRE_INIT, __pre_init_hook, NULL, AHM_RUN_REPEAT);
@@ -499,4 +549,5 @@ main_loop_worker_init(void)
 void
 main_loop_worker_deinit(void)
 {
+  _exit_cond_destroy();
 }

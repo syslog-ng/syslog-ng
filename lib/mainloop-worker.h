@@ -87,6 +87,15 @@ void set_reloading_scheduled(gboolean scheduled);
 
 gboolean main_loop_worker_job_quit(void);
 
+/* NOTE: If any of the threads using these and the return value
+*        (a.k.a the value of main_loop_workers_quit) is TURE,
+ *       the callers must ensure that the thread will exit as soon as possible, and
+ *       never call these function again.
+ *       (as the exit condition might not be signaled anymore, and the wait would block forever)
+ */
+gboolean main_loop_worker_wait_for_exit_until(gdouble wait_time);
+void main_loop_worker_wait_for_exit(void);
+
 void main_loop_worker_init(void);
 void main_loop_worker_deinit(void);
 
