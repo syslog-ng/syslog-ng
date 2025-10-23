@@ -57,7 +57,6 @@ typedef struct _DarwinOSLogSourceDriver
   DarwinOSLogSourcePersist *log_source_persist;
   DarwinOSLogSourcePosition log_source_position;
 
-  GAtomicCounter exit_requested;
   guint curr_fetch_in_run;
   const gchar *persist_name;
   const gchar *stat_persist_name;
@@ -306,36 +305,6 @@ _send(LogThreadedSourceWorker *worker, LogMessage *msg)
   log_threaded_source_worker_blocking_post(worker, msg);
 }
 
-static void
-_request_exit(LogThreadedSourceWorker *worker)
-{
-  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
-  g_atomic_counter_set(&self->exit_requested, TRUE);
-}
-
-static void
-_sleep(DarwinOSLogSourceDriver *self, gdouble wait_time)
-{
-  const useconds_t min_sleep_time = 1;
-  const useconds_t def_sleep_time = 1000;
-  const useconds_t sleep_time = MAX(min_sleep_time, (useconds_t) MIN(def_sleep_time, wait_time * USEC_PER_SEC));
-  struct timespec now, last_check;
-
-  clock_gettime(CLOCK_MONOTONIC, &now);
-  last_check = now;
-
-  while (FALSE == g_atomic_counter_get(&self->exit_requested))
-    {
-      usleep(sleep_time);
-
-      gdouble diff = timespec_diff_usec(&last_check, &now) / (gdouble) USEC_PER_SEC;
-
-      if (diff >= wait_time)
-        break;
-      clock_gettime(CLOCK_MONOTONIC, &last_check);
-    }
-}
-
 /* runs in a dedicated thread */
 static void
 _run(LogThreadedSourceWorker *worker)
@@ -344,14 +313,14 @@ _run(LogThreadedSourceWorker *worker)
   const gdouble iteration_sleep_time = 1.0 / self->options.fetch_delay;
   gboolean exit_requested = FALSE;
 
-  while (FALSE == (exit_requested = g_atomic_counter_get(&self->exit_requested)))
+  while (FALSE == (exit_requested = main_loop_worker_job_quit()))
     {
       @autoreleasepool
       {
         if (FALSE == _open_osl(self))
           break;
 
-        while (FALSE == (exit_requested = g_atomic_counter_get(&self->exit_requested)))
+        while (FALSE == (exit_requested = main_loop_worker_job_quit()))
           {
             @autoreleasepool
             {
@@ -361,13 +330,13 @@ _run(LogThreadedSourceWorker *worker)
               else if (res.result != THREADED_FETCH_TRY_AGAIN) /* See _fetch for meanng of THREADED_FETCH_TRY_AGAIN */
                 break;
             }
-            _sleep(self, iteration_sleep_time);
+            main_loop_worker_wait_for_exit_until(iteration_sleep_time);
           }
 
         _close_osl(self);
       }
       if (FALSE == exit_requested && self->options.fetch_retry_delay)
-        _sleep(self, self->options.fetch_retry_delay);
+        main_loop_worker_wait_for_exit_until(self->options.fetch_retry_delay);
     }
 }
 
@@ -462,10 +431,7 @@ _construct_worker(LogThreadedSourceDriver *s, gint worker_index)
   LogThreadedSourceWorker *worker = g_new0(LogThreadedSourceWorker, 1);
   log_threaded_source_worker_init_instance(worker, s, worker_index);
 
-  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) s;
-  g_atomic_counter_set(&self->exit_requested, FALSE);
   worker->run = _run;
-  worker->request_exit = _request_exit;
 
   return worker;
 }
