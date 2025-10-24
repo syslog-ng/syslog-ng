@@ -39,10 +39,11 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/ivykis/
 
     DOWNLOAD_COMMAND echo
-    BUILD_COMMAND make
+    BUILD_COMMAND
+    COMMAND /bin/sh -vc "CFLAGS='-fPIC ${CMAKE_C_FLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' make"
     INSTALL_COMMAND make install
     CONFIGURE_COMMAND
-    COMMAND /bin/sh -vc "autoreconf -i ${PROJECT_SOURCE_DIR}/lib/ivykis && CFLAGS='-fPIC ${CFLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' ${PROJECT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/ --disable-shared --enable-static"
+    COMMAND /bin/sh -vc "autoreconf -i ${PROJECT_SOURCE_DIR}/lib/ivykis && CFLAGS='-fPIC ${CMAKE_C_FLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' ${PROJECT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/ --disable-shared --enable-static"
   )
 
   set(${LIB_NAME}_INTERNAL TRUE)
