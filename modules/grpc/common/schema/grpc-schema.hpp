@@ -38,12 +38,19 @@
 #define PROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII 0
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdouble-promotion"
+#if (defined(__clang__) && __clang_major__ >= 10)
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#endif
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/dynamic_message.h>
 #include <google/protobuf/message.h>
 #include <google/protobuf/compiler/importer.h>
 #include <grpc++/grpc++.h>
+#pragma GCC diagnostic pop
 
 #include <memory>
 #include <vector>

@@ -21,12 +21,15 @@
  *
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
 #include <grpc/grpc.h>
 #include <grpcpp/channel.h>
 #include <grpcpp/create_channel.h>
 #include <grpcpp/security/credentials.h>
 
 #include "grpc-dest-worker.hpp"
+#pragma GCC diagnostic pop
 
 #include "compat/cpp-start.h"
 #include "scratch-buffers.h"
