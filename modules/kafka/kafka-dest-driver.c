@@ -277,7 +277,8 @@ _construct_client(KafkaDestDriver *self)
                                 G_N_ELEMENTS(protected_properties)))
     return NULL;
 
-  rd_kafka_conf_set_log_cb(conf, kafka_log_callback);
+  if (self->options.super.kafka_logging != KFL_DISABLED)
+    rd_kafka_conf_set_log_cb(conf, kafka_log_callback);
   rd_kafka_conf_set_dr_cb(conf, _kafka_delivery_report_cb);
   rd_kafka_conf_set_opaque(conf, &self->opaque);
 

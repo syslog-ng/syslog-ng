@@ -1098,8 +1098,9 @@ _construct_kafka_client(KafkaSourceDriver *self)
                                         G_N_ELEMENTS(protected_properties)))
     goto err_exit;
 
-  rd_kafka_conf_set_log_cb(conf, kafka_log_callback);
   rd_kafka_conf_set_opaque(conf, &self->opaque);
+  if (self->options.super.kafka_logging != KFL_DISABLED)
+    rd_kafka_conf_set_log_cb(conf, kafka_log_callback);
   rd_kafka_conf_set_throttle_cb(conf, _kafka_throttle_cb);
   rd_kafka_conf_set_rebalance_cb(conf, _kafka_rebalance_cb);
 
@@ -1325,6 +1326,14 @@ kafka_sd_merge_config(LogDriver *d, GList *props)
   KafkaSourceDriver *self = (KafkaSourceDriver *)d;
 
   kafka_options_merge_config(&self->options.super, props);
+}
+
+gboolean
+kafka_sd_set_logging(LogDriver *d, const gchar *logging)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)d;
+
+  return kafka_options_set_logging(&self->options.super, logging);
 }
 
 gboolean

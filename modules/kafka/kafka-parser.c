@@ -41,6 +41,7 @@ static CfgLexerKeyword kafka_keywords[] =
 
   /* https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md */
   { "config",         KW_CONFIG },
+  { "kafka_logging",  KV_KAFKA_LOGGING },
   { "flush_timeout_on_shutdown", KW_FLUSH_TIMEOUT_ON_SHUTDOWN },
   { "flush_timeout_on_reload",   KW_FLUSH_TIMEOUT_ON_RELOAD },
 
@@ -49,6 +50,7 @@ static CfgLexerKeyword kafka_keywords[] =
   { "sync_send",      KW_SYNC_SEND},
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
   { "poll_timeout",   KW_POLL_TIMEOUT },
+
   { NULL }
 };
 

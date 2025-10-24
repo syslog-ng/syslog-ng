@@ -87,8 +87,14 @@ kafka_validate_topic_name(const gchar *name, GError **error)
 void
 kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg)
 {
+  KafkaOptions *options = (KafkaOptions *) ((KafkaOpaque *)rd_kafka_opaque(rkt))->options;
+
   gchar *buf = g_strdup_printf("librdkafka: %s(%d): %s", fac, level, msg);
-  msg_event_send(msg_event_create(level, buf, NULL));
+
+  if (options->kafka_logging == KFL_KAFKA_LEVEL)
+    msg_event_send(msg_event_create(level, buf, NULL));
+  else
+    msg_trace("kafka: log callback message", evt_tag_str("msg", buf));
   g_free(buf);
 }
 
@@ -188,6 +194,29 @@ inline void
 kafka_options_merge_config(KafkaOptions *self, GList *props)
 {
   self->config = g_list_concat(self->config, props);
+}
+
+KafkaLogging
+kafka_string_to_logging(const gchar *logging)
+{
+  KafkaLogging kafka_logging = KFL_UNKNOWN;
+  if (g_ascii_strcasecmp(logging, "disabled"))
+    kafka_logging = KFL_DISABLED;
+  else if (g_ascii_strcasecmp(logging, "kafka"))
+    kafka_logging = KFL_KAFKA_LEVEL;
+  else if (g_ascii_strcasecmp(logging, "trace"))
+    kafka_logging = KFL_TRACE_LEVEL;
+  return kafka_logging;
+}
+
+gboolean
+kafka_options_set_logging(KafkaOptions *self, const gchar *logging)
+{
+  KafkaLogging kafka_logging = kafka_string_to_logging(logging);
+  if (kafka_logging == KFL_UNKNOWN)
+    return FALSE;
+  self->kafka_logging = kafka_logging;
+  return TRUE;
 }
 
 void

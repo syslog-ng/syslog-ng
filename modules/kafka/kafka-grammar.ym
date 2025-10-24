@@ -62,6 +62,7 @@
 %token KW_FALLBACK_TOPIC
 %token KW_PARTITION
 %token KW_CONFIG
+%token KV_KAFKA_LOGGING
 %token KW_FLUSH_TIMEOUT_ON_SHUTDOWN
 %token KW_FLUSH_TIMEOUT_ON_RELOAD
 %token KW_POLL_TIMEOUT
@@ -104,6 +105,7 @@ kafka_src_options
 kafka_src_option
         : KW_BOOTSTRAP_SERVERS '(' string ')'                   { kafka_sd_set_bootstrap_servers(last_driver, $3); free($3); }
         | KW_CONFIG '(' kafka_properties ')'                    { kafka_sd_merge_config(last_driver, $3);  }
+        | KV_KAFKA_LOGGING '(' string ')'                       { CHECK_ERROR(kafka_sd_set_logging(last_driver, $3), @3, "Error parsing logging option %s", $3); free($3); }
         | KW_TOPIC '(' string ')'                               { CHECK_ERROR(kafka_sd_set_topics(last_driver, $3), @3, "Error parsing topic option %s", $3); free($3); }
         | KW_PARTITION '(' string ')'                           { CHECK_ERROR(kafka_sd_set_partitions(last_driver, $3), @3, "Error parsing partition option %s", $3); free($3); }
         | KW_LOG_FETCH_DELAY '(' nonnegative_integer ')'        { kafka_sd_set_log_fetch_delay(last_driver, $3); }
@@ -123,6 +125,7 @@ kafka_dest_options
 kafka_dest_option
         : KW_BOOTSTRAP_SERVERS '(' string ')'                       { kafka_dd_set_bootstrap_servers(last_driver, $3); free($3); }
         | KW_CONFIG '(' kafka_properties ')'                        { kafka_dd_merge_config(last_driver, $3); }
+        | KV_KAFKA_LOGGING '(' string ')'                           { CHECK_ERROR(kafka_dd_set_logging(last_driver, $3), @3, "Error parsing logging option %s", $3); free($3); }
         | KW_TOPIC '(' template_content ')'                         { kafka_dd_set_topic(last_driver, $3); }
         | KW_FALLBACK_TOPIC '(' string ')'                          { kafka_dd_set_fallback_topic(last_driver, $3); free($3); }
         | KW_KEY '(' template_content ')'                           { kafka_dd_set_key_ref(last_driver, $3); }
