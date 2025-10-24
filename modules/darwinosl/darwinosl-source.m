@@ -143,20 +143,20 @@ _check_restored_postion(DarwinOSLogSourceDriver *self, OSLogEntry *nextLogEntry)
     {
       msg_debug("darwinosl: Bookmark is restored fine",
                 evt_tag_str("bookmark", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                         nextLogEntry.date].UTF8String));
+                                                                          nextLogEntry.date].UTF8String));
     }
   else
     {
       if (self->log_source_position.last_msg_hash)
         msg_info("darwinosl: Could not restore last bookmark (filter might be changed or max_bookmark_distance took effect?)",
                  evt_tag_str("bookmark", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                          [NSDate dateWithTimeIntervalSince1970:self->log_source_position.log_position]].UTF8String),
+                                                                           [NSDate dateWithTimeIntervalSince1970:self->log_source_position.log_position]].UTF8String),
                  evt_tag_str("new_start_position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                                    nextLogEntry.date].UTF8String));
+                                                                                     nextLogEntry.date].UTF8String));
       else
         msg_debug("darwinosl: No last msg hash found",
                   evt_tag_str("new_start_position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                                     nextLogEntry.date].UTF8String));
+                                                                                      nextLogEntry.date].UTF8String));
     }
 }
 
@@ -169,7 +169,7 @@ _log_position_date_from_persist(DarwinOSLogSourceDriver *self, NSDate **startDat
            based on read-old-records() we just let the user manually solve this (e.g. clear the persis-file if needed)
   */
   NSDate *maxBookmarkDistanceDate = [NSDate dateWithTimeIntervalSinceNow:-1 * (NSTimeInterval)(
-                                       self->options.max_bookmark_distance)];
+                                              self->options.max_bookmark_distance)];
   if (self->options.max_bookmark_distance > 0)
     *startDate = maxBookmarkDistanceDate;
 
@@ -208,7 +208,7 @@ _open_osl(DarwinOSLogSourceDriver *self)
   NSDate *startDate = nil;
   bool positionRestored = _log_position_date_from_persist(self, &startDate);
   NSString *filterString = (self->options.filter_predicate ? [NSString stringWithUTF8String:
-                                                              self->options.filter_predicate] : nil);
+                                                                       self->options.filter_predicate] : nil);
   OSLogEnumeratorOptions options = (self->options.go_reverse ? OSLogEnumeratorReverse : 0);
 
   msg_trace("darwinosl: Should start from",
@@ -310,7 +310,7 @@ static void
 _run(LogThreadedSourceWorker *worker)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
-  const gdouble iteration_sleep_time = 1.0 / self->options.fetch_delay;
+  const gdouble iteration_sleep_time = self->options.fetch_delay ? 1.0 / self->options.fetch_delay : 0;
   gboolean exit_requested = FALSE;
 
   while (FALSE == (exit_requested = main_loop_worker_job_quit()))
@@ -330,7 +330,8 @@ _run(LogThreadedSourceWorker *worker)
               else if (res.result != THREADED_FETCH_TRY_AGAIN) /* See _fetch for meanng of THREADED_FETCH_TRY_AGAIN */
                 break;
             }
-            main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+            if (iteration_sleep_time > 0.0)
+              main_loop_worker_wait_for_exit_until(iteration_sleep_time);
           }
 
         _close_osl(self);
