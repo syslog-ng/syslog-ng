@@ -165,3 +165,40 @@ kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions)
                 evt_tag_str("topic", partitions->elems[i].topic),
                 evt_tag_int("partition", (int) partitions->elems[i].partition));
 }
+
+void
+kafka_options_defaults(KafkaOptions *self)
+{
+  self->poll_timeout = 1000;
+  self->kafka_logging = KFL_DISABLED;
+}
+
+void
+kafka_options_destroy(KafkaOptions *self)
+{
+  if (self->bootstrap_servers)
+    g_free(self->bootstrap_servers);
+  self->bootstrap_servers = NULL;
+  if (self->config)
+    kafka_property_list_free(self->config);
+  self->config = NULL;
+}
+
+inline void
+kafka_options_merge_config(KafkaOptions *self, GList *props)
+{
+  self->config = g_list_concat(self->config, props);
+}
+
+void
+kafka_options_set_bootstrap_servers(KafkaOptions *self, const gchar *bootstrap_servers)
+{
+  g_free(self->bootstrap_servers);
+  self->bootstrap_servers = g_strdup(bootstrap_servers);
+}
+
+inline void
+kafka_options_set_poll_timeout(KafkaOptions *self, gint poll_timeout)
+{
+  self->poll_timeout = poll_timeout;
+}

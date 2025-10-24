@@ -328,7 +328,7 @@ _iteration_sleep_time(LogThreadedSourceWorker *worker)
 static void _kafka_throttle_cb(rd_kafka_t *rk, const char *broker_name,
                                int32_t broker_id, int throttle_time_ms, void *opaque)
 {
-  KafkaSourceDriver *self = (KafkaSourceDriver *) opaque;
+  KafkaSourceDriver *self = (KafkaSourceDriver *) ((KafkaOpaque *)opaque)->driver;
 
   msg_info("kafka: Broker throttled request",
            evt_tag_str("group_id", self->group_id),
@@ -580,7 +580,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
     {
       int qlen = (int)rd_kafka_outq_len(self->kafka);
 
-      msg = rd_kafka_consumer_poll(self->kafka, self->options.poll_timeout);
+      msg = rd_kafka_consumer_poll(self->kafka, self->options.super.poll_timeout);
       if (msg == NULL || msg->err)
         {
           if (msg == NULL || msg->err == RD_KAFKA_RESP_ERR__PARTITION_EOF)
@@ -688,7 +688,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
        * For non-blocking calls, provide 0 as timeout_ms. To wait indefinitely for an event, provide -1. */
       rd_kafka_poll(self->kafka, 0);
 
-      ssize_t cnt = rd_kafka_consume_batch(single_topic, requested_partition, self->options.poll_timeout,
+      ssize_t cnt = rd_kafka_consume_batch(single_topic, requested_partition, self->options.super.poll_timeout,
                                            msgs,
                                            MAX_BATCH_SIZE);
       if (cnt < 0 || (cnt == 1 && msgs[0]->err))
@@ -863,7 +863,7 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
                     rd_kafka_topic_partition_list_t *partitions,
                     void *opaque)
 {
-  KafkaSourceDriver *self = (KafkaSourceDriver *)opaque;
+  KafkaSourceDriver *self = (KafkaSourceDriver *) ((KafkaOpaque *)opaque)->driver;
 
   g_assert(self->kafka == rk);
   switch (err)
@@ -1001,14 +1001,14 @@ _apply_group_id(KafkaSourceDriver *self)
 {
   gchar *conf_group_id = NULL;
   const KafkaProperty key = { "group.id", NULL };
-  GList *li = g_list_find_custom(self->config, &key, (GCompareFunc) _property_name_compare);
+  GList *li = g_list_find_custom(self->options.super.config, &key, (GCompareFunc) _property_name_compare);
   if (li == NULL)
     {
       conf_group_id = g_strdup(self->super.super.super.id);
       KafkaProperty *kp_groupid = g_new0(KafkaProperty, 1);
       kp_groupid->name = g_strdup("group.id");
       kp_groupid->value = g_strdup(conf_group_id);
-      self->config = g_list_prepend(self->config, kp_groupid);
+      self->options.super.config = g_list_prepend(self->options.super.config, kp_groupid);
       msg_trace("kafka: config group.id not found, using self-generated group id",
                 evt_tag_str("group_id", conf_group_id),
                 evt_tag_str("driver", self->super.super.super.id));
@@ -1018,7 +1018,7 @@ _apply_group_id(KafkaSourceDriver *self)
       KafkaProperty *conf_data = ((KafkaProperty *)li->data);
       if (conf_data->value == NULL || conf_data->value[0] == '\0')
         {
-          self->config = g_list_remove(self->config, li->data);
+          self->options.super.config = g_list_remove(self->options.super.config, li->data);
           msg_warning("kafka: config group.id is empty, forcibly NOT using group id, removed from config",
                       evt_tag_str("driver", self->super.super.super.id));
         }
@@ -1067,7 +1067,7 @@ _construct_kafka_client(KafkaSourceDriver *self)
 
   rd_kafka_conf_t *conf = rd_kafka_conf_new();
 
-  if (!kafka_conf_set_prop(conf, "metadata.broker.list", self->options.bootstrap_servers))
+  if (!kafka_conf_set_prop(conf, "metadata.broker.list", self->options.super.bootstrap_servers))
     goto err_exit;
   /* NOTE: The callback-based consumer API's offset store granularity is
    * said to be not good enough, also, we want to control the offset store
@@ -1098,8 +1098,8 @@ _construct_kafka_client(KafkaSourceDriver *self)
                                         G_N_ELEMENTS(protected_properties)))
     goto err_exit;
 
-  rd_kafka_conf_set_opaque(conf, self);
   rd_kafka_conf_set_log_cb(conf, kafka_log_callback);
+  rd_kafka_conf_set_opaque(conf, &self->opaque);
   rd_kafka_conf_set_throttle_cb(conf, _kafka_throttle_cb);
   rd_kafka_conf_set_rebalance_cb(conf, _kafka_rebalance_cb);
 
@@ -1173,9 +1173,9 @@ _destroy_kafka_client(LogDriver *s)
       self->kafka = NULL;
     }
 
-  if (self->config)
-    kafka_property_list_free(self->config);
-  self->config = NULL;
+  if (self->options.super.config)
+    kafka_property_list_free(self->options.super.config);
+  self->options.super.config = NULL;
 
   g_free(self->group_id);
   self->group_id = NULL;
@@ -1231,7 +1231,7 @@ kafka_sd_init(LogPipe *s)
       return FALSE;
     }
 
-  if (self->options.bootstrap_servers == NULL)
+  if (self->options.super.bootstrap_servers == NULL)
     {
       msg_error("kafka: the bootstrap-servers() option is required for kafka source",
                 evt_tag_str("driver", self->super.super.super.id),
@@ -1309,6 +1309,9 @@ kafka_sd_new(GlobalConfig *cfg)
 
   self->super.format_stats_key = _format_stats_key;
 
+  self->opaque.driver = &self->super.super.super;
+  self->opaque.options = &self->options.super;
+
   kafka_sd_options_defaults(&self->options, &self->super.worker_options);
 
   return &self->super.super.super;
@@ -1321,7 +1324,7 @@ kafka_sd_merge_config(LogDriver *d, GList *props)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)d;
 
-  self->config = g_list_concat(self->config, props);
+  kafka_options_merge_config(&self->options.super, props);
 }
 
 gboolean
@@ -1357,8 +1360,7 @@ kafka_sd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)d;
 
-  g_free(self->options.bootstrap_servers);
-  self->options.bootstrap_servers = g_strdup(bootstrap_servers);
+  kafka_options_set_bootstrap_servers(&self->options.super, bootstrap_servers);
 }
 
 void
@@ -1366,7 +1368,7 @@ kafka_sd_set_poll_timeout(LogDriver *d, gint poll_timeout)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)d;
 
-  self->options.poll_timeout = poll_timeout;
+  kafka_options_set_poll_timeout(&self->options.super, poll_timeout);
 }
 
 void
@@ -1433,7 +1435,7 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   /* No additional format options now, so intentionally referencing only, and not using msg_format_options_copy */
   self->format_options = &self->super_source_options->parse_options;
 
-  self->poll_timeout = 1000;
+  kafka_options_defaults(&self->super);
   self->time_reopen = 60;
 
   self->do_not_use_bookmark = FALSE;
@@ -1447,14 +1449,14 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
 void
 kafka_sd_options_destroy(KafkaSourceOptions *self)
 {
-  g_free(self->bootstrap_servers);
-  self->bootstrap_servers = NULL;
   g_free(self->requested_topics);
   self->requested_topics = NULL;
   g_free(self->requested_partitions);
   self->requested_partitions = NULL;
   log_template_unref(self->message);
   self->message = NULL;
+
+  kafka_options_destroy(&self->super);
   log_template_options_destroy(&self->template_options);
 
   /* Just referenced, not copied */

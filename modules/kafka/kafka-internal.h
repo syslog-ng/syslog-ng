@@ -56,19 +56,38 @@ gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **p
 void kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
 
+typedef struct _KafkaOptions
+{
+  gchar *bootstrap_servers;
+  GList *config;
+  gint poll_timeout;
+} KafkaOptions;
+
+void kafka_options_defaults(KafkaOptions *self);
+void kafka_options_destroy(KafkaOptions *self);
+void kafka_options_merge_config(KafkaOptions *self, GList *props);
+void kafka_options_set_bootstrap_servers(KafkaOptions *self, const gchar *bootstrap_servers);
+void kafka_options_set_poll_timeout(KafkaOptions *self, gint poll_timeout);
+typedef struct _KafkaOpaque
+{
+  LogDriver *driver;
+  KafkaOptions *options;
+} KafkaOpaque;
+
 /* Kafka Source */
 
 struct _KafkaSourceOptions
 {
+  KafkaOptions super;
+  /* WARNING: multiple inheritance! */
   LogThreadedSourceWorkerOptions *super_source_options;
+
   MsgFormatOptions *format_options;
   LogTemplateOptions template_options;
 
-  gchar *bootstrap_servers;
   gchar *requested_topics;
   gchar *requested_partitions;
   LogTemplate *message;
-  gint poll_timeout;
   gint time_reopen;
 
   gboolean do_not_use_bookmark;
@@ -89,14 +108,13 @@ typedef enum _KafkaSrcConsumerStrategy
 struct _KafkaSourceDriver
 {
   LogThreadedSourceDriver super;
-
   KafkaSourceOptions options;
+  KafkaOpaque opaque;
 
   rd_kafka_t *kafka;
   GList *topic_handle_list;
   rd_kafka_topic_partition_list_t *assigned_partitions;
   rd_kafka_queue_t *kafka_queue;
-  GList *config;
 
   gchar *group_id;
   GList *requested_topics;
@@ -137,26 +155,35 @@ struct _KafkaDestWorker
   GString *topic_name_buffer;
 };
 
+struct _KafkaDestinationOptions
+{
+  KafkaOptions super;
+
+  LogTemplate *topic_name;
+  gchar *fallback_topic_name;
+  LogTemplate *key;
+
+  LogTemplateOptions template_options;
+  LogTemplate *message;
+
+  gint flush_timeout_on_shutdown;
+  gint flush_timeout_on_reload;
+
+  gboolean transaction_commit;
+};
+
 struct _KafkaDestDriver
 {
   LogThreadedDestDriver super;
+  KafkaDestinationOptions options;
+  KafkaOpaque opaque;
 
-  LogTemplateOptions template_options;
-  LogTemplate *key;
-  LogTemplate *message;
-  LogTemplate *topic_name;
+  rd_kafka_topic_t *topic;
+  rd_kafka_t *kafka;
+
   GHashTable *topics;
   GMutex topics_lock;
 
-  gboolean transaction_commit;
-  GList *config;
-  gchar *bootstrap_servers;
-  gchar *fallback_topic_name;
-  rd_kafka_topic_t *topic;
-  rd_kafka_t *kafka;
-  gint flush_timeout_on_shutdown;
-  gint flush_timeout_on_reload;
-  gint poll_timeout;
   gboolean transaction_inited;
 };
 
