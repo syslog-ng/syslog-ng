@@ -26,33 +26,8 @@
 #define KAFKA_H_INCLUDED
 
 #include "logthrdest/logthrdestdrv.h"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-qualifiers"
-#include <librdkafka/rdkafka.h>
-#pragma GCC diagnostic pop
 
-typedef struct
-{
-  LogThreadedDestDriver super;
-
-  LogTemplateOptions template_options;
-  LogTemplate *key;
-  LogTemplate *message;
-  LogTemplate *topic_name;
-  GHashTable *topics;
-  GMutex topics_lock;
-
-  gboolean transaction_commit;
-  GList *config;
-  gchar *bootstrap_servers;
-  gchar *fallback_topic_name;
-  rd_kafka_topic_t *topic;
-  rd_kafka_t *kafka;
-  gint flush_timeout_on_shutdown;
-  gint flush_timeout_on_reload;
-  gint poll_timeout;
-  gboolean transaction_inited;
-} KafkaDestDriver;
+typedef struct _KafkaDestDriver KafkaDestDriver;
 
 void kafka_dd_set_topic(LogDriver *d, LogTemplate *topic);
 gboolean kafka_dd_reopen(LogDriver *d);
@@ -68,7 +43,6 @@ void kafka_dd_set_poll_timeout(LogDriver *d, gint poll_timeout);
 void kafka_dd_set_transaction_commit(LogDriver *d, gboolean transaction_commit);
 
 gboolean kafka_dd_is_topic_name_a_template(KafkaDestDriver *self);
-rd_kafka_topic_t *kafka_dd_query_insert_topic(KafkaDestDriver *self, const gchar *name);
 LogTemplateOptions *kafka_dd_get_template_options(LogDriver *d);
 
 LogDriver *kafka_dd_new(GlobalConfig *cfg);

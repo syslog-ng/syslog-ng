@@ -27,6 +27,7 @@ set(KAFKA_SOURCES
   kafka-dest-worker.c
   kafka-props.c
   kafka-internal.h
+  kafka-internal.c
 )
 
 add_module(

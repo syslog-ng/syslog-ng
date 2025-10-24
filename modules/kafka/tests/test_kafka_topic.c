@@ -30,8 +30,6 @@
 #include "kafka-dest-driver.h"
 #include "kafka-internal.h"
 #include "apphook.h"
-#include <librdkafka/rdkafka.h>
-
 
 #define STRING_250_LEN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \

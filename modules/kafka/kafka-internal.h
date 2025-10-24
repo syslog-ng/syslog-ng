@@ -26,7 +26,11 @@
 #define KAFKA_INTERNAL_H_INCLUDED
 
 #include "logthrdest/logthrdestdrv.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #include <librdkafka/rdkafka.h>
+#pragma GCC diagnostic pop
+#include "kafka-dest-driver.h"
 #include "kafka-dest-worker.h"
 
 #define TOPIC_NAME_ERROR topic_name_error_quark()
@@ -41,18 +45,55 @@ typedef enum _KafkaTopicError
 
 GQuark topic_name_error_quark(void);
 
+gboolean kafka_is_valid_topic_pattern(const gchar *name);
 gboolean kafka_validate_topic_name(const gchar *name, GError **error);
-void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
 gboolean kafka_conf_get_prop(const rd_kafka_conf_t *conf, const gchar *name, gchar *dest, size_t *dest_size);
 gboolean kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value);
 gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_properties,
                                   gsize protected_properties_num);
+void kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions);
+void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
 
-gboolean _contains_valid_pattern(const gchar *name);
+
+/* Kafka Destination */
+
+struct _KafkaDestWorker
+{
+  LogThreadedDestWorker super;
+  struct iv_timer poll_timer;
+  GString *key;
+  GString *message;
+  GString *topic_name_buffer;
+};
+
+struct _KafkaDestDriver
+{
+  LogThreadedDestDriver super;
+
+  LogTemplateOptions template_options;
+  LogTemplate *key;
+  LogTemplate *message;
+  LogTemplate *topic_name;
+  GHashTable *topics;
+  GMutex topics_lock;
+
+  gboolean transaction_commit;
+  GList *config;
+  gchar *bootstrap_servers;
+  gchar *fallback_topic_name;
+  rd_kafka_topic_t *topic;
+  rd_kafka_t *kafka;
+  gint flush_timeout_on_shutdown;
+  gint flush_timeout_on_reload;
+  gint poll_timeout;
+  gboolean transaction_inited;
+};
+
 const gchar *kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage *msg);
 rd_kafka_topic_t *kafka_dest_worker_calculate_topic_from_template(KafkaDestWorker *self, LogMessage *msg);
 rd_kafka_topic_t *kafka_dest_worker_get_literal_topic(KafkaDestWorker *self);
 rd_kafka_topic_t *kafka_dest_worker_calculate_topic(KafkaDestWorker *self, LogMessage *msg);
+rd_kafka_topic_t *kafka_dd_query_insert_topic(KafkaDestDriver *self, const gchar *name);
 gboolean kafka_dd_init(LogPipe *s);
 
 #endif
