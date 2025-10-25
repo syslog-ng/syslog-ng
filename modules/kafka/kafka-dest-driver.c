@@ -463,7 +463,6 @@ gboolean
 kafka_dd_init(LogPipe *s)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (!self->options.topic_name)
     {
@@ -508,6 +507,7 @@ kafka_dd_init(LogPipe *s)
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
+  GlobalConfig *cfg = log_pipe_get_config(s);
   if (self->options.message == NULL)
     {
       self->options.message = log_template_new(cfg, NULL);
@@ -567,10 +567,10 @@ kafka_dd_free(LogPipe *d)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)d;
 
-  log_template_options_destroy(&self->options.template_options);
   _destroy_kafka(&self->super.super.super);
   if (self->options.fallback_topic_name)
     g_free(self->options.fallback_topic_name);
+  log_template_options_destroy(&self->options.template_options);
   log_template_unref(self->options.key);
   log_template_unref(self->options.message);
   log_template_unref(self->options.topic_name);

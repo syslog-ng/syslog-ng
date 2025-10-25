@@ -229,7 +229,7 @@ _register_aggregated_stats(KafkaSourceDriver *self)
   StatsClusterKeyBuilder *kb = worker->super.metrics.stats_kb;
   stats_cluster_key_builder_push(kb);
   {
-    LogSourceOptions *super_options = &self->options.super_source_options->super;
+    LogSourceOptions *super_options = &self->options.worker_options->super;
     gchar *stats_id = worker->super.stats_id;
     gchar stats_instance[1024];
     const gchar *instance_name = stats_cluster_key_builder_format_legacy_stats_instance(kb, stats_instance,
@@ -1222,7 +1222,6 @@ static gboolean
 kafka_sd_init(LogPipe *s)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (self->options.requested_topics == NULL)
     {
@@ -1252,6 +1251,7 @@ kafka_sd_init(LogPipe *s)
   g_cond_init(&self->queue_cond);
   g_mutex_init(&self->queue_cond_mutex);
 
+  GlobalConfig *cfg = log_pipe_get_config(s);
   log_template_options_init(&self->options.template_options, cfg);
   msg_verbose("kafka: Kafka source initialized",
               evt_tag_str("group_id", self->group_id),
@@ -1435,14 +1435,14 @@ kafka_sd_set_log_fetch_limit(LogDriver *s, guint new_value)
 
 void
 kafka_sd_options_defaults(KafkaSourceOptions *self,
-                          LogThreadedSourceWorkerOptions *super_source_options)
+                          LogThreadedSourceWorkerOptions *worker_options)
 {
-  self->super_source_options = super_source_options;
-  self->super_source_options->super.stats_level = STATS_LEVEL0;
-  self->super_source_options->super.stats_source = stats_register_type("kafka_src");
+  self->worker_options = worker_options;
+  self->worker_options->super.stats_level = STATS_LEVEL0;
+  self->worker_options->super.stats_source = stats_register_type("kafka_src");
 
   /* No additional format options now, so intentionally referencing only, and not using msg_format_options_copy */
-  self->format_options = &self->super_source_options->parse_options;
+  self->format_options = &self->worker_options->parse_options;
 
   kafka_options_defaults(&self->super);
   self->time_reopen = 60;
@@ -1470,5 +1470,5 @@ kafka_sd_options_destroy(KafkaSourceOptions *self)
 
   /* Just referenced, not copied */
   self->format_options = NULL;
-  self->super_source_options = NULL;
+  self->worker_options = NULL;
 }

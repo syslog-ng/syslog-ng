@@ -167,9 +167,9 @@ void
 kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions)
 {
   for (int i = 0 ; i < partitions->cnt ; i++)
-    msg_verbose("kafka: partition",
-                evt_tag_str("topic", partitions->elems[i].topic),
-                evt_tag_int("partition", (int) partitions->elems[i].partition));
+    msg_debug("kafka: partition",
+              evt_tag_str("topic", partitions->elems[i].topic),
+              evt_tag_int("partition", (int) partitions->elems[i].partition));
 }
 
 void

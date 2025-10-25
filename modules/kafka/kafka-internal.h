@@ -91,7 +91,7 @@ struct _KafkaSourceOptions
 {
   KafkaOptions super;
   /* WARNING: multiple inheritance! */
-  LogThreadedSourceWorkerOptions *super_source_options;
+  LogThreadedSourceWorkerOptions *worker_options;
 
   MsgFormatOptions *format_options;
   LogTemplateOptions template_options;
@@ -150,7 +150,7 @@ struct _KafkaSourceDriver
 };
 
 void kafka_sd_options_defaults(KafkaSourceOptions *self,
-                               LogThreadedSourceWorkerOptions *super_source_options);
+                               LogThreadedSourceWorkerOptions *worker_options);
 void kafka_sd_options_destroy(KafkaSourceOptions *self);
 
 gboolean kafka_sd_reopen(LogDriver *s);
@@ -172,9 +172,9 @@ struct _KafkaDestinationOptions
 
   LogTemplate *topic_name;
   gchar *fallback_topic_name;
-  LogTemplate *key;
 
   LogTemplateOptions template_options;
+  LogTemplate *key;
   LogTemplate *message;
 
   gint flush_timeout_on_shutdown;
