@@ -219,7 +219,7 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
                           rd_kafka_resp_err_t err,
                           void *opaque, void *msg_opaque)
 {
-  KafkaDestDriver *self = (KafkaDestDriver *) ((KafkaOpaque *)opaque)->driver;;
+  KafkaDestDriver *self = (KafkaDestDriver *) kafka_opaque_driver((KafkaOpaque *)opaque);
 
   /* delivery callback will be called from the the thread where rd_kafka_poll is called,
    * which could be any worker and not just worker#0 due to the kafka_dd_shutdown in thread_init
@@ -479,6 +479,7 @@ kafka_dd_init(LogPipe *s)
       return FALSE;
     }
 
+  kafka_opaque_init(&self->opaque, &self->super.super.super, &self->options.super);
   if (!kafka_dd_reopen(&self->super.super.super))
     {
       return FALSE;
@@ -558,6 +559,7 @@ kafka_dd_deinit(LogPipe *s)
 
   kafka_dd_shutdown(&self->super);
   _check_for_remaining_messages(self);
+  kafka_opaque_deinit(&self->opaque);
 
   return log_threaded_dest_driver_deinit_method(s);
 }
@@ -598,8 +600,6 @@ kafka_dd_new(GlobalConfig *cfg)
   self->super.stats_source = stats_register_type("kafka");
   self->super.worker.construct = _construct_worker;
 
-  self->opaque.driver = &self->super.super.super;
-  self->opaque.options = &self->options.super;
   g_mutex_init(&self->topics_lock);
 
   /* one minute */

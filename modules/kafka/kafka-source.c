@@ -328,13 +328,93 @@ _iteration_sleep_time(LogThreadedSourceWorker *worker)
 static void _kafka_throttle_cb(rd_kafka_t *rk, const char *broker_name,
                                int32_t broker_id, int throttle_time_ms, void *opaque)
 {
-  KafkaSourceDriver *self = (KafkaSourceDriver *) ((KafkaOpaque *)opaque)->driver;
+  KafkaSourceDriver *self = (KafkaSourceDriver *) kafka_opaque_driver((KafkaOpaque *)opaque);
 
   msg_info("kafka: Broker throttled request",
            evt_tag_str("group_id", self->group_id),
            evt_tag_str("broker_name", broker_name),
            evt_tag_int("throttle_time_ms", throttle_time_ms),
            evt_tag_str("driver", self->super.super.super.id));
+}
+
+rd_kafka_resp_err_t
+kafka_update_state(KafkaSourceDriver *self, gboolean lock)
+{
+  if (lock)
+    kafka_opaque_state_lock(&self->opaque);
+
+  KafkaConnectedState state = kafka_opaque_state_get(&self->opaque);
+
+  const struct rd_kafka_metadata *metadata;
+  rd_kafka_resp_err_t err = rd_kafka_metadata(self->kafka, 0, NULL, &metadata, self->options.super.poll_timeout);
+
+  if (err == RD_KAFKA_RESP_ERR_NO_ERROR)
+    {
+      state = KFS_CONNECTED;
+      kafka_opaque_state_set(&self->opaque, state);
+      if (kafka_opaque_state_get_last_error(&self->opaque))
+        {
+          kafka_opaque_state_set_last_error(&self->opaque, 0);
+          msg_verbose("kafka: Connected",
+                      //evt_tag_str("broker_name", broker_name),
+                      evt_tag_str("driver", self->super.super.super.id));
+        }
+      rd_kafka_metadata_destroy(metadata);
+    }
+
+  if (lock)
+    kafka_opaque_state_unlock(&self->opaque);
+
+  return err;
+}
+
+void
+_kafka_error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) kafka_opaque_driver((KafkaOpaque *)opaque);
+
+  kafka_opaque_state_lock(&self->opaque);
+
+  KafkaConnectedState old_state = kafka_opaque_state_get(&self->opaque);
+  if (kafka_update_state(self, FALSE) != RD_KAFKA_RESP_ERR_NO_ERROR)
+    kafka_opaque_state_set(&self->opaque, KFS_DISCONNECTED);
+
+  if (kafka_opaque_state_get(&self->opaque) == KFS_DISCONNECTED)
+    {
+      if(old_state == KFS_CONNECTED)
+        {
+          msg_verbose("kafka: Disconnected",
+                      //evt_tag_str("broker_name", broker_name),
+                      evt_tag_str("driver", self->super.super.super.id));
+          /* Log the first error on error level, the further errors ony in trace, see bellow for more */
+          msg_error("kafka: Temporally error occured",
+                    //evt_tag_str("broker_name", broker_name),
+                    evt_tag_str("error", reason),
+                    evt_tag_str("driver", self->super.super.super.id));
+        }
+      if (kafka_opaque_state_get_last_error(&self->opaque) != err)
+        {
+          if(old_state != KFS_CONNECTED)
+            {
+              /* Logging further errors ony on trace level, unfortunately house keeping the last error only
+               * is not enought to filter out the repetititons which would be the real goal here
+               * the user can add even more detailed kafka error logging using the config options
+               *      kafka-logging("kafka")
+               *      config(
+               *          "log_level" => "7"
+               *      )
+               * so, we do want to log the minimal info here in case of a connection error
+               * TODO: we can try to maintain a list of already recieved errors later, and show only the new ones in this error run ?!
+               */
+              msg_trace("kafka: Temporally error occured",
+                        //evt_tag_str("broker_name", broker_name),
+                        evt_tag_str("error", reason),
+                        evt_tag_str("driver", self->super.super.super.id));
+            }
+          kafka_opaque_state_set_last_error(&self->opaque, err);
+        }
+    }
+  kafka_opaque_state_unlock(&self->opaque);
 }
 
 static gboolean
@@ -576,13 +656,14 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
             evt_tag_str("partition", self->options.requested_partitions),
             evt_tag_str("driver", self->super.super.super.id));
 
+  kafka_update_state(self, TRUE);
   while (FALSE == main_loop_worker_job_quit())
     {
       int qlen = (int)rd_kafka_outq_len(self->kafka);
-
       msg = rd_kafka_consumer_poll(self->kafka, self->options.super.poll_timeout);
       if (msg == NULL || msg->err)
         {
+          kafka_update_state(self, TRUE);
           if (msg == NULL || msg->err == RD_KAFKA_RESP_ERR__PARTITION_EOF)
             {
               // msg_trace("kafka: consumer_poll timeout",
@@ -682,6 +763,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
             evt_tag_str("partition", self->options.requested_partitions),
             evt_tag_str("driver", self->super.super.super.id));
 
+  kafka_update_state(self, TRUE);
   while (FALSE == main_loop_worker_job_quit())
     {
       /* Polls the provided kafka handle for events. Events will cause application-provided callbacks to be called.
@@ -715,8 +797,12 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
             rd_kafka_message_destroy(msg);
         }
 
-      if (cnt == 0 && self->options.fetch_retry_delay && FALSE == main_loop_worker_job_quit())
-        main_loop_worker_wait_for_exit_until(self->options.fetch_retry_delay);
+      if (cnt == 0)
+        {
+          kafka_update_state(self, TRUE);
+          if (self->options.fetch_retry_delay && FALSE == main_loop_worker_job_quit())
+            main_loop_worker_wait_for_exit_until(self->options.fetch_retry_delay);
+        }
     }
   rd_kafka_consume_stop(single_topic, requested_partition);
 
@@ -733,6 +819,7 @@ _restart_consumer(LogThreadedSourceWorker *worker, const gdouble iteration_sleep
 
   while (FALSE == main_loop_worker_job_quit())
     {
+      kafka_update_state(self, TRUE);
       if (g_atomic_counter_get(&self->sleeping_thread_num) == self->super.num_workers - 1)
         {
           kafka_sd_reopen(&self->super.super.super);
@@ -863,7 +950,7 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
                     rd_kafka_topic_partition_list_t *partitions,
                     void *opaque)
 {
-  KafkaSourceDriver *self = (KafkaSourceDriver *) ((KafkaOpaque *)opaque)->driver;
+  KafkaSourceDriver *self = (KafkaSourceDriver *) kafka_opaque_driver((KafkaOpaque *)opaque);
 
   g_assert(self->kafka == rk);
   switch (err)
@@ -1101,6 +1188,7 @@ _construct_kafka_client(KafkaSourceDriver *self)
   rd_kafka_conf_set_opaque(conf, &self->opaque);
   if (self->options.super.kafka_logging != KFL_DISABLED)
     rd_kafka_conf_set_log_cb(conf, kafka_log_callback);
+  rd_kafka_conf_set_error_cb(conf, _kafka_error_cb);
   rd_kafka_conf_set_throttle_cb(conf, _kafka_throttle_cb);
   rd_kafka_conf_set_rebalance_cb(conf, _kafka_rebalance_cb);
 
@@ -1239,6 +1327,7 @@ kafka_sd_init(LogPipe *s)
       return FALSE;
     }
 
+  kafka_opaque_init(&self->opaque, &self->super.super.super, &self->options.super);
   if (FALSE == kafka_sd_reopen(&self->super.super.super))
     return FALSE;
 
@@ -1273,6 +1362,7 @@ kafka_sd_deinit(LogPipe *s)
   g_cond_clear(&self->queue_cond);
 
   _destroy_kafka_client(&self->super.super.super);
+  kafka_opaque_deinit(&self->opaque);
 
   _unregister_aggregated_stats(self);
 
@@ -1309,9 +1399,6 @@ kafka_sd_new(GlobalConfig *cfg)
   self->super.worker_construct = _construct_worker;
 
   self->super.format_stats_key = _format_stats_key;
-
-  self->opaque.driver = &self->super.super.super;
-  self->opaque.options = &self->options.super;
 
   kafka_sd_options_defaults(&self->options, &self->super.worker_options);
 

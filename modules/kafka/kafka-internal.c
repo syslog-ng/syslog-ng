@@ -87,6 +87,7 @@ kafka_validate_topic_name(const gchar *name, GError **error)
 void
 kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg)
 {
+  /* NOTE: you cannot use KafkaOpaque driver here, as you do not know the type of the driver */
   KafkaOptions *options = (KafkaOptions *) ((KafkaOpaque *)rd_kafka_opaque(rkt))->options;
 
   gchar *buf = g_strdup_printf("librdkafka: %s(%d): %s", fac, level, msg);
@@ -230,4 +231,75 @@ inline void
 kafka_options_set_poll_timeout(KafkaOptions *self, gint poll_timeout)
 {
   self->poll_timeout = poll_timeout;
+}
+
+void
+kafka_opaque_init(KafkaOpaque *self, LogDriver *driver, KafkaOptions *options)
+{
+  self->driver = driver;
+  self->options = options;
+  self->state.state = KFS_UNKNOWN;
+  self->state.last_error = -1;
+
+  g_mutex_init(&self->state.mutex);
+}
+
+void
+kafka_opaque_deinit(KafkaOpaque *self)
+{
+  self->driver = NULL;
+  self->options = NULL;
+  self->state.state = KFS_UNKNOWN;
+
+  g_mutex_clear(&self->state.mutex);
+}
+
+inline LogDriver *
+kafka_opaque_driver(KafkaOpaque *self)
+{
+  return self->driver;
+}
+
+inline KafkaOptions *
+kafka_opaque_options(KafkaOpaque *self)
+{
+  return self->options;
+}
+
+inline void
+kafka_opaque_state_lock(KafkaOpaque *self)
+{
+  g_mutex_lock(&self->state.mutex);
+}
+
+inline void
+kafka_opaque_state_unlock(KafkaOpaque *self)
+{
+  g_mutex_unlock(&self->state.mutex);
+}
+
+/* NOTE: lock must be held when calling these */
+
+inline KafkaConnectedState
+kafka_opaque_state_get(KafkaOpaque *self)
+{
+  return self->state.state;
+}
+
+inline void
+kafka_opaque_state_set(KafkaOpaque *self, KafkaConnectedState state)
+{
+  self->state.state = state;
+}
+
+inline gint
+kafka_opaque_state_get_last_error(KafkaOpaque *self)
+{
+  return self->state.last_error;
+}
+
+inline void
+kafka_opaque_state_set_last_error(KafkaOpaque *self, gint error)
+{
+  self->state.last_error = error;
 }
