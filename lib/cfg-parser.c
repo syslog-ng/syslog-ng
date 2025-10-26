@@ -193,7 +193,9 @@ static CfgLexerKeyword main_keywords[] =
   { "batch_lines",        KW_BATCH_LINES },
   { "batch_timeout",      KW_BATCH_TIMEOUT },
 
-  { "read_old_records",   KW_READ_OLD_RECORDS},
+  { "read_old_records",     KW_READ_OLD_RECORDS},
+  { "do_not_use_bookmark",  KW_DO_NOT_USE_BOOKMARK },
+
   { "use_syslogng_pid",   KW_USE_SYSLOGNG_PID },
   { "fetch_no_data_delay", KW_FETCH_NO_DATA_DELAY},
 

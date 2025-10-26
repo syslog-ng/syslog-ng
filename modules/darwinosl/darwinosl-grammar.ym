@@ -52,7 +52,6 @@
 %token KW_DARWIN_OSL
 %token KW_FILTER_PREDICATE
 %token KW_GO_REVERSE
-%token KW_DO_NOT_USE_BOOKMARK
 %token KW_MAX_BOOKMARK_DISTANCE
 
 %type   <ptr> source_darwinosl

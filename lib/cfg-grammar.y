@@ -260,8 +260,10 @@
 
 %token KW_PASS_UNIX_CREDENTIALS       10180
 %token KW_PERSIST_NAME                10181
-%token KW_READ_OLD_RECORDS            10182
-%token KW_USE_SYSLOGNG_PID            10183
+%token KW_USE_SYSLOGNG_PID            10182
+
+%token KW_READ_OLD_RECORDS            10185
+%token KW_DO_NOT_USE_BOOKMARK         10186
 
 /* log statement options */
 %token KW_FLAGS                       10190
