@@ -32,7 +32,7 @@ topic_name_error_quark(void)
 }
 
 gboolean
-kafka_is_valid_topic_pattern(const gchar *name)
+kafka_is_valid_topic_name_pattern(const gchar *name)
 {
   const gchar *p;
   for (p = name; *p; p++)
@@ -46,6 +46,24 @@ kafka_is_valid_topic_pattern(const gchar *name)
         }
     }
   return TRUE;
+}
+
+gboolean
+kafka_validate_topic_pattern(const char *topic, GError **error)
+{
+  if (topic == NULL || *topic == 0)
+    return FALSE;
+
+  regex_t re;
+  int ret = regcomp(&re, topic, REG_EXTENDED | REG_NOSUB);
+  if (ret == 0)
+    {
+      regfree(&re);
+      return TRUE;
+    }
+  g_set_error(error, TOPIC_NAME_ERROR, TOPIC_INVALID_PATTERN,
+              "kafka: topic name %s is illegal as it contains a badly formatted regex pattern", topic);
+  return FALSE;
 }
 
 gboolean
@@ -74,7 +92,7 @@ kafka_validate_topic_name(const gchar *name, GError **error)
       return FALSE;
     }
 
-  if (!kafka_is_valid_topic_pattern(name))
+  if (FALSE == kafka_is_valid_topic_name_pattern(name))
     {
       g_set_error(error, TOPIC_NAME_ERROR, TOPIC_INVALID_PATTERN,
                   "kafka: topic name %s is illegal as it contains characters other than pattern [-._a-zA-Z0-9]+", name);
@@ -168,9 +186,9 @@ void
 kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions)
 {
   for (int i = 0 ; i < partitions->cnt ; i++)
-    msg_debug("kafka: partition",
-              evt_tag_str("topic", partitions->elems[i].topic),
-              evt_tag_int("partition", (int) partitions->elems[i].partition));
+    msg_verbose("kafka: partition",
+                evt_tag_str("topic", partitions->elems[i].topic),
+                evt_tag_int("partition", (int) partitions->elems[i].partition));
 }
 
 void
