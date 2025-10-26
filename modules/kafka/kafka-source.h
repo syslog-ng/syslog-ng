@@ -34,8 +34,7 @@ LogTemplateOptions *kafka_sd_get_template_options(LogDriver *d);
 
 void kafka_sd_merge_config(LogDriver *d, GList *props);
 gboolean kafka_sd_set_logging(LogDriver *d, const gchar *logging);
-gboolean kafka_sd_set_topics(LogDriver *d, const gchar *topics);
-gboolean kafka_sd_set_partitions(LogDriver *d, const gchar *partitions);
+gboolean kafka_sd_set_topics(LogDriver *d, GList *topics);
 void kafka_sd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers);
 void kafka_sd_set_log_fetch_delay(LogDriver *s, guint new_value);
 void kafka_sd_set_log_fetch_retry_delay(LogDriver *s, guint new_value);

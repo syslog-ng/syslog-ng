@@ -23,6 +23,7 @@
 #include "kafka-source.h"
 #include "kafka-internal.h"
 #include "kafka-props.h"
+#include "kafka-topic-parts.h"
 #include "ack-tracker/ack_tracker_factory.h"
 #include "stats/stats-cluster-single.h"
 #include "stats/aggregator/stats-aggregator-registry.h"
@@ -141,13 +142,6 @@ _validate_part_num(gpointer item, GError **error)
 }
 
 static gboolean
-_convert_to_string(const gchar *token, gpointer *item)
-{
-  *item = g_strdup(token);
-  return TRUE;
-}
-
-static gboolean
 _is_topic_pattern(const char *topic)
 {
   if (topic == NULL || *topic == 0)
@@ -180,8 +174,9 @@ _format_stats_key(LogThreadedSourceDriver *d, StatsClusterKeyBuilder *kb)
   KafkaSourceDriver *self = (KafkaSourceDriver *)d;
 
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "kafka"));
+  // FIXME: add proper name
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("topic",
-                                             self->options.requested_topics));
+                                             ((KafkaProperty *)g_list_first(self->options.requested_topics)->data)->name));
 }
 
 static const gchar *
@@ -193,7 +188,8 @@ _format_persist_name(const LogPipe *d)
   if (d->persist_name)
     g_snprintf(persist_name, sizeof(persist_name), "kafka-src.%s", d->persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "kafka-src(%s)", self->options.requested_topics);
+    g_snprintf(persist_name, sizeof(persist_name), "kafka-src(%s)",
+               ((KafkaProperty *)g_list_first(self->options.requested_topics)->data)->name);
   return persist_name;
 }
 
@@ -291,12 +287,17 @@ _log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_optio
 static void
 _decide_strategy(KafkaSourceDriver *self)
 {
-  gboolean single_topic = g_list_length(self->requested_topics) == 1 &&
-                          FALSE == _is_topic_pattern(g_list_first(self->requested_topics)->data);
-  gboolean single_partition = g_list_length(self->requested_partitions) == 1 &&
-                              (int32_t)GPOINTER_TO_INT(g_list_first(self->requested_partitions)->data) != -1;
-  gboolean wildcard_partition = g_list_length(self->requested_partitions) == 1 &&
-                                (int32_t)GPOINTER_TO_INT(g_list_first(self->requested_partitions)->data) == -1;
+  guint topic_num = g_list_length(self->requested_topics);
+  g_assert(topic_num > 0);
+  KafkaTopicParts *fist_item = (KafkaTopicParts *)g_list_first(self->requested_topics)->data;
+  guint fist_item_part_num = g_list_length(fist_item->partitions);
+
+  gboolean single_topic = topic_num == 1 &&
+                          FALSE == _is_topic_pattern(fist_item->topic);
+  gboolean single_partition = topic_num == 1 && fist_item_part_num == 1 &&
+                              (int32_t)GPOINTER_TO_INT(fist_item->partitions->data) != -1;
+  gboolean wildcard_partition = topic_num == 1 && fist_item_part_num == 1 &&
+                                (int32_t)GPOINTER_TO_INT(fist_item->partitions->data) == -1;
 
   if (single_topic && single_partition)
     self->startegy = KSCS_BATCH_POLL;
@@ -492,8 +493,6 @@ _procesor_run(LogThreadedSourceWorker *worker)
   msg_debug("kafka: started queue processor",
             evt_tag_int("index", worker->worker_index),
             evt_tag_str("group_id", self->group_id),
-            evt_tag_str("topic", self->options.requested_topics),
-            evt_tag_str("partition", self->options.requested_partitions),
             evt_tag_str("driver", self->super.super.super.id));
 
   const gdouble iteration_sleep_time = _iteration_sleep_time(worker);
@@ -529,8 +528,6 @@ _procesor_run(LogThreadedSourceWorker *worker)
   msg_debug("kafka: stopped queue processor",
             evt_tag_int("index", worker->worker_index),
             evt_tag_str("group_id", self->group_id),
-            evt_tag_str("topic", self->options.requested_topics),
-            evt_tag_str("partition", self->options.requested_partitions),
             evt_tag_str("driver", self->super.super.super.id));
 
   g_atomic_counter_dec_and_test(&self->running_thread_num);
@@ -546,20 +543,23 @@ _setup_method_assign_consumer_poll(KafkaSourceDriver *self)
   g_assert(self->kafka);
   gboolean result = TRUE;
   const guint topics_num = g_list_length(self->requested_topics);
-  const guint parts_num = g_list_length(self->requested_partitions);
-  int32_t first_requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(self->requested_partitions)->data);
-  g_assert(parts_num >= 1 && first_requested_partition != -1 && topics_num > 0);
+  g_assert(topics_num > 0);
 
   /* Forward main event queue to consumer queue so we can serve both queues with a single consumer_poll() call */
   rd_kafka_poll_set_consumer(self->kafka);
 
-  rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(g_list_length(self->requested_topics));
+  rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(topics_num);
   for (GList *t = self->requested_topics; t; t = t->next)
     {
-      const gchar *requested_topic = (const gchar *)(t->data);
-      for (GList *p = self->requested_partitions; p; p = p->next)
+      KafkaTopicParts *tps_item = (KafkaTopicParts *)t->data;
+      const gchar *requested_topic = tps_item->topic;
+      GList *requested_topic_parts = tps_item->partitions;
+      g_assert(g_list_length(requested_topic_parts) >= 1);
+
+      for (GList *p = requested_topic_parts; p; p = p->next)
         {
           int32_t requested_partition = (int32_t)GPOINTER_TO_INT(p->data);
+          g_assert(requested_partition != -1);
           rd_kafka_topic_partition_list_add(parts, requested_topic, requested_partition);
         }
     }
@@ -568,17 +568,14 @@ _setup_method_assign_consumer_poll(KafkaSourceDriver *self)
     {
       msg_debug("kafka: partitions assigned",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
-                evt_tag_str("partition", self->options.requested_partitions),
                 evt_tag_str("driver", self->super.super.super.id));
       self->assigned_partitions = parts;
+      kafka_log_partition_list(parts);
     }
   else
     {
       msg_error("kafka: rd_kafka_assign() failed",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
-                evt_tag_str("partition", self->options.requested_partitions),
                 evt_tag_str("error", rd_kafka_err2str(err)),
                 evt_tag_str("driver", self->super.super.super.id));
       rd_kafka_topic_partition_list_destroy(parts);
@@ -598,17 +595,15 @@ _setup_method_subscribe_consumer_poll(KafkaSourceDriver *self)
   g_assert(self->kafka);
   gboolean result = TRUE;
   const guint topics_num = g_list_length(self->requested_topics);
-  const guint parts_num = g_list_length(self->requested_partitions);
-  int32_t requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(self->requested_partitions)->data);
-  g_assert(parts_num == 1 && requested_partition == -1 && topics_num > 0);
+  g_assert(topics_num > 0);
 
   /* Forward main event queue to consumer queue so we can serve both queues with a single consumer_poll() call */
   rd_kafka_poll_set_consumer(self->kafka);
 
-  rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(g_list_length(self->requested_topics));
+  rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(topics_num);
   for (GList *t = self->requested_topics; t; t = t->next)
     {
-      const gchar *requested_topic = (const gchar *)(t->data);
+      const gchar *requested_topic = ((KafkaTopicParts *)t->data)->topic;
       rd_kafka_topic_partition_list_add(parts, requested_topic, RD_KAFKA_PARTITION_UA); // partition is ignored in subscribe
     }
   /* Subscribe to topic set using balanced consumer groups.
@@ -624,7 +619,6 @@ _setup_method_subscribe_consumer_poll(KafkaSourceDriver *self)
     {
       msg_debug("kafka: waiting for group rebalancer",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
                 evt_tag_str("driver", self->super.super.super.id));
       self->assigned_partitions = parts;
     }
@@ -632,8 +626,6 @@ _setup_method_subscribe_consumer_poll(KafkaSourceDriver *self)
     {
       msg_error("kafka: rd_kafka_subscribe() failed",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
-                evt_tag_str("partition", self->options.requested_partitions),
                 evt_tag_str("error", rd_kafka_err2str(err)),
                 evt_tag_str("driver", self->super.super.super.id));
       rd_kafka_topic_partition_list_destroy(parts);
@@ -650,10 +642,8 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
   rd_kafka_message_t *msg;
 
-  msg_debug("kafka: started consumer poll run - queued",
+  msg_debug("kafka: consumer poll run started - queued",
             evt_tag_str("group_id", self->group_id),
-            evt_tag_str("topic", self->options.requested_topics),
-            evt_tag_str("partition", self->options.requested_partitions),
             evt_tag_str("driver", self->super.super.super.id));
 
   kafka_update_state(self, TRUE);
@@ -678,8 +668,8 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
             {
               msg_error("kafka: consumer poll message error",
                         evt_tag_str("group_id", self->group_id),
-                        evt_tag_str("topic", self->options.requested_topics),
-                        evt_tag_str("partition", self->options.requested_partitions),
+                        evt_tag_str("topic", msg && msg->rkt ? rd_kafka_topic_name(msg->rkt) : ""),
+                        evt_tag_int("partition", msg ? msg->partition : -1),
                         evt_tag_str("error", rd_kafka_err2str(msg->err)),
                         evt_tag_str("driver", self->super.super.super.id));
               rd_kafka_message_destroy(msg);
@@ -716,30 +706,34 @@ _setup_method_batch_consumer_poll(KafkaSourceDriver *self)
   g_assert(self->kafka);
   gboolean result = TRUE;
   const guint topics_num = g_list_length(self->requested_topics);
-  const guint parts_num = g_list_length(self->requested_partitions);
-  g_assert(topics_num == 1 && parts_num == 1);
+  g_assert(topics_num == 1);
+  KafkaTopicParts *fist_item = (KafkaTopicParts *)g_list_first(self->requested_topics)->data;
+  const guint parts_num = g_list_length(fist_item->partitions);
+  g_assert(parts_num == 1);
 
-  int32_t requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(self->requested_partitions)->data);
-  const gchar *requested_topic = (const gchar *)(g_list_first(self->requested_topics)->data);
+  const gchar *requested_topic = fist_item->topic;
+  int32_t requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(fist_item->partitions)->data);
 
   rd_kafka_topic_t *new_topic = rd_kafka_topic_new(self->kafka,
                                                    requested_topic,
                                                    NULL); // TODO: add support of per-topic conf
   if (rd_kafka_consume_start(new_topic,
                              requested_partition,
-                             RD_KAFKA_OFFSET_END) != RD_KAFKA_RESP_ERR_NO_ERROR)
+                             RD_KAFKA_OFFSET_BEGINNING) != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_error("kafka: rd_kafka_consume_start() failed",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
-                evt_tag_str("partition", self->options.requested_partitions),
+                evt_tag_str("topic", requested_topic),
+                evt_tag_int("partition", requested_partition),
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
                 evt_tag_str("driver", self->super.super.super.id));
       rd_kafka_topic_destroy(new_topic);
       result = FALSE;
     }
   else
-    self->topic_handle_list = g_list_append(self->topic_handle_list, new_topic);
+    {
+      self->topic_handle_list = g_list_append(self->topic_handle_list, new_topic);
+    }
 
   return result;
 }
@@ -750,22 +744,25 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
 
-  g_assert(g_list_length(self->requested_partitions) == 1 && g_list_length(self->topic_handle_list) == 1);
   // TODO: make this dynamic
 #define MAX_BATCH_SIZE 100
   rd_kafka_message_t *msgs[MAX_BATCH_SIZE];
-  int32_t requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(self->requested_partitions)->data);
+  const guint topics_num = g_list_length(self->requested_topics);
+  g_assert(topics_num == 1 && g_list_length(self->topic_handle_list) == 1);
+  KafkaTopicParts *fist_item = (KafkaTopicParts *)g_list_first(self->requested_topics)->data;
+  int32_t requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(fist_item->partitions)->data);
   rd_kafka_topic_t *single_topic = (rd_kafka_topic_t *)g_list_first(self->topic_handle_list)->data;
 
-  msg_debug("kafka: started consumer poll run - NONE queued",
+  msg_debug("kafka: consumer poll run started - NONE queued",
             evt_tag_str("group_id", self->group_id),
-            evt_tag_str("topic", self->options.requested_topics),
-            evt_tag_str("partition", self->options.requested_partitions),
+            evt_tag_str("topic", rd_kafka_topic_name(single_topic)),
+            evt_tag_int("partition", requested_partition),
             evt_tag_str("driver", self->super.super.super.id));
 
   kafka_update_state(self, TRUE);
   while (FALSE == main_loop_worker_job_quit())
     {
+      int qlen = (int)rd_kafka_outq_len(self->kafka);
       /* Polls the provided kafka handle for events. Events will cause application-provided callbacks to be called.
        * For non-blocking calls, provide 0 as timeout_ms. To wait indefinitely for an event, provide -1. */
       rd_kafka_poll(self->kafka, 0);
@@ -777,8 +774,8 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
         {
           msg_error("kafka: consume batch error",
                     evt_tag_str("group_id", self->group_id),
-                    evt_tag_str("topic", self->options.requested_topics),
-                    evt_tag_str("partition", self->options.requested_partitions),
+                    evt_tag_str("topic", rd_kafka_topic_name(single_topic)),
+                    evt_tag_int("partition", requested_partition),
                     evt_tag_str("error", cnt < 0 ? rd_kafka_err2str(rd_kafka_last_error()) : rd_kafka_message_errstr(msgs[0])),
                     evt_tag_str("driver", self->super.super.super.id));
           break;
@@ -799,6 +796,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
 
       if (cnt == 0)
         {
+          msg_trace("kafka: consumer_poll timeout", evt_tag_int("kafka_outq_len", qlen));
           kafka_update_state(self, TRUE);
           if (self->options.fetch_retry_delay && FALSE == main_loop_worker_job_quit())
             main_loop_worker_wait_for_exit_until(self->options.fetch_retry_delay);
@@ -827,8 +825,6 @@ _restart_consumer(LogThreadedSourceWorker *worker, const gdouble iteration_sleep
         }
       msg_trace("kafka: waiting for queue processors to sleep",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
-                evt_tag_str("partition", self->options.requested_partitions),
                 evt_tag_str("driver", self->super.super.super.id));
       if (iteration_sleep_time > 0.0)
         main_loop_worker_wait_for_exit_until(iteration_sleep_time);
@@ -863,8 +859,6 @@ _consumer_run(LogThreadedSourceWorker *worker)
         }
       msg_debug("kafka: stopped consumer poll run",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
-                evt_tag_str("partition", self->options.requested_partitions),
                 evt_tag_str("driver", self->super.super.super.id));
 
       exit_requested = main_loop_worker_job_quit();
@@ -899,8 +893,6 @@ _adjust_num_workers(KafkaSourceDriver *self)
     {
       msg_warning("kafka: setting worker thread count to 1 for the selected processing strategy",
                   evt_tag_str("group_id", self->group_id),
-                  evt_tag_str("topic", self->options.requested_topics),
-                  evt_tag_str("partition", self->options.requested_partitions),
                   evt_tag_str("driver", self->super.super.super.id));
       log_threaded_source_driver_set_num_workers(&self->super.super.super, 1);
     }
@@ -908,8 +900,6 @@ _adjust_num_workers(KafkaSourceDriver *self)
     {
       msg_error("kafka: the selected processing strategy requires at least 2 worker threads",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
-                evt_tag_str("partition", self->options.requested_partitions),
                 evt_tag_str("driver", self->super.super.super.id));
       result = FALSE;
     }
@@ -990,56 +980,28 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
 }
 
 static gboolean
-_check_and_apply_topics(KafkaSourceDriver *self, const gchar *topics, gboolean apply)
-{
-  GError *error = NULL;
-  GList *list = split_and_convert_to_list("topic", topics, ",", TRUE, g_free, _convert_to_string, _validate_topic_name,
-                                          &error);
-  if (error)
-    {
-      msg_error("kafka: invalid topic name in the requested topics list",
-                evt_tag_str("topics", topics),
-                evt_tag_str("error", error->message),
-                evt_tag_str("driver", self->super.super.super.id));
-      g_error_free(error);
-      return FALSE;
-    }
-  const gint original_length = g_list_length(list);
-  if (list)
-    list = g_list_remove_duplicates(list, g_str_equal);
-  if (list == NULL || g_list_length(list) == 0)
-    {
-      if (list)
-        g_list_free_full(list, g_free);
-      list = NULL;
-    }
-  if (list == NULL)
-    return FALSE;
-
-  if (apply)
-    {
-      if (original_length != g_list_length(list))
-        msg_warning("kafka: dropped duplicated entries of topics",
-                    evt_tag_str("topics", topics),
-                    evt_tag_str("driver", self->super.super.super.id));
-      if (self->requested_topics)
-        g_list_free_full(self->requested_topics, g_free);
-      self->requested_topics = list;
-    }
-  return TRUE;
-}
-
-static gboolean
 _g_int32_equal(gconstpointer  v1, gconstpointer  v2)
 {
   return (int32_t)GPOINTER_TO_INT(v1) == (int32_t)GPOINTER_TO_INT(v2);
 }
 
 static gboolean
-_check_and_apply_partitions(KafkaSourceDriver *self, const gchar *partitions, gboolean apply)
+_g_int32_compare(gconstpointer  v1, gconstpointer  v2)
+{
+  if ((int32_t)GPOINTER_TO_INT(v1) < (int32_t)GPOINTER_TO_INT(v2))
+    return -1;
+  else if ((int32_t)GPOINTER_TO_INT(v1) > (int32_t)GPOINTER_TO_INT(v2))
+    return 1;
+  else
+    return 0;
+}
+
+static gboolean
+_check_and_apply_partitions(KafkaSourceDriver *self, const gchar *partitions, GList **requested_partitions)
 {
   GList *list = split_and_convert_to_list("partition", partitions, ",", TRUE, NULL, _convert_to_int,
                                           _validate_part_num, NULL);
+  list = g_list_sort(list, _g_int32_compare);
   const gint original_length = g_list_length(list);
   if (list)
     list = g_list_remove_duplicates(list, _g_int32_equal);
@@ -1064,15 +1026,74 @@ _check_and_apply_partitions(KafkaSourceDriver *self, const gchar *partitions, gb
         }
     }
 
-  if (apply)
+  if (requested_partitions)
     {
       if (original_length != g_list_length(list))
         msg_warning("kafka: dropped duplicated entries of partition numbers",
                     evt_tag_str("partitions", partitions),
                     evt_tag_str("driver", self->super.super.super.id));
-      if (self->requested_partitions)
-        g_list_free(self->requested_partitions);
-      self->requested_partitions = list;
+      *requested_partitions = list;
+    }
+  return TRUE;
+}
+
+static gboolean
+_check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
+{
+  if (g_list_length(topics) == 0)
+    return FALSE;
+
+  GList *requested_topics = NULL;
+  for (GList *topic_option = topics; topic_option != NULL; topic_option = topic_option->next)
+    {
+      GList *requested_partitions = NULL;
+      KafkaProperty *prop = (KafkaProperty *)topic_option->data;
+
+      if (_check_and_apply_partitions(self, (const gchar *) prop->value, &requested_partitions))
+        {
+          GError *err = NULL;
+          if (_validate_topic_name(prop->name, &err))
+            {
+              KafkaTopicParts *new_item = kafka_tps_new(prop->name, requested_partitions);
+              requested_topics = g_list_prepend(self->requested_topics, new_item);
+              continue;
+            }
+          else
+            {
+              msg_error("kafka: invalid topic name in the requested topics list",
+                        evt_tag_str("topic", prop->name),
+                        evt_tag_str("error", err->message),
+                        evt_tag_str("driver", self->super.super.super.id));
+              if (err)
+                g_error_free(err);
+            }
+        }
+      if (requested_partitions)
+        g_list_free(requested_partitions);
+      if (requested_topics)
+        kafka_tps_list_free(requested_topics);
+      return FALSE;
+    }
+
+  const gint original_length = g_list_length(requested_topics);
+  requested_topics = g_list_remove_duplicates(requested_topics, kafka_tps_equal);
+  if (requested_topics == NULL || g_list_length(requested_topics) == 0)
+    {
+      if (requested_topics)
+        kafka_tps_list_free(requested_topics);
+      requested_topics = NULL;
+    }
+  if (requested_topics == NULL)
+    return FALSE;
+
+  if (apply)
+    {
+      if (original_length != g_list_length(requested_topics))
+        msg_warning("kafka: dropped duplicated entries of topics config option",
+                    evt_tag_str("driver", self->super.super.super.id));
+      if (self->requested_topics)
+        kafka_tps_list_free(self->requested_topics);
+      self->requested_topics = requested_topics;
     }
   return TRUE;
 }
@@ -1126,7 +1147,6 @@ _apply_options(KafkaSourceDriver *self)
 {
   _apply_group_id(self);
   _check_and_apply_topics(self, self->options.requested_topics, TRUE);
-  _check_and_apply_partitions(self, self->options.requested_partitions, TRUE);
 }
 
 static LogThreadedSourceWorker *
@@ -1148,8 +1168,6 @@ _construct_kafka_client(KafkaSourceDriver *self)
 
   msg_debug("kafka: constructing client",
             evt_tag_str("group_id", self->group_id),
-            evt_tag_str("topic", self->options.requested_topics),
-            evt_tag_str("partition", self->options.requested_partitions),
             evt_tag_str("driver", self->super.super.super.id));
 
   rd_kafka_conf_t *conf = rd_kafka_conf_new();
@@ -1198,8 +1216,6 @@ _construct_kafka_client(KafkaSourceDriver *self)
     {
       msg_error("kafka: error constructing the kafka connection object",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
-                evt_tag_str("partition", self->options.requested_partitions),
                 evt_tag_str("error", errbuf),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
@@ -1225,8 +1241,6 @@ _destroy_kafka_client(LogDriver *s)
 
   msg_debug("kafka: destroying client",
             evt_tag_str("group_id", self->group_id),
-            evt_tag_str("topic", self->options.requested_topics),
-            evt_tag_str("partition", self->options.requested_partitions),
             evt_tag_str("driver", self->super.super.super.id));
   if  (self->topic_handle_list)
     {
@@ -1269,12 +1283,8 @@ _destroy_kafka_client(LogDriver *s)
   g_free(self->group_id);
   self->group_id = NULL;
 
-  if (self->requested_partitions)
-    g_list_free(self->requested_partitions);
-  self->requested_partitions = NULL;
-
   if (self->requested_topics)
-    g_list_free_full(self->requested_topics, g_free);
+    kafka_tps_list_free(self->requested_topics);
   self->requested_topics = NULL;
 }
 
@@ -1291,8 +1301,6 @@ kafka_sd_reopen(LogDriver *s)
     {
       msg_error("kafka: error constructing kafka connection object",
                 evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", self->options.requested_topics),
-                evt_tag_str("partition", self->options.requested_partitions),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
@@ -1344,8 +1352,6 @@ kafka_sd_init(LogPipe *s)
   log_template_options_init(&self->options.template_options, cfg);
   msg_verbose("kafka: Kafka source initialized",
               evt_tag_str("group_id", self->group_id),
-              evt_tag_str("topic", self->options.requested_topics),
-              evt_tag_str("partition", self->options.requested_partitions),
               evt_tag_str("driver", self->super.super.super.id),
               log_pipe_location_tag(&self->super.super.super.super));
   return TRUE;
@@ -1423,40 +1429,24 @@ kafka_sd_set_logging(LogDriver *d, const gchar *logging)
   return kafka_options_set_logging(&self->options.super, logging);
 }
 
-gboolean
-kafka_sd_set_topics(LogDriver *d, const gchar *topics)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *) d;
-
-  if (FALSE == _check_and_apply_topics(self, topics, FALSE))
-    return FALSE;
-
-  g_free(self->options.requested_topics);
-  self->options.requested_topics = g_strdup(topics);
-
-  return TRUE;
-}
-
-gboolean
-kafka_sd_set_partitions(LogDriver *d, const gchar *partitions)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *) d;
-
-  if (FALSE == _check_and_apply_partitions(self, partitions, FALSE))
-    return FALSE;
-
-  g_free(self->options.requested_partitions);
-  self->options.requested_partitions = g_strdup(partitions);
-
-  return TRUE;
-}
-
 void
 kafka_sd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)d;
 
   kafka_options_set_bootstrap_servers(&self->options.super, bootstrap_servers);
+}
+
+gboolean
+kafka_sd_set_topics(LogDriver *d, GList *topics)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) d;
+
+  if (self->options.requested_topics)
+    kafka_property_list_free(self->options.requested_topics);
+  self->options.requested_topics = topics;
+
+  return _check_and_apply_topics(self, topics, FALSE);
 }
 
 void
@@ -1545,10 +1535,7 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
 void
 kafka_sd_options_destroy(KafkaSourceOptions *self)
 {
-  g_free(self->requested_topics);
-  self->requested_topics = NULL;
-  g_free(self->requested_partitions);
-  self->requested_partitions = NULL;
+  kafka_property_list_free(self->requested_topics);
   log_template_unref(self->message);
   self->message = NULL;
 

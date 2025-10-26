@@ -124,8 +124,7 @@ struct _KafkaSourceOptions
   MsgFormatOptions *format_options;
   LogTemplateOptions template_options;
 
-  gchar *requested_topics;
-  gchar *requested_partitions;
+  GList *requested_topics;
   LogTemplate *message;
   gint time_reopen;
 
@@ -157,7 +156,6 @@ struct _KafkaSourceDriver
 
   gchar *group_id;
   GList *requested_topics;
-  GList *requested_partitions;
 
   KafkaSrcConsumerStrategy startegy;
   GAsyncQueue *msg_queue;

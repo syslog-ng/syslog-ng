@@ -20,16 +20,19 @@ set(CMAKE_REQUIRED_LIBRARIES ${RDKAFKA_LIBRARY})
 set(KAFKA_SOURCES
   kafka-parser.c
   kafka-parser.h
-  kafka-plugin.c
   kafka-dest-driver.h
   kafka-dest-driver.c
   kafka-dest-worker.h
   kafka-dest-worker.c
   kafka-source.h
   kafka-source.c
+  kafka-props.h
   kafka-props.c
   kafka-internal.h
   kafka-internal.c
+  kafka-topic-parts.h
+  kafka-topic-parts.c
+  kafka-plugin.c
 )
 
 add_module(
