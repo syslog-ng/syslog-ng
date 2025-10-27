@@ -779,6 +779,8 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
                     evt_tag_int("partition", requested_partition),
                     evt_tag_str("error", cnt < 0 ? rd_kafka_err2str(rd_kafka_last_error()) : rd_kafka_message_errstr(msgs[0])),
                     evt_tag_str("driver", self->super.super.super.id));
+          if (cnt == 1)
+            rd_kafka_message_destroy(msgs[0]);
           break;
         }
 
