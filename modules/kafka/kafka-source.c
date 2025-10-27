@@ -458,13 +458,6 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
                     evt_tag_int("partition", msg->partition),
                     evt_tag_str("error", rd_kafka_error_string(err)),
                     evt_tag_str("driver", self->super.super.super.id));
-      if (rd_kafka_commit_message(self->kafka, msg, FALSE) != RD_KAFKA_RESP_ERR_NO_ERROR)
-        msg_warning("kafka: error commiting message offset",
-                    evt_tag_str("group_id", self->group_id),
-                    evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
-                    evt_tag_int("partition", msg->partition),
-                    evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
-                    evt_tag_str("driver", self->super.super.super.id));
     }
   rd_kafka_message_destroy(msg);
 
@@ -1192,18 +1185,20 @@ _construct_kafka_client(KafkaSourceDriver *self)
     goto err_exit;
   /* NOTE: The callback-based consumer API's offset store granularity is
    * said to be not good enough, also, we want to control the offset store
-   * process, and treat the message process if we were able to fuly deliver it.
-   * Disable automatic offset store and commiting, do it explicitly per-message in
+   * process, and treat the message processed if we were able to fuly deliver it.
+   * Disable the automatic offset store, do it explicitly per-message in
    * the message processor of the consume callback/batch_loop instead.
    * Also, this controls only the high-level consumer API scenario, for the low-lewel
    * version we should use our persist state backup/restore and RD_KAFKA_OFFSET_STORED
    * in rd_kafka_consume_start */
   if (FALSE == kafka_conf_set_prop(conf, "enable.auto.offset.store", "false"))
     goto err_exit;
-  if (FALSE == kafka_conf_set_prop(conf, "enable.auto.commit", "false"))
+  if (FALSE == kafka_conf_set_prop(conf, "enable.auto.commit", "true"))
     goto err_exit;
   /* Like RD_KAFKA_OFFSET_XXX of rd_kafka_consume_start for the high-level consumer API
-   * this is just a fallback if the offset cannot be restored */
+   * this is just a fallback if the offset cannot be restored.
+   * NOTE: this is treated a per-topic option in the documentation, but seems to apply globally.
+   */
   if (FALSE == kafka_conf_set_prop(conf, "auto.offset.reset", _get_start_fallback_offset_string(self)))
     goto err_exit;
 
@@ -1212,6 +1207,7 @@ _construct_kafka_client(KafkaSourceDriver *self)
     "bootstrap.servers",
     "metadata.broker.list",
     "enable.auto.offset.store",
+    "auto.offset.reset",
     "enable.auto.commit",
     "auto.commit.enable",
   };
