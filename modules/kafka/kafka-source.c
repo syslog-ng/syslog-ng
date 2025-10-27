@@ -515,6 +515,7 @@ _procesor_run(LogThreadedSourceWorker *worker)
           if (fetch_result == THREADED_FETCH_SUCCESS)
             {
               _process_message(worker, msg);
+              main_loop_worker_run_gc();
               if (iteration_sleep_time > 0.0)
                 main_loop_worker_wait_for_exit_until(iteration_sleep_time);
             }
@@ -692,6 +693,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
                     evt_tag_int("kafka_outq_len", qlen),
                     evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
           _signal_queue(self);
+          main_loop_worker_run_gc();
 
           // Let this take effect in the processor?!?
           // if (iteration_sleep_time > 0.0)
@@ -793,6 +795,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
           if (FALSE == main_loop_worker_job_quit())
             {
               _process_message(worker, msg);
+              main_loop_worker_run_gc();
               if (iteration_sleep_time > 0.0)
                 main_loop_worker_wait_for_exit_until(iteration_sleep_time);
             }
