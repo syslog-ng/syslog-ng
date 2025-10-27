@@ -40,6 +40,7 @@ void kafka_sd_set_log_fetch_delay(LogDriver *s, guint new_value);
 void kafka_sd_set_log_fetch_retry_delay(LogDriver *s, guint new_value);
 void kafka_sd_set_poll_timeout(LogDriver *d, gint poll_timeout);
 void kafka_sd_set_time_reopen(LogDriver *d, gint time_reopen);
+void kafka_sd_set_do_not_use_bookmark(LogDriver *s, gboolean new_value);
 void kafka_sd_set_message_ref(LogDriver *d, LogTemplate *message);
 
 LogDriver *kafka_sd_new(GlobalConfig *cfg);

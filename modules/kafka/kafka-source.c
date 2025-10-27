@@ -266,6 +266,26 @@ _unregister_aggregated_stats(KafkaSourceDriver *self)
   stats_aggregator_unlock();
 }
 
+static int64_t
+_get_start_fallback_offset_code(KafkaSourceDriver *self)
+{
+  int64_t code = RD_KAFKA_OFFSET_END;
+  if (self->options.do_not_use_bookmark)
+    if (self->options.worker_options->super.read_old_records)
+      code = RD_KAFKA_OFFSET_BEGINNING;
+  return code;
+}
+
+static const gchar *
+_get_start_fallback_offset_string(KafkaSourceDriver *self)
+{
+  int64_t code = _get_start_fallback_offset_code(self);
+  if (code == RD_KAFKA_OFFSET_END)
+    return "end";
+  else
+    return "beginning";
+}
+
 static gsize
 _log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_options, LogMessage **out_msg)
 {
@@ -702,7 +722,7 @@ _setup_method_batch_consumer_poll(KafkaSourceDriver *self)
                                                    NULL); // TODO: add support of per-topic conf
   if (rd_kafka_consume_start(new_topic,
                              requested_partition,
-                             RD_KAFKA_OFFSET_BEGINNING) != RD_KAFKA_RESP_ERR_NO_ERROR)
+                             _get_start_fallback_offset_code(self)) != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_error("kafka: rd_kafka_consume_start() failed",
                 evt_tag_str("group_id", self->group_id),
@@ -1178,7 +1198,7 @@ _construct_kafka_client(KafkaSourceDriver *self)
     goto err_exit;
   /* Like RD_KAFKA_OFFSET_XXX of rd_kafka_consume_start for the high-level consumer API
    * this is just a fallback if the offset cannot be restored */
-  if (FALSE == kafka_conf_set_prop(conf, "auto.offset.reset", "beginning"))
+  if (FALSE == kafka_conf_set_prop(conf, "auto.offset.reset", _get_start_fallback_offset_string(self)))
     goto err_exit;
 
   static gchar *protected_properties[] =
