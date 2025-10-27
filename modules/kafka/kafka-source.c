@@ -471,15 +471,18 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   return TRUE;
 }
 
-static ThreadedFetchResult
+static inline ThreadedFetchResult
 _fetch(LogThreadedSourceWorker *worker, rd_kafka_message_t **msg)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-
-  if ((*msg = g_async_queue_try_pop(self->msg_queue)) == NULL)
-    return THREADED_FETCH_NO_DATA;
-
-  return THREADED_FETCH_SUCCESS;
+  GAsyncQueue *queue = self->msg_queue;
+  do
+    {
+      if ((*msg = g_async_queue_try_pop(queue)))
+        return THREADED_FETCH_SUCCESS;
+    }
+  while (g_async_queue_length(queue) && FALSE == main_loop_worker_job_quit());
+  return THREADED_FETCH_NO_DATA;
 }
 
 /* runs in a dedicated thread */
