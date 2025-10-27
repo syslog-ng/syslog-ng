@@ -10,10 +10,6 @@ if(ENABLE_JAVA_MODULES AND NOT GRADLE_FOUND)
   message(FATAL_ERROR "Java based modules enabled, but the required gardle dependency could not be found")
 endif()
 
-if(NOT ENABLE_JAVA_MODULES)
-  return()
-endif()
-
 set(CAN_ENABLE_JAVA_MODULES OFF)
 if((GRADLE_FOUND AND ENABLE_JAVA))
   set(CAN_ENABLE_JAVA_MODULES ON)
