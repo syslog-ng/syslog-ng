@@ -533,6 +533,24 @@ _procesor_run(LogThreadedSourceWorker *worker)
   g_atomic_counter_dec_and_test(&self->running_thread_num);
 }
 
+static void
+_kafka_final_flush(KafkaSourceDriver *self)
+{
+  const gint poll_timeout = 50;
+
+  gint remaining_time = self->options.super.poll_timeout;
+  while (rd_kafka_outq_len(self->kafka) > 0 && remaining_time > 0)
+    {
+      rd_kafka_poll(self->kafka, poll_timeout);
+      remaining_time -= poll_timeout;
+    }
+
+  if (rd_kafka_outq_len(self->kafka) > 0)
+    msg_warning("kafka: final outq flush could not process all items",
+                evt_tag_str("group_id", self->group_id),
+                evt_tag_str("driver", self->super.super.super.id));
+}
+
 /* **************************
  * Strategy - assign poll
  * **************************
@@ -693,8 +711,12 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
           //   main_loop_worker_wait_for_exit_until(iteration_sleep_time);
         }
     }
+  /* This call will block until the consumer has revoked its assignment, calling the rebalance_cb if it is configured,
+   * committed offsets to broker, and left the consumer group (if applicable).
+   */
+  rd_kafka_consumer_close(self->kafka);
   /* Wait for outstanding requests to finish. */
-  // FIXME: clarify if we need rd_kafka_flush(). and polling rd_kafka_outq_len() till its empty, if we only have offset commits
+  _kafka_final_flush(self);
 }
 
 /* ***********************
@@ -807,9 +829,8 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
         }
     }
   rd_kafka_consume_stop(single_topic, requested_partition);
-
   /* Wait for outstanding requests to finish. */
-  // FIXME: clarify if we need rd_kafka_flush(). and polling rd_kafka_outq_len() till its empty, if we only have offset commits
+  _kafka_final_flush(self);
 }
 
 static gboolean
@@ -896,7 +917,8 @@ _consumer_run(LogThreadedSourceWorker *worker)
   if (self->startegy != KSCS_BATCH_POLL)
     _drop_queued_messages(self);
 
-  g_atomic_counter_dec_and_test(&self->running_thread_num);
+  gint running_thread_num = g_atomic_counter_dec_and_test(&self->running_thread_num);
+  g_assert(running_thread_num == 1);
 }
 
 static gboolean
@@ -1276,15 +1298,14 @@ _destroy_kafka_client(LogDriver *s)
 
   if (self->kafka)
     {
-      if (self->startegy == KSCS_SUBSCRIBE_POLL)
+      if (self->startegy != KSCS_BATCH_POLL)
         {
-          rd_kafka_unsubscribe(self->kafka);
-          rd_kafka_consumer_close(self->kafka);
+          if (self->startegy == KSCS_SUBSCRIBE_POLL)
+            rd_kafka_unsubscribe(self->kafka);
+          else
+            rd_kafka_assign(self->kafka, NULL);
         }
-      else if (self->startegy != KSCS_BATCH_POLL)
-        {
-          rd_kafka_assign(self->kafka, NULL);
-        }
+      _kafka_final_flush(self);
 
       rd_kafka_destroy(self->kafka);
       self->kafka = NULL;
