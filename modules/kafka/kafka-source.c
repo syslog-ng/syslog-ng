@@ -451,14 +451,6 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   return TRUE;
 }
 
-static void
-_drop_queued_messages(KafkaSourceDriver *self)
-{
-  rd_kafka_message_t *msg;
-  while ((msg = g_async_queue_try_pop(self->msg_queue)) != NULL)
-    rd_kafka_message_destroy(msg);
-}
-
 static ThreadedFetchResult
 _fetch(LogThreadedSourceWorker *worker, rd_kafka_message_t **msg)
 {
@@ -824,6 +816,17 @@ _restart_consumer(LogThreadedSourceWorker *worker, const gdouble iteration_sleep
   return FALSE == main_loop_worker_job_quit();
 }
 
+static void
+_drop_queued_messages(KafkaSourceDriver *self)
+{
+  rd_kafka_message_t *msg;
+
+  /* Intentionally not using the 0 index slot */
+  for (guint i = 1; i < self->super.num_workers; ++i)
+    while ((msg = g_async_queue_try_pop(self->msg_queue)) != NULL)
+      rd_kafka_message_destroy(msg);
+}
+
 /* runs in a dedicated thread */
 static void
 _consumer_run(LogThreadedSourceWorker *worker)
@@ -1159,7 +1162,7 @@ _construct_kafka_client(KafkaSourceDriver *self)
 
   rd_kafka_conf_t *conf = rd_kafka_conf_new();
 
-  if (!kafka_conf_set_prop(conf, "metadata.broker.list", self->options.super.bootstrap_servers))
+  if (FALSE == kafka_conf_set_prop(conf, "metadata.broker.list", self->options.super.bootstrap_servers))
     goto err_exit;
   /* NOTE: The callback-based consumer API's offset store granularity is
    * said to be not good enough, also, we want to control the offset store
@@ -1169,13 +1172,13 @@ _construct_kafka_client(KafkaSourceDriver *self)
    * Also, this controls only the high-level consumer API scenario, for the low-lewel
    * version we should use our persist state backup/restore and RD_KAFKA_OFFSET_STORED
    * in rd_kafka_consume_start */
-  if (!kafka_conf_set_prop(conf, "enable.auto.offset.store", "false"))
+  if (FALSE == kafka_conf_set_prop(conf, "enable.auto.offset.store", "false"))
     goto err_exit;
-  if (!kafka_conf_set_prop(conf, "enable.auto.commit", "false"))
+  if (FALSE == kafka_conf_set_prop(conf, "enable.auto.commit", "false"))
     goto err_exit;
-  /* Like RD_KAFKA_OFFSET_END of rd_kafka_consume_start for the high-level consumer API
+  /* Like RD_KAFKA_OFFSET_XXX of rd_kafka_consume_start for the high-level consumer API
    * this is just a fallback if the offset cannot be restored */
-  if (!kafka_conf_set_prop(conf, "auto.offset.reset", "beginning"))
+  if (FALSE == kafka_conf_set_prop(conf, "auto.offset.reset", "beginning"))
     goto err_exit;
 
   static gchar *protected_properties[] =
