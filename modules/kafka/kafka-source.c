@@ -549,9 +549,6 @@ _procesor_run(LogThreadedSourceWorker *worker)
           else if (fetch_result == THREADED_FETCH_NO_DATA)
             break;
         }
-
-      if (FALSE == main_loop_worker_job_quit() && self->options.fetch_retry_delay)
-        main_loop_worker_wait_for_exit_until(self->options.fetch_retry_delay);
     }
   msg_debug("kafka: stopped queue processor",
             evt_tag_int("index", worker->worker_index),
@@ -702,8 +699,6 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
                           evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
               if (msg)
                 rd_kafka_message_destroy(msg);
-              if (self->options.fetch_retry_delay)
-                main_loop_worker_wait_for_exit_until(self->options.fetch_retry_delay);
             }
           else
             {
@@ -838,10 +833,8 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
 
       if (cnt == 0)
         {
-          msg_trace("kafka: consumer_poll timeout", evt_tag_int("kafka_outq_len", qlen));
+          msg_verbose("kafka: consumer_poll timeout", evt_tag_int("kafka_outq_len", qlen));
           kafka_update_state(self, TRUE);
-          if (self->options.fetch_retry_delay && FALSE == main_loop_worker_job_quit())
-            main_loop_worker_wait_for_exit_until(self->options.fetch_retry_delay);
         }
     }
   rd_kafka_consume_stop(single_topic, requested_partition);
@@ -1552,13 +1545,6 @@ kafka_sd_set_log_fetch_delay(LogDriver *s, guint new_value)
 }
 
 void
-kafka_sd_set_log_fetch_retry_delay(LogDriver *s, guint new_value)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *)s;
-  self->options.fetch_retry_delay = new_value;
-}
-
-void
 kafka_sd_set_log_fetch_limit(LogDriver *s, guint new_value)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)s;
@@ -1582,7 +1568,6 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->do_not_use_bookmark = FALSE;
   self->fetch_delay = 10000;
   self->fetch_limit = 0; /* 0 means no limit */
-  self->fetch_retry_delay = 1; /* seconds */
 
   log_template_options_defaults(&self->template_options);
 }

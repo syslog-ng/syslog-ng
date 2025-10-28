@@ -130,7 +130,6 @@ struct _KafkaSourceOptions
   gint time_reopen;
 
   gboolean do_not_use_bookmark;
-  gint fetch_retry_delay;
   guint fetch_delay;
   guint fetch_limit;
 };

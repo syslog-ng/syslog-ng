@@ -110,8 +110,7 @@ kafka_src_option
         | KV_KAFKA_LOGGING '(' string ')'                       { CHECK_ERROR(kafka_sd_set_logging(last_driver, $3), @3, "Error parsing logging option %s", $3); free($3); }
         | KW_TOPIC '(' kafka_properties ')'                     { CHECK_ERROR(kafka_sd_set_topics(last_driver, $3), @3, "Error parsing topic options"); }
         | KW_LOG_FETCH_DELAY '(' nonnegative_integer ')'        { kafka_sd_set_log_fetch_delay(last_driver, $3); }
-        | KW_LOG_FETCH_RETRY_DELAY '(' nonnegative_integer ')'  { kafka_sd_set_log_fetch_retry_delay(last_driver, $3); }
-        | KW_POLL_TIMEOUT '(' nonnegative_integer ')'           { kafka_sd_set_poll_timeout(last_driver, $3); }
+        | KW_POLL_TIMEOUT '(' positive_integer ')'              { kafka_sd_set_poll_timeout(last_driver, $3); }
         | KW_TIME_REOPEN '(' positive_integer ')'               { kafka_sd_set_time_reopen(last_driver, $3); }
         | KW_DO_NOT_USE_BOOKMARK '(' yesno ')'                  { kafka_sd_set_do_not_use_bookmark(last_driver, $3); }
         | KW_MESSAGE '(' template_name_or_content ')'           { kafka_sd_set_message_ref(last_driver, $3); }
