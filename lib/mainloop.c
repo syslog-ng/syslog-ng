@@ -285,8 +285,8 @@ main_loop_reload_config_apply(gpointer user_data)
     }
 
   self->old_config->persist = persist_config_new();
-  cfg_deinit(self->old_config);
   cfg_persist_config_move(self->old_config, self->new_config);
+  cfg_deinit(self->old_config);
 
   /* The threads have stopped, deinit methods were called, but
    * self->current_configuration still points to the old config.  We either
