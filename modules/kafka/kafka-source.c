@@ -543,6 +543,7 @@ _procesor_run(LogThreadedSourceWorker *worker)
             {
               _process_message(worker, msg);
               main_loop_worker_run_gc();
+              rd_kafka_poll(self->kafka, 0);
               main_loop_worker_wait_for_exit_until(iteration_sleep_time);
             }
           else if (fetch_result == THREADED_FETCH_NO_DATA)
@@ -589,9 +590,6 @@ _setup_method_assign_consumer_poll(KafkaSourceDriver *self)
   gboolean result = TRUE;
   const guint topics_num = g_list_length(self->requested_topics);
   g_assert(topics_num > 0);
-
-  /* Forward main event queue to consumer queue so we can serve both queues with a single consumer_poll() call */
-  rd_kafka_poll_set_consumer(self->kafka);
 
   rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(topics_num);
   for (GList *t = self->requested_topics; t; t = t->next)
@@ -642,9 +640,6 @@ _setup_method_subscribe_consumer_poll(KafkaSourceDriver *self)
   const guint topics_num = g_list_length(self->requested_topics);
   g_assert(topics_num > 0);
 
-  /* Forward main event queue to consumer queue so we can serve both queues with a single consumer_poll() call */
-  rd_kafka_poll_set_consumer(self->kafka);
-
   rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(topics_num);
   for (GList *t = self->requested_topics; t; t = t->next)
     {
@@ -694,6 +689,8 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   while (FALSE == main_loop_worker_job_quit())
     {
       int qlen = (int)rd_kafka_outq_len(self->kafka);
+
+      rd_kafka_poll(self->kafka, 0);
       msg = rd_kafka_consumer_poll(self->kafka, self->options.super.poll_timeout);
       if (msg == NULL || msg->err)
         {
@@ -807,10 +804,8 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
   while (FALSE == main_loop_worker_job_quit())
     {
       int qlen = (int)rd_kafka_outq_len(self->kafka);
-      /* Polls the provided kafka handle for events. Events will cause application-provided callbacks to be called.
-       * For non-blocking calls, provide 0 as timeout_ms. To wait indefinitely for an event, provide -1. */
-      rd_kafka_poll(self->kafka, 0);
 
+      rd_kafka_poll(self->kafka, 0);
       ssize_t cnt = rd_kafka_consume_batch(single_topic, requested_partition, self->options.super.poll_timeout,
                                            msgs,
                                            MAX_BATCH_SIZE);
@@ -834,6 +829,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
             {
               _process_message(worker, msg);
               main_loop_worker_run_gc();
+              rd_kafka_poll(self->kafka, 0);
               main_loop_worker_wait_for_exit_until(iteration_sleep_time);
             }
           else
