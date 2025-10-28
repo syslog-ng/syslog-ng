@@ -686,6 +686,17 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   while (FALSE == main_loop_worker_job_quit())
     {
       int qlen = (int)rd_kafka_outq_len(self->kafka);
+      gint msg_queue_len = g_async_queue_length(self->msg_queue);
+
+      if (msg_queue_len >= self->options.fetch_limit)
+        {
+          msg_verbose("kafka: message queue full, waiting",
+                      evt_tag_int("kafka_outq_len", qlen),
+                      evt_tag_int("msg_queue_len", msg_queue_len));
+          _signal_queue(self);
+          rd_kafka_poll(self->kafka, self->options.super.poll_timeout);
+          continue;
+        }
 
       rd_kafka_poll(self->kafka, 0);
       msg = rd_kafka_consumer_poll(self->kafka, self->options.super.poll_timeout);
@@ -696,7 +707,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
             {
               msg_verbose("kafka: consumer_poll timeout",
                           evt_tag_int("kafka_outq_len", qlen),
-                          evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
+                          evt_tag_int("msg_queue_len", msg_queue_len));
               if (msg)
                 rd_kafka_message_destroy(msg);
             }
@@ -781,9 +792,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
 
-  // TODO: make this dynamic
-#define MAX_BATCH_SIZE 100
-  rd_kafka_message_t *msgs[MAX_BATCH_SIZE];
+  rd_kafka_message_t **msgs = g_new0(rd_kafka_message_t *, self->options.fetch_limit);
   const guint topics_num = g_list_length(self->requested_topics);
   g_assert(topics_num == 1 && g_list_length(self->topic_handle_list) == 1);
   KafkaTopicParts *fist_item = (KafkaTopicParts *)g_list_first(self->requested_topics)->data;
@@ -803,7 +812,8 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
       rd_kafka_poll(self->kafka, 0);
       ssize_t cnt = rd_kafka_consume_batch(single_topic, requested_partition, self->options.super.poll_timeout,
                                            msgs,
-                                           MAX_BATCH_SIZE);
+                                           self->options.fetch_limit);
+      g_assert(cnt <= self->options.fetch_limit);
       if (cnt < 0 || (cnt == 1 && msgs[0]->err))
         {
           msg_error("kafka: consume batch error",
@@ -840,6 +850,8 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
   rd_kafka_consume_stop(single_topic, requested_partition);
   /* Wait for outstanding requests to finish. */
   _kafka_final_flush(self);
+
+  g_free(msgs);
 }
 
 static gboolean
@@ -1566,8 +1578,8 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->time_reopen = 60;
 
   self->do_not_use_bookmark = FALSE;
-  self->fetch_delay = 10000;
-  self->fetch_limit = 0; /* 0 means no limit */
+  self->fetch_delay = 10000; /* 1 second / 10000 */
+  self->fetch_limit = 1000;
 
   log_template_options_defaults(&self->template_options);
 }

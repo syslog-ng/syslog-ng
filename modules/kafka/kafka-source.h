@@ -37,6 +37,7 @@ gboolean kafka_sd_set_logging(LogDriver *d, const gchar *logging);
 gboolean kafka_sd_set_topics(LogDriver *d, GList *topics);
 void kafka_sd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers);
 void kafka_sd_set_log_fetch_delay(LogDriver *s, guint new_value);
+void kafka_sd_set_log_fetch_limit(LogDriver *s, guint new_value);
 void kafka_sd_set_poll_timeout(LogDriver *d, gint poll_timeout);
 void kafka_sd_set_time_reopen(LogDriver *d, gint time_reopen);
 void kafka_sd_set_do_not_use_bookmark(LogDriver *s, gboolean new_value);
