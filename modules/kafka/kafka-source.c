@@ -543,17 +543,10 @@ _procesor_run(LogThreadedSourceWorker *worker)
             {
               _process_message(worker, msg);
               main_loop_worker_run_gc();
-              if (iteration_sleep_time > 0.0)
-                main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+              main_loop_worker_wait_for_exit_until(iteration_sleep_time);
             }
           else if (fetch_result == THREADED_FETCH_NO_DATA)
-            {
-              // TODO:
-              break;
-            }
-          else
-            // TODO:
-            ;
+            break;
         }
 
       if (FALSE == main_loop_worker_job_quit() && self->options.fetch_retry_delay)
@@ -738,10 +731,6 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
                     evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
           _signal_queue(self);
           main_loop_worker_run_gc();
-
-          // Let this take effect in the processor?!?
-          // if (iteration_sleep_time > 0.0)
-          //   main_loop_worker_wait_for_exit_until(iteration_sleep_time);
         }
     }
   /* This call will block until the consumer has revoked its assignment, calling the rebalance_cb if it is configured,
@@ -845,8 +834,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
             {
               _process_message(worker, msg);
               main_loop_worker_run_gc();
-              if (iteration_sleep_time > 0.0)
-                main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+              main_loop_worker_wait_for_exit_until(iteration_sleep_time);
             }
           else
             rd_kafka_message_destroy(msg);
@@ -883,8 +871,7 @@ _restart_consumer(LogThreadedSourceWorker *worker, const gdouble iteration_sleep
       msg_trace("kafka: waiting for queue processors to sleep",
                 evt_tag_str("group_id", self->group_id),
                 evt_tag_str("driver", self->super.super.super.id));
-      if (iteration_sleep_time > 0.0)
-        main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+      main_loop_worker_wait_for_exit_until(iteration_sleep_time);
     }
 
   return FALSE == main_loop_worker_job_quit();
