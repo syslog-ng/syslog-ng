@@ -36,7 +36,11 @@
 #include <memory>
 #include <cstddef>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "google/cloud/bigquery/storage/v1/storage.grpc.pb.h"
+#pragma GCC diagnostic pop
 
 namespace syslogng {
 namespace grpc {

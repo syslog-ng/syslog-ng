@@ -24,9 +24,13 @@
 #ifndef OTEL_SERVICECALL_HPP
 #define OTEL_SERVICECALL_HPP
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "opentelemetry/proto/collector/trace/v1/trace_service.grpc.pb.h"
 #include "opentelemetry/proto/collector/logs/v1/logs_service.grpc.pb.h"
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.h"
+#pragma GCC diagnostic pop
 
 namespace syslogng {
 namespace grpc {
