@@ -311,14 +311,13 @@ main_loop_reload_config_apply(gpointer user_data)
   cfg_free(self->old_config);
   self->current_configuration = self->new_config;
   service_management_clear_status();
-  msg_notice("Configuration reload request received, reloading configuration");
+  msg_notice("Loading the new configuration");
 
   stats_counter_set(self->metrics.last_successful_reload, (gsize) self->last_config_reload_time);
 
   /* this is already running with the new config in place */
   main_loop_reload_config_finished(self);
 }
-
 
 /* initiate configuration reload */
 gboolean
