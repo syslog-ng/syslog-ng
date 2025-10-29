@@ -344,39 +344,6 @@ add_custom_target(check-commits COMMAND ${PROJECT_SOURCE_DIR}/tests/commits/chec
 add_custom_target(check-copyright COMMAND ${PROJECT_SOURCE_DIR}/tests/copyright/check.sh . ${PROJECT_BINARY_DIR} policy WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 set_target_properties(check-copyright PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "copyright-run.log;copyright-err.log")
 
-option(BUILD_TESTING "Enable unit tests" ON)
-
-if(BUILD_TESTING)
-  find_package(criterion)
-endif()
-
-include(add_tests)
-
-if(BUILD_TESTING)
-  if(NOT CRITERION_FOUND)
-    message(FATAL_ERROR "BUILD_TESTING is enabled (by default, or explicitely) without criterion detected! You can turn off testing via the -DBUILD_TESTING=OFF cmake option.")
-  else()
-    set(CTEST_ENVIRONMENT
-      "G_SLICE=always-malloc,debug-blocks"
-      "G_DEBUG=fatal-warnings,fatal-criticals,gc-friendly")
-
-    # The inclusion of CTest triggers enable_testing()
-    # CMake will generate tests only if the enable_testing() command has been invoked.
-    # The CTest module invokes the command automatically when the BUILD_TESTING option is ON.
-    include(CTest)
-
-    # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking soution
-    if(APPLE)
-      SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-flat_namespace")
-    endif()
-
-    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --output-on-failure)
-
-    # This one is useful to see the failed tests in details
-    add_custom_target(check_failed COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --rerun-failed --output-on-failure)
-  endif()
-endif()
-
 set(IMPORTANT_WARNINGS
   -Wshadow)
 
@@ -431,6 +398,7 @@ option(ENABLE_FORCE_GNU99 "Enforce C99 with gnu extensions" OFF)
 if(ENABLE_FORCE_GNU99)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 endif()
+include(set_testing)
 
 include(set_diagnostic_options)
 
