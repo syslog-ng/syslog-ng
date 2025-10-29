@@ -165,22 +165,6 @@ endif()
 
 set(CMAKE_C_STANDARD 99)
 
-set(SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
-set(IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path/AUTO)")
-external_or_find_package(IVYKIS REQUIRED)
-set(IVYKIS_LIBRARIES ${IVYKIS_LIBRARY} CACHE STRING "IVYKIS libraries path")
-
-if((NOT IVYKIS_INTERNAL) AND(IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
-  set(SYSLOG_NG_USE_CONST_IVYKIS_MOCK 0)
-elseif(IVYKIS_INTERNAL)
-  # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
-  find_package(uring)
-
-  if(URING_FOUND)
-    set(IVYKIS_LIBRARIES ${IVYKIS_LIBRARIES} ${URING_LIBRARIES})
-  endif()
-endif()
-
 # Find only hard dependencies here directly to prevent hard linking of optional dependencies
 include(find_bison)
 include(find_glib)
@@ -193,6 +177,7 @@ find_package(WRAP)
 
 external_or_find_package(JSONC REQUIRED)
 include(find_python)
+include(find_ivykis)
 pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 
 
