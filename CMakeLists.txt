@@ -18,8 +18,6 @@ project(syslog-ng C)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
 set(CMAKE_POSITION_INDEPENDENT_CODE 1)
-set(BISON_FLAGS "-Wno-other -Werror=conflicts-sr -Werror=conflicts-rr -Wcounterexamples")
-set(BISON_BUILT_SOURCE_CFLAGS "-Wno-unused-but-set-variable")
 
 include(common_helpers)
 include(CheckIncludeFiles)
@@ -247,10 +245,6 @@ set(WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.g
 
 set(CMAKE_C_STANDARD 99)
 
-find_package(BISON 3.7.6 REQUIRED)
-
-string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\..*$" _dummy "${BISON_VERSION}")
-
 find_package(GLIB 2.32.0 REQUIRED COMPONENTS gmodule gthread)
 
 set(CMAKE_REQUIRED_INCLUDES ${GLIB_INCLUDE_DIRS})
@@ -293,6 +287,8 @@ endif()
 
 external_or_find_package(JSONC REQUIRED)
 
+# Find only hard dependencies here directly to prevent hard linking of optional dependencies
+include(find_bison)
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(Resolv REQUIRED)
