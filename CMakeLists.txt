@@ -333,9 +333,7 @@ openssl_set_defines()
 
 pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 include(enable_caps)
-
-option(ENABLE_TCP_WRAPPER "Enable TCP wrapper support" ${WRAP_FOUND})
-set(SYSLOG_NG_ENABLE_TCP_WRAPPER ${ENABLE_TCP_WRAPPER})
+include(enable_wrap)
 
 # OS specific other comile/linker options might be needed
 if(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
