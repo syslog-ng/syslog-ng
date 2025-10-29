@@ -297,7 +297,6 @@ find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(WRAP)
-find_package(LIBCAP)
 
 include(enable_systemd)
 
@@ -333,6 +332,7 @@ include(openssl_functions)
 openssl_set_defines()
 
 pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
+include(enable_caps)
 
 option(ENABLE_TCP_WRAPPER "Enable TCP wrapper support" ${WRAP_FOUND})
 set(SYSLOG_NG_ENABLE_TCP_WRAPPER ${ENABLE_TCP_WRAPPER})
@@ -400,12 +400,6 @@ endif()
 
 include(enable_spoof_source)
 
-if(ENABLE_LINUX_CAPS AND NOT PC_LIBCAP_FOUND)
-  message(FATAL_ERROR "ENABLE_LINUX_CAPS was explicitly enabled, but the required POSIX capabilities library dependency could not be found.")
-endif()
-
-option(ENABLE_LINUX_CAPS "Enable memtrace" ${PC_LIBCAP_FOUND})
-set(SYSLOG_NG_ENABLE_LINUX_CAPS ${ENABLE_LINUX_CAPS})
 
 option(ENABLE_MEMTRACE "Enable memtrace" 0)
 set(SYSLOG_NG_ENABLE_MEMTRACE ${ENABLE_MEMTRACE})
