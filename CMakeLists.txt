@@ -191,18 +191,6 @@ find_package(FLEX REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(WRAP)
 
-
-# Use only one of them if both are present, like on FreeBSD, where the inotify wrapper started to be distributed.
-# Prioritize kqueue, as inotify is just a wrapper around it if both are present.
-check_function_exists(kqueue SYSLOG_NG_HAVE_KQUEUE)
-
-if(NOT SYSLOG_NG_HAVE_KQUEUE)
-  find_package(Inotify)
-
-  if(Inotify_FOUND)
-    set(SYSLOG_NG_HAVE_INOTIFY 1)
-  endif()
-endif()
 external_or_find_package(JSONC REQUIRED)
 include(find_python)
 pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
