@@ -79,8 +79,6 @@ include(CheckSockaddrStorage)
 include(CheckCreds)
 include(CheckTCP)
 
-include(EnableIPv6)
-
 option(WITH_COMPILE_DATE "Include compile date in binary" ON)
 
 if(WITH_COMPILE_DATE)
@@ -212,19 +210,15 @@ elseif(IVYKIS_INTERNAL)
   endif()
 endif()
 
-external_or_find_package(JSONC REQUIRED)
-
 # Find only hard dependencies here directly to prevent hard linking of optional dependencies
 include(find_bison)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(WRAP)
 
-include(enable_systemd)
-
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
 
 # Use only one of them if both are present, like on FreeBSD, where the inotify wrapper started to be distributed.
 # Prioritize kqueue, as inotify is just a wrapper around it if both are present.
@@ -237,16 +231,21 @@ if(NOT SYSLOG_NG_HAVE_KQUEUE)
     set(SYSLOG_NG_HAVE_INOTIFY 1)
   endif()
 endif()
+external_or_find_package(JSONC REQUIRED)
 include(find_python)
+pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 
 
 include(openssl_functions)
 openssl_set_defines()
 include(platform_options)
 
-pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
+include(EnableIPv6)
+include(enable_systemd)
+include(enable_spoof_source)
 include(enable_caps)
 include(enable_wrap)
+include(enable_stackdump)
 include(enable_env_wrap)
 include(enable_server_mode)
 
@@ -254,15 +253,9 @@ endif()
 
 # Let the user specify a timezone directory
 set(TIMEZONE_DIR "" CACHE PATH "Use path as the directory to get the timezone files")
-
 if(TIMEZONE_DIR)
   set(PATH_TIMEZONEDIR "${TIMEZONE_DIR}")
 endif()
-
-include(enable_spoof_source)
-
-
-include(enable_stackdump)
 
 set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/eventlog/src")
 
