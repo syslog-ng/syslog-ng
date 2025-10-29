@@ -81,11 +81,6 @@ include(CheckTCP)
 
 include(EnableIPv6)
 
-if(NOT DEFINED ENABLE_FORCED_SERVER_MODE)
-  set(ENABLE_FORCED_SERVER_MODE ON)
-endif()
-set(SYSLOG_NG_ENABLE_FORCED_SERVER_MODE ${ENABLE_FORCED_SERVER_MODE})
-
 option(ENV_LD_LIBRARY_PATH "Set LD_LIBRARY_PATH during runtime to the value given" "")
 if(NOT DEFINED ENABLE_ENV_WRAPPER)
   set(ENABLE_ENV_WRAPPER OFF)
@@ -272,6 +267,7 @@ openssl_set_defines()
 pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 include(enable_caps)
 include(enable_wrap)
+include(enable_server_mode)
 
 # OS specific other comile/linker options might be needed
 if(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
