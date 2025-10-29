@@ -237,19 +237,8 @@ if(NOT SYSLOG_NG_HAVE_KQUEUE)
     set(SYSLOG_NG_HAVE_INOTIFY 1)
   endif()
 endif()
+include(find_python)
 
-set(PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library")
-
-if("${PYTHON_VERSION}" MATCHES "^(auto|AUTO)$")
-  find_package(PythonInterp EXACT 3)
-  find_package(PythonLibs EXACT 3)
-else()
-  find_package(PythonInterp EXACT "${PYTHON_VERSION}" REQUIRED)
-  find_package(PythonLibs EXACT "${PYTHON_VERSION}" REQUIRED)
-endif()
-
-MESSAGE(STATUS "Detected pythonlib version: ${PYTHONLIBS_VERSION_STRING}")
-include(python_build_venv)
 
 include(openssl_functions)
 openssl_set_defines()
