@@ -170,8 +170,6 @@ if(NOT DEFINED SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS)
   set(SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS OFF)
 endif()
 
-set(WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.g. /usr)")
-
 set(CMAKE_C_STANDARD 99)
 
 find_package(GLIB 2.32.0 REQUIRED COMPONENTS gmodule gthread)
@@ -327,14 +325,6 @@ include(enable_spoof_source)
 
 
 include(enable_stackdump)
-
-if(WITH_GETTEXT)
-  set(CMAKE_PREFIX_PATH ${WITH_GETTEXT})
-  find_package(Gettext REQUIRED QUIET)
-  set(CMAKE_PREFIX_PATH "")
-else()
-  find_package(Gettext REQUIRED QUIET)
-endif()
 
 set(Eventlog_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/eventlog/src")
 
