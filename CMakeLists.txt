@@ -79,11 +79,6 @@ include(CheckSockaddrStorage)
 include(CheckCreds)
 include(CheckTCP)
 
-option(WITH_COMPILE_DATE "Include compile date in binary" ON)
-
-if(WITH_COMPILE_DATE)
-  set(SYSLOG_NG_WITH_COMPILE_DATE 1)
-endif()
 
 set(CMAKE_REQUIRED_DEFINITIONS "-D_LARGEFILE64_SOURCE=1")
 set(CMAKE_EXTRA_INCLUDE_FILES "fcntl.h")
@@ -249,6 +244,9 @@ include(enable_stackdump)
 include(enable_env_wrap)
 include(enable_server_mode)
 
+option(WITH_COMPILE_DATE "Include compile date in binary" ON)
+if(WITH_COMPILE_DATE)
+  set(SYSLOG_NG_WITH_COMPILE_DATE 1)
 endif()
 
 # Let the user specify a timezone directory
