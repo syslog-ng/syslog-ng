@@ -81,17 +81,8 @@ include(CheckTCP)
 
 include(EnableIPv6)
 
-option(ENV_LD_LIBRARY_PATH "Set LD_LIBRARY_PATH during runtime to the value given" "")
-if(NOT DEFINED ENABLE_ENV_WRAPPER)
-  set(ENABLE_ENV_WRAPPER OFF)
-
-  if(ENV_LD_LIBRARY_PATH)
-    set(ENABLE_ENV_WRAPPER ON)
-  endif()
-endif()
-set(SYSLOG_NG_ENABLE_ENV_WRAPPER ${ENABLE_ENV_WRAPPER})
-
 option(WITH_COMPILE_DATE "Include compile date in binary" ON)
+
 if(WITH_COMPILE_DATE)
   set(SYSLOG_NG_WITH_COMPILE_DATE 1)
 endif()
@@ -174,6 +165,7 @@ endif()
 check_symbol_exists(SO_MEMINFO "sys/socket.h" SYSLOG_NG_HAVE_SO_MEMINFO)
 check_include_file("linux/sock_diag.h" SYSLOG_NG_HAVE_LINUX_SOCK_DIAG_H)
 set(SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS ${SYSLOG_NG_HAVE_SO_MEMINFO})
+
 if(NOT DEFINED SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS)
   set(SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS OFF)
 endif()
@@ -267,6 +259,7 @@ openssl_set_defines()
 pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 include(enable_caps)
 include(enable_wrap)
+include(enable_env_wrap)
 include(enable_server_mode)
 
 # OS specific other comile/linker options might be needed
@@ -331,7 +324,6 @@ if(TIMEZONE_DIR)
 endif()
 
 include(enable_spoof_source)
-
 
 option(ENABLE_MEMTRACE "Enable memtrace" 0)
 set(SYSLOG_NG_ENABLE_MEMTRACE ${ENABLE_MEMTRACE})
