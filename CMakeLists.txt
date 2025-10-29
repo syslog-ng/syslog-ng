@@ -79,9 +79,6 @@ include(CheckSockaddrStorage)
 include(CheckCreds)
 include(CheckTCP)
 
-
-set(CMAKE_C_STANDARD 99)
-
 # Find only hard dependencies here directly to prevent hard linking of optional dependencies
 include(find_bison)
 include(find_glib)
@@ -127,62 +124,8 @@ add_custom_target(check-commits COMMAND ${PROJECT_SOURCE_DIR}/tests/commits/chec
 add_custom_target(check-copyright COMMAND ${PROJECT_SOURCE_DIR}/tests/copyright/check.sh . ${PROJECT_BINARY_DIR} policy WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 set_target_properties(check-copyright PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "copyright-run.log;copyright-err.log")
 
-set(IMPORTANT_WARNINGS
-  -Wshadow)
-
-set(ACCEPTABLE_WARNINGS
-  -Wno-stack-protector
-  -Wno-unused-parameter
-  -Wno-variadic-macros)
-
-option(ENABLE_EXTRA_WARNINGS "Enable extra warnings" ON)
-
-if(ENABLE_EXTRA_WARNINGS)
-  set(EXTRA_WARNINGS
-    $<$<COMPILE_LANGUAGE:C>:-Wimplicit-function-declaration>
-    $<$<COMPILE_LANGUAGE:C>:-Wnested-externs>
-    $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
-    -Wswitch-default
-    $<$<COMPILE_LANGUAGE:C>:-Wimplicit-int>
-    -Wall
-    -Wuninitialized
-    -Wdeprecated
-    -Wdeprecated-declarations
-    -Woverflow
-    -Wdouble-promotion
-    -Wfloat-equal
-    -Wpointer-arith
-    $<$<COMPILE_LANGUAGE:C>:-Wpointer-sign>
-    -Wmissing-format-attribute
-    $<$<COMPILE_LANGUAGE:C>:-Wold-style-definition>
-    -Wundef
-    -Wignored-qualifiers
-    -Wfloat-conversion
-    $<$<COMPILE_LANGUAGE:C>:-Wbad-function-cast>)
-
-  if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-    set(EXTRA_WARNINGS
-      ${EXTRA_WARNINGS}
-    )
-  else()
-    set(EXTRA_WARNINGS
-      $<$<COMPILE_LANGUAGE:C>:-Wold-style-declaration>
-      -Wunused-but-set-parameter
-      $<$<COMPILE_LANGUAGE:C>:-Woverride-init>
-      ${EXTRA_WARNINGS}
-    )
-  endif()
-endif()
-
-add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
-
-option(ENABLE_FORCE_GNU99 "Enforce C99 with gnu extensions" OFF)
-
-if(ENABLE_FORCE_GNU99)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-endif()
 include(set_testing)
-
+include(set_compile_options)
 include(set_diagnostic_options)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
