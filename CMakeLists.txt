@@ -67,15 +67,7 @@ set(TOOLSDIR "\${datadir}/syslog-ng/tools")
 
 set(LOGGEN_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/syslog-ng/loggen")
 
-IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
-  set(SYSLOG_NG_ENABLE_DEBUG ON)
-  add_definitions(-DYYDEBUG=1)
-ELSE()
-  set(SYSLOG_NG_ENABLE_DEBUG OFF)
-ENDIF()
-
-add_definitions(-D_GNU_SOURCE=1)
-add_definitions(-D_LARGEFILE64_SOURCE=1)
+include(set_debug_options)
 
 include(CheckTypeSize)
 include(CheckStructMember)
