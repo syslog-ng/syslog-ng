@@ -2,10 +2,18 @@ EXTRA_DIST +=	\
 	cmake/add_module.cmake \
 	cmake/add_tests.cmake	\
 	cmake/external_or_find_package.cmake	\
+	cmake/enable_cpp.cmake \
+	cmake/enable_spoof_source.cmake \
+	cmake/enable_stackdump.cmake \
+	cmake/enable_systemd.cmake \
+	cmake/module_switch.cmake		\
+	cmake/openssl_functions.cmake \
+	cmake/print_config_summary.cmake \
+	cmake/python_build_venv.cmake \
 	cmake/Modules/CheckCreds.cmake	\
-	cmake/Modules/CheckTCP.cmake	\
 	cmake/Modules/CheckSockaddrStorage.cmake	\
 	cmake/Modules/CheckStructMember.cmake	\
+	cmake/Modules/CheckTCP.cmake \
 	cmake/Modules/EnableIPv6.cmake	\
 	cmake/Modules/ExternalIVYKIS.cmake	\
 	cmake/Modules/Findcriterion.cmake	\
@@ -35,12 +43,4 @@ EXTRA_DIST +=	\
 	cmake/Modules/FindWRAP.cmake	\
 	cmake/Modules/GenerateYFromYm.cmake	\
 	cmake/Modules/LibFindMacros.cmake	\
-	cmake/Modules/ProtobufGenerateCpp.cmake	\
-	cmake/enable_cpp.cmake \
-	cmake/enable_spoof_source.cmake \
-	cmake/enable_stackdump.cmake \
-	cmake/enable_systemd.cmake \
-	cmake/module_switch.cmake		\
-	cmake/openssl_functions.cmake \
-	cmake/print_config_summary.cmake \
-	cmake/python_build_venv.cmake
+	cmake/Modules/ProtobufGenerateCpp.cmake
