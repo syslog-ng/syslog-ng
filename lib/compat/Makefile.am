@@ -28,7 +28,8 @@ compatinclude_HEADERS		= 	\
 	lib/compat/uio.h	\
 	lib/compat/syslog.h	\
 	lib/compat/alarm.h	\
-	lib/compat/glob.h
+	lib/compat/glob.h	\
+	lib/compat/ivykis_fd.h
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\
@@ -45,6 +46,7 @@ compat_sources			= 	\
 	lib/compat/getent-sun.c		\
 	lib/compat/getent-openbsd.c	\
 	lib/compat/getent-generic.c	\
-	lib/compat/glob-win.c
+	lib/compat/glob-win.c	\
+    lib/compat/ivykis_fd_windows.c
 
 include lib/compat/tests/Makefile.am

@@ -23,6 +23,7 @@ set(COMPAT_HEADERS
     compat/syslog.h
     compat/alarm.h
     compat/glob.h
+    compat/ivykis_fd.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES
@@ -41,6 +42,7 @@ set(COMPAT_SOURCES
     compat/getent-openbsd.c
     compat/getent-generic.c
     compat/glob-win.c
+    compat/ivykis_fd_windows.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)
