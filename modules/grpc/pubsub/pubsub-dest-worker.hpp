@@ -27,7 +27,10 @@
 #include "pubsub-dest.hpp"
 #include "grpc-dest-worker.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
 #include "google/pubsub/v1/pubsub.grpc.pb.h"
+#pragma GCC diagnostic pop
 
 namespace syslogng {
 namespace grpc {

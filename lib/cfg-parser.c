@@ -153,6 +153,10 @@ static CfgLexerKeyword main_keywords[] =
 
   { "log_fifo_size",      KW_LOG_FIFO_SIZE },
   { "log_fetch_limit",    KW_LOG_FETCH_LIMIT },
+  { "fetch_delay",        KW_LOG_FETCH_DELAY, KWS_OBSOLETE, "This has been deprecated, try log_fetch_delay() instead" },
+  { "log_fetch_delay",    KW_LOG_FETCH_DELAY },
+  { "fetch_retry_delay",  KW_LOG_FETCH_RETRY_DELAY, KWS_OBSOLETE, "This has been deprecated, try log_fetch_retry_delay() instead" },
+  { "log_fetch_retry_delay", KW_LOG_FETCH_RETRY_DELAY },
   { "log_iw_size",        KW_LOG_IW_SIZE },
   { "log_msg_size",       KW_LOG_MSG_SIZE },
   { "trim_large_messages", KW_TRIM_LARGE_MESSAGES },
@@ -195,7 +199,9 @@ static CfgLexerKeyword main_keywords[] =
   { "batch_lines",        KW_BATCH_LINES },
   { "batch_timeout",      KW_BATCH_TIMEOUT },
 
-  { "read_old_records",   KW_READ_OLD_RECORDS},
+  { "read_old_records",     KW_READ_OLD_RECORDS},
+  { "do_not_use_bookmark",  KW_DO_NOT_USE_BOOKMARK },
+
   { "use_syslogng_pid",   KW_USE_SYSLOGNG_PID },
   { "fetch_no_data_delay", KW_FETCH_NO_DATA_DELAY},
 
@@ -218,6 +224,7 @@ static CfgLexerKeyword main_keywords[] =
   { "no",                 KW_NO },
   { "off",                KW_NO },
   { "auto",               KW_AUTO },
+
   /* rewrite rules */
   { "condition",          KW_CONDITION },
   { "value",              KW_VALUE },

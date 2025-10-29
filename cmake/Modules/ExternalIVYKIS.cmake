@@ -38,7 +38,7 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
   set(IVY_SRC    "${PROJECT_SOURCE_DIR}/lib/ivykis")
   
   set(CONF_CMD  /bin/sh -vc
-      "autoreconf -i ${IVY_SRC} && CFLAGS='-fPIC ${CFLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' ${IVY_SRC}/configure --prefix=${IVY_PREFIX} --disable-shared --enable-static")
+      "autoreconf -i ${IVY_SRC} && CFLAGS='-fPIC ${CMAKE_C_FLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' ${IVY_SRC}/configure --prefix=${IVY_PREFIX} --disable-shared --enable-static")
   set(BUILD_CMD make)
   set(INST_CMD  make install)
 
@@ -61,9 +61,9 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
       rm -rf autom4te.cache
       libtoolize -cfi || true
       autoreconf -fiv
-      ./configure --prefix='${IVY_PREFIX}' CFLAGS='-fPIC ${CFLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS} --disable-shared --enable-static'
+      ./configure --prefix='${IVY_PREFIX}' CFLAGS='-fPIC ${CMAKE_C_FLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS} --disable-shared --enable-static'
       ")
-    file(WRITE "${IVY_BUILD_SH}"   "set -e\ncd '${IVY_SRC}'\nmake -j1 SUBDIRS=src\n")
+    file(WRITE "${IVY_BUILD_SH}"   "set -e\ncd '${IVY_SRC}'\nCFLAGS='-fPIC ${CMAKE_C_FLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' make -j1 SUBDIRS=src\n")
     file(WRITE "${IVY_INSTALL_SH}" "set -e\ncd '${IVY_SRC}'\nmake SUBDIRS=src install\n")
       
     set(CONF_CMD  ${SH} "${IVY_CONF_SH}")

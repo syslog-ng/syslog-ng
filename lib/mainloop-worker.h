@@ -82,21 +82,26 @@ gboolean main_loop_worker_is_worker_thread(void);
 void main_loop_worker_sync_call(void (*func)(void *user_data), void *user_data);
 void main_loop_sync_worker_startup_and_teardown(void);
 
+gboolean is_reloading_scheduled(void);
+void set_reloading_scheduled(gboolean scheduled);
+
+gboolean main_loop_worker_job_quit(void);
+
+/* NOTE: If any of the threads using these and the return value
+*        (a.k.a the value of main_loop_workers_quit) is TURE,
+ *       the callers must ensure that the thread will exit as soon as possible, and
+ *       never call these function again.
+ *       (as the exit condition might not be signaled anymore, and the wait would block forever)
+ */
+gboolean main_loop_worker_wait_for_exit_until(gdouble wait_time);
+void main_loop_worker_wait_for_exit(void);
+
 void main_loop_worker_init(void);
 void main_loop_worker_deinit(void);
 
 gint main_loop_worker_get_max_number_of_threads(void);
 void main_loop_worker_allocate_thread_space(gint num_threads);
 void main_loop_worker_finalize_thread_space(void);
-
-extern volatile gboolean main_loop_workers_quit;
-extern volatile gboolean is_reloading_scheduled;
-
-static inline gboolean
-main_loop_worker_job_quit(void)
-{
-  return main_loop_workers_quit;
-}
 
 static inline void
 main_loop_assert_worker_thread(void)

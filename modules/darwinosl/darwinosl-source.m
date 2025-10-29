@@ -57,7 +57,6 @@ typedef struct _DarwinOSLogSourceDriver
   DarwinOSLogSourcePersist *log_source_persist;
   DarwinOSLogSourcePosition log_source_position;
 
-  GAtomicCounter exit_requested;
   guint curr_fetch_in_run;
   const gchar *persist_name;
   const gchar *stat_persist_name;
@@ -144,20 +143,20 @@ _check_restored_postion(DarwinOSLogSourceDriver *self, OSLogEntry *nextLogEntry)
     {
       msg_debug("darwinosl: Bookmark is restored fine",
                 evt_tag_str("bookmark", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                         nextLogEntry.date].UTF8String));
+                                                                          nextLogEntry.date].UTF8String));
     }
   else
     {
       if (self->log_source_position.last_msg_hash)
         msg_info("darwinosl: Could not restore last bookmark (filter might be changed or max_bookmark_distance took effect?)",
                  evt_tag_str("bookmark", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                          [NSDate dateWithTimeIntervalSince1970:self->log_source_position.log_position]].UTF8String),
+                                                                           [NSDate dateWithTimeIntervalSince1970:self->log_source_position.log_position]].UTF8String),
                  evt_tag_str("new_start_position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                                    nextLogEntry.date].UTF8String));
+                                                                                     nextLogEntry.date].UTF8String));
       else
         msg_debug("darwinosl: No last msg hash found",
                   evt_tag_str("new_start_position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                                     nextLogEntry.date].UTF8String));
+                                                                                      nextLogEntry.date].UTF8String));
     }
 }
 
@@ -170,7 +169,7 @@ _log_position_date_from_persist(DarwinOSLogSourceDriver *self, NSDate **startDat
            based on read-old-records() we just let the user manually solve this (e.g. clear the persis-file if needed)
   */
   NSDate *maxBookmarkDistanceDate = [NSDate dateWithTimeIntervalSinceNow:-1 * (NSTimeInterval)(
-                                       self->options.max_bookmark_distance)];
+                                              self->options.max_bookmark_distance)];
   if (self->options.max_bookmark_distance > 0)
     *startDate = maxBookmarkDistanceDate;
 
@@ -209,7 +208,7 @@ _open_osl(DarwinOSLogSourceDriver *self)
   NSDate *startDate = nil;
   bool positionRestored = _log_position_date_from_persist(self, &startDate);
   NSString *filterString = (self->options.filter_predicate ? [NSString stringWithUTF8String:
-                                                              self->options.filter_predicate] : nil);
+                                                                       self->options.filter_predicate] : nil);
   OSLogEnumeratorOptions options = (self->options.go_reverse ? OSLogEnumeratorReverse : 0);
 
   msg_trace("darwinosl: Should start from",
@@ -246,16 +245,30 @@ _close_osl(DarwinOSLogSourceDriver *self)
 
 /* runs in a dedicated thread */
 static LogThreadedFetchResult
-_fetch(DarwinOSLogSourceDriver *self)
+_fetch(LogThreadedSourceWorker *worker)
 {
-  gboolean fetchedEnough = (self->options.fetch_limit && self->curr_fetch_in_run > self->options.fetch_limit);
-  OSLogEntry *nextLogEntry = (fetchedEnough ? nil :[self->osLogSource fetchNextEntry]);
+  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
+  gboolean fetchedEnough = (self->options.fetch_limit && self->curr_fetch_in_run >= self->options.fetch_limit);
+  OSLogEntry *nextLogEntry = (fetchedEnough ? nil : [self->osLogSource fetchNextEntry]);
 
   if (nextLogEntry == nil)
     {
-      msg_trace(nextLogEntry ? "darwinosl: Fetch limit reached" : "darwinosl: No more log data currently");
+      msg_trace(fetchedEnough ? "darwinosl: Fetch limit reached" : "darwinosl: No more log data currently");
       msg_debug("darwinosl: Fetched logs in this run", evt_tag_long("fetch_count", (long) self->curr_fetch_in_run));
-      LogThreadedFetchResult result = {THREADED_FETCH_NO_DATA, NULL};
+
+      log_threaded_source_worker_close_batch(worker);
+      /*
+         TODO: Dual return code is needed due to an actual macOS API bug https://openradar.appspot.com/radar?id=5597032077066240, as
+               interrupting the reading from an open cursor would lead to unclosed enumerator threads with
+               an unreleased OSLogEntry item array in each.
+               Once the issue is fixed we can simplify this again to just use THREADED_FETCH_NO_DATA.
+          So, now THREADED_FETCH_TRY_AGAIN means, continue reading (after iteration_sleep_time ellapsed)
+              and THREADED_FETCH_NO_DATA means, close and reopen the store (after fetch_retry_delay elapsed)
+        */
+      LogThreadedFetchResult result = {fetchedEnough ? THREADED_FETCH_TRY_AGAIN : THREADED_FETCH_NO_DATA, NULL};
+      /* this will not be needed either once the above mentioned issue is fixed */
+      self->curr_fetch_in_run = 0;
+
       return result;
     }
 
@@ -271,8 +284,7 @@ _fetch(DarwinOSLogSourceDriver *self)
   self->log_source_position.log_position = [nextLogEntry.date timeIntervalSince1970];
   self->log_source_position.last_msg_hash = g_str_hash(log_string);
 
-  LogSource *worker = (LogSource *) self->super.workers[0];
-  Bookmark *bookmark = ack_tracker_request_bookmark(worker->ack_tracker);
+  Bookmark *bookmark = ack_tracker_request_bookmark(worker->super.ack_tracker);
   darwinosl_source_persist_fill_bookmark(self->log_source_persist, bookmark, self->log_source_position);
   msg_trace("darwinosl: Bookmark created",
             evt_tag_printf("position", "%.6f", self->log_source_position.log_position),
@@ -293,67 +305,39 @@ _send(LogThreadedSourceWorker *worker, LogMessage *msg)
   log_threaded_source_worker_blocking_post(worker, msg);
 }
 
-static void
-_request_exit(LogThreadedSourceWorker *worker)
-{
-  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
-  g_atomic_counter_set(&self->exit_requested, TRUE);
-}
-
-static void
-_sleep(DarwinOSLogSourceDriver *self, gdouble wait_time)
-{
-  const useconds_t min_sleep_time = 1;
-  const useconds_t def_sleep_time = 1000;
-  const useconds_t sleep_time = MAX(min_sleep_time, (useconds_t) MIN(def_sleep_time, wait_time * USEC_PER_SEC));
-  struct timespec now, last_check;
-
-  clock_gettime(CLOCK_MONOTONIC, &now);
-  last_check = now;
-
-  while (FALSE == g_atomic_counter_get(&self->exit_requested))
-    {
-      usleep(sleep_time);
-
-      gdouble diff = timespec_diff_usec(&last_check, &now) / (gdouble) USEC_PER_SEC;
-
-      if (diff >= wait_time)
-        break;
-      clock_gettime(CLOCK_MONOTONIC, &last_check);
-    }
-}
-
 /* runs in a dedicated thread */
 static void
 _run(LogThreadedSourceWorker *worker)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
-  const gdouble iteration_sleep_time = 1.0 / self->options.fetch_delay;
+  const gdouble iteration_sleep_time = self->options.fetch_delay ? 1.0 / self->options.fetch_delay : 0;
+  gboolean exit_requested = FALSE;
 
-  while (FALSE == g_atomic_counter_get(&self->exit_requested))
+  while (FALSE == (exit_requested = main_loop_worker_job_quit()))
     {
       @autoreleasepool
       {
         if (FALSE == _open_osl(self))
           break;
 
-        while (FALSE == g_atomic_counter_get(&self->exit_requested))
+        while (FALSE == (exit_requested = main_loop_worker_job_quit()))
           {
             @autoreleasepool
             {
-              LogThreadedFetchResult res = _fetch(self);
+              LogThreadedFetchResult res = _fetch(worker);
               if (res.result == THREADED_FETCH_SUCCESS)
                 _send(worker, res.msg);
-              else
+              else if (res.result != THREADED_FETCH_TRY_AGAIN) /* See _fetch for meanng of THREADED_FETCH_TRY_AGAIN */
                 break;
             }
-            _sleep(self, iteration_sleep_time);
+            if (iteration_sleep_time > 0.0)
+              main_loop_worker_wait_for_exit_until(iteration_sleep_time);
           }
 
         _close_osl(self);
       }
-      if (self->options.fetch_retry_delay)
-        _sleep(self, self->options.fetch_retry_delay);
+      if (FALSE == exit_requested && self->options.fetch_retry_delay)
+        main_loop_worker_wait_for_exit_until(self->options.fetch_retry_delay);
     }
 }
 
@@ -448,10 +432,7 @@ _construct_worker(LogThreadedSourceDriver *s, gint worker_index)
   LogThreadedSourceWorker *worker = g_new0(LogThreadedSourceWorker, 1);
   log_threaded_source_worker_init_instance(worker, s, worker_index);
 
-  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) s;
-  g_atomic_counter_set(&self->exit_requested, FALSE);
   worker->run = _run;
-  worker->request_exit = _request_exit;
 
   return worker;
 }
@@ -568,6 +549,9 @@ darwinosl_sd_set_log_fetch_limit(LogDriver *s, guint new_value)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
   self->options.fetch_limit = new_value;
+
+  // We use our batch handling if fetch_limit is set
+  self->super.auto_close_batches = (self->options.fetch_limit == 0);
 }
 
 gboolean

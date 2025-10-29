@@ -260,8 +260,10 @@
 
 %token KW_PASS_UNIX_CREDENTIALS       10180
 %token KW_PERSIST_NAME                10181
-%token KW_READ_OLD_RECORDS            10182
-%token KW_USE_SYSLOGNG_PID            10183
+%token KW_USE_SYSLOGNG_PID            10182
+
+%token KW_READ_OLD_RECORDS            10185
+%token KW_DO_NOT_USE_BOOKMARK         10186
 
 /* log statement options */
 %token KW_FLAGS                       10190
@@ -294,8 +296,12 @@
 /* destination options */
 %token KW_TMPL_ESCAPE                 10220
 
+/* source options */
+%token KW_LOG_FETCH_DELAY             10230
+%token KW_LOG_FETCH_RETRY_DELAY       10231
+
 /* driver specific options */
-%token KW_OPTIONAL                    10230
+%token KW_OPTIONAL                    10235
 
 /* file related options */
 %token KW_CREATE_DIRS                 10240
@@ -318,8 +324,8 @@
 
 %token KW_PORT                        10323
 %token KW_HTTP                        10324
-/* misc options */
 
+/* misc options */
 %token KW_USE_TIME_RECVD              10340
 
 /* filter items*/
@@ -340,7 +346,6 @@
 %token KW_VALUE                       10372
 
 /* yes/no switches */
-
 %token KW_YES                         10380
 %token KW_NO                          10381
 %token KW_AUTO                        10382

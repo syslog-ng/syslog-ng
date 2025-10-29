@@ -280,7 +280,7 @@ main_loop_reload_config_apply(gpointer user_data)
           cfg_free(self->new_config);
           self->new_config = NULL;
         }
-      is_reloading_scheduled = FALSE;
+      set_reloading_scheduled(FALSE);
       return;
     }
 
@@ -311,14 +311,13 @@ main_loop_reload_config_apply(gpointer user_data)
   cfg_free(self->old_config);
   self->current_configuration = self->new_config;
   service_management_clear_status();
-  msg_notice("Configuration reload request received, reloading configuration");
+  msg_notice("Loading the new configuration");
 
   stats_counter_set(self->metrics.last_successful_reload, (gsize) self->last_config_reload_time);
 
   /* this is already running with the new config in place */
   main_loop_reload_config_finished(self);
 }
-
 
 /* initiate configuration reload */
 gboolean
@@ -335,7 +334,7 @@ main_loop_reload_config_prepare(MainLoop *self, GError **error)
                   "Unable to trigger a reload while a termination is in progress");
       return FALSE;
     }
-  if (is_reloading_scheduled)
+  if (is_reloading_scheduled())
     {
       g_set_error(error, MAIN_LOOP_ERROR, MAIN_LOOP_ERROR_RELOAD_FAILED,
                   "Unable to trigger a reload while another reload attempt is in progress");
@@ -357,14 +356,14 @@ main_loop_reload_config_prepare(MainLoop *self, GError **error)
                   "Syntax error parsing configuration file");
       return FALSE;
     }
-  is_reloading_scheduled = TRUE;
+  set_reloading_scheduled(TRUE);
   return TRUE;
 }
 
 void
 main_loop_reload_config_commence(MainLoop *self)
 {
-  g_assert(is_reloading_scheduled == TRUE);
+  g_assert(is_reloading_scheduled() == TRUE);
   main_loop_worker_sync_call(main_loop_reload_config_apply, self);
 }
 

@@ -44,7 +44,7 @@ class ConsoleLogReader(object):
     def wait_for_reload_message(self):
         syslog_ng_reload_messages = [
             "New configuration initialized",
-            "Configuration reload request received, reloading configuration",
+            "Loading the new configuration",
             "Configuration reload finished",
         ]
         return self.wait_for_messages_in_console_log(syslog_ng_reload_messages)

@@ -23,9 +23,12 @@
 #ifndef GRPC_CREDENTIALS_BUILDER_HPP
 #define GRPC_CREDENTIALS_BUILDER_HPP
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
 #include <grpcpp/server.h>
 #include <grpcpp/security/credentials.h>
 #include "grpc-credentials-builder.h"
+#pragma GCC diagnostic pop
 
 namespace syslogng {
 namespace grpc {
