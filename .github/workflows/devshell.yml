@@ -196,7 +196,7 @@ jobs:
           PYTHONUSERBASE="${HOME}/python_packages"
           CC="${{ matrix.cc }}"
           CXX=`[ $CC = gcc ] && echo g++ || echo clang++`
-          CFLAGS="${{ matrix.image.cflags}} -Wno-unused-command-line-argument"
+          CFLAGS="${{ matrix.image.cflags}} -Wno-unused-command-line-argument -DNO_PTHREAD_SELF_USAGE_WARNING=1"
           CXXFLAGS="${CFLAGS}"
           SYSLOG_NG_INSTALL_DIR=${HOME}/install/syslog-ng
           CONFIGURE_FLAGS="

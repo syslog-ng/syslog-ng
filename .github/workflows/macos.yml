@@ -207,7 +207,7 @@ jobs:
           SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
           PYTHONUSERBASE="${HOME}/python_packages"
           THREADS="$(sysctl -n hw.physicalcpu)"
-          WARNING_FLAGS="-Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
+          WARNING_FLAGS="-DNO_PTHREAD_SELF_USAGE_WARNING=1 -Wno-unused-command-line-argument -Werror"
           CFLAGS="-I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include ${WARNING_FLAGS}"
           CXXFLAGS="${CFLAGS}"
           # brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
