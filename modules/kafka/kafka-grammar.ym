@@ -35,6 +35,7 @@
 #include "cfg-grammar-internal.h"
 #include "plugin.h"
 #include "kafka-dest-driver.h"
+#include "kafka-source.h"
 #include "kafka-props.h"
 
 }
@@ -59,6 +60,7 @@
 %token KW_KAFKA_C
 %token KW_TOPIC
 %token KW_FALLBACK_TOPIC
+%token KW_PARTITION
 %token KW_CONFIG
 %token KW_FLUSH_TIMEOUT_ON_SHUTDOWN
 %token KW_FLUSH_TIMEOUT_ON_RELOAD
@@ -69,7 +71,15 @@
 %%
 
 start
-        : LL_CONTEXT_DESTINATION kafka_keyword
+        : LL_CONTEXT_SOURCE KW_KAFKA
+        {
+            last_driver = *instance = kafka_sd_new(configuration);
+        }
+        '(' _inner_src_context_push kafka_src_options _inner_src_context_pop ')'
+        {
+            YYACCEPT;
+        }
+        | LL_CONTEXT_DESTINATION kafka_keyword
         {
             last_driver = *instance = kafka_dd_new(configuration);
         }
@@ -82,6 +92,25 @@ start
 kafka_keyword
         : KW_KAFKA
         | KW_KAFKA_C
+        ;
+
+kafka_src_options
+        : kafka_src_option kafka_src_options
+        |
+        ;
+
+kafka_src_option
+        : KW_BOOTSTRAP_SERVERS '(' string ')'                   { kafka_sd_set_bootstrap_servers(last_driver, $3); free($3); }
+        | KW_CONFIG '(' kafka_properties ')'                    { kafka_sd_merge_config(last_driver, $3);  }
+        | KW_TOPIC '(' string ')'                               { CHECK_ERROR(kafka_sd_set_topics(last_driver, $3), @3, "Error parsing topic %s", $3); free($3); }
+        | KW_PARTITION '(' string ')'                           { CHECK_ERROR(kafka_sd_set_partitions(last_driver, $3), @3, "Error parsing partition %s", $3); free($3); }
+        | KW_LOG_FETCH_DELAY '(' nonnegative_integer ')'        { kafka_sd_set_log_fetch_delay(last_driver, $3); }
+        | KW_LOG_FETCH_RETRY_DELAY '(' nonnegative_integer ')'  { kafka_sd_set_log_fetch_retry_delay(last_driver, $3); }
+        | KW_POLL_TIMEOUT '(' nonnegative_integer ')'           { kafka_sd_set_poll_timeout(last_driver, $3); }
+        | KW_TIME_REOPEN '(' positive_integer ')'               { kafka_sd_set_time_reopen(last_driver, $3); }
+        | KW_MESSAGE '(' template_name_or_content ')'           { kafka_sd_set_message_ref(last_driver, $3); }
+        | threaded_source_driver_workers_option
+        | { last_template_options = kafka_sd_get_template_options(last_driver); } template_option
         ;
 
 kafka_dest_options

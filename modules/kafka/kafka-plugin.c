@@ -40,6 +40,11 @@ static Plugin kafka_plugins[] =
     .name = "kafka_c", /* for compatibility with old incubator naming */
     .parser = &kafka_parser,
   },
+  {
+    .type = LL_CONTEXT_SOURCE,
+    .name = "kafka",
+    .parser = &kafka_parser,
+  },
 };
 
 gboolean

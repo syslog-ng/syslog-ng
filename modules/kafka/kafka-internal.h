@@ -25,11 +25,13 @@
 #ifndef KAFKA_INTERNAL_H_INCLUDED
 #define KAFKA_INTERNAL_H_INCLUDED
 
+#include "logthrsource/logthrfetcherdrv.h"
 #include "logthrdest/logthrdestdrv.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #include <librdkafka/rdkafka.h>
 #pragma GCC diagnostic pop
+#include "kafka-source.h"
 #include "kafka-dest-driver.h"
 #include "kafka-dest-worker.h"
 
@@ -54,6 +56,75 @@ gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **p
 void kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
 
+/* Kafka Source */
+
+struct _KafkaSourceOptions
+{
+  LogThreadedSourceWorkerOptions *super_source_options;
+  MsgFormatOptions *format_options;
+  LogTemplateOptions template_options;
+
+  gchar *bootstrap_servers;
+  gchar *requested_topics;
+  gchar *requested_partitions;
+  LogTemplate *message;
+  gint poll_timeout;
+  gint time_reopen;
+
+  gboolean do_not_use_bookmark;
+  gint fetch_retry_delay;
+  guint fetch_delay;
+  guint fetch_limit;
+};
+
+typedef enum _KafkaSrcConsumerStrategy
+{
+  KSCS_ASSIGN_POLL,
+  KSCS_SUBSCRIBE_POLL,
+  KSCS_BATCH_POLL,
+
+  KSCS_UNDEFINED
+} KafkaSrcConsumerStrategy;
+
+struct _KafkaSourceDriver
+{
+  LogThreadedSourceDriver super;
+
+  KafkaSourceOptions options;
+
+  rd_kafka_t *kafka;
+  GList *topic_handle_list;
+  rd_kafka_topic_partition_list_t *assigned_partitions;
+  rd_kafka_queue_t *kafka_queue;
+  GList *config;
+
+  gchar *group_id;
+  GList *requested_topics;
+  GList *requested_partitions;
+
+  KafkaSrcConsumerStrategy startegy;
+  GAsyncQueue *msg_queue;
+  GCond queue_cond;
+  GMutex queue_cond_mutex;
+
+  GAtomicCounter running_thread_num;
+  GAtomicCounter sleeping_thread_num;
+
+  guint curr_fetch_in_run;
+  const gchar *persist_name;
+  const gchar *stat_persist_name;
+
+  StatsAggregator *max_message_size;
+  StatsAggregator *average_messages_size;
+  StatsAggregator *CPS;
+
+};
+
+void kafka_sd_options_defaults(KafkaSourceOptions *self,
+                               LogThreadedSourceWorkerOptions *super_source_options);
+void kafka_sd_options_destroy(KafkaSourceOptions *self);
+
+gboolean kafka_sd_reopen(LogDriver *s);
 
 /* Kafka Destination */
 
