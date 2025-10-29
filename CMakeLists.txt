@@ -165,30 +165,6 @@ endif()
 
 set(CMAKE_C_STANDARD 99)
 
-find_package(GLIB 2.32.0 REQUIRED COMPONENTS gmodule gthread)
-
-set(CMAKE_REQUIRED_INCLUDES ${GLIB_INCLUDE_DIRS})
-set(CMAKE_REQUIRED_LIBRARIES ${GLIB_LIBRARIES})
-check_symbol_exists(g_list_copy_deep "glib.h" SYSLOG_NG_HAVE_G_LIST_COPY_DEEP)
-check_symbol_exists(g_memdup2 "glib.h" SYSLOG_NG_HAVE_MEMDUP2)
-check_symbol_exists(g_ptr_array_find_with_equal_func "glib.h" SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC)
-check_symbol_exists(g_canonicalize_filename "glib.h" SYSLOG_NG_HAVE_G_CANONICALIZE_FILENAME)
-
-# only set MIN_REQUIRED to 2.68 if we know that we are at least on that version.
-# On CentOS7/SLES12 we don't have recent enough glib but with compat
-# wrappers we can compile. Bad news is that if we don't set to 2.68 at least,
-# we can't compile on new platforms with clang.
-#
-# Best of both worlds: we set to 2.68 if we have that version, so we
-# get clang to compile our code, otherwise we set it to 2.32.
-if(PC_GLIB_VERSION VERSION_GREATER_EQUAL "2.68")
-  set_target_properties(GLib::GLib PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS "GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_68")
-else()
-  set_target_properties(GLib::GLib PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS "GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32")
-endif()
-
 set(SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
 set(IVYKIS_SOURCE "internal" CACHE STRING "Select ivykis source (internal/system/path/AUTO)")
 external_or_find_package(IVYKIS REQUIRED)
@@ -207,6 +183,7 @@ endif()
 
 # Find only hard dependencies here directly to prevent hard linking of optional dependencies
 include(find_bison)
+include(find_glib)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
