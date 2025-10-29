@@ -325,16 +325,6 @@ endif()
 
 include(enable_spoof_source)
 
-option(ENABLE_MEMTRACE "Enable memtrace" 0)
-set(SYSLOG_NG_ENABLE_MEMTRACE ${ENABLE_MEMTRACE})
-
-# TODO: This one does not seem to be used at all, add the missing configure option handling if needed in the future
-if(ENABLE_PERF)
-  message(FATAL_ERROR "ENABLE_PERF was explicitly enabled, but the cmake build system does not support it currently.")
-endif()
-
-set(ENABLE_PERF OFF)
-set(SYSLOG_NG_ENABLE_PERF ${ENABLE_PERF})
 
 include(enable_stackdump)
 
@@ -442,42 +432,7 @@ if(ENABLE_FORCE_GNU99)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 endif()
 
-option(ENABLE_GPROF "Enable gcc profiling" OFF)
-
-if(ENABLE_GPROF)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-endif()
-
-set(SYSLOG_NG_ENABLE_GCOV ${ENABLE_GPROF})
-
-option(ENABLE_GCOV "Enable code coverage analysis (like gcov) support" OFF)
-
-if(ENABLE_GCOV)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
-endif()
-
-set(SYSLOG_NG_ENABLE_GPROF ${ENABLE_GCOV})
-
-# Sanatizer configuration
-set(SANITIZER "OFF" CACHE STRING "Enable clang sanitizer")
-set_property(CACHE SANITIZER PROPERTY STRINGS OFF address thread undefined address-all)
-
-if(SANITIZER)
-  SET(SANITIZE_MODE "${SANITIZER}")
-
-  if(SANITIZER MATCHES address-all)
-    SET(SANITIZE_MODE "address")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize-address-use-after-scope")
-  endif()
-
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -fsanitize=${SANITIZE_MODE} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-
-  if(APPLE)
-    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=${SANITIZE_MODE}")
-  endif()
-endif()
+include(set_diagnostic_options)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
