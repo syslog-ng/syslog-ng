@@ -30,14 +30,14 @@ install(FILES ${PROJECT_SOURCE_DIR}/requirements.txt DESTINATION "${CMAKE_INSTAL
 
 if (BUILD_TESTING)
     add_custom_target(pymodules-unit
-                      COMMAND ${CMAKE_COMMAND} -E env ${PYTHON_VENV_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/syslogng
+                      COMMAND ${CMAKE_COMMAND} -E env ${PYTHON_VENV_EXECUTABLE} -m pytest --showlocals --verbosity=3 ${CMAKE_CURRENT_SOURCE_DIR}/syslogng
                       DEPENDS BuildPyVirtualEnv
                       VERBATIM)
     add_dependencies(check pymodules-unit)
 endif()
 
 add_custom_target(pymodules-pep8
-                  COMMAND ${CMAKE_COMMAND} -E env ${PYTHON_VENV_EXECUTABLE} -m pep8 --ignore=E501 ${CMAKE_CURRENT_SOURCE_DIR}/syslogng
+                  COMMAND ${CMAKE_COMMAND} -E env ${PYTHON_VENV_EXECUTABLE} -m pycodestyle --ignore=E501,E121,E123,E126,E226,E24,E704,W503,W504,R0917 ${CMAKE_CURRENT_SOURCE_DIR}/syslogng
                   DEPENDS BuildPyVirtualEnv
                   VERBATIM)
 add_custom_target(pymodules-pylint
