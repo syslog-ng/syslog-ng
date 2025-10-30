@@ -398,6 +398,10 @@ set_target_properties(syslog-ng
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
     SOVERSION ${SYSLOG_NG_VERSION})
 
+if (WIN32 AND DEFINED SYSLOG_NG_VERSION)
+  # Make the C macro available so mainloop.c can use it
+  target_compile_definitions(syslog-ng PRIVATE SYSLOG_NG_VERSION="${SYSLOG_NG_VERSION}")
+endif()
 
 # severity-aliases.h generation
 if (WIN32)

@@ -29,7 +29,9 @@ compatinclude_HEADERS		= 	\
 	lib/compat/syslog.h	\
 	lib/compat/alarm.h	\
 	lib/compat/glob.h	\
-	lib/compat/ivykis_fd.h
+	lib/compat/ivykis_fd.h	\
+	lib/compat/ivykis_signal.h
+
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\

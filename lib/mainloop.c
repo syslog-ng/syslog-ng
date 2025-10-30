@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2013-2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,11 +51,15 @@
 #include "file-monitor.h"
 
 #include <sys/types.h>
+#include "compat/ivykis_signal.h"
+
+#ifdef COMPAT_HAVE_POSIX_SIGNALS
 #include <sys/wait.h>
+#endif
+
 #include <string.h>
 #include <time.h>
 #include <iv.h>
-#include <iv_signal.h>
 #include <iv_event.h>
 
 volatile gint main_loop_workers_running;
@@ -141,11 +146,11 @@ struct _MainLoop
   time_t last_config_reload_time;
 
   /* signal handling */
-  struct iv_signal sighup_poll;
-  struct iv_signal sigterm_poll;
-  struct iv_signal sigint_poll;
-  struct iv_signal sigchild_poll;
-  struct iv_signal sigusr1_poll;
+  compat_iv_signal sighup_poll;
+  compat_iv_signal sigterm_poll;
+  compat_iv_signal sigint_poll;
+  compat_iv_signal sigchild_poll;
+  compat_iv_signal sigusr1_poll;
 
   struct iv_event exit_requested;
 
@@ -256,7 +261,9 @@ main_loop_reload_config_revert(gpointer user_data)
        * Best is to kill ourselves in the hope that the supervisor
        * restarts us.
        */
+#ifdef COMPAT_HAVE_POSIX_SIGNALS
       kill(getpid(), SIGQUIT);
+#endif
       g_assert_not_reached();
     }
   persist_config_free(self->old_config->persist);
@@ -524,6 +531,8 @@ sig_int_handler(gpointer user_data)
 static void
 sig_child_handler(gpointer user_data)
 {
+  /* Windows: no child reaping via signals. (Child mgmt is different.) */
+#ifdef COMPAT_HAVE_POSIX_SIGNALS
   pid_t pid;
   int status;
 
@@ -538,6 +547,7 @@ sig_child_handler(gpointer user_data)
       signal_handler_exec_external_handler(SIGCHLD);
     }
   while (pid > 0);
+#endif
 }
 
 static void
@@ -547,34 +557,17 @@ sig_usr1_handler(gpointer user_data)
 }
 
 static void
-_ignore_signal(gint signum)
-{
-  struct sigaction sa;
-
-  memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = SIG_IGN;
-  sigaction(signum, &sa, NULL);
-}
-
-static void
-_register_signal_handler(struct iv_signal *signal_poll, gint signum, void (*handler)(void *), gpointer user_data)
-{
-  IV_SIGNAL_INIT(signal_poll);
-  signal_poll->signum = signum;
-  signal_poll->cookie = user_data;
-  signal_poll->handler = handler;
-  iv_signal_register(signal_poll);
-}
-
-static void
 setup_signals(MainLoop *self)
 {
-  _ignore_signal(SIGPIPE);
-  _register_signal_handler(&self->sighup_poll, SIGHUP, sig_hup_handler, self);
-  _register_signal_handler(&self->sigchild_poll, SIGCHLD, sig_child_handler, self);
-  _register_signal_handler(&self->sigterm_poll, SIGTERM, sig_term_handler, self);
-  _register_signal_handler(&self->sigint_poll, SIGINT, sig_int_handler, self);
-  _register_signal_handler(&self->sigusr1_poll, SIGUSR1, sig_usr1_handler, self);
+  /* Windows: no POSIX signals; handlers aren’t registered. */
+#ifdef COMPAT_HAVE_POSIX_SIGNALS
+  compat_ignore_signal(SIGPIPE);
+  compat_register_signal_handler(&self->sighup_poll, SIGHUP, sig_hup_handler, self);
+  compat_register_signal_handler(&self->sigchild_poll, SIGCHLD, sig_child_handler, self);
+  compat_register_signal_handler(&self->sigterm_poll, SIGTERM, sig_term_handler, self);
+  compat_register_signal_handler(&self->sigint_poll, SIGINT, sig_int_handler, self);
+  compat_register_signal_handler(&self->sigusr1_poll, SIGUSR1, sig_usr1_handler, self);
+#endif
 }
 
 /************************************************************************************

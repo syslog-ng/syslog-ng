@@ -24,6 +24,7 @@ set(COMPAT_HEADERS
     compat/alarm.h
     compat/glob.h
     compat/ivykis_fd.h
+    compat/ivykis_signal.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES
