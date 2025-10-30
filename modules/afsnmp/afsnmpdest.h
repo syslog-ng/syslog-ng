@@ -24,8 +24,11 @@
 #ifndef AFSNMPDEST_H_INCLUDED
 #define AFSNMPDEST_H_INCLUDED
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
+#pragma GCC diagnostic pop
 
 #include "driver.h"
 #include "mainloop-worker.h"

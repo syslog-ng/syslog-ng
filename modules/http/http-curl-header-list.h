@@ -27,8 +27,12 @@
 
 #include "list-adt.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wattribute-warning"
 #define CURL_NO_OLDIES 1
 #include <curl/curl.h>
+#pragma GCC diagnostic pop
 
 List *http_curl_header_list_new(void);
 struct curl_slist *http_curl_header_list_as_slist(List *list);

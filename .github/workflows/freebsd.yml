@@ -52,7 +52,7 @@ jobs:
           #THREADS=$(sysctl -n hw.ncpu) # TODO: Check how to get it on the FreeBSD VM
           BSDPORTS_PREFIX=/usr/local
           SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
-          WARNING_FLAGS="-Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
+          WARNING_FLAGS="-DNO_PTHREAD_SELF_USAGE_WARNING=1 -Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
           CFLAGS="-I${BSDPORTS_PREFIX}/include/ ${WARNING_FLAGS}"
           CXXFLAGS="${CFLAGS}"
           LDFLAGS="-L${BSDPORTS_PREFIX}/lib"

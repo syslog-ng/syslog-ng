@@ -25,6 +25,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <grpcpp/server.h>
 #include <grpcpp/security/credentials.h>
 #include "grpc-credentials-builder.h"

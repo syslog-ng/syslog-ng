@@ -29,6 +29,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "google/pubsub/v1/pubsub.grpc.pb.h"
 #pragma GCC diagnostic pop
 
