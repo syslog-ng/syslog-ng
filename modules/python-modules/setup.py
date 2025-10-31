@@ -53,7 +53,7 @@ requires_addons=[
 ]
 
 packages = packages_builtin
-requires = []
+requires = requires_builtin
 if install_addons:
   packages = packages + packages_addons
   requires = requires + requires_addons
