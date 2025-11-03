@@ -19,7 +19,7 @@ EXTRA_DIST += \
 	cmake/find_glib.cmake \
 	cmake/find_inotify.cmake \
 	cmake/find_ivykis.cmake \
-	cmake/find_python.cmake \
+	cmake/find_python_and_build_venv.cmake \
 	cmake/init_submodules.cmake \
 	cmake/module_switch.cmake \
 	cmake/openssl_functions.cmake \
