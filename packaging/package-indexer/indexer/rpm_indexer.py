@@ -264,12 +264,13 @@ class NightlyRPMIndexer(RPMIndexer):
         )
 
     def __get_pkg_timestamps_in_dir(self, directory: Path) -> List[str]:
-        timestamp_regexp = re.compile(r"\+([^_]+)_")
+        timestamp_regexp = re.compile(r"\+([^.]+)\.")
         pkg_timestamps: List[str] = []
 
-        for rpm_file in directory.rglob("syslog-ng-core*.rpm"):
+        for rpm_file in directory.rglob("syslog-ng-[1-9].*.rpm"):
             pkg_timestamp = timestamp_regexp.findall(rpm_file.name)[0]
-            pkg_timestamps.append(pkg_timestamp)
+            if pkg_timestamp not in pkg_timestamps:
+                pkg_timestamps.append(pkg_timestamp)
         pkg_timestamps.sort()
 
         return pkg_timestamps
