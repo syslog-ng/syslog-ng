@@ -311,15 +311,15 @@ _decide_strategy(KafkaSourceDriver *self)
                                 (int32_t)GPOINTER_TO_INT(fist_item->partitions->data) == RD_KAFKA_PARTITION_UA;
 
   if (single_topic && single_partition)
-    self->startegy = KSCS_BATCH_POLL;
+    self->startegy = KSCS_BATCH_CONSUME_DIRECTLY;
   else if (wildcard_partition)
-    self->startegy = KSCS_SUBSCRIBE_POLL;
+    self->startegy = KSCS_SUBSCRIBE_POLL_QUEUED;
   else
-    self->startegy = KSCS_ASSIGN_POLL;
+    self->startegy = KSCS_ASSIGN_POLL_QUEUED;
 
   msg_verbose("kafka: selected consumer startegy",
-              evt_tag_str("strategy", self->startegy == KSCS_BATCH_POLL ? "batch_poll" :
-                          self->startegy == KSCS_SUBSCRIBE_POLL ? "subscribe_poll" : "assign_poll"),
+              evt_tag_str("strategy", self->startegy == KSCS_BATCH_CONSUME_DIRECTLY ? "batch_consume_directly" :
+                          self->startegy == KSCS_SUBSCRIBE_POLL_QUEUED ? "subscribe_poll_queued" : "assign_poll_queued"),
               evt_tag_str("group_id", self->group_id),
               evt_tag_str("driver", self->super.super.super.id));
 }
@@ -482,7 +482,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
 
   _send(worker, log_msg);
 
-  if (self->startegy == KSCS_SUBSCRIBE_POLL || self->startegy == KSCS_ASSIGN_POLL)
+  if (self->startegy == KSCS_SUBSCRIBE_POLL_QUEUED || self->startegy == KSCS_ASSIGN_POLL_QUEUED)
     {
       rd_kafka_error_t *err = rd_kafka_offset_store_message(msg);
       if (err)
@@ -519,8 +519,8 @@ _procesor_run(LogThreadedSourceWorker *worker)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
 
-  /* KSCS_BATCH_POLL can run on a single thread only to guarantee strict ordering; the thread count must have already been set to 1. */
-  g_assert(self->startegy != KSCS_BATCH_POLL);
+  /* KSCS_BATCH_CONSUME_DIRECTLY can run on a single thread only to guarantee strict ordering; the thread count must have already been set to 1. */
+  g_assert(self->startegy != KSCS_BATCH_CONSUME_DIRECTLY);
 
   g_atomic_counter_inc(&self->running_thread_num);
 
@@ -576,12 +576,12 @@ _kafka_final_flush(KafkaSourceDriver *self)
                 evt_tag_str("driver", self->super.super.super.id));
 }
 
-/* **************************
- * Strategy - assign poll
- * **************************
+/* *********************************
+ * Strategy - assign poll and queue
+ * *********************************
  */
 static gboolean
-_setup_method_assign_consumer_poll(KafkaSourceDriver *self)
+_setup_method_assigned_consumer(KafkaSourceDriver *self)
 {
   g_assert(self->kafka);
   gboolean result = TRUE;
@@ -625,12 +625,12 @@ _setup_method_assign_consumer_poll(KafkaSourceDriver *self)
   return result;
 }
 
-/* **************************
- * Strategy - subscribe poll
- * **************************
+/* ************************************
+ * Strategy - subscribe poll and queue
+ * ************************************
  */
 static gboolean
-_setup_method_subscribe_consumer_poll(KafkaSourceDriver *self)
+_setup_method_subscribed_consumer(KafkaSourceDriver *self)
 {
   g_assert(self->kafka);
   gboolean result = TRUE;
@@ -674,7 +674,7 @@ _setup_method_subscribe_consumer_poll(KafkaSourceDriver *self)
 
 /* runs in a dedicated thread */
 static void
-_consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
+_consumer_run_consumer_poll_and_queue(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
   rd_kafka_message_t *msg;
@@ -742,12 +742,12 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   main_loop_worker_run_gc();
 }
 
-/* ***********************
- * Strategy - batch poll
- * ***********************
+/* ***********************************************
+ * Strategy - batch consume and direct processing
+ * ***********************************************
  */
 static gboolean
-_setup_method_batch_consumer_poll(KafkaSourceDriver *self)
+_setup_method_batch_consume(KafkaSourceDriver *self)
 {
   g_assert(self->kafka);
   gboolean result = TRUE;
@@ -786,7 +786,7 @@ _setup_method_batch_consumer_poll(KafkaSourceDriver *self)
 
 /* runs in a dedicated thread */
 static void
-_consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
+_consumer_run_batch_consume_directly(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
 
@@ -797,7 +797,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
   int32_t requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(fist_item->partitions)->data);
   rd_kafka_topic_t *single_topic = (rd_kafka_topic_t *)g_list_first(self->topic_handle_list)->data;
 
-  msg_debug("kafka: consumer poll run started - NONE queued",
+  msg_debug("kafka: consumer poll run started - NOT queued",
             evt_tag_str("group_id", self->group_id),
             evt_tag_str("topic", rd_kafka_topic_name(single_topic)),
             evt_tag_int("partition", requested_partition),
@@ -902,13 +902,13 @@ _consumer_run(LogThreadedSourceWorker *worker)
 
       switch(self->startegy)
         {
-        case KSCS_ASSIGN_POLL:
-        case KSCS_SUBSCRIBE_POLL:
-          _consumer_run_consumer_poll(worker, iteration_sleep_time);
+        case KSCS_ASSIGN_POLL_QUEUED:
+        case KSCS_SUBSCRIBE_POLL_QUEUED:
+          _consumer_run_consumer_poll_and_queue(worker, iteration_sleep_time);
           break;
 
-        case KSCS_BATCH_POLL:
-          _consumer_run_batch_poll(worker, iteration_sleep_time);
+        case KSCS_BATCH_CONSUME_DIRECTLY:
+          _consumer_run_batch_consume_directly(worker, iteration_sleep_time);
           break;
         default:
           g_assert_not_reached();
@@ -927,14 +927,14 @@ _consumer_run(LogThreadedSourceWorker *worker)
 
   /* Wake-up sleeping/waiting (queue) processor workers */
   _signal_queue(self);
-  /* Wait for all the (queue) processor workers to exit, see _procesor_run why not just for the _consumer_run_consumer_poll case */
+  /* Wait for all the (queue) processor workers to exit, see _procesor_run why not just for the _consumer_run_consumer_poll_and_queue case */
   while (g_atomic_counter_get(&self->running_thread_num) > 1)
     {
       main_loop_worker_wait_for_exit_until(iteration_sleep_time);
       _signal_queue(self);
     }
 
-  if (self->startegy != KSCS_BATCH_POLL)
+  if (self->startegy != KSCS_BATCH_CONSUME_DIRECTLY)
     _drop_queued_messages(self);
 
   gint running_thread_num = g_atomic_counter_dec_and_test(&self->running_thread_num);
@@ -946,7 +946,7 @@ _adjust_num_workers(KafkaSourceDriver *self)
 {
   gboolean result = TRUE;
 
-  if (self->startegy == KSCS_BATCH_POLL)
+  if (self->startegy == KSCS_BATCH_CONSUME_DIRECTLY)
     {
       msg_warning("kafka: setting worker thread count to 1 for the selected processing strategy",
                   evt_tag_str("group_id", self->group_id),
@@ -976,14 +976,14 @@ _setup_kafka_client(KafkaSourceDriver *self)
 
   switch(self->startegy)
     {
-    case KSCS_ASSIGN_POLL:
-      result = _setup_method_assign_consumer_poll(self);
+    case KSCS_ASSIGN_POLL_QUEUED:
+      result = _setup_method_assigned_consumer(self);
       break;
-    case KSCS_SUBSCRIBE_POLL:
-      result = _setup_method_subscribe_consumer_poll(self);
+    case KSCS_SUBSCRIBE_POLL_QUEUED:
+      result = _setup_method_subscribed_consumer(self);
       break;
-    case KSCS_BATCH_POLL:
-      result = _setup_method_batch_consumer_poll(self);
+    case KSCS_BATCH_CONSUME_DIRECTLY:
+      result = _setup_method_batch_consume(self);
       break;
     default:
       g_assert_not_reached();
@@ -1319,9 +1319,9 @@ _destroy_kafka_client(LogDriver *s)
 
   if (self->kafka)
     {
-      if (self->startegy != KSCS_BATCH_POLL)
+      if (self->startegy != KSCS_BATCH_CONSUME_DIRECTLY)
         {
-          if (self->startegy == KSCS_SUBSCRIBE_POLL)
+          if (self->startegy == KSCS_SUBSCRIBE_POLL_QUEUED)
             rd_kafka_unsubscribe(self->kafka);
           else
             rd_kafka_assign(self->kafka, NULL);
