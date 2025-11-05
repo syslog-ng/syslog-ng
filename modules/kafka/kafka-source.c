@@ -295,6 +295,23 @@ _log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_optio
   return msg_len;
 }
 
+gboolean _has_wildcard_partition(GList *requested_topics)
+{
+  g_assert(g_list_length(requested_topics));
+
+  for (GList *l = requested_topics; l != NULL; l = l->next)
+    {
+      KafkaTopicParts *item = (KafkaTopicParts *)l->data;
+      for (GList *p = item->partitions; p != NULL; p = p->next)
+        {
+          int32_t partition = (int32_t)GPOINTER_TO_INT(p->data);
+          if (partition == RD_KAFKA_PARTITION_UA)
+            return TRUE;
+        }
+    }
+  return FALSE;
+}
+
 static void
 _decide_strategy(KafkaSourceDriver *self)
 {
@@ -307,8 +324,7 @@ _decide_strategy(KafkaSourceDriver *self)
                           FALSE == _is_topic_pattern(fist_item->topic);
   gboolean single_partition = topic_num == 1 && fist_item_part_num == 1 &&
                               (int32_t)GPOINTER_TO_INT(fist_item->partitions->data) != RD_KAFKA_PARTITION_UA;
-  gboolean wildcard_partition = topic_num == 1 && fist_item_part_num == 1 &&
-                                (int32_t)GPOINTER_TO_INT(fist_item->partitions->data) == RD_KAFKA_PARTITION_UA;
+  gboolean wildcard_partition = _has_wildcard_partition(self->requested_topics);
 
   if (single_topic && single_partition)
     self->startegy = KSCS_BATCH_CONSUME_DIRECTLY;
