@@ -1134,7 +1134,7 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
           if (_validate_topic_name(prop->name, &err))
             {
               KafkaTopicParts *new_item = kafka_tps_new(prop->name, requested_partitions);
-              requested_topics = g_list_prepend(self->requested_topics, new_item);
+              requested_topics = g_list_prepend(requested_topics, new_item);
               continue;
             }
           else
