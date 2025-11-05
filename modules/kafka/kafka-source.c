@@ -683,6 +683,10 @@ _consumer_run_consumer_poll_and_queue(LogThreadedSourceWorker *worker, const gdo
             evt_tag_str("group_id", self->group_id),
             evt_tag_str("driver", self->super.super.super.id));
 
+  /* We just steal these from the main/consumer event loops to be able to stop the blocking rd_kafka_consumer_poll */
+  self->consumer_kafka_queue = rd_kafka_queue_get_consumer(self->kafka);
+  self->main_kafka_queue = rd_kafka_queue_get_main(self->kafka);
+
   while (FALSE == main_loop_worker_job_quit())
     {
       gint msg_queue_len = g_async_queue_length(self->msg_queue);
@@ -737,8 +741,15 @@ _consumer_run_consumer_poll_and_queue(LogThreadedSourceWorker *worker, const gdo
    * committed offsets to broker, and left the consumer group (if applicable).
    */
   rd_kafka_consumer_close(self->kafka);
+  /* We just stole these, the reference must be released */
+  rd_kafka_queue_destroy(self->consumer_kafka_queue);
+  self->consumer_kafka_queue = NULL;
+  rd_kafka_queue_destroy(self->main_kafka_queue);
+  self->main_kafka_queue = NULL;
+
   /* Wait for outstanding requests to finish. */
   _kafka_final_flush(self);
+
   main_loop_worker_run_gc();
 }
 
@@ -763,9 +774,12 @@ _setup_method_batch_consume(KafkaSourceDriver *self)
   rd_kafka_topic_t *new_topic = rd_kafka_topic_new(self->kafka,
                                                    requested_topic,
                                                    NULL); // TODO: add support of per-topic conf
-  if (rd_kafka_consume_start(new_topic,
-                             requested_partition,
-                             _get_start_fallback_offset_code(self)) != RD_KAFKA_RESP_ERR_NO_ERROR)
+  rd_kafka_queue_t *new_kafka_queue = rd_kafka_queue_new(self->kafka);
+
+  if (rd_kafka_consume_start_queue(new_topic,
+                                   requested_partition,
+                                   _get_start_fallback_offset_code(self),
+                                   new_kafka_queue) != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_error("kafka: rd_kafka_consume_start() failed",
                 evt_tag_str("group_id", self->group_id),
@@ -773,11 +787,14 @@ _setup_method_batch_consume(KafkaSourceDriver *self)
                 evt_tag_int("partition", requested_partition),
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
                 evt_tag_str("driver", self->super.super.super.id));
+      if (new_kafka_queue)
+        rd_kafka_queue_destroy(new_kafka_queue);
       rd_kafka_topic_destroy(new_topic);
       result = FALSE;
     }
   else
     {
+      self->consumer_kafka_queue = new_kafka_queue;
       self->topic_handle_list = g_list_append(self->topic_handle_list, new_topic);
     }
 
@@ -808,9 +825,9 @@ _consumer_run_batch_consume_directly(LogThreadedSourceWorker *worker, const gdou
       int qlen = (int)rd_kafka_outq_len(self->kafka);
 
       rd_kafka_poll(self->kafka, 0);
-      ssize_t cnt = rd_kafka_consume_batch(single_topic, requested_partition, self->options.super.poll_timeout,
-                                           msgs,
-                                           self->options.fetch_limit);
+      ssize_t cnt = rd_kafka_consume_batch_queue(self->consumer_kafka_queue, self->options.super.poll_timeout,
+                                                 msgs,
+                                                 self->options.fetch_limit);
       g_assert(cnt <= self->options.fetch_limit);
       if (cnt < 0 || (cnt == 1 && msgs[0]->err))
         {
@@ -845,6 +862,9 @@ _consumer_run_batch_consume_directly(LogThreadedSourceWorker *worker, const gdou
         }
     }
   rd_kafka_consume_stop(single_topic, requested_partition);
+  rd_kafka_queue_destroy(self->consumer_kafka_queue);
+  self->consumer_kafka_queue = NULL;
+
   /* Wait for outstanding requests to finish. */
   _kafka_final_flush(self);
 
@@ -1203,13 +1223,28 @@ _apply_options(KafkaSourceDriver *self)
   _check_and_apply_topics(self, self->options.requested_topics, TRUE);
 }
 
+static void
+_exit_requested(LogThreadedSourceWorker *worker)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
+
+  /* We need to wake-up the possibly blocking rd_kafka_consumer_poll/rd_kafka_poll */
+  if (self->consumer_kafka_queue)
+    rd_kafka_queue_yield(self->consumer_kafka_queue);
+  if (self->main_kafka_queue)
+    rd_kafka_queue_yield(self->main_kafka_queue);
+}
+
 static LogThreadedSourceWorker *
 _construct_worker(LogThreadedSourceDriver *s, gint worker_index)
 {
   LogThreadedSourceWorker *worker = g_new0(LogThreadedSourceWorker, 1);
   log_threaded_source_worker_init_instance(worker, s, worker_index);
   if (worker_index == 0)
-    worker->run = _consumer_run;
+    {
+      worker->run = _consumer_run;
+      worker->request_exit = _exit_requested;
+    }
   else
     worker->run = _procesor_run;
   return worker;
@@ -1311,11 +1346,7 @@ _destroy_kafka_client(LogDriver *s)
       self->assigned_partitions = NULL;
     }
 
-  if (self->kafka_queue)
-    {
-      rd_kafka_queue_destroy(self->kafka_queue);
-      self->kafka_queue = NULL;
-    }
+  g_assert(self->consumer_kafka_queue == NULL && self->main_kafka_queue == NULL);
 
   if (self->kafka)
     {

@@ -151,8 +151,9 @@ struct _KafkaSourceDriver
 
   rd_kafka_t *kafka;
   GList *topic_handle_list;
+  rd_kafka_queue_t *consumer_kafka_queue;
+  rd_kafka_queue_t *main_kafka_queue;
   rd_kafka_topic_partition_list_t *assigned_partitions;
-  rd_kafka_queue_t *kafka_queue;
 
   gchar *group_id;
   GList *requested_topics;

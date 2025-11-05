@@ -194,7 +194,7 @@ kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions)
 void
 kafka_options_defaults(KafkaOptions *self)
 {
-  self->poll_timeout = 1000;
+  self->poll_timeout = 10000; /* 10 seconds */
   self->kafka_logging = KFL_DISABLED;
 }
 
