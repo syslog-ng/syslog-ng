@@ -796,6 +796,9 @@ _setup_method_batch_consume(KafkaSourceDriver *self)
     {
       self->consumer_kafka_queue = new_kafka_queue;
       self->topic_handle_list = g_list_append(self->topic_handle_list, new_topic);
+      msg_verbose("kafka: batch consuming partition",
+                  evt_tag_str("topic", requested_topic),
+                  evt_tag_int("partition", requested_partition));
     }
 
   return result;
@@ -1075,7 +1078,7 @@ _g_int32_compare(gconstpointer  v1, gconstpointer  v2)
 }
 
 static gboolean
-_check_and_apply_partitions(KafkaSourceDriver *self, const gchar *partitions, GList **requested_partitions)
+_check_and_sort_partitions(KafkaSourceDriver *self, const gchar *partitions, GList **requested_partitions)
 {
   GList *list = split_and_convert_to_list("partition", partitions, ",", TRUE, NULL, _convert_to_int,
                                           _validate_part_num, NULL);
@@ -1125,7 +1128,7 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
       GList *requested_partitions = NULL;
       KafkaProperty *prop = (KafkaProperty *)topic_option->data;
 
-      if (_check_and_apply_partitions(self, (const gchar *) prop->value, &requested_partitions))
+      if (_check_and_sort_partitions(self, (const gchar *) prop->value, &requested_partitions))
         {
           GError *err = NULL;
           if (_validate_topic_name(prop->name, &err))
