@@ -705,9 +705,9 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
           kafka_update_state(self, TRUE);
           if (msg == NULL || msg->err == RD_KAFKA_RESP_ERR__PARTITION_EOF)
             {
-              msg_verbose("kafka: consumer_poll timeout",
-                          evt_tag_int("kafka_outq_len", qlen),
-                          evt_tag_int("msg_queue_len", msg_queue_len));
+              msg_debug("kafka: consumer_poll timeout",
+                        evt_tag_int("kafka_outq_len", qlen),
+                        evt_tag_int("msg_queue_len", msg_queue_len));
               if (msg)
                 rd_kafka_message_destroy(msg);
             }
@@ -843,7 +843,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
 
       if (cnt == 0)
         {
-          msg_verbose("kafka: consumer_poll timeout", evt_tag_int("kafka_outq_len", qlen));
+          msg_debug("kafka: consume_batch timeout", evt_tag_int("kafka_outq_len", qlen));
           kafka_update_state(self, TRUE);
         }
     }
