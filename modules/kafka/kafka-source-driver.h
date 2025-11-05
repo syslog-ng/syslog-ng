@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef KAFKA_SOURCE_H_INCLUDED
-#define KAFKA_SOURCE_H_INCLUDED
+#ifndef KAFKA_SOURCE_DRIVER_H_INCLUDED
+#define KAFKA_SOURCE_DRIVER_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "driver.h"

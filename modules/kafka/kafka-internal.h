@@ -31,7 +31,8 @@
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #include <librdkafka/rdkafka.h>
 #pragma GCC diagnostic pop
-#include "kafka-source.h"
+#include "kafka-source-driver.h"
+#include "kafka-source-worker.h"
 #include "kafka-dest-driver.h"
 #include "kafka-dest-worker.h"
 
@@ -73,6 +74,9 @@ gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **p
                                   gsize protected_properties_num);
 void kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
+
+rd_kafka_resp_err_t kafka_update_state(KafkaSourceDriver *self, gboolean lock);
+void kafka_final_flush(KafkaSourceDriver *self);
 
 typedef struct _KafkaOptions
 {
