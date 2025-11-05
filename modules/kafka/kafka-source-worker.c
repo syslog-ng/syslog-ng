@@ -230,7 +230,7 @@ _consumer_run_consumer_poll_and_queue(LogThreadedSourceWorker *worker, const gdo
           kafka_update_state(self, TRUE);
           if (msg == NULL || msg->err == RD_KAFKA_RESP_ERR__PARTITION_EOF)
             {
-              msg_debug("kafka: consumer_poll timeout",
+              msg_debug("kafka: consumer_poll - no data",
                         evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
                         evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
               if (msg)
@@ -337,7 +337,7 @@ _consumer_run_batch_consume_directly(LogThreadedSourceWorker *worker, const gdou
 
       if (cnt == 0)
         {
-          msg_debug("kafka: consume_batch timeout", evt_tag_int("kafka_outq_len", qlen));
+          msg_debug("kafka: consume_batch - no data", evt_tag_int("kafka_outq_len", qlen));
           kafka_update_state(self, TRUE);
         }
     }
