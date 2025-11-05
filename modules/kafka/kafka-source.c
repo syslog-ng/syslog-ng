@@ -494,6 +494,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
                     evt_tag_str("driver", self->super.super.super.id));
     }
   rd_kafka_message_destroy(msg);
+  main_loop_worker_run_gc();
 
   return TRUE;
 }
@@ -542,7 +543,6 @@ _procesor_run(LogThreadedSourceWorker *worker)
           if (fetch_result == THREADED_FETCH_SUCCESS)
             {
               _process_message(worker, msg);
-              main_loop_worker_run_gc();
               rd_kafka_poll(self->kafka, 0);
               main_loop_worker_wait_for_exit_until(iteration_sleep_time);
             }
@@ -731,7 +731,6 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
                     evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
                     evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
           _signal_queue(self);
-          main_loop_worker_run_gc();
         }
     }
   /* This call will block until the consumer has revoked its assignment, calling the rebalance_cb if it is configured,
@@ -740,6 +739,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   rd_kafka_consumer_close(self->kafka);
   /* Wait for outstanding requests to finish. */
   _kafka_final_flush(self);
+  main_loop_worker_run_gc();
 }
 
 /* ***********************
@@ -831,7 +831,6 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
           if (FALSE == main_loop_worker_job_quit())
             {
               _process_message(worker, msg);
-              main_loop_worker_run_gc();
               rd_kafka_poll(self->kafka, 0);
               main_loop_worker_wait_for_exit_until(iteration_sleep_time);
             }
@@ -850,6 +849,7 @@ _consumer_run_batch_poll(LogThreadedSourceWorker *worker, const gdouble iteratio
   _kafka_final_flush(self);
 
   g_free(msgs);
+  main_loop_worker_run_gc();
 }
 
 static gboolean
