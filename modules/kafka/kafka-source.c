@@ -685,13 +685,11 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
 
   while (FALSE == main_loop_worker_job_quit())
     {
-      int qlen = (int)rd_kafka_outq_len(self->kafka);
       gint msg_queue_len = g_async_queue_length(self->msg_queue);
-
       if (msg_queue_len >= self->options.fetch_limit)
         {
           msg_verbose("kafka: message queue full, waiting",
-                      evt_tag_int("kafka_outq_len", qlen),
+                      evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
                       evt_tag_int("msg_queue_len", msg_queue_len));
           _signal_queue(self);
           rd_kafka_poll(self->kafka, self->options.super.poll_timeout);
@@ -706,8 +704,8 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
           if (msg == NULL || msg->err == RD_KAFKA_RESP_ERR__PARTITION_EOF)
             {
               msg_debug("kafka: consumer_poll timeout",
-                        evt_tag_int("kafka_outq_len", qlen),
-                        evt_tag_int("msg_queue_len", msg_queue_len));
+                        evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+                        evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
               if (msg)
                 rd_kafka_message_destroy(msg);
             }
@@ -730,7 +728,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
                     evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
                     evt_tag_int("partition", msg->partition),
                     evt_tag_int("offset", msg->offset),
-                    evt_tag_int("kafka_outq_len", qlen),
+                    evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
                     evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
           _signal_queue(self);
           main_loop_worker_run_gc();
