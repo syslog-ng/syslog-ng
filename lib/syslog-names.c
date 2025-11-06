@@ -141,6 +141,9 @@ syslog_make_range(guint32 value1, guint32 value2)
 
 #if (defined(__clang__) && __clang_major__ >= 15)
 #pragma GCC diagnostic ignored "-Wdeprecated-non-prototype"
+#elif defined(__GNUC__) && __GNUC__ >= 10
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
+#pragma GCC diagnostic ignored "-Wold-style-definition"
 #endif
 #include "severity-aliases.h"
 

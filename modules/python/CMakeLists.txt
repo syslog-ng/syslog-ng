@@ -1,9 +1,3 @@
-module_switch(ENABLE_PYTHON "Enable Python module" PYTHONLIBS_FOUND)
-
-if(ENABLE_PYTHON AND NOT PYTHONLIBS_FOUND)
-  message(FATAL_ERROR "Python module was explicitly enabled, but the required python library dependency could not be found")
-endif()
-
 if(NOT ENABLE_PYTHON)
   return()
 endif()
@@ -65,6 +59,7 @@ set(PYTHON_SOURCES
   python-types.c
   python-options.h
   python-options.c
+  compat/compat-python.h
   compat/compat-python.c
   python-flags.h
   python-flags.c
@@ -75,12 +70,9 @@ set(PYTHON_SOURCES
 add_module(
   TARGET mod-python
   GRAMMAR python-grammar
-  INCLUDES ${PYTHON_INCLUDE_DIRS}
-  ${PROJECT_SOURCE_DIR}
-  DEPENDS ${PYTHON_LIBRARIES}
-  ${Eventlog_LIBRARIES}
-  ${IVYKIS_LIBRARIES}
+  INCLUDES ${PYTHON_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}
   SOURCES ${PYTHON_SOURCES}
+  DEPENDS ${PYTHON_LIBRARIES} ${Eventlog_LIBRARIES} ${IVYKIS_LIBRARIES}
 )
 
 add_test_subdirectory(tests)

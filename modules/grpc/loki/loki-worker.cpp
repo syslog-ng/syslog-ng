@@ -33,7 +33,11 @@
 #include "logmsg/logmsg.h"
 #include "compat/cpp-end.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "push.grpc.pb.h"
+#pragma GCC diagnostic pop
 
 #include <string>
 #include <sstream>

@@ -40,6 +40,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
 #if (defined(__clang__) && __clang_major__ >= 10)
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"

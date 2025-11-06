@@ -292,3 +292,5 @@ function(print_config_summary)
 
   _print_separator("")
 endfunction()
+
+print_config_summary()

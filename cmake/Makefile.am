@@ -1,46 +1,67 @@
-EXTRA_DIST +=	\
+EXTRA_DIST += \
 	cmake/add_module.cmake \
-	cmake/add_tests.cmake	\
-	cmake/external_or_find_package.cmake	\
-	cmake/Modules/CheckCreds.cmake	\
-	cmake/Modules/CheckTCP.cmake	\
-	cmake/Modules/CheckSockaddrStorage.cmake	\
-	cmake/Modules/CheckStructMember.cmake	\
-	cmake/Modules/EnableIPv6.cmake	\
-	cmake/Modules/ExternalIVYKIS.cmake	\
-	cmake/Modules/Findcriterion.cmake	\
-	cmake/Modules/FindCurl.cmake	\
-	cmake/Modules/FindESMTP.cmake	\
-	cmake/Modules/FindFLEX.cmake	\
-	cmake/Modules/FindGettext.cmake	\
-	cmake/Modules/FindGLIB.cmake	\
-	cmake/Modules/FindGperf.cmake	\
-	cmake/Modules/FindGradle.cmake	\
-	cmake/Modules/FindgRPC.cmake	\
-	cmake/Modules/FindHiredis.cmake	\
-	cmake/Modules/FindInotify.cmake	\
-	cmake/Modules/FindIVYKIS.cmake	\
-	cmake/Modules/FindJSONC.cmake	\
-	cmake/Modules/FindLIBCAP.cmake	\
-	cmake/Modules/FindLIBDBI.cmake	\
-	cmake/Modules/FindLIBMAXMINDDB.cmake	\
-	cmake/Modules/FindLIBNET.cmake	\
-	cmake/Modules/FindNETSNMP.cmake	\
-	cmake/Modules/FindPackageMessage.cmake	\
-	cmake/Modules/FindRabbitMQ.cmake	\
-	cmake/Modules/Findrdkafka.cmake	\
-	cmake/Modules/FindResolv.cmake	\
-	cmake/Modules/FindRiemannClient.cmake	\
-	cmake/Modules/Findsystemd.cmake	\
-	cmake/Modules/FindWRAP.cmake	\
-	cmake/Modules/GenerateYFromYm.cmake	\
-	cmake/Modules/LibFindMacros.cmake	\
-	cmake/Modules/ProtobufGenerateCpp.cmake	\
+	cmake/add_tests.cmake \
+	cmake/common_helpers.cmake \
+	cmake/detect_features.cmake \
+	cmake/enable_caps.cmake \
 	cmake/enable_cpp.cmake \
+	cmake/enable_env_wrap.cmake \
+	cmake/enable_objc.cmake \
+	cmake/enable_perf.cmake \
+	cmake/enable_server_mode.cmake \
 	cmake/enable_spoof_source.cmake \
 	cmake/enable_stackdump.cmake \
 	cmake/enable_systemd.cmake \
-	cmake/module_switch.cmake		\
+	cmake/enable_wrap.cmake \
+	cmake/external_or_find_package.cmake \
+	cmake/find_bison.cmake \
+	cmake/find_gettext.cmake \
+	cmake/find_glib.cmake \
+	cmake/find_inotify.cmake \
+	cmake/find_ivykis.cmake \
+	cmake/find_python_and_build_venv.cmake \
+	cmake/init_submodules.cmake \
+	cmake/module_switch.cmake \
 	cmake/openssl_functions.cmake \
+	cmake/platform_options.cmake \
 	cmake/print_config_summary.cmake \
-	cmake/python_build_venv.cmake
+	cmake/python_build_venv.cmake \
+	cmake/set_compile_options.cmake \
+	cmake/set_debug_options.cmake \
+	cmake/set_diagnostic_options.cmake \
+	cmake/set_testing.cmake \
+	cmake/syslog_ng_core_java_native.cmake \
+	cmake/Modules/CheckCreds.cmake \
+	cmake/Modules/CheckSockaddrStorage.cmake \
+	cmake/Modules/CheckStructMember.cmake \
+	cmake/Modules/CheckTCP.cmake \
+	cmake/Modules/EnableIPv6.cmake \
+	cmake/Modules/ExternalIVYKIS.cmake \
+	cmake/Modules/Findcriterion.cmake \
+	cmake/Modules/FindCurl.cmake \
+	cmake/Modules/FindESMTP.cmake \
+	cmake/Modules/FindFLEX.cmake \
+	cmake/Modules/FindGettext.cmake \
+	cmake/Modules/FindGLIB.cmake \
+	cmake/Modules/FindGperf.cmake \
+	cmake/Modules/FindGradle.cmake \
+	cmake/Modules/FindgRPC.cmake \
+	cmake/Modules/FindHiredis.cmake \
+	cmake/Modules/FindInotify.cmake \
+	cmake/Modules/FindIVYKIS.cmake \
+	cmake/Modules/FindJSONC.cmake \
+	cmake/Modules/FindLIBCAP.cmake \
+	cmake/Modules/FindLIBDBI.cmake \
+	cmake/Modules/FindLIBMAXMINDDB.cmake \
+	cmake/Modules/FindLIBNET.cmake \
+	cmake/Modules/FindNETSNMP.cmake \
+	cmake/Modules/FindPackageMessage.cmake \
+	cmake/Modules/FindRabbitMQ.cmake \
+	cmake/Modules/Findrdkafka.cmake \
+	cmake/Modules/FindResolv.cmake \
+	cmake/Modules/FindRiemannClient.cmake \
+	cmake/Modules/Findsystemd.cmake \
+	cmake/Modules/FindWRAP.cmake \
+	cmake/Modules/GenerateYFromYm.cmake \
+	cmake/Modules/LibFindMacros.cmake \
+	cmake/Modules/ProtobufGenerateCpp.cmake

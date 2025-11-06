@@ -30,9 +30,13 @@
 #include "value-pairs/value-pairs.h"
 #include "compat/cpp-end.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
 #include "opentelemetry/proto/metrics/v1/metrics.pb.h"
 #include "opentelemetry/proto/trace/v1/trace.pb.h"
+#pragma GCC diagnostic pop
 
 namespace syslogng {
 namespace grpc {
