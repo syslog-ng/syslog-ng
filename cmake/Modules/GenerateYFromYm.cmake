@@ -34,7 +34,7 @@ function(generate_y_from_ym FileWoExt)
         configure_file(${PROJECT_SOURCE_DIR}/${FileWoExt}.ym       ${PROJECT_BINARY_DIR}/${FileWoExt}.clean.ym NEWLINE_STYLE UNIX)
 
         add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${FileWoExt}.y
-            COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_BINARY_DIR}/lib/merge-grammar.py
+            COMMAND ${PYTHON_LAUNCHER} ${PROJECT_BINARY_DIR}/lib/merge-grammar.py
                     ${PROJECT_BINARY_DIR}/${FileWoExt}.clean.ym > ${PROJECT_BINARY_DIR}/${FileWoExt}.y
             DEPENDS ${PROJECT_BINARY_DIR}/lib/merge-grammar.py
                     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.y
@@ -53,7 +53,7 @@ function(generate_y_from_ym FileWoExt)
         configure_file(${PROJECT_SOURCE_DIR}/${FileWoExt}.ym       ${PROJECT_BINARY_DIR}/${FileWoExt}.clean.ym NEWLINE_STYLE UNIX)
 
         add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${ARGV1}.y
-            COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_BINARY_DIR}/lib/merge-grammar.py
+            COMMAND ${PYTHON_LAUNCHER} ${PROJECT_BINARY_DIR}/lib/merge-grammar.py
                     ${PROJECT_BINARY_DIR}/${FileWoExt}.clean.ym > ${PROJECT_BINARY_DIR}/${ARGV1}.y
             DEPENDS ${PROJECT_BINARY_DIR}/lib/merge-grammar.py
                     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.y
@@ -85,7 +85,7 @@ function(module_generate_y_from_ym FileWoExtSrc FileWoExtDst)
         configure_file(${FileWoExtSrc}.ym                         ${FileWoExtDst}.clean.ym                   NEWLINE_STYLE UNIX)
 
         add_custom_command(OUTPUT ${FileWoExtDst}.y
-            COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_BINARY_DIR}/lib/merge-grammar.py
+            COMMAND ${PYTHON_LAUNCHER} ${PROJECT_BINARY_DIR}/lib/merge-grammar.py
                     ${FileWoExtDst}.clean.ym > ${FileWoExtDst}.y
             DEPENDS ${PROJECT_BINARY_DIR}/lib/merge-grammar.py
                     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.y
