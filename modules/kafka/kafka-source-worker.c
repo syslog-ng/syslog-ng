@@ -306,8 +306,7 @@ _consumer_run_batch_consume_directly(LogThreadedSourceWorker *worker, const gdou
 
       rd_kafka_poll(self->kafka, 0);
       ssize_t cnt = rd_kafka_consume_batch_queue(self->consumer_kafka_queue, self->options.super.poll_timeout,
-                                                 msgs,
-                                                 self->options.fetch_limit);
+                                                 msgs, self->options.fetch_limit);
       g_assert(cnt <= self->options.fetch_limit);
       if (cnt < 0 || (cnt == 1 && msgs[0]->err))
         {

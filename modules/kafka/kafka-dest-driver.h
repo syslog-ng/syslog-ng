@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef KAFKA_H_INCLUDED
-#define KAFKA_H_INCLUDED
+#ifndef KAFKA_DEST_DRIVER_H_INCLUDED
+#define KAFKA_DEST_DRIVER_H_INCLUDED
 
 #include "logthrdest/logthrdestdrv.h"
 
