@@ -164,9 +164,8 @@ _format_stats_key(LogThreadedSourceDriver *d, StatsClusterKeyBuilder *kb)
   KafkaSourceDriver *self = (KafkaSourceDriver *)d;
 
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "kafka"));
-  // FIXME: add proper name
-  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("topic",
-                                             ((KafkaProperty *)g_list_first(self->options.requested_topics)->data)->name));
+  if (self->group_id)
+    stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("group_id", self->group_id));
 }
 
 static const gchar *
@@ -176,10 +175,9 @@ _format_persist_name(const LogPipe *d)
   static gchar persist_name[1024];
 
   if (d->persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "kafka-src.%s", d->persist_name);
+    g_snprintf(persist_name, sizeof(persist_name), "kafka.%s", d->persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "kafka-src(%s)",
-               ((KafkaProperty *)g_list_first(self->options.requested_topics)->data)->name);
+    g_snprintf(persist_name, sizeof(persist_name), "kafka(%s)", self->super.super.super.id);
   return persist_name;
 }
 
@@ -1208,7 +1206,7 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
 {
   self->worker_options = worker_options;
   self->worker_options->super.stats_level = STATS_LEVEL0;
-  self->worker_options->super.stats_source = stats_register_type("kafka_src");
+  self->worker_options->super.stats_source = stats_register_type("kafka");
 
   /* No additional format options now, so intentionally referencing only, and not using msg_format_options_copy */
   self->format_options = &self->worker_options->parse_options;
