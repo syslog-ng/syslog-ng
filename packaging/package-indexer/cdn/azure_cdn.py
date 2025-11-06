@@ -99,7 +99,7 @@ class AzureCDN(CDN):
             domains=cfg["domains"],
         )
 
-    def refresh_cache(self, path: Path) -> None:
+    def refresh_cache(self, path: Path, wait: bool = False) -> LROPoller | None:
         path_str = str(Path("/", path))
 
         self._log_info("Refreshing CDN cache.", path=path_str, domains=str(self.__domains))
@@ -110,9 +110,15 @@ class AzureCDN(CDN):
                 endpoint_name=self.__endpoint_name,
                 contents={"contentPaths": [path_str], "domains": self.__domains},
             )
-            poller.wait()
-
+            if wait is True:
+                poller.wait()
+            else:
+                poller.wait(5)
+                if not poller.done():
+                    self._log_info("CDN cache purge job still runs in the background. Returning ...")
+                    return poller
             status = poller.status()
+
             if not status == "Succeeded":
                 raise Exception("Failed to refresh CDN cache. status: {}".format(status))
 
@@ -123,3 +129,4 @@ class AzureCDN(CDN):
                 self._log_info("%s Skipping changes." % err.message)
             else:
                 raise err
+        return None
