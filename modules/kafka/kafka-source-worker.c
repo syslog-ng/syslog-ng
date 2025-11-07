@@ -27,6 +27,12 @@
 #include "ack-tracker/ack_tracker_factory.h"
 #include "stats/aggregator/stats-aggregator.h"
 
+#if SYSLOG_NG_ENABLE_DEBUG
+#define kafka_msg_debug msg_verbose
+#else
+#define kafka_msg_debug msg_debug
+#endif
+
 static void
 _log_reader_insert_msg_length_stats(KafkaSourceDriver *self, gsize len)
 {
@@ -131,10 +137,10 @@ _processor_run(LogThreadedSourceWorker *worker)
 
   g_atomic_counter_inc(&self->running_thread_num);
 
-  msg_debug("kafka: started queue processor",
-            evt_tag_int("index", worker->worker_index),
-            evt_tag_str("group_id", self->group_id),
-            evt_tag_str("driver", self->super.super.super.id));
+  kafka_msg_debug("kafka: started queue processor",
+                  evt_tag_int("index", worker->worker_index),
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("driver", self->super.super.super.id));
 
   GAsyncQueue *msg_queue = kafka_sd_worker_queue(self, worker);
   const gdouble iteration_sleep_time = _iteration_sleep_time(worker);
@@ -158,10 +164,10 @@ _processor_run(LogThreadedSourceWorker *worker)
             break;
         }
     }
-  msg_debug("kafka: stopped queue processor",
-            evt_tag_int("index", worker->worker_index),
-            evt_tag_str("group_id", self->group_id),
-            evt_tag_str("driver", self->super.super.super.id));
+  kafka_msg_debug("kafka: stopped queue processor",
+                  evt_tag_int("index", worker->worker_index),
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("driver", self->super.super.super.id));
 
   g_atomic_counter_dec_and_test(&self->running_thread_num);
 }
@@ -178,9 +184,9 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   rd_kafka_message_t *msg;
   guint rr = 0;
 
-  msg_debug("kafka: consumer poll run started - queued",
-            evt_tag_str("group_id", self->group_id),
-            evt_tag_str("driver", self->super.super.super.id));
+  kafka_msg_debug("kafka: consumer poll run started - queued",
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("driver", self->super.super.super.id));
 
   /* We just steal these from the main/consumer event loops to be able to stop the blocking rd_kafka_consumer_poll */
   self->consumer_kafka_queue = rd_kafka_queue_get_consumer(self->kafka);
@@ -191,9 +197,9 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
       gint msg_queue_len = kafka_sd_worker_queues_len(self);
       if (msg_queue_len >= self->options.fetch_limit)
         {
-          msg_verbose("kafka: message queue full, waiting",
-                      evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                      evt_tag_int("msg_queue_len", msg_queue_len));
+          kafka_msg_debug("kafka: message queue full, waiting",
+                          evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+                          evt_tag_int("msg_queue_len", msg_queue_len));
           kafka_sd_signal_queues(self);
           rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
           continue;
@@ -206,9 +212,9 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
           kafka_update_state(self, TRUE);
           if (msg == NULL || msg->err == RD_KAFKA_RESP_ERR__PARTITION_EOF)
             {
-              msg_debug("kafka: consumer_poll - no data",
-                        evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                        evt_tag_int("msg_queue_len", kafka_sd_worker_queues_len(self)));
+              kafka_msg_debug("kafka: consumer_poll - no data",
+                              evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+                              evt_tag_int("msg_queue_len", kafka_sd_worker_queues_len(self)));
               if (msg)
                 rd_kafka_message_destroy(msg);
             }
@@ -276,11 +282,11 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
   const guint msg_queue_ndx = 1;
   GAsyncQueue *msg_queue = (self->used_queue_num ? self->msg_queues[msg_queue_ndx] : NULL);
 
-  msg_debug("kafka: consumer poll run started - NOT queued",
-            evt_tag_str("group_id", self->group_id),
-            evt_tag_str("topic", rd_kafka_topic_name(single_topic)),
-            evt_tag_int("partition", requested_partition),
-            evt_tag_str("driver", self->super.super.super.id));
+  kafka_msg_debug("kafka: consumer poll run started - NOT queued",
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("topic", rd_kafka_topic_name(single_topic)),
+                  evt_tag_int("partition", requested_partition),
+                  evt_tag_str("driver", self->super.super.super.id));
 
   while (FALSE == main_loop_worker_job_quit())
     {
@@ -315,9 +321,9 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
                   gint msg_queue_len;
                   while ((msg_queue_len = g_async_queue_length(msg_queue)) >= self->options.fetch_limit)
                     {
-                      msg_verbose("kafka: message queue full, waiting",
-                                  evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                                  evt_tag_int("msg_queue_len", msg_queue_len));
+                      kafka_msg_debug("kafka: message queue full, waiting",
+                                      evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+                                      evt_tag_int("msg_queue_len", msg_queue_len));
                       kafka_sd_signal_queue_ndx(self, msg_queue_ndx);
                       rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
                       if (main_loop_worker_job_quit())
@@ -344,7 +350,7 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
 
       if (cnt == 0)
         {
-          msg_debug("kafka: consume_batch - no data", evt_tag_int("kafka_outq_len", qlen));
+          kafka_msg_debug("kafka: consume_batch - no data", evt_tag_int("kafka_outq_len", qlen));
           kafka_update_state(self, TRUE);
         }
     }
@@ -409,9 +415,9 @@ _consumer_run(LogThreadedSourceWorker *worker)
         default:
           g_assert_not_reached();
         }
-      msg_debug("kafka: stopped consumer poll run",
-                evt_tag_str("group_id", self->group_id),
-                evt_tag_str("driver", self->super.super.super.id));
+      kafka_msg_debug("kafka: stopped consumer poll run",
+                      evt_tag_str("group_id", self->group_id),
+                      evt_tag_str("driver", self->super.super.super.id));
 
       exit_requested = main_loop_worker_job_quit();
 
