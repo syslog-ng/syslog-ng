@@ -61,8 +61,9 @@ kafka_validate_topic_pattern(const char *topic, GError **error)
       regfree(&re);
       return TRUE;
     }
-  g_set_error(error, TOPIC_NAME_ERROR, TOPIC_INVALID_PATTERN,
-              "kafka: topic name %s is illegal as it contains a badly formatted regex pattern", topic);
+  if (error)
+    g_set_error(error, TOPIC_NAME_ERROR, TOPIC_INVALID_PATTERN,
+                "kafka: topic name %s is illegal as it contains a badly formatted regex pattern", topic);
   return FALSE;
 }
 
@@ -73,29 +74,33 @@ kafka_validate_topic_name(const gchar *name, GError **error)
 
   if (len == 0)
     {
-      g_set_error(error, TOPIC_NAME_ERROR, TOPIC_LENGTH_ZERO,
-                  "kafka: topic name is illegal, it can't be empty");
+      if (error)
+        g_set_error(error, TOPIC_NAME_ERROR, TOPIC_LENGTH_ZERO,
+                    "kafka: topic name is illegal, it can't be empty");
       return FALSE;
     }
 
   if ((!g_strcmp0(name, ".")) || !g_strcmp0(name, ".."))
     {
-      g_set_error(error, TOPIC_NAME_ERROR, TOPIC_DOT_TWO_DOTS,
-                  "kafka: topic name cannot be . or ..");
+      if (error)
+        g_set_error(error, TOPIC_NAME_ERROR, TOPIC_DOT_TWO_DOTS,
+                    "kafka: topic name cannot be . or ..");
       return FALSE;
     }
 
   if (len > 249)
     {
-      g_set_error(error, TOPIC_NAME_ERROR, TOPIC_EXCEEDS_MAX_LENGTH,
-                  "kafka: topic name cannot be longer than 249 characters");
+      if (error)
+        g_set_error(error, TOPIC_NAME_ERROR, TOPIC_EXCEEDS_MAX_LENGTH,
+                    "kafka: topic name cannot be longer than 249 characters");
       return FALSE;
     }
 
   if (FALSE == kafka_is_valid_topic_name_pattern(name))
     {
-      g_set_error(error, TOPIC_NAME_ERROR, TOPIC_INVALID_PATTERN,
-                  "kafka: topic name %s is illegal as it contains characters other than pattern [-._a-zA-Z0-9]+", name);
+      if (error)
+        g_set_error(error, TOPIC_NAME_ERROR, TOPIC_INVALID_PATTERN,
+                    "kafka: topic name %s is illegal as it contains characters other than pattern [-._a-zA-Z0-9]+", name);
       return FALSE;
     }
 

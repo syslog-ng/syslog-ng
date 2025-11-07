@@ -143,8 +143,7 @@ _validate_part_num(gpointer item, GError **error)
 static gboolean
 _is_topic_pattern(const char *topic)
 {
-  GError *error = NULL;
-  return FALSE == kafka_validate_topic_name(topic, &error);
+  return FALSE == kafka_validate_topic_name(topic, NULL);
 }
 
 static gboolean
@@ -152,8 +151,9 @@ _validate_topic_name(gpointer item, GError **error)
 {
   const gchar *topic = (const gchar *)item;
 
-  *error = NULL;
-  if (FALSE == kafka_validate_topic_name(topic, error))
+  if (error)
+    *error = NULL;
+  if (FALSE == kafka_validate_topic_name(topic, NULL))
     return kafka_validate_topic_pattern(topic, error);
   return TRUE;
 }
