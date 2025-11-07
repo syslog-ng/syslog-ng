@@ -12,8 +12,10 @@ init.d.solaris 		- another sample init script for Sun Solaris
 syslog-ng.conf.HP-UX 	- sample configuration for HP-UX
 syslog-ng.conf.RedHat 	- sample configuration for RedHat GNU/Linux
 syslog-ng.conf.SunOS 	- sample configuration for SunOS
-syslog-ng.conf.doc	- sample configuration file with inline documentation as comments
-syslog2ng		- script to convert old syslog.conf to syslog-ng.conf
-relogger.pl		- script to replay syslog messages at the original rate
-fedora-packaging	- directory containing files related to Fedora packaging
-syslog-mc		- syslog multicast client
+syslog-ng.conf.doc	            - sample configuration file with inline documentation as comments
+syslog2ng		                - script to convert old syslog.conf to syslog-ng.conf
+relogger.pl		                - script to replay syslog messages at the original rate
+fedora-packaging	            - directory containing files related to Fedora packaging
+syslog-mc	                    - syslog multicast client
+com.syslog-ng.syslog-ng.plist   - sample macOS LaunchAgent/LaunchDaemon plist file
+syslog-ng-entitlements.plist    - sample macOS code-signing entitlements file for debugging/instrumenting
