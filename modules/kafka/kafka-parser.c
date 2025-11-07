@@ -51,6 +51,7 @@ static CfgLexerKeyword kafka_keywords[] =
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
   { "poll_timeout",   KW_POLL_TIMEOUT },
   { "single_worker_queue", KW_SINGLE_WORKER_QUEUE },
+  { "log_fetch_queue_full_delay", KW_LOG_FETCH_QUEUE_FULL_DELAY },
 
   { NULL }
 };

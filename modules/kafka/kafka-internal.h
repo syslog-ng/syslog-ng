@@ -136,6 +136,7 @@ struct _KafkaSourceOptions
   gboolean do_not_use_bookmark;
   guint fetch_delay;
   guint fetch_limit;
+  guint fetch_queue_full_delay;
   gboolean separated_worker_queues;
 };
 

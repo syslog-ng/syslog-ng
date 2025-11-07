@@ -1322,6 +1322,13 @@ kafka_sd_set_log_fetch_limit(LogDriver *s, guint new_value)
   self->options.fetch_limit = new_value;
 }
 
+void
+kafka_sd_set_log_fetch_queue_full_delay(LogDriver *s, guint new_value)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)s;
+  self->options.fetch_queue_full_delay = new_value;
+}
+
 void kafka_sd_set_single_worker_queue(LogDriver *s, gboolean new_value)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)s;
@@ -1345,6 +1352,7 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->do_not_use_bookmark = FALSE;
   self->fetch_delay = 10000; /* 1 second / 10000 */
   self->fetch_limit = 1000;
+  self->fetch_queue_full_delay = 1000; /* 1 second */
   self->separated_worker_queues = FALSE;
 
   log_template_options_defaults(&self->template_options);

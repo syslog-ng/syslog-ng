@@ -195,7 +195,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
                       evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
                       evt_tag_int("msg_queue_len", msg_queue_len));
           kafka_sd_signal_queues(self);
-          rd_kafka_poll(self->kafka, self->options.super.poll_timeout);
+          rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
           continue;
         }
 
@@ -319,7 +319,7 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
                                   evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
                                   evt_tag_int("msg_queue_len", msg_queue_len));
                       kafka_sd_signal_queue_ndx(self, msg_queue_ndx);
-                      rd_kafka_poll(self->kafka, 1000);
+                      rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
                       if (main_loop_worker_job_quit())
                         break;
                     }
