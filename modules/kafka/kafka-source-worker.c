@@ -95,6 +95,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   gsize msg_len = _log_message_from_string((gchar *)msg->payload, self->options.format_options, &log_msg);
   log_msg_set_value_to_string(log_msg, LM_V_TRANSPORT, "local+kafka");
   _log_reader_insert_msg_length_stats(self, msg_len);
+  log_msg_set_recvd_rawmsg_size(log_msg, msg->len);
 
   _send(worker, log_msg);
 

@@ -228,6 +228,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
       return FALSE;
     }
 
+  log_threaded_dest_worker_written_bytes_add(&self->super, self->message->len);
 
   msg_debug("kafka: message published",
             evt_tag_str("topic", rd_kafka_topic_name(topic)),
