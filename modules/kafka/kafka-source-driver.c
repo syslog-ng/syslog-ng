@@ -60,12 +60,10 @@ g_list_remove_duplicates(GList *list, GEqualFunc compare_func, GDestroyNotify fr
 typedef gboolean (*ListItemConvertFunc)(const gchar *token, gpointer *item);
 typedef gboolean (*ListItemValidateFunc)(gpointer token, GError **error);
 
-// TODO: Move to a common lib place
 static GList *
 split_and_convert_to_list(const gchar *name, const gchar *input, const gchar *split_str,
                           gboolean break_on_validate_err,
-                          GDestroyNotify free_func, ListItemConvertFunc convert_func, ListItemValidateFunc validate_func,
-                          GError **error)
+                          GDestroyNotify free_func, ListItemConvertFunc convert_func, ListItemValidateFunc validate_func)
 {
   g_assert(input);
   if (*input == 0)
@@ -93,7 +91,7 @@ split_and_convert_to_list(const gchar *name, const gchar *input, const gchar *sp
             {
               if (validate_func)
                 {
-                  if (validate_func(item, error))
+                  if (validate_func(item, NULL))
                     list = g_list_prepend(list, item);
                   else
                     {
@@ -825,20 +823,15 @@ _g_int32_compare(gconstpointer  v1, gconstpointer  v2)
 static gboolean
 _check_and_sort_partitions(KafkaSourceDriver *self, const gchar *partitions, GList **requested_partitions)
 {
-  GList *list = split_and_convert_to_list("partition", partitions, ",", TRUE, NULL, _convert_to_int,
-                                          _validate_part_num, NULL);
+  GList *list = split_and_convert_to_list("partition", partitions, ",", TRUE, NULL,
+                                          _convert_to_int, _validate_part_num);
+  if (list == NULL)
+    return FALSE;
+
   list = g_list_sort(list, _g_int32_compare);
   const gint original_length = g_list_length(list);
   if (list)
     list = g_list_remove_duplicates(list, _g_int32_equal, NULL);
-  if (list == NULL || g_list_length(list) == 0)
-    {
-      if (list)
-        g_list_free(list);
-      list = NULL;
-    }
-  if (list == NULL)
-    return FALSE;
 
   const gpointer all_parts = GINT_TO_POINTER((gint)RD_KAFKA_PARTITION_UA);
   if (g_list_find(list, all_parts))
@@ -897,17 +890,10 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
         kafka_tps_list_free(requested_topics);
       return FALSE;
     }
+  g_assert(requested_topics != NULL);
 
   const gint original_length = g_list_length(requested_topics);
   requested_topics = g_list_remove_duplicates(requested_topics, kafka_tps_equal, (GDestroyNotify) kafka_tps_free);
-  if (requested_topics == NULL || g_list_length(requested_topics) == 0)
-    {
-      if (requested_topics)
-        kafka_tps_list_free(requested_topics);
-      requested_topics = NULL;
-    }
-  if (requested_topics == NULL)
-    return FALSE;
 
   if (apply)
     {
