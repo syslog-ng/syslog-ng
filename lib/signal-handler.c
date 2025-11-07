@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2018 Balabit
  * Copyright (c) 2018 Kokan
+ * Copyright (c) 2018-2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,8 +25,10 @@
 
 #include "syslog-ng.h"
 
-#include <signal.h>
+#include "compat/ivykis_signal.h"
 #include <string.h>
+
+#ifdef COMPAT_HAVE_POSIX_SIGNALS
 
 #if defined(NSIG)
 #  define SIGNAL_HANDLER_ARRAY_SIZE NSIG
@@ -154,6 +157,16 @@ sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
   _save_external_sigaction_handler(signum, act);
 
   return 0;
+}
+
+#endif
+
+#else  /* !COMPAT_HAVE_POSIX_SIGNALS (Windows) */
+
+/* Keep the exported function, but as a no-op on Windows */
+void signal_handler_exec_external_handler(gint signum)
+{
+  return;
 }
 
 #endif

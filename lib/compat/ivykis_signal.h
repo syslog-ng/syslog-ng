@@ -35,22 +35,10 @@ typedef struct compat_iv_signal
   void *impl;                      /* private */
 } compat_iv_signal;
 
-static inline void compat_iv_signal_init(compat_iv_signal *s)
-{
-  memset(s, 0, sizeof(*s));
-}
-static inline void compat_iv_signal_register(compat_iv_signal *s)
-{
-  return;
-}
-static inline void compat_iv_signal_unregister(compat_iv_signal *s)
-{
-  return;
-}
-static inline void compat_ignore_signal(int signum)
-{
-  return;
-}
+static inline void compat_iv_signal_init(compat_iv_signal *s);
+static inline void compat_iv_signal_register(compat_iv_signal *s);
+static inline void compat_iv_signal_unregister(compat_iv_signal *s);
+static inline void compat_ignore_signal(int signum);
 
 #define COMPAT_IV_SIGNAL_INIT(s) do { memset((s), 0, sizeof(*(s))); } while (0)
 
