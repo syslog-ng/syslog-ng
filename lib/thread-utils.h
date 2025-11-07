@@ -33,6 +33,9 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+#ifndef NOGDI
+#define NOGDI
+#endif
 #include <windows.h>            /* DWORD, HANDLE, THREAD_TERMINATE, CloseHandle */
 #include <processthreadsapi.h>  /* OpenThread, GetCurrentThreadId */
 #include <stdint.h>             /* uintptr_t for the cast */
