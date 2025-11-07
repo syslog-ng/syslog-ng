@@ -67,6 +67,7 @@
 %token KW_FLUSH_TIMEOUT_ON_SHUTDOWN
 %token KW_FLUSH_TIMEOUT_ON_RELOAD
 %token KW_POLL_TIMEOUT
+%token KW_STATE_UPDATE_TIMEOUT
 %token KW_LOG_FETCH_QUEUE_FULL_DELAY
 %token KW_SINGLE_WORKER_QUEUE
 %token KW_BOOTSTRAP_SERVERS
@@ -115,6 +116,7 @@ kafka_src_option
         | KW_LOG_FETCH_LIMIT '(' positive_integer ')'           { kafka_sd_set_log_fetch_limit(last_driver, $3); }
         | KW_LOG_FETCH_QUEUE_FULL_DELAY '(' positive_integer ')'{ kafka_sd_set_log_fetch_queue_full_delay(last_driver, $3); }
         | KW_POLL_TIMEOUT '(' positive_integer ')'              { kafka_sd_set_poll_timeout(last_driver, $3); }
+        | KW_STATE_UPDATE_TIMEOUT '(' positive_integer ')'      { kafka_sd_set_state_update_timeout(last_driver, $3); }
         | KW_TIME_REOPEN '(' positive_integer ')'               { kafka_sd_set_time_reopen(last_driver, $3); }
         | KW_DO_NOT_USE_BOOKMARK '(' yesno ')'                  { kafka_sd_set_do_not_use_bookmark(last_driver, $3); }
         | KW_SINGLE_WORKER_QUEUE '(' yesno ')'                  { kafka_sd_set_single_worker_queue(last_driver, $3); }

@@ -339,8 +339,8 @@ kafka_update_state(KafkaSourceDriver *self, gboolean lock)
   KafkaConnectedState state = kafka_opaque_state_get(&self->opaque);
 
   const struct rd_kafka_metadata *metadata;
-  rd_kafka_resp_err_t err = rd_kafka_metadata(self->kafka, 0, NULL, &metadata, self->options.super.poll_timeout);
-
+  rd_kafka_resp_err_t err = rd_kafka_metadata(self->kafka, 0, NULL, &metadata,
+                                              self->options.super.state_update_timeout);
   if (err == RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       state = KFS_CONNECTED;
@@ -354,6 +354,7 @@ kafka_update_state(KafkaSourceDriver *self, gboolean lock)
     }
   else
     {
+      /* Though, the error can be RD_KAFKA_RESP_ERR__TIMED_OUT as well, treat it as not connected too on startup */
       if(state == KFS_UNKNOWN)
         {
           state = KFS_DISCONNECTED;
@@ -1274,6 +1275,14 @@ kafka_sd_set_poll_timeout(LogDriver *d, gint poll_timeout)
   KafkaSourceDriver *self = (KafkaSourceDriver *)d;
 
   kafka_options_set_poll_timeout(&self->options.super, poll_timeout);
+}
+
+void
+kafka_sd_set_state_update_timeout(LogDriver *d, gint state_update_timeout)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)d;
+
+  kafka_options_set_state_update_timeout(&self->options.super, state_update_timeout);
 }
 
 void

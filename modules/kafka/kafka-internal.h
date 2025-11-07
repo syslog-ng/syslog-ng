@@ -84,6 +84,7 @@ typedef struct _KafkaOptions
   GList *config;
   KafkaLogging kafka_logging;
   gint poll_timeout;
+  gint state_update_timeout;
 } KafkaOptions;
 
 void kafka_options_defaults(KafkaOptions *self);
@@ -92,6 +93,7 @@ void kafka_options_merge_config(KafkaOptions *self, GList *props);
 gboolean kafka_options_set_logging(KafkaOptions *self, const gchar *logging);
 void kafka_options_set_bootstrap_servers(KafkaOptions *self, const gchar *bootstrap_servers);
 void kafka_options_set_poll_timeout(KafkaOptions *self, gint poll_timeout);
+void kafka_options_set_state_update_timeout(KafkaOptions *self, gint state_update_timeout);
 
 typedef struct _KafkaState
 {
