@@ -67,7 +67,12 @@ split_and_convert_to_list(const gchar *name, const gchar *input, const gchar *sp
                           GDestroyNotify free_func, ListItemConvertFunc convert_func, ListItemValidateFunc validate_func,
                           GError **error)
 {
-  g_assert(input && *input);
+  g_assert(input);
+  if (*input == 0)
+    {
+      msg_error("kafka: list cannot be an empty string", evt_tag_str("name", name));
+      return NULL;
+    }
 
   GList *list = NULL;
   gchar *trimmed = NULL;
