@@ -197,7 +197,7 @@ void kafka_sd_signal_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *wor
 void kafka_sd_signal_queue_ndx(KafkaSourceDriver *self, guint ndx);
 void kafka_sd_signal_queues(KafkaSourceDriver *self);
 void kafka_sd_drop_queued_messages(KafkaSourceDriver *self);
-
+void kafka_sd_update_msg_length_stats(KafkaSourceDriver *self, gsize len);
 
 /* Kafka Destination */
 

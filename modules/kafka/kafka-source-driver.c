@@ -188,6 +188,13 @@ _format_persist_name(const LogPipe *d)
   return persist_name;
 }
 
+void
+kafka_sd_update_msg_length_stats(KafkaSourceDriver *self, gsize len)
+{
+  stats_aggregator_add_data_point(self->max_message_size, len);
+  stats_aggregator_add_data_point(self->average_messages_size, len);
+}
+
 static void
 _register_aggregated_stats(KafkaSourceDriver *self)
 {
