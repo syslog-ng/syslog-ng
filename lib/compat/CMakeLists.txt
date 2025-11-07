@@ -25,6 +25,7 @@ set(COMPAT_HEADERS
     compat/glob.h
     compat/ivykis_fd.h
     compat/ivykis_signal.h
+    compat/realpath.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES

@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 2013 Viktor Juhasz
- * Copyright (c) 2013 Viktor Tusa
+ * Copyright (c) 2013 Viktor
+ * Copyright (c) 2013-2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +28,7 @@
 #include "messages.h"
 #include <sys/stat.h>
 #include <string.h>
+#include "compat/realpath.h"
 
 gboolean
 is_file_directory(const char *filename)
@@ -147,7 +149,7 @@ resolve_to_absolute_path(const gchar *basedir, const gchar *path)
   w_name = build_filename(basedir, path);
   res = (char *)g_malloc(path_max);
 
-  if (!realpath(w_name, res))
+  if (!compat_realpath(w_name, res))
     {
       g_free(res);
       if (errno == ENOENT)

@@ -30,7 +30,8 @@ compatinclude_HEADERS		= 	\
 	lib/compat/alarm.h	\
 	lib/compat/glob.h	\
 	lib/compat/ivykis_fd.h	\
-	lib/compat/ivykis_signal.h
+	lib/compat/ivykis_signal.h	\
+	lib/compat/realpath.h
 
 
 compat_sources			= 	\
