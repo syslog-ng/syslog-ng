@@ -1,6 +1,6 @@
 #!/bin/sh
 #############################################################################
-# Copyright (c) 2017 Balabit
+# Copyright (c) 2025 Balabit, Daniele Ferla
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -21,36 +21,50 @@
 #
 #############################################################################
 
-TARGETS=$confgen_targets
-TARGET_PARAMS=$confgen_parameters
+set -f
 
-target_cnt=$(echo $TARGETS | wc -w)
-target_id=0
-echo 'channel {'
-for target in $TARGETS
-do
-#    other_targets=$(echo $TARGETS | sed -e s/\\b${target}\\b//)
-    echo '  channel {'
-    echo '    filter {'
-    echo -n '    "'
-    echo -n $target_id
-    echo -n '" == "$(% ${R_MSEC} '
-    echo -n $target_cnt
-    echo ')"'
-    echo '    };'
-    echo '    destination {'
-    echo -n '      network("'
-    echo -n $target
-    echo -n '" '
-    echo -n $TARGET_PARAMS
-#echo -n 'failover-servers("'
-#echo -n $other_targets
-#echo -n '")'
-    echo '      );'
-    echo '    };'
-    echo '    flags(final);'
-    echo '  };'
-    target_id=$((target_id+1))
+# Normalize target list (quotes/commas/spaces -> spaces)
+targets=$(printf '%s' "$confgen_targets" | sed "s/[\"']//g; s/,/ /g")
+set -- $targets
+target_cnt=$#
+i=0
+
+printf 'channel {'
+for target in $targets; do
+    # Skip failover generation if failover is disabled or there are less than 2 targets
+    if  [ "$confgen_failover" = "off" ] || [ "$confgen_failover" = "no" ] ||
+        [ "$target_cnt" -lt 2 ]; then
+        failover=""
+    else
+        # Automatically generate the list of failover targets if not specified
+        if ! printf '%s' "$confgen_failover" | grep -qi 'servers('; then
+            failover_servers=""
+            for t in $targets; do
+              [ "$t" = "$target" ] && continue                    # skip current target
+              failover_servers="${failover_servers}, \"$t\""
+            done
+            failover_servers=${failover_servers#, }
+            failover="failover(servers($failover_servers) $confgen_failover)"
+        else
+            # Use the user-specified failover configuration as-is
+            failover="failover($confgen_failover)"
+        fi
+    fi
+
+    printf '
+    channel {
+        filter {
+            "%s" == "$(%% ${R_USEC} %s)"
+        };
+        destination {
+            network("%s"
+                %s
+                %s
+            );
+        };
+        flags(final);
+    };\n' "$i" "$target_cnt" "$target" "$failover" "$confgen_parameters"
+
+    i=$((i+1))
 done
-echo '};'
-
+printf '};\n'
