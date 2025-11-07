@@ -142,9 +142,9 @@ struct _KafkaSourceOptions
 
 typedef enum _KafkaSrcConsumerStrategy
 {
-  KSCS_ASSIGN_POLL_QUEUED,
-  KSCS_SUBSCRIBE_POLL_QUEUED,
-  KSCS_BATCH_CONSUME_DIRECTLY,
+  KSCS_ASSIGN,
+  KSCS_SUBSCRIBE,
+  KSCS_BATCH_CONSUME,
 
   KSCS_UNDEFINED
 } KafkaSrcConsumerStrategy;

@@ -92,7 +92,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
 
   _send(worker, log_msg);
 
-  if (self->startegy == KSCS_SUBSCRIBE_POLL_QUEUED || self->startegy == KSCS_ASSIGN_POLL_QUEUED)
+  if (self->startegy == KSCS_SUBSCRIBE || self->startegy == KSCS_ASSIGN)
     {
       rd_kafka_error_t *err = rd_kafka_offset_store_message(msg);
       if (err)
@@ -398,13 +398,13 @@ _consumer_run(LogThreadedSourceWorker *worker)
 
       switch(self->startegy)
         {
-        case KSCS_ASSIGN_POLL_QUEUED:
-        case KSCS_SUBSCRIBE_POLL_QUEUED:
-          _consumer_run_consumer_poll_and_queue(worker, iteration_sleep_time);
+        case KSCS_ASSIGN:
+        case KSCS_SUBSCRIBE:
+          _consumer_run_consumer_poll(worker, iteration_sleep_time);
           break;
 
-        case KSCS_BATCH_CONSUME_DIRECTLY:
-          _consumer_run_batch_consume_directly(worker, iteration_sleep_time);
+        case KSCS_BATCH_CONSUME:
+          _consumer_run_batch_consume(worker, iteration_sleep_time);
           break;
         default:
           g_assert_not_reached();

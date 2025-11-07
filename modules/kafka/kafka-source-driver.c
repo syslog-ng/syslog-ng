@@ -291,15 +291,15 @@ _decide_strategy(KafkaSourceDriver *self)
   gboolean wildcard_partition = _has_wildcard_partition(self->requested_topics);
 
   if (single_topic && single_partition)
-    self->startegy = KSCS_BATCH_CONSUME_DIRECTLY;
+    self->startegy = KSCS_BATCH_CONSUME;
   else if (wildcard_partition)
-    self->startegy = KSCS_SUBSCRIBE_POLL_QUEUED;
+    self->startegy = KSCS_SUBSCRIBE;
   else
-    self->startegy = KSCS_ASSIGN_POLL_QUEUED;
+    self->startegy = KSCS_ASSIGN;
 
   msg_verbose("kafka: selected consumer startegy",
-              evt_tag_str("strategy", self->startegy == KSCS_BATCH_CONSUME_DIRECTLY ? "batch_consume_directly" :
-                          self->startegy == KSCS_SUBSCRIBE_POLL_QUEUED ? "subscribe_poll_queued" : "assign_poll_queued"),
+              evt_tag_str("strategy", self->startegy == KSCS_BATCH_CONSUME ? "batch_consume" :
+                          self->startegy == KSCS_SUBSCRIBE ? "subscribe_consume" : "assign_consume"),
               evt_tag_str("group_id", self->group_id),
               evt_tag_str("driver", self->super.super.super.id));
 }
@@ -583,7 +583,7 @@ _adjust_num_workers(KafkaSourceDriver *self)
 {
   gboolean result = TRUE;
 
-  if (self->startegy == KSCS_BATCH_CONSUME_DIRECTLY)
+  if (self->startegy == KSCS_BATCH_CONSUME)
     {
       if (self->super.num_workers > 2)
         {
@@ -734,13 +734,13 @@ _setup_kafka_client(KafkaSourceDriver *self)
 
   switch(self->startegy)
     {
-    case KSCS_ASSIGN_POLL_QUEUED:
+    case KSCS_ASSIGN:
       result = _setup_method_assigned_consumer(self);
       break;
-    case KSCS_SUBSCRIBE_POLL_QUEUED:
+    case KSCS_SUBSCRIBE:
       result = _setup_method_subscribed_consumer(self);
       break;
-    case KSCS_BATCH_CONSUME_DIRECTLY:
+    case KSCS_BATCH_CONSUME:
       result = _setup_method_batch_consume(self);
       break;
     default:
@@ -1079,9 +1079,9 @@ _destroy_kafka_client(LogDriver *s)
 
   if (self->kafka)
     {
-      if (self->startegy != KSCS_BATCH_CONSUME_DIRECTLY)
+      if (self->startegy != KSCS_BATCH_CONSUME)
         {
-          if (self->startegy == KSCS_SUBSCRIBE_POLL_QUEUED)
+          if (self->startegy == KSCS_SUBSCRIBE)
             rd_kafka_unsubscribe(self->kafka);
           else
             rd_kafka_assign(self->kafka, NULL);
