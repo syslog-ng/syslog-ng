@@ -136,6 +136,7 @@ struct _KafkaSourceOptions
   gboolean do_not_use_bookmark;
   guint fetch_delay;
   guint fetch_limit;
+  gboolean separated_worker_queues;
 };
 
 typedef enum _KafkaSrcConsumerStrategy
@@ -163,9 +164,10 @@ struct _KafkaSourceDriver
   GList *requested_topics;
 
   KafkaSrcConsumerStrategy startegy;
-  GAsyncQueue *msg_queue;
-  GCond queue_cond;
-  GMutex queue_cond_mutex;
+  GAsyncQueue **msg_queues;
+  GCond *queue_conds;
+  GMutex *queue_cond_mutexes;
+  guint used_queue_num;
 
   GAtomicCounter running_thread_num;
   GAtomicCounter sleeping_thread_num;
@@ -184,6 +186,15 @@ void kafka_sd_options_defaults(KafkaSourceOptions *self,
 void kafka_sd_options_destroy(KafkaSourceOptions *self);
 
 gboolean kafka_sd_reopen(LogDriver *s);
+
+guint kafka_sd_worker_queues_len(KafkaSourceDriver *self);
+GAsyncQueue *kafka_sd_worker_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *worker);
+void kafka_sd_wait_for_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *worker);
+void kafka_sd_signal_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *worker);
+void kafka_sd_signal_queue_ndx(KafkaSourceDriver *self, guint ndx);
+void kafka_sd_signal_queues(KafkaSourceDriver *self);
+void kafka_sd_drop_queued_messages(KafkaSourceDriver *self);
+
 
 /* Kafka Destination */
 

@@ -28,28 +28,6 @@
 #include "stats/aggregator/stats-aggregator.h"
 
 static void
-_wait_for_queue(LogThreadedSourceWorker *worker)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-
-  g_mutex_lock(&self->queue_cond_mutex);
-  g_atomic_counter_inc(&self->sleeping_thread_num);
-  g_cond_wait(&self->queue_cond, &self->queue_cond_mutex);
-  g_atomic_counter_dec_and_test(&self->sleeping_thread_num);
-  g_mutex_unlock(&self->queue_cond_mutex);
-}
-
-static void
-_signal_queue(LogThreadedSourceWorker *worker)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-
-  g_mutex_lock(&self->queue_cond_mutex);
-  g_cond_broadcast(&self->queue_cond);
-  g_mutex_unlock(&self->queue_cond_mutex);
-}
-
-static void
 _log_reader_insert_msg_length_stats(KafkaSourceDriver *self, gsize len)
 {
   stats_aggregator_add_data_point(self->max_message_size, len);
@@ -135,24 +113,21 @@ static inline ThreadedFetchResult
 _fetch(LogThreadedSourceWorker *worker, rd_kafka_message_t **msg)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-  GAsyncQueue *queue = self->msg_queue;
+  GAsyncQueue *msg_queue = kafka_sd_worker_queue(self, worker);
   do
     {
-      if ((*msg = g_async_queue_try_pop(queue)))
+      if ((*msg = g_async_queue_try_pop(msg_queue)))
         return THREADED_FETCH_SUCCESS;
     }
-  while (g_async_queue_length(queue) && FALSE == main_loop_worker_job_quit());
+  while (g_async_queue_length(msg_queue) && FALSE == main_loop_worker_job_quit());
   return THREADED_FETCH_NO_DATA;
 }
 
 /* runs in a dedicated thread */
 static void
-_procesor_run(LogThreadedSourceWorker *worker)
+_processor_run(LogThreadedSourceWorker *worker)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-
-  /* KSCS_BATCH_CONSUME_DIRECTLY can run on a single thread only to guarantee strict ordering; the thread count must have already been set to 1. */
-  g_assert(self->startegy != KSCS_BATCH_CONSUME_DIRECTLY);
 
   g_atomic_counter_inc(&self->running_thread_num);
 
@@ -161,13 +136,14 @@ _procesor_run(LogThreadedSourceWorker *worker)
             evt_tag_str("group_id", self->group_id),
             evt_tag_str("driver", self->super.super.super.id));
 
+  GAsyncQueue *msg_queue = kafka_sd_worker_queue(self, worker);
   const gdouble iteration_sleep_time = _iteration_sleep_time(worker);
   rd_kafka_message_t *msg = NULL;
 
   while (FALSE == main_loop_worker_job_quit())
     {
-      if (g_async_queue_length(self->msg_queue) == 0)
-        _wait_for_queue(worker);
+      if (g_async_queue_length(msg_queue) == 0)
+        kafka_sd_wait_for_queue(self, worker);
 
       while (FALSE == main_loop_worker_job_quit())
         {
@@ -190,17 +166,17 @@ _procesor_run(LogThreadedSourceWorker *worker)
   g_atomic_counter_dec_and_test(&self->running_thread_num);
 }
 
-/* *******************************************
- * Strategy - assign/subscribe poll and queue
- * *******************************************
- */
+/* ****************************************************
+ * Strategy - assign/subscribe consumer poll and queue
+ * ****************************************************/
 
 /* runs in a dedicated thread */
 static void
-_consumer_run_consumer_poll_and_queue(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
+_consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
   rd_kafka_message_t *msg;
+  guint rr = 0;
 
   msg_debug("kafka: consumer poll run started - queued",
             evt_tag_str("group_id", self->group_id),
@@ -212,13 +188,13 @@ _consumer_run_consumer_poll_and_queue(LogThreadedSourceWorker *worker, const gdo
 
   while (FALSE == main_loop_worker_job_quit())
     {
-      gint msg_queue_len = g_async_queue_length(self->msg_queue);
+      gint msg_queue_len = kafka_sd_worker_queues_len(self);
       if (msg_queue_len >= self->options.fetch_limit)
         {
           msg_verbose("kafka: message queue full, waiting",
                       evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
                       evt_tag_int("msg_queue_len", msg_queue_len));
-          _signal_queue(worker);
+          kafka_sd_signal_queues(self);
           rd_kafka_poll(self->kafka, self->options.super.poll_timeout);
           continue;
         }
@@ -232,7 +208,7 @@ _consumer_run_consumer_poll_and_queue(LogThreadedSourceWorker *worker, const gdo
             {
               msg_debug("kafka: consumer_poll - no data",
                         evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                        evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
+                        evt_tag_int("msg_queue_len", kafka_sd_worker_queues_len(self)));
               if (msg)
                 rd_kafka_message_destroy(msg);
             }
@@ -250,14 +226,18 @@ _consumer_run_consumer_poll_and_queue(LogThreadedSourceWorker *worker, const gdo
         }
       else
         {
-          g_async_queue_push(self->msg_queue, msg);
           msg_trace("kafka: got message",
                     evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
                     evt_tag_int("partition", msg->partition),
                     evt_tag_int("offset", msg->offset),
                     evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                    evt_tag_int("msg_queue_len", g_async_queue_length(self->msg_queue)));
-          _signal_queue(worker);
+                    evt_tag_int("msg_queue_len", kafka_sd_worker_queues_len(self)));
+
+          guint target_queue = (self->options.separated_worker_queues ?
+                                (rr++ % (self->super.num_workers - 1)) + 1 :
+                                1); /* Intentionally not using the 0 index slot */
+          g_async_queue_push(self->msg_queues[target_queue], msg);
+          kafka_sd_signal_queue_ndx(self, target_queue);
         }
     }
   /* This call will block until the consumer has revoked its assignment, calling the rebalance_cb if it is configured,
@@ -276,14 +256,13 @@ _consumer_run_consumer_poll_and_queue(LogThreadedSourceWorker *worker, const gdo
   main_loop_worker_run_gc();
 }
 
-/* ***********************************************
- * Strategy - batch consume and direct processing
- * ***********************************************
- */
+/* ***********************************************************
+ * Strategy - batch consume and direct processing or queueing
+ * ***********************************************************/
 
 /* runs in a dedicated thread */
 static void
-_consumer_run_batch_consume_directly(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
+_consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
 
@@ -293,6 +272,9 @@ _consumer_run_batch_consume_directly(LogThreadedSourceWorker *worker, const gdou
   KafkaTopicParts *fist_item = (KafkaTopicParts *)g_list_first(self->requested_topics)->data;
   int32_t requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(fist_item->partitions)->data);
   rd_kafka_topic_t *single_topic = (rd_kafka_topic_t *)g_list_first(self->topic_handle_list)->data;
+  g_assert(self->used_queue_num <= 2 && self->super.num_workers <= 2);
+  const guint msg_queue_ndx = 1;
+  GAsyncQueue *msg_queue = (self->used_queue_num ? self->msg_queues[msg_queue_ndx] : NULL);
 
   msg_debug("kafka: consumer poll run started - NOT queued",
             evt_tag_str("group_id", self->group_id),
@@ -305,8 +287,10 @@ _consumer_run_batch_consume_directly(LogThreadedSourceWorker *worker, const gdou
       int qlen = (int)rd_kafka_outq_len(self->kafka);
 
       rd_kafka_poll(self->kafka, 0);
-      ssize_t cnt = rd_kafka_consume_batch_queue(self->consumer_kafka_queue, self->options.super.poll_timeout,
-                                                 msgs, self->options.fetch_limit);
+      ssize_t cnt = rd_kafka_consume_batch_queue(self->consumer_kafka_queue,
+                                                 self->options.super.poll_timeout,
+                                                 msgs,
+                                                 self->options.fetch_limit);
       g_assert(cnt <= self->options.fetch_limit);
       if (cnt < 0 || (cnt == 1 && msgs[0]->err))
         {
@@ -326,12 +310,36 @@ _consumer_run_batch_consume_directly(LogThreadedSourceWorker *worker, const gdou
           rd_kafka_message_t *msg = msgs[i];
           if (FALSE == main_loop_worker_job_quit())
             {
-              _process_message(worker, msg);
-              rd_kafka_poll(self->kafka, 0);
-              main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+              if (msg_queue)
+                {
+                  gint msg_queue_len;
+                  while ((msg_queue_len = g_async_queue_length(msg_queue)) >= self->options.fetch_limit)
+                    {
+                      msg_verbose("kafka: message queue full, waiting",
+                                  evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+                                  evt_tag_int("msg_queue_len", msg_queue_len));
+                      kafka_sd_signal_queue_ndx(self, msg_queue_ndx);
+                      rd_kafka_poll(self->kafka, 1000);
+                      if (main_loop_worker_job_quit())
+                        break;
+                    }
+
+                  if (FALSE == main_loop_worker_job_quit())
+                    {
+                      g_async_queue_push(msg_queue, msg);
+                      kafka_sd_signal_queue_ndx(self, msg_queue_ndx);
+                      continue;
+                    }
+                }
+              else
+                {
+                  _process_message(worker, msg);
+                  rd_kafka_poll(self->kafka, 0);
+                  main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+                  continue;
+                }
             }
-          else
-            rd_kafka_message_destroy(msg);
+          rd_kafka_message_destroy(msg);
         }
 
       if (cnt == 0)
@@ -375,18 +383,6 @@ _restart_consumer(LogThreadedSourceWorker *worker, const gdouble iteration_sleep
   return FALSE == main_loop_worker_job_quit();
 }
 
-static void
-_drop_queued_messages(LogThreadedSourceWorker *worker)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-  rd_kafka_message_t *msg;
-
-  /* Intentionally not using the 0 index slot */
-  for (guint i = 1; i < self->super.num_workers; ++i)
-    while ((msg = g_async_queue_try_pop(self->msg_queue)) != NULL)
-      rd_kafka_message_destroy(msg);
-}
-
 /* runs in a dedicated thread */
 static void
 _consumer_run(LogThreadedSourceWorker *worker)
@@ -426,16 +422,16 @@ _consumer_run(LogThreadedSourceWorker *worker)
   while (FALSE == exit_requested);
 
   /* Wake-up sleeping/waiting (queue) processor workers */
-  _signal_queue(worker);
-  /* Wait for all the (queue) processor workers to exit, see _procesor_run why not just for the _consumer_run_consumer_poll_and_queue case */
+  kafka_sd_signal_queues(self);
+  /* Wait for all the (queue) processor workers to exit, see _processor_run why not just for the _consumer_run_consumer_poll case */
   while (g_atomic_counter_get(&self->running_thread_num) > 1)
     {
       main_loop_worker_wait_for_exit_until(iteration_sleep_time);
-      _signal_queue(worker);
+      kafka_sd_signal_queues(self);
     }
 
-  if (self->startegy != KSCS_BATCH_CONSUME_DIRECTLY)
-    _drop_queued_messages(worker);
+  if (self->used_queue_num > 0)
+    kafka_sd_drop_queued_messages(self);
 
   gint running_thread_num = g_atomic_counter_dec_and_test(&self->running_thread_num);
   g_assert(running_thread_num == 1);
@@ -463,6 +459,6 @@ LogThreadedSourceWorker *kafka_src_worker_new(LogThreadedSourceDriver *owner, gi
       self->request_exit = _exit_requested;
     }
   else
-    self->run = _procesor_run;
+    self->run = _processor_run;
   return self;
 }

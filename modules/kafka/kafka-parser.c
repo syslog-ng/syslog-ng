@@ -50,6 +50,7 @@ static CfgLexerKeyword kafka_keywords[] =
   { "sync_send",      KW_SYNC_SEND},
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
   { "poll_timeout",   KW_POLL_TIMEOUT },
+  { "single_worker_queue", KW_SINGLE_WORKER_QUEUE },
 
   { NULL }
 };

@@ -67,6 +67,7 @@
 %token KW_FLUSH_TIMEOUT_ON_SHUTDOWN
 %token KW_FLUSH_TIMEOUT_ON_RELOAD
 %token KW_POLL_TIMEOUT
+%token KW_SINGLE_WORKER_QUEUE
 %token KW_BOOTSTRAP_SERVERS
 %token KW_SYNC_SEND
 
@@ -114,6 +115,7 @@ kafka_src_option
         | KW_POLL_TIMEOUT '(' positive_integer ')'              { kafka_sd_set_poll_timeout(last_driver, $3); }
         | KW_TIME_REOPEN '(' positive_integer ')'               { kafka_sd_set_time_reopen(last_driver, $3); }
         | KW_DO_NOT_USE_BOOKMARK '(' yesno ')'                  { kafka_sd_set_do_not_use_bookmark(last_driver, $3); }
+        | KW_SINGLE_WORKER_QUEUE '(' yesno ')'                  { kafka_sd_set_single_worker_queue(last_driver, $3); }
         | KW_MESSAGE '(' template_name_or_content ')'           { kafka_sd_set_message_ref(last_driver, $3); }
         | threaded_source_driver_option
         | threaded_source_driver_workers_option
