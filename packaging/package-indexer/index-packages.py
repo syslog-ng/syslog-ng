@@ -22,6 +22,8 @@
 #############################################################################
 
 import logging
+import os.path
+from time import sleep
 from argparse import ArgumentParser
 from pathlib import Path
 from sys import stdin
@@ -29,6 +31,10 @@ from typing import List
 
 from indexer import Indexer, NightlyDebIndexer, StableDebIndexer, NightlyRPMIndexer, StableRPMIndexer
 from config import Config
+
+
+logger = logging.getLogger("index-packages")
+logger.setLevel(logging.INFO)
 
 
 def add_required_arguments(parser: ArgumentParser) -> None:
@@ -189,8 +195,21 @@ def main() -> None:
         for indexer in indexers:
             indexer.flush_cdn_cache()
     else:
+        pollers = []
         for indexer in indexers:
-            indexer.index()
+            poller = indexer.index()
+            if poller is not None:
+                pollers.append(poller)
+
+        logger.info("Waiting for CDN cache purge jobs to finish. %s jobs are running." % len(pollers))
+        while len(pollers) > 0:
+            for poller in pollers:
+                poller.wait(1)
+                if poller.done() is True:
+                    pollers.remove(poller)
+                    logger.info("1 job finished, %s are still running." % len(pollers))
+            sleep(30)
+        logger.info("All purge jobs are done. Exiting.")
 
 
 if __name__ == "__main__":
