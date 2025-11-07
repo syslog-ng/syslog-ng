@@ -66,6 +66,5 @@ kafka_tps_free(KafkaTopicParts *self)
 void
 kafka_tps_list_free(GList *l)
 {
-  g_list_foreach(l, (GFunc) kafka_tps_free, NULL);
-  g_list_free(l);
+  g_list_free_full(l, (GDestroyNotify) kafka_tps_free);
 }

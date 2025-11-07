@@ -32,7 +32,7 @@
 
 // TODO: Move to a common lib place
 GList *
-g_list_remove_duplicates(GList *list, GEqualFunc compare_func)
+g_list_remove_duplicates(GList *list, GEqualFunc compare_func, GDestroyNotify free_func)
 {
   g_assert(list && compare_func);
 
@@ -45,7 +45,11 @@ g_list_remove_duplicates(GList *list, GEqualFunc compare_func)
           GList *prev = inner->prev;
 
           if (compare_func(outer->data, inner->data))
-            list = g_list_delete_link(list, inner);
+            {
+              if (free_func)
+                free_func(inner->data);
+              list = g_list_delete_link(list, inner);
+            }
 
           inner = prev;
         }
@@ -821,7 +825,7 @@ _check_and_sort_partitions(KafkaSourceDriver *self, const gchar *partitions, GLi
   list = g_list_sort(list, _g_int32_compare);
   const gint original_length = g_list_length(list);
   if (list)
-    list = g_list_remove_duplicates(list, _g_int32_equal);
+    list = g_list_remove_duplicates(list, _g_int32_equal, NULL);
   if (list == NULL || g_list_length(list) == 0)
     {
       if (list)
@@ -890,7 +894,7 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
     }
 
   const gint original_length = g_list_length(requested_topics);
-  requested_topics = g_list_remove_duplicates(requested_topics, kafka_tps_equal);
+  requested_topics = g_list_remove_duplicates(requested_topics, kafka_tps_equal, (GDestroyNotify) kafka_tps_free);
   if (requested_topics == NULL || g_list_length(requested_topics) == 0)
     {
       if (requested_topics)
