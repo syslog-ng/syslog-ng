@@ -903,6 +903,9 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
         kafka_tps_list_free(self->requested_topics);
       self->requested_topics = requested_topics;
     }
+  else if (requested_topics)
+    kafka_tps_list_free(requested_topics);
+
   return TRUE;
 }
 
