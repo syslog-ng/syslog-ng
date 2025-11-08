@@ -27,12 +27,6 @@
 #include "ack-tracker/ack_tracker_factory.h"
 #include "stats/aggregator/stats-aggregator.h"
 
-#if SYSLOG_NG_ENABLE_DEBUG
-#define kafka_msg_debug msg_verbose
-#else
-#define kafka_msg_debug msg_debug
-#endif
-
 static gsize
 _log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_options, LogMessage **out_msg)
 {

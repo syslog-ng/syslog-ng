@@ -36,6 +36,12 @@
 #include "kafka-dest-driver.h"
 #include "kafka-dest-worker.h"
 
+#if SYSLOG_NG_ENABLE_DEBUG
+#define kafka_msg_debug msg_verbose
+#else
+#define kafka_msg_debug msg_debug
+#endif
+
 #define TOPIC_NAME_ERROR topic_name_error_quark()
 
 typedef enum _KafkaLogging
