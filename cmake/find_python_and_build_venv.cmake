@@ -81,7 +81,9 @@ endif()
 
 # Final fallback for legacy CMake (PythonInterp/PythonLibs)
 if(NOT PYTHON_FOUND)
-  cmake_policy(SET CMP0148 OLD)
+  if(POLICY CMP0148)
+    cmake_policy(SET CMP0148 OLD)
+  endif()
 
   if(PYTHON_VERSION_NAME STREQUAL "")
     find_package(PythonInterp EXACT 3)
