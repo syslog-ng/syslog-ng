@@ -444,12 +444,8 @@ static void
 _exit_requested(LogThreadedSourceWorker *worker)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-
   /* We need to wake-up the possibly blocking rd_kafka_consumer_poll/rd_kafka_poll */
-  if (self->consumer_kafka_queue)
-    rd_kafka_queue_yield(self->consumer_kafka_queue);
-  if (self->main_kafka_queue)
-    rd_kafka_queue_yield(self->main_kafka_queue);
+  kafka_sd_wakeup_kafka_queues(self);
 }
 
 static gboolean

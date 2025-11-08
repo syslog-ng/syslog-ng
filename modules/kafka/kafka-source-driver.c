@@ -829,6 +829,15 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
     }
 }
 
+void
+kafka_sd_wakeup_kafka_queues(KafkaSourceDriver *self)
+{
+  if (self->consumer_kafka_queue)
+    rd_kafka_queue_yield(self->consumer_kafka_queue);
+  if (self->main_kafka_queue)
+    rd_kafka_queue_yield(self->main_kafka_queue);
+}
+
 static gboolean
 _setup_kafka_client(KafkaSourceDriver *self)
 {
