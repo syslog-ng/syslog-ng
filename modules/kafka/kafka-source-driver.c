@@ -1177,12 +1177,19 @@ _destroy_kafka_client(LogDriver *s)
       self->assigned_partitions = NULL;
     }
 
-  g_assert(self->consumer_kafka_queue == NULL && self->main_kafka_queue == NULL);
-
   if (self->kafka)
     {
-      if (self->startegy != KSCS_BATCH_CONSUME)
+      if (self->startegy == KSCS_BATCH_CONSUME)
         {
+          if (self->consumer_kafka_queue)
+            rd_kafka_queue_destroy(self->consumer_kafka_queue);
+          self->consumer_kafka_queue = NULL;
+        }
+      else
+        {
+          /* These are just borrowed temporally in _consumer_run_consumer_poll */
+          g_assert(self->consumer_kafka_queue == NULL && self->main_kafka_queue == NULL);
+
           if (self->startegy == KSCS_SUBSCRIBE)
             rd_kafka_unsubscribe(self->kafka);
           else

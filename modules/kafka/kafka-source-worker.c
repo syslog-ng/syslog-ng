@@ -352,8 +352,6 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
         }
     }
   rd_kafka_consume_stop(single_topic, requested_partition);
-  rd_kafka_queue_destroy(self->consumer_kafka_queue);
-  self->consumer_kafka_queue = NULL;
 
   /* Wait for outstanding requests to finish. */
   kafka_final_flush(self);
