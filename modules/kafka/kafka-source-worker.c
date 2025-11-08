@@ -443,16 +443,43 @@ _exit_requested(LogThreadedSourceWorker *worker)
     rd_kafka_queue_yield(self->main_kafka_queue);
 }
 
-LogThreadedSourceWorker *kafka_src_worker_new(LogThreadedSourceDriver *owner, gint worker_index)
+static gboolean
+_kafka_src_worker_init(LogThreadedSourceWorker *worker)
 {
-  LogThreadedSourceWorker *self = g_new0(LogThreadedSourceWorker, 1);
-  log_threaded_source_worker_init_instance(self, owner, worker_index);
-  if (worker_index == 0)
+  KafkaSourceWorker *self = (KafkaSourceWorker *) worker;
+
+  int ret = g_snprintf(self->name, sizeof(self->name), "worker#%d", worker->worker_index);
+  g_assert((gsize)ret < sizeof(self->name));
+
+  if (worker->worker_index == 0)
     {
-      self->run = _consumer_run;
-      self->request_exit = _exit_requested;
+      self->super.run = _consumer_run;
+      self->super.request_exit = _exit_requested;
     }
   else
-    self->run = _processor_run;
-  return self;
+    self->super.run = _processor_run;
+
+  return TRUE;
+}
+
+const gchar *
+kafka_src_worker_get_name(LogThreadedSourceWorker *worker)
+{
+  KafkaSourceWorker *self = (KafkaSourceWorker *) worker;
+  return self->name;
+}
+
+LogThreadedSourceWorker *kafka_src_worker_new(LogThreadedSourceDriver *owner, gint worker_index)
+{
+  KafkaSourceWorker *self = g_new0(KafkaSourceWorker, 1);
+
+  log_threaded_source_worker_init_instance(&self->super, owner, worker_index);
+
+  /* NOTE: Cannot use self->super.thread_init, as kafka_src_worker_get_name might be called before thread_init is called
+   *       also, name cannot be a dynamically allocated GString, as it might be used during shutdown/cleanups etc.,
+   *       like the worker_index, and currently there is no LogThreadedSourceDriver thread.free hook to free such resources.
+   */
+  _kafka_src_worker_init(&self->super);
+
+  return &self->super;
 }

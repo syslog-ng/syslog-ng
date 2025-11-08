@@ -25,6 +25,8 @@
 
 #include "logthrsource/logthrsourcedrv.h"
 
+typedef struct _KafkaSourceWorker KafkaSourceWorker;
+
 LogThreadedSourceWorker *kafka_src_worker_new(LogThreadedSourceDriver *owner, gint worker_index);
 
 #endif

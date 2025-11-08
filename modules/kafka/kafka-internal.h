@@ -162,6 +162,14 @@ typedef enum _KafkaSrcConsumerStrategy
   KSCS_UNDEFINED
 } KafkaSrcConsumerStrategy;
 
+struct _KafkaSourceWorker
+{
+  LogThreadedSourceWorker super;
+  gchar name[32]; /* see kafka_src_worker_new why a fixed size name buffer */
+};
+
+const gchar *kafka_src_worker_get_name(LogThreadedSourceWorker *worker);
+
 struct _KafkaSourceDriver
 {
   LogThreadedSourceDriver super;
