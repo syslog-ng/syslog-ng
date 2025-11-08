@@ -197,6 +197,8 @@ struct _KafkaSourceDriver
   const gchar *persist_name;
   const gchar *stat_persist_name;
 
+  GHashTable *stats_topics;
+  GHashTable *stats_workers;
   StatsAggregator *max_message_size;
   StatsAggregator *average_messages_size;
   StatsAggregator *CPS;
@@ -216,7 +218,11 @@ void kafka_sd_signal_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *wor
 void kafka_sd_signal_queue_ndx(KafkaSourceDriver *self, guint ndx);
 void kafka_sd_signal_queues(KafkaSourceDriver *self);
 void kafka_sd_drop_queued_messages(KafkaSourceDriver *self);
+
 void kafka_sd_update_msg_length_stats(KafkaSourceDriver *self, gsize len);
+void kafka_sd_inc_msg_topic_stats(KafkaSourceDriver *self, const gchar *topic);
+void kafka_sd_inc_msg_worker_stats(KafkaSourceDriver *self, const gchar *worker_id);
+void kafka_sd_dec_msg_worker_stats(KafkaSourceDriver *self, const gchar *worker_id);
 
 /* Kafka Destination */
 

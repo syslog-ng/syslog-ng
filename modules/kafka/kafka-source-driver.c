@@ -195,6 +195,89 @@ kafka_sd_update_msg_length_stats(KafkaSourceDriver *self, gsize len)
   stats_aggregator_add_data_point(self->average_messages_size, len);
 }
 
+void
+kafka_sd_inc_msg_topic_stats(KafkaSourceDriver *self, const gchar *topic)
+{
+  StatsCounterItem *counter = g_hash_table_lookup(self->stats_topics, topic);
+  stats_counter_inc(counter);
+}
+
+void
+kafka_sd_inc_msg_worker_stats(KafkaSourceDriver *self, const gchar *worker_id)
+{
+  StatsCounterItem *counter = g_hash_table_lookup(self->stats_workers, worker_id);
+  stats_counter_inc(counter);
+}
+
+void
+kafka_sd_dec_msg_worker_stats(KafkaSourceDriver *self, const gchar *worker_id)
+{
+  StatsCounterItem *counter = g_hash_table_lookup(self->stats_workers, worker_id);
+  stats_counter_dec(counter);
+}
+
+static void
+_register_worker_stats(KafkaSourceDriver *self)
+{
+  const gchar *counter_names[] = { "queued", NULL };
+
+  for (int i = 1 ; i < self->used_queue_num; i++)
+    {
+      const gchar *worker_id_str = kafka_src_worker_get_name(self->super.workers[i]);
+      if (FALSE == g_hash_table_contains(self->stats_workers, worker_id_str))
+        kafka_register_counters(self, self->stats_workers, "worker", worker_id_str, counter_names, STATS_LEVEL2);
+    }
+}
+
+static void
+_unregister_worker_counters(gpointer key, gpointer value, gpointer user_data)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)user_data;
+  const gchar *worker_id = (const gchar *)key;
+  StatsCounterItem *counter = (StatsCounterItem *)value;
+  const gchar *counter_names[] = { "queued", NULL };
+
+  kafka_unregister_counters(self, "worker", worker_id, counter, counter_names);
+}
+
+static void
+_unregister_worker_stats(KafkaSourceDriver *self)
+{
+  g_hash_table_foreach(self->stats_workers, _unregister_worker_counters, self);
+}
+
+static void
+_register_topic_stats(KafkaSourceDriver *self)
+{
+  LogSourceOptions *super_options = &self->options.worker_options->super;
+  gint level = super_options->stats_level;
+  const gchar *counter_names[] = { "processed", NULL };
+
+  for (int i = 0 ; i < self->assigned_partitions->cnt ; i++)
+    {
+      const gchar *topic = self->assigned_partitions->elems[i].topic;
+      if (FALSE == g_hash_table_contains(self->stats_topics, topic))
+        kafka_register_counters(self, self->stats_topics, "topic", topic, counter_names, level);
+    }
+}
+
+static void
+_unregister_topic_counters(gpointer key, gpointer value, gpointer user_data)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)user_data;
+  const gchar *topic = (const gchar *)key;
+  StatsCounterItem *counter = (StatsCounterItem *)value;
+  const gchar *counter_names[] = { "processed", NULL };
+
+  kafka_unregister_counters(self, "topic", topic, counter, counter_names);
+}
+
+static inline void
+_unregister_topic_stats(KafkaSourceDriver *self)
+{
+  g_hash_table_foreach(self->stats_topics, _unregister_topic_counters, self);
+}
+
 static void
 _register_aggregated_stats(KafkaSourceDriver *self)
 {
@@ -481,6 +564,7 @@ _setup_method_assigned_consumer(KafkaSourceDriver *self)
                 evt_tag_str("driver", self->super.super.super.id));
       self->assigned_partitions = parts;
       kafka_log_partition_list(parts);
+      _register_topic_stats(self);
     }
   else
     {
@@ -583,11 +667,17 @@ _setup_method_batch_consume(KafkaSourceDriver *self)
     }
   else
     {
-      self->consumer_kafka_queue = new_kafka_queue;
-      self->topic_handle_list = g_list_append(self->topic_handle_list, new_topic);
       msg_verbose("kafka: batch consuming partition",
                   evt_tag_str("topic", requested_topic),
                   evt_tag_int("partition", requested_partition));
+      self->consumer_kafka_queue = new_kafka_queue;
+      self->topic_handle_list = g_list_append(self->topic_handle_list, new_topic);
+
+      /* Setting up assigned partitions only for stats purpose here */
+      rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(topics_num);
+      rd_kafka_topic_partition_list_add(parts, requested_topic, requested_partition);
+      self->assigned_partitions = parts;
+      _register_topic_stats(self);
     }
 
   return result;
@@ -725,9 +815,17 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
   /* Intentionally not using the 0 index slot */
   for (guint i = 1; i < self->used_queue_num; ++i)
     {
+      LogThreadedSourceWorker *target_worker = (self->options.separated_worker_queues ?
+                                                self->super.workers[i] :
+                                                self->super.workers[1]);
+      const gchar *worker_name = kafka_src_worker_get_name(target_worker);
       GAsyncQueue *msg_queue = self->msg_queues[i];
+
       while ((msg = g_async_queue_try_pop(msg_queue)) != NULL)
+        {
         rd_kafka_message_destroy(msg);
+          kafka_sd_dec_msg_worker_stats(self, worker_name);
+        }
     }
 }
 
@@ -736,16 +834,6 @@ _setup_kafka_client(KafkaSourceDriver *self)
 {
   g_assert(self->kafka);
   gboolean result = TRUE;
-
-  _decide_strategy(self);
-
-  if (FALSE == _adjust_num_workers(self))
-    return FALSE;
-
-  /* The allocated message queue number depends on the strategy
-   * and the worker thread count, so must happen after strategy decision
-   * and worker count adjustment */
-  _alloc_msg_queues(self);
 
   switch(self->startegy)
     {
@@ -786,6 +874,7 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
       kafka_log_partition_list(self->assigned_partitions);
       /* Broker assigned the partitions → assign to the consumers too */
       rd_kafka_assign(self->kafka, self->assigned_partitions);
+      _register_topic_stats(self);
       break;
 
     case RD_KAFKA_RESP_ERR__REVOKE_PARTITIONS:
@@ -970,8 +1059,6 @@ _apply_options(KafkaSourceDriver *self)
 static rd_kafka_t *
 _construct_kafka_client(KafkaSourceDriver *self)
 {
-  _apply_options(self);
-
   msg_debug("kafka: constructing client",
             evt_tag_str("group_id", self->group_id),
             evt_tag_str("driver", self->super.super.super.id));
@@ -1162,14 +1249,33 @@ kafka_sd_init(LogPipe *s)
       return FALSE;
     }
 
-  if (FALSE == kafka_sd_reopen(&self->super.super.super))
+  /* Order is important here
+   *  - apply options first to have group.id set correctly
+   *  - then decide strategy based on options, as it may affect worker and used queue count
+   *  - then allocate message queues based on strategy and worker count
+   *  - then allocate the stats hash tables as opening the kafka connection may register topic stats
+   *  - then call the parent init to setup threading
+   *  - then open the kafka connection which requires to be ready the group.id and the threading
+   *  - registering further stats need threading and group.id set correctly too
+   */
+  _apply_options(self);
+  _decide_strategy(self);
+
+  if (FALSE == _adjust_num_workers(self))
     return FALSE;
+
+  _alloc_msg_queues(self);
+  self->stats_topics = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+  self->stats_workers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
 
   if (FALSE == log_threaded_source_driver_init_method(s))
     return FALSE;
 
-  _register_aggregated_stats(self);
+  if (FALSE == kafka_sd_reopen(&self->super.super.super))
+    return FALSE;
 
+  _register_worker_stats(self);
+  _register_aggregated_stats(self);
 
   GlobalConfig *cfg = log_pipe_get_config(s);
   log_template_options_init(&self->options.template_options, cfg);
@@ -1188,6 +1294,10 @@ kafka_sd_deinit(LogPipe *s)
   _destroy_kafka_client(&self->super.super.super);
 
   _unregister_aggregated_stats(self);
+  _unregister_worker_stats(self);
+  _unregister_topic_stats(self);
+  g_hash_table_destroy(self->stats_topics);
+  g_hash_table_destroy(self->stats_workers);
 
   return log_threaded_source_driver_deinit_method(s);
 }
@@ -1236,7 +1346,9 @@ kafka_sd_new(GlobalConfig *cfg)
   return &self->super.super.super;
 }
 
-/* Options */
+/* *********
+ *  Options
+ * *********/
 
 void
 kafka_sd_merge_config(LogDriver *d, GList *props)

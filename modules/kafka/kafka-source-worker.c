@@ -83,6 +83,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   log_msg_set_value_to_string(log_msg, LM_V_TRANSPORT, "local+kafka");
   kafka_sd_update_msg_length_stats(self, msg_len);
   log_msg_set_recvd_rawmsg_size(log_msg, msg->len);
+  kafka_sd_inc_msg_topic_stats(self, rd_kafka_topic_name(msg->rkt));
 
   _send(worker, log_msg);
 
@@ -111,7 +112,13 @@ _fetch(LogThreadedSourceWorker *worker, rd_kafka_message_t **msg)
   do
     {
       if ((*msg = g_async_queue_try_pop(msg_queue)))
-        return THREADED_FETCH_SUCCESS;
+        {
+          LogThreadedSourceWorker *target_worker = (self->options.separated_worker_queues ?
+                                                    self->super.workers[worker->worker_index] :
+                                                    self->super.workers[1]); /* Intentionally not using the 0 index slot */
+          kafka_sd_dec_msg_worker_stats(self, kafka_src_worker_get_name(target_worker));
+          return THREADED_FETCH_SUCCESS;
+        }
     }
   while (g_async_queue_length(msg_queue) && FALSE == main_loop_worker_job_quit());
   return THREADED_FETCH_NO_DATA;
@@ -231,6 +238,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
                                 (rr++ % (self->super.num_workers - 1)) + 1 :
                                 1); /* Intentionally not using the 0 index slot */
           g_async_queue_push(self->msg_queues[target_queue], msg);
+          kafka_sd_inc_msg_worker_stats(self, kafka_src_worker_get_name(self->super.workers[target_queue]));
           kafka_sd_signal_queue_ndx(self, target_queue);
         }
     }
@@ -321,6 +329,7 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
                   if (FALSE == main_loop_worker_job_quit())
                     {
                       g_async_queue_push(msg_queue, msg);
+                      kafka_sd_inc_msg_worker_stats(self, kafka_src_worker_get_name(self->super.workers[msg_queue_ndx]));
                       kafka_sd_signal_queue_ndx(self, msg_queue_ndx);
                       continue;
                     }
