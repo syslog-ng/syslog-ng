@@ -142,9 +142,9 @@ kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value
 {
   gchar errbuf[1024];
 
-  msg_debug("kafka: setting librdkafka config property",
-            evt_tag_str("name", name),
-            evt_tag_str("value", value));
+  kafka_msg_debug("kafka: setting librdkafka config property",
+                  evt_tag_str("name", name),
+                  evt_tag_str("value", value));
   if (rd_kafka_conf_set(conf, name, value, errbuf, sizeof(errbuf)) < 0)
     {
       msg_error("kafka: error setting librdkafka config property",

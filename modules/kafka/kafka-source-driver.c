@@ -608,9 +608,9 @@ _setup_method_subscribed_consumer(KafkaSourceDriver *self)
   rd_kafka_resp_err_t err;
   if ((err = rd_kafka_subscribe(self->kafka, parts)) == RD_KAFKA_RESP_ERR_NO_ERROR)
     {
-      msg_debug("kafka: waiting for group rebalancer",
-                evt_tag_str("group_id", self->group_id),
-                evt_tag_str("driver", self->super.super.super.id));
+      kafka_msg_debug("kafka: waiting for group rebalancer",
+                      evt_tag_str("group_id", self->group_id),
+                      evt_tag_str("driver", self->super.super.super.id));
       self->assigned_partitions = parts;
     }
   else
@@ -1025,9 +1025,9 @@ _apply_group_id(KafkaSourceDriver *self)
       else
         {
           conf_group_id = g_strdup(conf_data->value);
-          msg_trace("kafka: using config group id",
-                    evt_tag_str("group_id", conf_group_id),
-                    evt_tag_str("driver", self->super.super.super.id));
+          kafka_msg_debug("kafka: using config group id",
+                          evt_tag_str("group_id", conf_group_id),
+                          evt_tag_str("driver", self->super.super.super.id));
         }
     }
   g_free(self->group_id);
@@ -1044,9 +1044,9 @@ _apply_options(KafkaSourceDriver *self)
 static rd_kafka_t *
 _construct_kafka_client(KafkaSourceDriver *self)
 {
-  msg_debug("kafka: constructing client",
-            evt_tag_str("group_id", self->group_id),
-            evt_tag_str("driver", self->super.super.super.id));
+  kafka_msg_debug("kafka: constructing client",
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("driver", self->super.super.super.id));
 
   rd_kafka_conf_t *conf = rd_kafka_conf_new();
 
@@ -1162,9 +1162,9 @@ _destroy_kafka_client(LogDriver *s)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)s;
 
-  msg_debug("kafka: destroying client",
-            evt_tag_str("group_id", self->group_id),
-            evt_tag_str("driver", self->super.super.super.id));
+  kafka_msg_debug("kafka: destroying client",
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("driver", self->super.super.super.id));
   if  (self->topic_handle_list)
     {
       g_list_free_full(self->topic_handle_list, _kafka_topic_free_func);
