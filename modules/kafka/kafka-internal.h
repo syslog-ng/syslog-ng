@@ -81,6 +81,11 @@ gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **p
 void kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
 
+void kafka_register_counters(KafkaSourceDriver *self, GHashTable *stats_table, const gchar *label,
+                             const gchar *label_value, const gchar **counter_names, gint level);
+void kafka_unregister_counters(KafkaSourceDriver *self, const gchar *label, const gchar *label_value,
+                               StatsCounterItem *counter, const gchar **counter_names);
+
 rd_kafka_resp_err_t kafka_update_state(KafkaSourceDriver *self, gboolean lock);
 void kafka_final_flush(KafkaSourceDriver *self);
 

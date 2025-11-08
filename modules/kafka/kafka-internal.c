@@ -197,6 +197,78 @@ kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions)
 }
 
 void
+kafka_register_counters(KafkaSourceDriver *self,
+                        GHashTable *stats_table,
+                        const gchar *label,
+                        const gchar *label_value,
+                        const gchar **counter_names,
+                        gint level)
+{
+  LogThreadedSourceWorker *worker = self->super.workers[0];
+  StatsClusterKeyBuilder *kb = worker->super.metrics.stats_kb;
+  gchar *stats_id = worker->super.stats_id;
+  LogSourceOptions *super_options = &self->options.worker_options->super;
+
+  stats_lock();
+  {
+    stats_cluster_key_builder_push(kb);
+
+    gchar stats_instance[1024];
+    stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label(label, label_value));
+    stats_cluster_key_builder_format_legacy_stats_instance(kb, stats_instance,
+                                                           sizeof(stats_instance));
+    StatsClusterKey sc_key;
+    for (const gchar **name_ptr = counter_names; *name_ptr != NULL; name_ptr++)
+      {
+        stats_cluster_single_key_legacy_set_with_name(&sc_key, super_options->stats_source | SCS_SOURCE,
+                                                      stats_id, stats_instance, *name_ptr);
+        StatsCounterItem *counter = NULL;
+        stats_register_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &counter);
+        g_hash_table_insert(stats_table, (gpointer) g_strdup(label_value), (gpointer) counter);
+        kafka_msg_debug("kafka: added stats counter",
+                        evt_tag_str(label, label_value),
+                        evt_tag_str("counter", *name_ptr));
+      }
+    stats_cluster_key_builder_pop(kb);
+  }
+  stats_unlock();
+}
+
+void
+kafka_unregister_counters(KafkaSourceDriver *self,
+                          const gchar *label,
+                          const gchar *label_value,
+                          StatsCounterItem *counter,
+                          const gchar **counter_names)
+{
+  LogThreadedSourceWorker *worker = self->super.workers[0];
+  gchar *stats_id = worker->super.stats_id;
+  StatsClusterKeyBuilder *kb = worker->super.metrics.stats_kb;
+  LogSourceOptions *super_options = &self->options.worker_options->super;
+
+  stats_lock();
+  {
+    stats_cluster_key_builder_push(kb);
+
+    stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label(label, label_value));
+
+    gchar stats_instance[1024];
+    stats_cluster_key_builder_format_legacy_stats_instance(kb, stats_instance,
+                                                           sizeof(stats_instance));
+    for (const gchar **name_ptr = counter_names; *name_ptr != NULL; name_ptr++)
+      {
+        StatsClusterKey sc_key;
+        stats_cluster_single_key_legacy_set_with_name(&sc_key, super_options->stats_source | SCS_SOURCE,
+                                                      stats_id, stats_instance, *name_ptr);
+        stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &counter);
+      }
+
+    stats_cluster_key_builder_pop(kb);
+  }
+  stats_unlock();
+}
+
+void
 kafka_options_defaults(KafkaOptions *self)
 {
   self->poll_timeout = 10000; /* 10 seconds */
