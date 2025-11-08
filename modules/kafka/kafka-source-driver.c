@@ -838,30 +838,6 @@ kafka_sd_wakeup_kafka_queues(KafkaSourceDriver *self)
     rd_kafka_queue_yield(self->main_kafka_queue);
 }
 
-static gboolean
-_setup_kafka_client(KafkaSourceDriver *self)
-{
-  g_assert(self->kafka);
-  gboolean result = TRUE;
-
-  switch(self->startegy)
-    {
-    case KSCS_ASSIGN:
-      result = _setup_method_assigned_consumer(self);
-      break;
-    case KSCS_SUBSCRIBE:
-      result = _setup_method_subscribed_consumer(self);
-      break;
-    case KSCS_BATCH_CONSUME:
-      result = _setup_method_batch_consume(self);
-      break;
-    default:
-      g_assert_not_reached();
-    }
-  rd_kafka_poll(self->kafka, 0);
-  return result;
-}
-
 static void
 _kafka_rebalance_cb(rd_kafka_t *rk,
                     rd_kafka_resp_err_t err,
@@ -1155,6 +1131,30 @@ kafka_final_flush(KafkaSourceDriver *self)
     msg_warning("kafka: final outq flush could not process all items",
                 evt_tag_str("group_id", self->group_id),
                 evt_tag_str("driver", self->super.super.super.id));
+}
+
+static gboolean
+_setup_kafka_client(KafkaSourceDriver *self)
+{
+  g_assert(self->kafka);
+  gboolean result = TRUE;
+
+  switch(self->startegy)
+    {
+    case KSCS_ASSIGN:
+      result = _setup_method_assigned_consumer(self);
+      break;
+    case KSCS_SUBSCRIBE:
+      result = _setup_method_subscribed_consumer(self);
+      break;
+    case KSCS_BATCH_CONSUME:
+      result = _setup_method_batch_consume(self);
+      break;
+    default:
+      g_assert_not_reached();
+    }
+  rd_kafka_poll(self->kafka, 0);
+  return result;
 }
 
 static void
