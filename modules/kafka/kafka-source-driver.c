@@ -990,48 +990,34 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
   return TRUE;
 }
 
-static gint
-_property_name_compare(const KafkaProperty *kp1, const KafkaProperty *kp2)
-{
-  return g_strcmp0(kp1->name, kp2->name);
-}
-
 static void
 _apply_group_id(KafkaSourceDriver *self)
 {
-  gchar *conf_group_id = NULL;
-  const KafkaProperty key = { "group.id", NULL };
-  GList *li = g_list_find_custom(self->options.super.config, &key, (GCompareFunc) _property_name_compare);
-  if (li == NULL)
-    {
-      conf_group_id = g_strdup(self->super.super.super.id);
-      KafkaProperty *kp_groupid = g_new0(KafkaProperty, 1);
-      kp_groupid->name = g_strdup("group.id");
-      kp_groupid->value = g_strdup(conf_group_id);
-      self->options.super.config = g_list_prepend(self->options.super.config, kp_groupid);
-      msg_trace("kafka: config group.id not found, using self-generated group id",
-                evt_tag_str("group_id", conf_group_id),
-                evt_tag_str("driver", self->super.super.super.id));
-    }
-  else
-    {
-      KafkaProperty *conf_data = ((KafkaProperty *)li->data);
-      if (conf_data->value == NULL || conf_data->value[0] == '\0')
+  const gchar *group_id_key = "group.id";
+  gchar *group_id = NULL;
+  const gchar *conf_group_id = kafka_property_list_find_not_empty(self->options.super.config, group_id_key);
+
+  if (conf_group_id )
         {
-          self->options.super.config = g_list_remove(self->options.super.config, li->data);
-          msg_warning("kafka: config group.id is empty, forcibly NOT using group id, removed from config",
+      group_id = g_strdup(conf_group_id);
+      kafka_msg_debug("kafka: found config group.id",
+                      evt_tag_str("group_id", group_id),
                       evt_tag_str("driver", self->super.super.super.id));
         }
       else
         {
-          conf_group_id = g_strdup(conf_data->value);
-          kafka_msg_debug("kafka: using config group id",
-                          evt_tag_str("group_id", conf_group_id),
-                          evt_tag_str("driver", self->super.super.super.id));
-        }
+      group_id = g_strdup(self->super.super.super.id);
+      KafkaProperty *kp_groupid = g_new0(KafkaProperty, 1);
+      kp_groupid->name = g_strdup(group_id_key);
+      kp_groupid->value = g_strdup(group_id);
+      self->options.super.config = g_list_prepend(self->options.super.config, kp_groupid);
+      kafka_msg_debug("kafka: config group.id not found, using a self-generated one",
+                      evt_tag_str("group_id", group_id),
+                      evt_tag_str("driver", group_id));
     }
+
   g_free(self->group_id);
-  self->group_id = conf_group_id;
+  self->group_id = group_id;
 }
 
 static void
