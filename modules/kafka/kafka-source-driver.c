@@ -381,15 +381,15 @@ _decide_strategy(KafkaSourceDriver *self)
   gboolean wildcard_partition = _has_wildcard_partition(self->requested_topics);
 
   if (single_topic && single_partition)
-    self->startegy = KSCS_BATCH_CONSUME;
+    self->strategy = KSCS_BATCH_CONSUME;
   else if (wildcard_partition)
-    self->startegy = KSCS_SUBSCRIBE;
+    self->strategy = KSCS_SUBSCRIBE;
   else
-    self->startegy = KSCS_ASSIGN;
+    self->strategy = KSCS_ASSIGN;
 
-  msg_verbose("kafka: selected consumer startegy",
-              evt_tag_str("strategy", self->startegy == KSCS_BATCH_CONSUME ? "batch_consume" :
-                          self->startegy == KSCS_SUBSCRIBE ? "subscribe_consume" : "assign_consume"),
+  msg_verbose("kafka: selected consumer strategy",
+              evt_tag_str("strategy", self->strategy == KSCS_BATCH_CONSUME ? "batch_consume" :
+                          self->strategy == KSCS_SUBSCRIBE ? "subscribe_consume" : "assign_consume"),
               evt_tag_str("group_id", self->group_id),
               evt_tag_str("driver", self->super.super.super.id));
 }
@@ -681,7 +681,7 @@ _adjust_num_workers(KafkaSourceDriver *self)
 {
   gboolean result = TRUE;
 
-  if (self->startegy == KSCS_BATCH_CONSUME)
+  if (self->strategy == KSCS_BATCH_CONSUME)
     {
       if (self->super.num_workers > 2)
         {
@@ -1111,7 +1111,7 @@ _setup_kafka_client(KafkaSourceDriver *self)
   g_assert(self->kafka);
   gboolean result = TRUE;
 
-  switch(self->startegy)
+  switch(self->strategy)
     {
     case KSCS_ASSIGN:
       result = _setup_method_assigned_consumer(self);
@@ -1158,7 +1158,7 @@ _destroy_kafka_client(LogDriver *s)
 
   if (self->kafka)
     {
-      if (self->startegy == KSCS_BATCH_CONSUME)
+      if (self->strategy == KSCS_BATCH_CONSUME)
         {
           if (self->consumer_kafka_queue)
             rd_kafka_queue_destroy(self->consumer_kafka_queue);
@@ -1169,7 +1169,7 @@ _destroy_kafka_client(LogDriver *s)
           /* These are just borrowed temporally in _consumer_run_consumer_poll */
           g_assert(self->consumer_kafka_queue == NULL && self->main_kafka_queue == NULL);
 
-          if (self->startegy == KSCS_SUBSCRIBE)
+          if (self->strategy == KSCS_SUBSCRIBE)
             rd_kafka_unsubscribe(self->kafka);
           else
             rd_kafka_assign(self->kafka, NULL);

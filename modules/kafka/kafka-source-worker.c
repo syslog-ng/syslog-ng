@@ -87,7 +87,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
 
   _send(worker, log_msg);
 
-  if (self->startegy == KSCS_SUBSCRIBE || self->startegy == KSCS_ASSIGN)
+  if (self->strategy == KSCS_SUBSCRIBE || self->strategy == KSCS_ASSIGN)
     {
       rd_kafka_error_t *err = rd_kafka_offset_store_message(msg);
       if (err)
@@ -403,7 +403,7 @@ _consumer_run(LogThreadedSourceWorker *worker)
     {
       kafka_update_state(self, TRUE);
 
-      switch(self->startegy)
+      switch(self->strategy)
         {
         case KSCS_ASSIGN:
         case KSCS_SUBSCRIBE:

@@ -185,7 +185,7 @@ struct _KafkaSourceDriver
   gchar *group_id;
   GList *requested_topics;
 
-  KafkaSrcConsumerStrategy startegy;
+  KafkaSrcConsumerStrategy strategy;
   GAsyncQueue **msg_queues;
   GCond *queue_conds;
   GMutex *queue_cond_mutexes;
