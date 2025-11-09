@@ -830,6 +830,24 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
 }
 
 void
+kafka_final_flush(KafkaSourceDriver *self)
+{
+  const gint poll_timeout = 50;
+
+  gint remaining_time = self->options.super.poll_timeout;
+  while (rd_kafka_outq_len(self->kafka) > 0 && remaining_time > 0)
+    {
+      rd_kafka_poll(self->kafka, poll_timeout);
+      remaining_time -= poll_timeout;
+    }
+
+  if (rd_kafka_outq_len(self->kafka) > 0)
+    msg_warning("kafka: final outq flush could not process all items",
+                evt_tag_str("group_id", self->group_id),
+                evt_tag_str("driver", self->super.super.super.id));
+}
+
+void
 kafka_sd_wakeup_kafka_queues(KafkaSourceDriver *self)
 {
   if (self->consumer_kafka_queue)
@@ -1094,31 +1112,6 @@ err_exit:
   return NULL;
 }
 
-static void
-_kafka_topic_free_func(gpointer data)
-{
-  rd_kafka_topic_t *topic_handle = (rd_kafka_topic_t *)data;
-  rd_kafka_topic_destroy(topic_handle);
-}
-
-void
-kafka_final_flush(KafkaSourceDriver *self)
-{
-  const gint poll_timeout = 50;
-
-  gint remaining_time = self->options.super.poll_timeout;
-  while (rd_kafka_outq_len(self->kafka) > 0 && remaining_time > 0)
-    {
-      rd_kafka_poll(self->kafka, poll_timeout);
-      remaining_time -= poll_timeout;
-    }
-
-  if (rd_kafka_outq_len(self->kafka) > 0)
-    msg_warning("kafka: final outq flush could not process all items",
-                evt_tag_str("group_id", self->group_id),
-                evt_tag_str("driver", self->super.super.super.id));
-}
-
 static gboolean
 _setup_kafka_client(KafkaSourceDriver *self)
 {
@@ -1141,6 +1134,13 @@ _setup_kafka_client(KafkaSourceDriver *self)
     }
   rd_kafka_poll(self->kafka, 0);
   return result;
+}
+
+static void
+_kafka_topic_free_func(gpointer data)
+{
+  rd_kafka_topic_t *topic_handle = (rd_kafka_topic_t *)data;
+  rd_kafka_topic_destroy(topic_handle);
 }
 
 static void
