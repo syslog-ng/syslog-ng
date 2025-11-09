@@ -61,4 +61,17 @@ thread_cancel(ThreadId tid)
 #endif
 }
 
+static inline void
+set_thread_name(const gchar *name)
+{
+#ifndef _WIN32
+# if defined(__APPLE__)
+  pthread_setname_np(name);
+# else
+  pthread_setname_np(pthread_self(), name);
+# endif
+#else
+#endif
+}
+
 #endif
