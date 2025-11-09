@@ -1016,14 +1016,14 @@ _apply_group_id(KafkaSourceDriver *self)
   const gchar *conf_group_id = kafka_property_list_find_not_empty(self->options.super.config, group_id_key);
 
   if (conf_group_id )
-        {
+    {
       group_id = g_strdup(conf_group_id);
       kafka_msg_debug("kafka: found config group.id",
                       evt_tag_str("group_id", group_id),
                       evt_tag_str("driver", self->super.super.super.id));
-        }
-      else
-        {
+    }
+  else
+    {
       group_id = g_strdup(self->super.super.super.id);
       KafkaProperty *kp_groupid = g_new0(KafkaProperty, 1);
       kp_groupid->name = g_strdup(group_id_key);
@@ -1186,20 +1186,6 @@ _destroy_kafka_client(LogDriver *s)
       rd_kafka_destroy(self->kafka);
       self->kafka = NULL;
     }
-
-  if (self->options.super.config)
-    kafka_property_list_free(self->options.super.config);
-  self->options.super.config = NULL;
-
-  g_free(self->group_id);
-  self->group_id = NULL;
-
-  if (self->requested_topics)
-    kafka_tps_list_free(self->requested_topics);
-  self->requested_topics = NULL;
-
-  kafka_opaque_deinit(&self->opaque);
-  _destroy_msg_queues(self);
 }
 
 gboolean
@@ -1209,8 +1195,6 @@ kafka_sd_reopen(LogDriver *s)
 
   if (self->kafka)
     _destroy_kafka_client(s);
-
-  kafka_opaque_init(&self->opaque, &self->super.super.super, &self->options.super);
 
   self->kafka = _construct_kafka_client(self);
   if (self->kafka == NULL)
@@ -1269,6 +1253,7 @@ kafka_sd_init(LogPipe *s)
   _alloc_msg_queues(self);
   self->stats_topics = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->stats_workers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+  kafka_opaque_init(&self->opaque, &self->super.super.super, &self->options.super);
 
   if (FALSE == log_threaded_source_driver_init_method(s))
     return FALSE;
@@ -1294,6 +1279,14 @@ kafka_sd_deinit(LogPipe *s)
   KafkaSourceDriver *self = (KafkaSourceDriver *)s;
 
   _destroy_kafka_client(&self->super.super.super);
+
+  g_free(self->group_id);
+
+  if (self->requested_topics)
+    kafka_tps_list_free(self->requested_topics);
+
+  kafka_opaque_deinit(&self->opaque);
+  _destroy_msg_queues(self);
 
   _unregister_aggregated_stats(self);
   _unregister_worker_stats(self);
