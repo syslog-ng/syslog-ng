@@ -203,17 +203,10 @@ kafka_sd_inc_msg_topic_stats(KafkaSourceDriver *self, const gchar *topic)
 }
 
 void
-kafka_sd_inc_msg_worker_stats(KafkaSourceDriver *self, const gchar *worker_id)
+kafka_sd_set_msg_worker_stats(KafkaSourceDriver *self, const gchar *worker_id, gssize value)
 {
   StatsCounterItem *counter = g_hash_table_lookup(self->stats_workers, worker_id);
-  stats_counter_inc(counter);
-}
-
-void
-kafka_sd_dec_msg_worker_stats(KafkaSourceDriver *self, const gchar *worker_id)
-{
-  StatsCounterItem *counter = g_hash_table_lookup(self->stats_workers, worker_id);
-  stats_counter_dec(counter);
+  stats_counter_set(counter, value);
 }
 
 static void
@@ -822,10 +815,10 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
       GAsyncQueue *msg_queue = self->msg_queues[i];
 
       while ((msg = g_async_queue_try_pop(msg_queue)) != NULL)
-        {
         rd_kafka_message_destroy(msg);
-          kafka_sd_dec_msg_worker_stats(self, worker_name);
-        }
+      /* Setting directly is still racy, but we can live with that */
+      guint msg_queue_len = g_async_queue_length(msg_queue);
+      kafka_sd_set_msg_worker_stats(self, worker_name, msg_queue_len);
     }
 }
 
