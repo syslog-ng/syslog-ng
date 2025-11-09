@@ -600,12 +600,7 @@ _setup_method_subscribed_consumer(KafkaSourceDriver *self)
    */
   rd_kafka_resp_err_t err;
   if ((err = rd_kafka_subscribe(self->kafka, parts)) == RD_KAFKA_RESP_ERR_NO_ERROR)
-    {
-      kafka_msg_debug("kafka: waiting for group rebalancer",
-                      evt_tag_str("group_id", self->group_id),
-                      evt_tag_str("driver", self->super.super.super.id));
-      self->assigned_partitions = parts;
-    }
+    self->assigned_partitions = parts;
   else
     {
       msg_error("kafka: rd_kafka_subscribe() failed",

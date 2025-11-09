@@ -184,6 +184,10 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   kafka_msg_debug("kafka: consumer poll run started - queued",
                   evt_tag_str("group_id", self->group_id),
                   evt_tag_str("driver", self->super.super.super.id));
+  if (self->strategy == KSCS_SUBSCRIBE)
+    kafka_msg_debug("kafka: waiting for group rebalancer",
+                    evt_tag_str("group_id", self->group_id),
+                    evt_tag_str("driver", self->super.super.super.id));
 
   /* We just steal these from the main/consumer event loops to be able to stop the blocking rd_kafka_consumer_poll */
   self->consumer_kafka_queue = rd_kafka_queue_get_consumer(self->kafka);
