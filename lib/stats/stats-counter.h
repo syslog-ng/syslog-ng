@@ -37,12 +37,12 @@
 #endif
 #if ! defined(CHECKED_COUNTER_ADD)
 # if SYSLOG_NG_ENABLE_DEBUG && USE_CHECKED_COUNTER_OPS
-#  define CHECKED_COUNTER_ADD(old_value_expr, add) \
-    do { \
-        gsize _old = old_value_expr; \
-        gsize _add = add; \
-        g_assert(_old + _add >= _old && "stats counter add overflow!"); \
-    } while (0)
+#define CHECKED_COUNTER_ADD(old_value_expr, add) \
+  do { \
+    gssize _old = (old_value_expr); \
+    gssize _add = (add); \
+    g_assert((_old <= G_MAXSSIZE - _add) && "stats counter add overflow!"); \
+  } while (0)
 # else
 #  define CHECKED_COUNTER_ADD(old_value_expr, add) ((void)(old_value_expr))
 # endif
@@ -50,12 +50,12 @@
 
 #if ! defined(CHECKED_COUNTER_SUB)
 # if SYSLOG_NG_ENABLE_DEBUG && USE_CHECKED_COUNTER_OPS
-#  define CHECKED_COUNTER_SUB(old_value_expr, sub) \
-    do { \
-        gsize _old = old_value_expr; \
-        gsize _sub = sub; \
-        g_assert(_old - _sub <= _old && "stats counter sub underflow!"); \
-    } while (0)
+#define CHECKED_COUNTER_SUB(old_value_expr, sub) \
+  do { \
+    gssize _old = (old_value_expr); \
+    gssize _sub = (sub); \
+    g_assert((_old >= _sub) && "stats counter sub underflow!"); \
+  } while (0)
 # else
 #  define CHECKED_COUNTER_SUB(old_value_expr, sub) ((void)(old_value_expr))
 # endif
