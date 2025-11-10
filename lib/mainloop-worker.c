@@ -200,10 +200,18 @@ main_loop_worker_wait_for_exit(void)
 gboolean
 main_loop_worker_wait_for_exit_until(gdouble wait_time)
 {
-  g_mutex_lock(&exit_cond.lock);
-  gint64 end = g_get_monotonic_time() + (gint64) wait_time * G_USEC_PER_SEC;
-  g_cond_wait_until(&exit_cond.cond, &exit_cond.lock, end);
-  g_mutex_unlock(&exit_cond.lock);
+  /* Fast-path: check without lock (intentionally racy, worst case is one extra wait cycle).
+   * main_loop_workers_quit is write-once (FALSE->TRUE), so eventual consistency is acceptable. */
+  if (G_UNLIKELY(main_loop_workers_quit))
+    return TRUE;
+
+  if (wait_time > 0.0)
+    {
+      g_mutex_lock(&exit_cond.lock);
+      gint64 end = g_get_monotonic_time() + (gint64) wait_time * G_USEC_PER_SEC;
+      g_cond_wait_until(&exit_cond.cond, &exit_cond.lock, end);
+      g_mutex_unlock(&exit_cond.lock);
+    }
   return main_loop_workers_quit;
 }
 
