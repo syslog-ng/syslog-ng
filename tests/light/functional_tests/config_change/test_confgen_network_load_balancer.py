@@ -36,6 +36,7 @@ destination d_remote {
 
     syslog_ng.start(config)
 
+
 def test_confgen_network_load_balancer_minimal_commas(config, syslog_ng):
     raw_config = r"""
 @include "scl.conf"
@@ -51,7 +52,11 @@ destination d_remote {
 
     syslog_ng.start(config)
 
-def test_confgen_network_load_balancer_minimal_quoted_commas(config, syslog_ng):
+
+def test_confgen_network_load_balancer_minimal_quoted_commas(
+        config,
+        syslog_ng,
+):
     raw_config = r"""
 @include "scl.conf"
 
@@ -108,6 +113,7 @@ destination d_remote {
     config.set_raw_config(raw_config)
 
     syslog_ng.start(config)
+
 
 def test_confgen_network_load_balancer_no_failover(config, syslog_ng):
     raw_config = r"""
