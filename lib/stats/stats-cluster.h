@@ -216,5 +216,10 @@ stats_cluster_key_is_legacy(const StatsClusterKey *self)
 {
   return self->legacy.set;
 }
+static inline gboolean
+stats_cluster_key_legacy_id_equal(const StatsClusterKey *self, const gchar *id)
+{
+  return g_strcmp0(self->legacy.id, id) == 0;
+}
 
 #endif
