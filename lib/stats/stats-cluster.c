@@ -372,16 +372,19 @@ _reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter,
   if (!stats_cluster_key_is_legacy(&sc->key))
     return;
 
-  if (strcmp(stats_cluster_get_type_name(sc, type), "memory_usage") == 0)
-    return;
-
   switch (type)
     {
     case SC_TYPE_QUEUED:
       return;
     default:
-      stats_counter_set(counter, 0);
+      if (strcmp(stats_cluster_get_type_name(sc, type), "memory_usage") == 0 ||
+          (strcmp(stats_cluster_get_type_name(sc, type), "value") == 0 &&
+           stats_cluster_key_legacy_id_equal(&sc->key, "msg_allocated_bytes"))
+         )
+        return;
     }
+
+  stats_counter_set(counter, 0);
 }
 
 void
