@@ -169,9 +169,43 @@ _processor_run(LogThreadedSourceWorker *worker)
   kafka_msg_debug("kafka: stopped queue processor",
                   evt_tag_int("index", worker->worker_index),
                   evt_tag_str("group_id", self->group_id),
-                  evt_tag_str("driver", self->super.super.super.id));
-
+                  evt_tag_str("driver", self->super.super.super.id),
+                  evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+                  evt_tag_int("worker_queue_len", g_async_queue_length(msg_queue)));
   g_atomic_counter_dec_and_test(&self->running_thread_num);
+}
+
+static gboolean
+_queue_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg, guint target_queue_ndx)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
+
+  while (1)
+    {
+      if (G_UNLIKELY(main_loop_worker_job_quit()))
+        return FALSE;
+
+      gint msg_queues_len = kafka_sd_worker_queues_len(self);
+      if (msg_queues_len >= self->options.fetch_limit)
+        {
+          kafka_msg_debug("kafka: message queue full, waiting",
+                          evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+                          evt_tag_int("worker_queues_len", msg_queues_len));
+          kafka_sd_signal_queues(self);
+          rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
+          continue;
+        }
+      break;
+    }
+  g_async_queue_push(self->msg_queues[target_queue_ndx], msg);
+  kafka_sd_signal_queue_ndx(self, target_queue_ndx);
+
+  /* Setting queue stats directly is still racy, but we can live with that */
+  gint msg_queue_len = g_async_queue_length(self->msg_queues[target_queue_ndx]);
+  const gchar *worker_name = kafka_src_worker_get_name(self->super.workers[target_queue_ndx]);
+  kafka_sd_set_msg_worker_stats(self, worker_name, msg_queue_len);
+
+  return TRUE;
 }
 
 /* ****************************************************
@@ -203,17 +237,6 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
       if (G_UNLIKELY(main_loop_worker_job_quit()))
         break;
 
-      gint msg_queue_len = kafka_sd_worker_queues_len(self);
-      if (msg_queue_len >= self->options.fetch_limit)
-        {
-          kafka_msg_debug("kafka: message queue full, waiting",
-                          evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                          evt_tag_int("msg_queue_len", msg_queue_len));
-          kafka_sd_signal_queues(self);
-          rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
-          continue;
-        }
-
       rd_kafka_poll(self->kafka, 0);
       msg = rd_kafka_consumer_poll(self->kafka, self->options.super.poll_timeout);
       if (msg == NULL || msg->err)
@@ -223,7 +246,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
             {
               kafka_msg_debug("kafka: consumer_poll - no data",
                               evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                              evt_tag_int("msg_queue_len", kafka_sd_worker_queues_len(self)));
+                              evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(self)));
               if (msg)
                 rd_kafka_message_destroy(msg);
             }
@@ -246,16 +269,12 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
                     evt_tag_int("partition", msg->partition),
                     evt_tag_int("offset", msg->offset),
                     evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                    evt_tag_int("msg_queue_len", kafka_sd_worker_queues_len(self)));
-
-          guint target_queue = (self->options.separated_worker_queues ?
-                                (rr++ % (self->super.num_workers - 1)) + 1 :
-                                1); /* Intentionally not using the 0 index slot */
-          g_async_queue_push(self->msg_queues[target_queue], msg);
-          /* Setting directly is still racy, but we can live with that */
-          msg_queue_len = g_async_queue_length(self->msg_queues[target_queue]);
-          kafka_sd_set_msg_worker_stats(self, kafka_src_worker_get_name(self->super.workers[target_queue]), msg_queue_len);
-          kafka_sd_signal_queue_ndx(self, target_queue);
+                    evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(self)));
+          guint target_queue_ndx = (self->options.separated_worker_queues ?
+                                    (rr++ % (self->super.num_workers - 1)) + 1 :
+                                    1); /* Intentionally not using the 0 index slot */
+          if (G_UNLIKELY(FALSE == _queue_message(worker, msg, target_queue_ndx)))
+            rd_kafka_message_destroy(msg);
         }
     }
   /* This call will block until the consumer has revoked its assignment, calling the rebalance_cb if it is configured,
@@ -333,27 +352,8 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
             {
               if (msg_queue)
                 {
-                  gint msg_queue_len;
-                  while ((msg_queue_len = g_async_queue_length(msg_queue)) >= self->options.fetch_limit)
-                    {
-                      kafka_msg_debug("kafka: message queue full, waiting",
-                                      evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                                      evt_tag_int("msg_queue_len", msg_queue_len));
-                      kafka_sd_signal_queue_ndx(self, msg_queue_ndx);
-                      rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
-                      if (G_UNLIKELY(main_loop_worker_job_quit()))
-                        break;
-                    }
-
-                  if (G_LIKELY(FALSE == main_loop_worker_job_quit()))
-                    {
-                      g_async_queue_push(msg_queue, msg);
-                      /* Setting directly is still racy, but we can live with that */
-                      msg_queue_len = g_async_queue_length(msg_queue);
-                      kafka_sd_set_msg_worker_stats(self, kafka_src_worker_get_name(self->super.workers[msg_queue_ndx]), msg_queue_len);
-                      kafka_sd_signal_queue_ndx(self, msg_queue_ndx);
-                      continue;
-                    }
+                  if (G_LIKELY(_queue_message(worker, msg, msg_queue_ndx)))
+                    continue;
                 }
               else
                 {
