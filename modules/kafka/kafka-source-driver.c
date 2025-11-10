@@ -799,6 +799,10 @@ kafka_sd_worker_queues_len(KafkaSourceDriver *self)
 void
 kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
 {
+  kafka_msg_debug("kafka: dropping queued messages",
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("driver", self->super.super.super.id),
+                  evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(self)));
   rd_kafka_message_t *msg;
   /* Intentionally not using the 0 index slot */
   for (guint i = 1; i < self->used_queue_num; ++i)
@@ -813,8 +817,10 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
         rd_kafka_message_destroy(msg);
       /* Setting directly is still racy, but we can live with that */
       guint msg_queue_len = g_async_queue_length(msg_queue);
+      g_assert(msg_queue_len == 0);
       kafka_sd_set_msg_worker_stats(self, worker_name, msg_queue_len);
     }
+  g_assert(kafka_sd_worker_queues_len(self) == 0);
 }
 
 void
@@ -833,9 +839,15 @@ kafka_final_flush(KafkaSourceDriver *self, gboolean commit)
     }
 
   if (rd_kafka_outq_len(self->kafka) > 0)
-    msg_warning("kafka: final outq flush could not process all items",
+    msg_warning("kafka: outq flush could not process all items",
                 evt_tag_str("group_id", self->group_id),
                 evt_tag_str("driver", self->super.super.super.id));
+  else
+    kafka_msg_debug("kafka: outq flush completed",
+                    evt_tag_str("group_id", self->group_id),
+                    evt_tag_str("driver", self->super.super.super.id),
+                    evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+                    evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(self)));
 }
 
 void
@@ -1193,6 +1205,7 @@ _destroy_kafka_client(LogDriver *s)
       /* Wait for outstanding requests to finish, there should be nothing to commit */
       kafka_final_flush(self, FALSE);
 
+      /* NOTE: If this call is blocking, we need to ensure that no resources are in use */
       rd_kafka_destroy(self->kafka);
       self->kafka = NULL;
     }
