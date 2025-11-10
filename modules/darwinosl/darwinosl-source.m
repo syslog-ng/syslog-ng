@@ -274,7 +274,8 @@ _fetch(LogThreadedSourceWorker *worker)
 
   self->curr_fetch_in_run++;
 
-  const char *log_string = [self->osLogSource stringFromDarwinOSLogEntry:nextLogEntry].UTF8String;
+  NSString *msgString = [self->osLogSource stringFromDarwinOSLogEntry:nextLogEntry];
+  const char *log_string = msgString.UTF8String;
   msg_trace("darwinosl: Msg string is composed", evt_tag_str("msg", log_string));
 
   /* NOTE: No other options unfortunately (there is no "current position" like getter)
@@ -296,6 +297,7 @@ _fetch(LogThreadedSourceWorker *worker)
   log_msg_set_value_to_string(msg, LM_V_TRANSPORT, "local+darwinoslog");
   LogThreadedFetchResult result = {THREADED_FETCH_SUCCESS, msg};
   _log_reader_insert_msg_length_stats(self, msg_len);
+  log_msg_set_recvd_rawmsg_size(msg, msgString.length);
   return result;
 }
 
