@@ -639,7 +639,7 @@ _setup_method_batch_consume(KafkaSourceDriver *self)
 
   if (rd_kafka_consume_start_queue(new_topic,
                                    requested_partition,
-                                   _get_start_fallback_offset_code(self),
+                                   (int64_t) RD_KAFKA_OFFSET_STORED,
                                    new_kafka_queue) != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_error("kafka: rd_kafka_consume_start_queue() failed",
@@ -818,9 +818,12 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
 }
 
 void
-kafka_final_flush(KafkaSourceDriver *self)
+kafka_final_flush(KafkaSourceDriver *self, gboolean commit)
 {
   const gint poll_timeout = 50;
+
+  if (commit)
+    rd_kafka_commit(self->kafka, NULL, FALSE); // synchronous commit of current offsets
 
   gint remaining_time = self->options.super.poll_timeout;
   while (rd_kafka_outq_len(self->kafka) > 0 && remaining_time > 0)
@@ -1044,10 +1047,28 @@ _construct_kafka_client(KafkaSourceDriver *self)
 
   if (FALSE == kafka_conf_set_prop(conf, "metadata.broker.list", self->options.super.bootstrap_servers))
     goto err_exit;
-  /* NOTE: The callback-based consumer API's offset store granularity is
-   * said to be not good enough, also, we want to control the offset store
-   * process, and treat the message processed if we were able to fuly deliver it.
-   * Disable the automatic offset store, do it explicitly per-message in
+  /* NOTE:
+   * 1. The callback-based consumer API's offset store granularity is not sufficient.
+   * 2. We want to control the offset storage process ourselves and only mark a message as processed
+   *    once it has been fully delivered — especially in the single topic/single partition case
+   *    (with the low-level API, `consume_start`), where message order matters and must be preserved.
+   * 3. The `auto.offset.store = true` + `enable.auto.commit = true` combination
+   *    would generally work well in the latest versions of librdkafka, but only if the consumer
+   *    reads *all* available messages within a single poll cycle. This is not always guaranteed,
+   *    as we might need to exit the poll loop early (e.g. due to shutdown or reconfiguration).
+   *    In such cases, we must terminate as soon as possible and discard any remaining messages
+   *    after exiting the poll cycle. This can result in messages being marked as processed and committed
+   *    (due to automatic offset store and commit, which we cannot control),
+   *    even though their delivery was not guaranteed — leading to potential message loss on restart/reload.
+   * 4. The `auto.offset.store = false` + `enable.auto.commit = true` combination
+   *    can work well if we explicitly store offsets after each message is fully processed and delivered.
+   *    However, when using the high-level consumer API (`subscribe`/`assign`),
+   *    this requires `rd_kafka_offset_store_message()`, which is only available in librdkafka 2.1.0 and later.
+   *    TODO: Even in this case, precision is not perfect — a few messages may still be reprocessed
+   *          after a restart/reload (even if the broker indicates all messages have been processed, see point nr1.).
+   *          This behavior requires further investigation.
+   *
+   * So, now we disable the automatic offset store, do it explicitly per-message in
    * the message processor of the consume callback/batch_loop instead.
    * Also, this controls only the high-level consumer API scenario, for the low-lewel
    * version we should use our persist state backup/restore and RD_KAFKA_OFFSET_STORED
@@ -1169,7 +1190,8 @@ _destroy_kafka_client(LogDriver *s)
           else
             rd_kafka_assign(self->kafka, NULL);
         }
-      kafka_final_flush(self);
+      /* Wait for outstanding requests to finish, there should be nothing to commit */
+      kafka_final_flush(self, FALSE);
 
       rd_kafka_destroy(self->kafka);
       self->kafka = NULL;

@@ -87,7 +87,7 @@ void kafka_unregister_counters(KafkaSourceDriver *self, const gchar *label, cons
                                StatsCounterItem *counter, const gchar **counter_names);
 
 rd_kafka_resp_err_t kafka_update_state(KafkaSourceDriver *self, gboolean lock);
-void kafka_final_flush(KafkaSourceDriver *self);
+void kafka_final_flush(KafkaSourceDriver *self, gboolean commit);
 
 typedef struct _KafkaOptions
 {

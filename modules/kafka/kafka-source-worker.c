@@ -87,17 +87,15 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
 
   _send(worker, log_msg);
 
-  if (self->strategy == KSCS_SUBSCRIBE || self->strategy == KSCS_ASSIGN)
-    {
-      rd_kafka_error_t *err = rd_kafka_offset_store_message(msg);
-      if (err)
-        msg_warning("kafka: error storing message offset",
-                    evt_tag_str("group_id", self->group_id),
-                    evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
-                    evt_tag_int("partition", msg->partition),
-                    evt_tag_str("error", rd_kafka_error_string(err)),
-                    evt_tag_str("driver", self->super.super.super.id));
-    }
+  rd_kafka_error_t *err = rd_kafka_offset_store_message(msg);
+  if (err)
+    msg_warning("kafka: error storing message offset",
+                evt_tag_str("group_id", self->group_id),
+                evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
+                evt_tag_int("partition", msg->partition),
+                evt_tag_str("error", rd_kafka_error_string(err)),
+                evt_tag_str("driver", self->super.super.super.id));
+
   rd_kafka_message_destroy(msg);
   main_loop_worker_run_gc();
 
@@ -270,8 +268,8 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   rd_kafka_queue_destroy(self->main_kafka_queue);
   self->main_kafka_queue = NULL;
 
-  /* Wait for outstanding requests to finish. */
-  kafka_final_flush(self);
+  /* Wait for outstanding requests to finish, commit offsets */
+  kafka_final_flush(self, TRUE);
 
   main_loop_worker_run_gc();
 }
@@ -376,8 +374,8 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
     }
   rd_kafka_consume_stop(single_topic, requested_partition);
 
-  /* Wait for outstanding requests to finish. */
-  kafka_final_flush(self);
+  /* Wait for outstanding requests to finish, commit offsets */
+  kafka_final_flush(self, TRUE);
 
   g_free(msgs);
   main_loop_worker_run_gc();
