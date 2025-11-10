@@ -410,7 +410,7 @@ kafka_log_state_changed(KafkaSourceDriver *self, KafkaConnectedState state, rd_k
       g_assert_not_reached();
     }
 
-  msg_verbose("kafka: Current state changed",
+  msg_verbose("kafka: current state changed",
               evt_tag_str("state", state_str),
               evt_tag_str("group_id", self->group_id),
               evt_tag_str("driver", self->super.super.super.id));
@@ -642,7 +642,7 @@ _setup_method_batch_consume(KafkaSourceDriver *self)
                                    _get_start_fallback_offset_code(self),
                                    new_kafka_queue) != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
-      msg_error("kafka: rd_kafka_consume_start() failed",
+      msg_error("kafka: rd_kafka_consume_start_queue() failed",
                 evt_tag_str("group_id", self->group_id),
                 evt_tag_str("topic", requested_topic),
                 evt_tag_int("partition", requested_partition),
