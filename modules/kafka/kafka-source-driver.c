@@ -1404,6 +1404,20 @@ kafka_sd_set_topics(LogDriver *d, GList *topics)
   return _check_and_apply_topics(self, topics, FALSE);
 }
 
+gboolean
+kafka_sd_set_strategy_hint(LogDriver *d, const gchar *strategy_hint)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) d;
+
+  if (g_strcmp0(strategy_hint, "subscribed") == 0)
+    self->options.strategy_hint = KSCS_SUBSCRIBE;
+  else if (g_strcmp0(strategy_hint, "batch-consume") == 0)
+    self->options.strategy_hint = KSCS_BATCH_CONSUME;
+  else
+    return FALSE;
+  return TRUE;
+}
+
 void
 kafka_sd_set_poll_timeout(LogDriver *d, gint poll_timeout)
 {
@@ -1491,6 +1505,7 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->format_options = &self->worker_options->parse_options;
 
   kafka_options_defaults(&self->super);
+  self->strategy_hint = KSCS_BATCH_CONSUME;
   self->time_reopen = 60;
 
   self->do_not_use_bookmark = FALSE;

@@ -133,6 +133,15 @@ void kafka_opaque_state_set_last_error(KafkaOpaque *self, gint error);
 
 /* Kafka Source */
 
+typedef enum _KafkaSrcConsumerStrategy
+{
+  KSCS_ASSIGN,
+  KSCS_SUBSCRIBE,
+  KSCS_BATCH_CONSUME,
+
+  KSCS_UNDEFINED
+} KafkaSrcConsumerStrategy;
+
 struct _KafkaSourceOptions
 {
   KafkaOptions super;
@@ -143,6 +152,7 @@ struct _KafkaSourceOptions
   LogTemplateOptions template_options;
 
   GList *requested_topics;
+  KafkaSrcConsumerStrategy strategy_hint;
   LogTemplate *message;
   gint time_reopen;
 
@@ -152,15 +162,6 @@ struct _KafkaSourceOptions
   guint fetch_queue_full_delay;
   gboolean separated_worker_queues;
 };
-
-typedef enum _KafkaSrcConsumerStrategy
-{
-  KSCS_ASSIGN,
-  KSCS_SUBSCRIBE,
-  KSCS_BATCH_CONSUME,
-
-  KSCS_UNDEFINED
-} KafkaSrcConsumerStrategy;
 
 struct _KafkaSourceWorker
 {
