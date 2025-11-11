@@ -349,21 +349,28 @@ _get_start_fallback_offset_string(KafkaSourceDriver *self)
 }
 
 static gboolean
-_has_wildcard_partition(GList *requested_topics)
+_has_wildcard_topic_or_partition(GList *requested_topics,
+                                 gboolean *has_wildcard_topic,
+                                 gboolean *has_wildcard_partition)
 {
   g_assert(g_list_length(requested_topics));
 
   for (GList *l = requested_topics; l != NULL; l = l->next)
     {
       KafkaTopicParts *item = (KafkaTopicParts *)l->data;
+      if (_is_topic_pattern(item->topic))
+        *has_wildcard_topic = TRUE;
+
       for (GList *p = item->partitions; p != NULL; p = p->next)
         {
           int32_t partition = (int32_t)GPOINTER_TO_INT(p->data);
           if (partition == RD_KAFKA_PARTITION_UA)
-            return TRUE;
+            *has_wildcard_partition = TRUE;
         }
+      if (*has_wildcard_topic && *has_wildcard_partition)
+        break;
     }
-  return FALSE;
+  return *has_wildcard_partition || *has_wildcard_topic;
 }
 
 static void
@@ -371,25 +378,22 @@ _decide_strategy(KafkaSourceDriver *self)
 {
   guint topic_num = g_list_length(self->requested_topics);
   g_assert(topic_num > 0);
-  KafkaTopicParts *fist_item = (KafkaTopicParts *)g_list_first(self->requested_topics)->data;
-  guint fist_item_part_num = g_list_length(fist_item->partitions);
+  gboolean wildcard_topic = FALSE, wildcard_partition = FALSE;
 
-  gboolean single_topic = topic_num == 1 &&
-                          FALSE == _is_topic_pattern(fist_item->topic);
-  gboolean single_partition = topic_num == 1 && fist_item_part_num == 1 &&
-                              (int32_t)GPOINTER_TO_INT(fist_item->partitions->data) != RD_KAFKA_PARTITION_UA;
-  gboolean wildcard_partition = _has_wildcard_partition(self->requested_topics);
+  _has_wildcard_topic_or_partition(self->requested_topics, &wildcard_topic, &wildcard_partition);
 
-  if (single_topic && single_partition)
+  if (FALSE == wildcard_partition && FALSE == wildcard_topic && self->options.strategy_hint != KSCS_SUBSCRIBE)
     self->strategy = KSCS_BATCH_CONSUME;
-  else if (wildcard_partition)
+  else if (wildcard_partition || wildcard_topic)
     self->strategy = KSCS_SUBSCRIBE;
   else
     self->strategy = KSCS_ASSIGN;
 
   msg_verbose("kafka: selected consumer strategy",
               evt_tag_str("strategy", self->strategy == KSCS_BATCH_CONSUME ? "batch_consume" :
-                          self->strategy == KSCS_SUBSCRIBE ? "subscribe_consume" : "assign_consume"),
+                          self->strategy == KSCS_SUBSCRIBE ? "subscribed_consume(subscribe)" : "subscribed_consume(assign)"),
+              evt_tag_str("strategy_hint", self->options.strategy_hint == KSCS_BATCH_CONSUME ?
+                          "batch_consume" : "subscribed_consume"),
               evt_tag_str("group_id", self->group_id),
               evt_tag_str("driver", self->super.super.super.id));
 }
