@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 One Identity LLC.
+ * Copyright (c) 2023-2025 One Identity LLC.
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -31,10 +31,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/mman.h>
+#include "compat/mmap.h"
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include "compat/pio.h"
+#include "compat/pagesize.h"
 
 #define PERSIST_FILE_INITIAL_SIZE 16384
 #define PERSIST_STATE_KEY_BLOCK_SIZE 4096

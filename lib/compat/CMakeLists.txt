@@ -26,6 +26,8 @@ set(COMPAT_HEADERS
     compat/ivykis_fd.h
     compat/ivykis_signal.h
     compat/realpath.h
+    compat/mmap.h
+    compat/pagesize.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES
@@ -45,6 +47,7 @@ set(COMPAT_SOURCES
     compat/getent-generic.c
     compat/glob-win.c
     compat/ivykis_fd_windows.c
+    compat/mmap_win.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)

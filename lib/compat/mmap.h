@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
@@ -21,30 +20,41 @@
  * COPYING for details.
  *
  */
-#ifndef COMPAT_PIO_H_INCLUDED
-#define COMPAT_PIO_H_INCLUDED 1
 
-#include "compat.h"
+#pragma once
 
-#include <sys/types.h>
-#include <unistd.h>
+#ifndef _WIN32
 
-/* NOTE: bb__ prefix is used for function names that might clash with system
- * supplied symbols. */
+#include <sys/mman.h>
 
-#if ! SYSLOG_NG_HAVE_PREAD || SYSLOG_NG_HAVE_BROKEN_PREAD
-# ifdef pread
-#  undef pread
-# endif
-# ifdef pwrite
-#  undef pwrite
-# endif
-#define pread bb__pread
-#define pwrite bb__pwrite
+#else /* POSIX */
 
-ssize_t bb__pread(int fd, void *buf, size_t count, off_t offset);
-ssize_t bb__pwrite(int fd, const void *buf, size_t count, off_t offset);
+#include <stddef.h>
+#include <stdint.h>
 
+/* flags/prot (minimal) */
+#ifndef PROT_READ
+#define PROT_READ   0x1
 #endif
+#ifndef PROT_WRITE
+#define PROT_WRITE  0x2
+#endif
+#ifndef MAP_SHARED
+#define MAP_SHARED  0x01
+#endif
+#ifndef MAP_PRIVATE
+#define MAP_PRIVATE 0x02
+#endif
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void *)-1)
+#endif
+#ifndef MS_SYNC
+#define MS_SYNC 0x4
+#endif
+
+/* POSIX-like signatures */
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, long long offset);
+int   munmap(void *addr, size_t length);
+int   msync(void *addr, size_t length, int flags);
 
 #endif

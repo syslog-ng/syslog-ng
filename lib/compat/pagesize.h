@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
@@ -21,29 +20,39 @@
  * COPYING for details.
  *
  */
-#ifndef COMPAT_PIO_H_INCLUDED
-#define COMPAT_PIO_H_INCLUDED 1
 
-#include "compat.h"
+#pragma once
 
-#include <sys/types.h>
+#ifdef _WIN32
+
+#include <windows.h>
+
+static inline int compat_getpagesize(void)
+{
+  SYSTEM_INFO si;
+  GetSystemInfo(&si);
+  return (int)si.dwPageSize;
+}
+
+#define getpagesize compat_getpagesize
+
+#else
+
 #include <unistd.h>
 
-/* NOTE: bb__ prefix is used for function names that might clash with system
- * supplied symbols. */
+#if !defined(getpagesize)
 
-#if ! SYSLOG_NG_HAVE_PREAD || SYSLOG_NG_HAVE_BROKEN_PREAD
-# ifdef pread
-#  undef pread
-# endif
-# ifdef pwrite
-#  undef pwrite
-# endif
-#define pread bb__pread
-#define pwrite bb__pwrite
+static inline int compat_getpagesize(void)
+{
+#ifdef _SC_PAGESIZE
+  long s = sysconf(_SC_PAGESIZE);
+#else
+  long s = sysconf(_SC_PAGE_SIZE);
+#endif
+  return (int)s;
+}
 
-ssize_t bb__pread(int fd, void *buf, size_t count, off_t offset);
-ssize_t bb__pwrite(int fd, const void *buf, size_t count, off_t offset);
+#define getpagesize compat_getpagesize
 
 #endif
 
