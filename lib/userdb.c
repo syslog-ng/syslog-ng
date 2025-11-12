@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,8 +25,12 @@
 #include "userdb.h"
 
 #include <sys/types.h>
+
+#ifndef _WIN32
 #include <pwd.h>
 #include <grp.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -40,13 +45,19 @@ resolve_user(const char *user, gint *uid)
     return FALSE;
 
   *uid = strtol(user, &endptr, 0);
+
   if (*endptr)
     {
+#ifndef _WIN32
       pw = getpwnam(user);
       if (!pw)
         return FALSE;
 
       *uid = pw->pw_uid;
+#else
+      /* Windows: no POSIX user DB → accept only numeric UIDs */
+      return FALSE;
+#endif
     }
   return TRUE;
 }
@@ -64,11 +75,16 @@ resolve_group(const char *group, gint *gid)
   *gid = strtol(group, &endptr, 0);
   if (*endptr)
     {
+#ifndef _WIN32
       gr = getgrnam(group);
       if (!gr)
         return FALSE;
 
       *gid = gr->gr_gid;
+#else
+      /* Windows: accept only numeric GIDs */
+      return FALSE;
+#endif
     }
   return TRUE;
 }
