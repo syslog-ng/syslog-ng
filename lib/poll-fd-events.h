@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,12 +26,12 @@
 #define POLL_FD_EVENTS_H_INCLUDED
 
 #include "poll-events.h"
-#include <iv.h>
+#include "compat/ivykis_fd.h"
 
 typedef struct _PollFdEvents
 {
   PollEvents super;
-  struct iv_fd fd_watch;
+  compat_iv_fd fd_watch;
 } PollFdEvents;
 
 PollEvents *poll_fd_events_new(gint fd);

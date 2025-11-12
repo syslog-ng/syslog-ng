@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +38,7 @@ poll_fd_events_start_watches(PollEvents *s)
 {
   PollFdEvents *self = (PollFdEvents *) s;
 
-  iv_fd_register(&self->fd_watch);
+  compat_iv_fd_register(&self->fd_watch);
 }
 
 static void
@@ -45,8 +46,8 @@ poll_fd_events_stop_watches(PollEvents *s)
 {
   PollFdEvents *self = (PollFdEvents *) s;
 
-  if (iv_fd_registered(&self->fd_watch))
-    iv_fd_unregister(&self->fd_watch);
+  if (compat_iv_fd_registered(&self->fd_watch))
+    compat_iv_fd_unregister(&self->fd_watch);
 }
 
 static void
@@ -54,9 +55,9 @@ poll_fd_events_suspend_watches(PollEvents *s)
 {
   PollFdEvents *self = (PollFdEvents *) s;
 
-  iv_fd_set_handler_in(&self->fd_watch, NULL);
-  iv_fd_set_handler_out(&self->fd_watch, NULL);
-  iv_fd_set_handler_err(&self->fd_watch, NULL);
+  compat_iv_fd_set_handler_in(&self->fd_watch, NULL);
+  compat_iv_fd_set_handler_out(&self->fd_watch, NULL);
+  compat_iv_fd_set_handler_err(&self->fd_watch, NULL);
 }
 
 
@@ -70,13 +71,13 @@ poll_fd_events_update_watches(PollEvents *s, GIOCondition cond)
   if (poll_events_check_watches(s) && FALSE == poll_events_system_notified(s))
     {
       if (cond & G_IO_IN)
-        iv_fd_set_handler_in(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
+        compat_iv_fd_set_handler_in(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
 
       if (cond & G_IO_OUT)
-        iv_fd_set_handler_out(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
+        compat_iv_fd_set_handler_out(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
 
       if (cond & (G_IO_IN + G_IO_OUT))
-        iv_fd_set_handler_err(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
+        compat_iv_fd_set_handler_err(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
     }
 }
 
@@ -94,7 +95,7 @@ poll_fd_events_new(gint fd)
   self->super.type = FM_SYSTEM_POLL;
   self->super.get_fd = _get_fd;
 
-  IV_FD_INIT(&self->fd_watch);
+  COMPAT_IV_FD_INIT(&self->fd_watch);
   self->fd_watch.fd = fd;
   self->fd_watch.cookie = self;
 
