@@ -216,9 +216,16 @@ _register_worker_stats(KafkaSourceDriver *self)
 
   for (int i = 1 ; i < self->used_queue_num; i++)
     {
-      const gchar *worker_id_str = kafka_src_worker_get_name(self->super.workers[i]);
-      if (FALSE == g_hash_table_contains(self->stats_workers, worker_id_str))
-        kafka_register_counters(self, self->stats_workers, "worker", worker_id_str, counter_names, STATS_LEVEL2);
+      const gchar *label_value_ptr = kafka_src_worker_get_name(self->super.workers[i]);
+      gchar label_value[64];
+      if (FALSE == self->options.separated_worker_queues && self->super.num_workers > 2)
+        {
+          g_snprintf(label_value, sizeof(label_value), "%s-%d", label_value_ptr, self->super.num_workers - 1);
+          label_value_ptr = label_value;
+        }
+
+      if (FALSE == g_hash_table_contains(self->stats_workers, label_value_ptr))
+        kafka_register_counters(self, self->stats_workers, "worker", label_value_ptr, counter_names, STATS_LEVEL2);
     }
 }
 
