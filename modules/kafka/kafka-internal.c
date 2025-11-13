@@ -187,6 +187,20 @@ kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_
   return TRUE;
 }
 
+
+void
+kafka_consume_stop(GList *topics, const rd_kafka_topic_partition_list_t *partitions)
+{
+  for (GList *l = topics; l != NULL; l = l->next)
+    {
+      rd_kafka_topic_t *topic = (rd_kafka_topic_t *)l->data;
+      for (int i = 0 ; i < partitions->cnt ; i++)
+        {
+          if (g_strcmp0(rd_kafka_topic_name(topic), partitions->elems[i].topic) == 0)
+            rd_kafka_consume_stop(topic, partitions->elems[i].partition);
+        }
+    }
+}
 void
 kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions)
 {

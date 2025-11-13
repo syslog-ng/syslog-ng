@@ -323,19 +323,13 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
 
   rd_kafka_message_t **msgs = g_new0(rd_kafka_message_t *, self->options.fetch_limit);
-  const guint topics_num = g_list_length(self->requested_topics);
-  g_assert(topics_num == 1 && g_list_length(self->topic_handle_list) == 1);
-  KafkaTopicParts *fist_item = (KafkaTopicParts *)g_list_first(self->requested_topics)->data;
-  int32_t requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(fist_item->partitions)->data);
-  rd_kafka_topic_t *single_topic = (rd_kafka_topic_t *)g_list_first(self->topic_handle_list)->data;
-  g_assert(self->used_queue_num <= 2 && self->super.num_workers <= 2);
-  const guint msg_queue_ndx = 1;
-  GAsyncQueue *msg_queue = (self->used_queue_num ? self->msg_queues[msg_queue_ndx] : NULL);
+  guint rr = 0;
 
-  kafka_msg_debug("kafka: consumer poll run started - NOT queued",
+  kafka_msg_debug("kafka: batch consumer poll run started",
+                  evt_tag_int("worker_num", self->super.num_workers),
+                  evt_tag_int("queue_num", self->used_queue_num ? self->used_queue_num - 1 : 0),
+                  evt_tag_int("queues_max_size", self->options.fetch_limit),
                   evt_tag_str("group_id", self->group_id),
-                  evt_tag_str("topic", rd_kafka_topic_name(single_topic)),
-                  evt_tag_int("partition", requested_partition),
                   evt_tag_str("driver", self->super.super.super.id));
 
   while (1)
@@ -355,8 +349,6 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
         {
           msg_error("kafka: consume batch error",
                     evt_tag_str("group_id", self->group_id),
-                    evt_tag_str("topic", rd_kafka_topic_name(single_topic)),
-                    evt_tag_int("partition", requested_partition),
                     evt_tag_str("error", cnt < 0 ? rd_kafka_err2str(rd_kafka_last_error()) : rd_kafka_message_errstr(msgs[0])),
                     evt_tag_str("driver", self->super.super.super.id));
           if (cnt == 1)
@@ -369,9 +361,9 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
           rd_kafka_message_t *msg = msgs[i];
           if (G_LIKELY(FALSE == main_loop_worker_job_quit()))
             {
-              if (msg_queue)
+              if (self->used_queue_num > 0)
                 {
-                  if (G_LIKELY(_queue_message(worker, msg, msg_queue_ndx)))
+                  if (G_LIKELY(_queue_message(worker, msg, _next_target_queue_ndx(self, &rr))))
                     continue;
                 }
               else
@@ -391,7 +383,8 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
           kafka_update_state(self, TRUE);
         }
     }
-  rd_kafka_consume_stop(single_topic, requested_partition);
+  /* Stop consuming from all the topics */
+  kafka_consume_stop(self->topic_handle_list, self->assigned_partitions);
 
   /* Wait for outstanding requests to finish, commit offsets */
   kafka_final_flush(self, TRUE);

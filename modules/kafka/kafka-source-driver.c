@@ -530,6 +530,41 @@ _kafka_error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
   kafka_opaque_state_unlock(&self->opaque);
 }
 
+static rd_kafka_topic_partition_list_t *
+_compose_partition_list(KafkaSourceDriver *self)
+{
+  g_assert(self->kafka);
+  rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(0);
+  const guint topics_num = g_list_length(self->requested_topics);
+  g_assert(topics_num > 0);
+
+  for (GList *t = self->requested_topics; t; t = t->next)
+    {
+      KafkaTopicParts *tps_item = (KafkaTopicParts *)t->data;
+      const gchar *requested_topic = tps_item->topic;
+      GList *requested_parts = tps_item->partitions;
+      guint requested_parts_num = g_list_length(requested_parts);
+      g_assert(requested_parts_num >= 1);
+
+      for (GList *p = requested_parts; p; p = p->next)
+        {
+          int32_t requested_partition = (int32_t)GPOINTER_TO_INT(p->data);
+          rd_kafka_topic_partition_list_add(parts, requested_topic, requested_partition);
+          /* Here we use the fact that the partition list is always ordered by partition number and cleaned up from duplicates
+           * so, if we find a wildcard partition, it must be the first and only one in the list */
+          g_assert((requested_partition != RD_KAFKA_PARTITION_UA || requested_parts_num == 1)
+                   && "Wildcard partition cannot be mixed with specific partitions");
+          if (self->options.strategy_hint == KSCS_SUBSCRIBE && requested_partition != RD_KAFKA_PARTITION_UA)
+            msg_warning("kafka: none wildcard partition requested whilst using subscribe strategy hint, partition field(s) might be ignored!",
+                        evt_tag_str("topic", requested_topic),
+                        evt_tag_int("partition", requested_partition),
+                        evt_tag_str("group_id", self->group_id),
+                        evt_tag_str("driver", self->super.super.super.id));
+        }
+    }
+  return parts;
+}
+
 /* *********************************
  * Strategy - assign poll and queue
  * *********************************
@@ -542,21 +577,7 @@ _setup_method_assigned_consumer(KafkaSourceDriver *self)
   const guint topics_num = g_list_length(self->requested_topics);
   g_assert(topics_num > 0);
 
-  rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(topics_num);
-  for (GList *t = self->requested_topics; t; t = t->next)
-    {
-      KafkaTopicParts *tps_item = (KafkaTopicParts *)t->data;
-      const gchar *requested_topic = tps_item->topic;
-      GList *requested_topic_parts = tps_item->partitions;
-      g_assert(g_list_length(requested_topic_parts) >= 1);
-
-      for (GList *p = requested_topic_parts; p; p = p->next)
-        {
-          int32_t requested_partition = (int32_t)GPOINTER_TO_INT(p->data);
-          g_assert(requested_partition != RD_KAFKA_PARTITION_UA);
-          rd_kafka_topic_partition_list_add(parts, requested_topic, requested_partition);
-        }
-    }
+  rd_kafka_topic_partition_list_t *parts = _compose_partition_list(self);
   rd_kafka_resp_err_t err;
   if ((err = rd_kafka_assign(self->kafka, parts)) == RD_KAFKA_RESP_ERR_NO_ERROR)
     {
@@ -592,33 +613,31 @@ _setup_method_subscribed_consumer(KafkaSourceDriver *self)
   const guint topics_num = g_list_length(self->requested_topics);
   g_assert(topics_num > 0);
 
-  rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(topics_num);
-  for (GList *t = self->requested_topics; t; t = t->next)
-    {
-      const gchar *requested_topic = ((KafkaTopicParts *)t->data)->topic;
-      rd_kafka_topic_partition_list_add(parts, requested_topic, RD_KAFKA_PARTITION_UA); // partition is ignored in subscribe
-    }
-  /* Subscribe to topic set using balanced consumer groups.
-   * Wildcard (regex) topics are supported: any topic name in the topics list that is prefixed with "^" will be regex-matched to the full list of topics in the cluster and matching topics will be added to the subscription list.
-   * The full topic list is retrieved every topic.metadata.refresh.interval.ms to pick up new or delete topics that match the subscription. If there is any change to the matched topics the consumer will immediately rejoin the group with the updated set of subscribed topics.
-   * Regex and full topic names can be mixed in topics.
-   * Remarks
-   * Only the .topic field is used in the supplied topics list, all other fields are ignored.
-   * subscribe() is an asynchronous method which returns immediately: background threads will (re)join the group, wait for group rebalance, issue any registered rebalance_cb, assign() the assigned partitions, and then start fetching messages. This cycle may take up to session.timeout.ms * 2 or more to complete.
-   */
+  rd_kafka_topic_partition_list_t *parts = _compose_partition_list(self);
   rd_kafka_resp_err_t err;
   if ((err = rd_kafka_subscribe(self->kafka, parts)) == RD_KAFKA_RESP_ERR_NO_ERROR)
-    self->assigned_partitions = parts;
+    {
+      /* Subscribe to topic set using balanced consumer groups.
+       * Wildcard (regex) topics are supported: any topic name in the topics list that is prefixed with "^" will be regex-matched to the full list of topics in the cluster and matching topics will be added to the subscription list.
+       * The full topic list is retrieved every topic.metadata.refresh.interval.ms to pick up new or delete topics that match the subscription. If there is any change to the matched topics the consumer will immediately rejoin the group with the updated set of subscribed topics.
+       * Regex and full topic names can be mixed in topics.
+       * NOTE:
+       * Only the topic field is used in the supplied topics list, all other fields are ignored.
+       * subscribe() is an asynchronous method which returns immediately: background threads will (re)join the group, wait for group rebalance, issue any registered rebalance_cb, assign() the assigned partitions, and then start fetching messages. This cycle may take up to session.timeout.ms * 2 or more to complete.
+       *
+       * So, we do not need to save or log anything here, the assignment will be made and logged later when partitions are
+       * actually assigned in the rebalance callback, also, we will add stats for the assigned topics there as well.
+       */
+    }
   else
     {
       msg_error("kafka: rd_kafka_subscribe() failed",
                 evt_tag_str("group_id", self->group_id),
                 evt_tag_str("error", rd_kafka_err2str(err)),
                 evt_tag_str("driver", self->super.super.super.id));
-      rd_kafka_topic_partition_list_destroy(parts);
       result = FALSE;
     }
-
+  rd_kafka_topic_partition_list_destroy(parts);
   return result;
 }
 
@@ -630,78 +649,76 @@ static gboolean
 _setup_method_batch_consume(KafkaSourceDriver *self)
 {
   g_assert(self->kafka);
-  gboolean result = TRUE;
-  const guint topics_num = g_list_length(self->requested_topics);
-  g_assert(topics_num == 1);
-  KafkaTopicParts *fist_item = (KafkaTopicParts *)g_list_first(self->requested_topics)->data;
-  const guint parts_num = g_list_length(fist_item->partitions);
-  g_assert(parts_num == 1);
 
-  const gchar *requested_topic = fist_item->topic;
-  int32_t requested_partition = (int32_t)GPOINTER_TO_INT(g_list_first(fist_item->partitions)->data);
-
-  rd_kafka_topic_t *new_topic = rd_kafka_topic_new(self->kafka,
-                                                   requested_topic,
-                                                   NULL); // TODO: add support of per-topic conf
   rd_kafka_queue_t *new_kafka_queue = rd_kafka_queue_new(self->kafka);
+  rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(0);
+  GList *topic_handle_list = NULL;
 
-  if (rd_kafka_consume_start_queue(new_topic,
-                                   requested_partition,
-                                   (int64_t) RD_KAFKA_OFFSET_STORED,
-                                   new_kafka_queue) != RD_KAFKA_RESP_ERR_NO_ERROR)
+  for (GList *t = self->requested_topics; t; t = t->next)
     {
-      msg_error("kafka: rd_kafka_consume_start_queue() failed",
-                evt_tag_str("group_id", self->group_id),
-                evt_tag_str("topic", requested_topic),
-                evt_tag_int("partition", requested_partition),
-                evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
-                evt_tag_str("driver", self->super.super.super.id));
-      if (new_kafka_queue)
-        rd_kafka_queue_destroy(new_kafka_queue);
-      rd_kafka_topic_destroy(new_topic);
-      result = FALSE;
-    }
-  else
-    {
-      msg_verbose("kafka: batch consuming partition",
-                  evt_tag_str("topic", requested_topic),
-                  evt_tag_int("partition", requested_partition));
-      self->consumer_kafka_queue = new_kafka_queue;
-      self->topic_handle_list = g_list_append(self->topic_handle_list, new_topic);
+      KafkaTopicParts *tps_item = (KafkaTopicParts *)t->data;
+      const gchar *requested_topic = tps_item->topic;
+      GList *requested_topic_parts = tps_item->partitions;
 
-      /* Setting up assigned partitions only for stats purpose here */
-      rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(topics_num);
-      rd_kafka_topic_partition_list_add(parts, requested_topic, requested_partition);
-      self->assigned_partitions = parts;
-      _register_topic_stats(self);
-    }
-
-  return result;
-}
-
-static gboolean
-_adjust_num_workers(KafkaSourceDriver *self)
-{
-  gboolean result = TRUE;
-
-  if (self->strategy == KSCS_BATCH_CONSUME)
-    {
-      if (self->super.num_workers > 2)
+      rd_kafka_topic_t *new_topic = rd_kafka_topic_new(self->kafka, requested_topic,
+                                                       NULL); /* TODO: add support of per-topic config */
+      if (new_topic == NULL)
         {
-          msg_warning("kafka: reducing worker thread count to 2 for the selected processing strategy",
-                      evt_tag_str("group_id", self->group_id),
-                      evt_tag_str("driver", self->super.super.super.id));
-          log_threaded_source_driver_set_num_workers(&self->super.super.super, 2);
+          msg_error("kafka: rd_kafka_topic_new() failed",
+                    evt_tag_str("topic", requested_topic),
+                    evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
+                    evt_tag_str("driver", self->super.super.super.id));
+          goto failed;
+        }
+      topic_handle_list = g_list_append(topic_handle_list, new_topic);
+
+      for (GList *p = requested_topic_parts; p; p = p->next)
+        {
+          int32_t requested_partition = (int32_t)GPOINTER_TO_INT(p->data);
+
+          if (rd_kafka_consume_start_queue(new_topic,
+                                           requested_partition,
+                                           (int64_t) RD_KAFKA_OFFSET_STORED,
+                                           new_kafka_queue) != RD_KAFKA_RESP_ERR_NO_ERROR)
+            {
+              msg_error("kafka: rd_kafka_consume_start_queue() failed",
+                        evt_tag_str("group_id", self->group_id),
+                        evt_tag_str("topic", requested_topic),
+                        evt_tag_int("partition", requested_partition),
+                        evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
+                        evt_tag_str("driver", self->super.super.super.id));
+              goto failed;
+            }
+          else
+            {
+              /* Here we use the fact that the partition list is always ordered by partition number,
+               * so, if we find a wildcard partition, it must be the first and only one in the list
+               */
+              g_assert(requested_partition != RD_KAFKA_PARTITION_UA && "Wildcard partition cannot be used in batch consuming mode");
+
+              msg_verbose("kafka: batch consuming partition",
+                          evt_tag_str("topic", requested_topic),
+                          evt_tag_int("partition", requested_partition));
+              rd_kafka_topic_partition_list_add(parts, requested_topic, requested_partition);
+            }
         }
     }
-  else if (self->super.num_workers < 2)
+  self->consumer_kafka_queue = new_kafka_queue;
+  self->topic_handle_list = topic_handle_list;
+  self->assigned_partitions = parts;
+  _register_topic_stats(self);
+  return TRUE;
+
+failed:
+  if (topic_handle_list)
     {
-      msg_error("kafka: the selected processing strategy requires at least 2 worker threads",
-                evt_tag_str("group_id", self->group_id),
-                evt_tag_str("driver", self->super.super.super.id));
-      result = FALSE;
+      kafka_consume_stop(topic_handle_list, parts);
+      g_list_free_full(topic_handle_list, kafka_topic_free_func);
     }
-  return result;
+  rd_kafka_topic_partition_list_destroy(parts);
+  rd_kafka_queue_destroy(new_kafka_queue);
+
+  return FALSE;
 }
 
 static void
@@ -1281,9 +1298,6 @@ kafka_sd_init(LogPipe *s)
    */
   _apply_options(self);
   _decide_strategy(self);
-
-  if (FALSE == _adjust_num_workers(self))
-    return FALSE;
 
   _alloc_msg_queues(self);
   self->stats_topics = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);

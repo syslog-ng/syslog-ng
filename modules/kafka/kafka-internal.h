@@ -78,6 +78,7 @@ gboolean kafka_conf_get_prop(const rd_kafka_conf_t *conf, const gchar *name, gch
 gboolean kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value);
 gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_properties,
                                   gsize protected_properties_num);
+void kafka_consume_stop(GList *topics, const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
 
