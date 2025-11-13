@@ -78,7 +78,6 @@ gboolean kafka_conf_get_prop(const rd_kafka_conf_t *conf, const gchar *name, gch
 gboolean kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value);
 gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_properties,
                                   gsize protected_properties_num);
-void kafka_consume_stop(GList *topics, const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
 
@@ -138,7 +137,6 @@ typedef enum _KafkaSrcConsumerStrategy
 {
   KSCS_ASSIGN,
   KSCS_SUBSCRIBE,
-  KSCS_BATCH_CONSUME,
 
   KSCS_UNDEFINED
 } KafkaSrcConsumerStrategy;
@@ -180,7 +178,6 @@ struct _KafkaSourceDriver
   KafkaOpaque opaque;
 
   rd_kafka_t *kafka;
-  GList *topic_handle_list;
   rd_kafka_queue_t *consumer_kafka_queue;
   rd_kafka_queue_t *main_kafka_queue;
   rd_kafka_topic_partition_list_t *assigned_partitions;

@@ -223,10 +223,6 @@ _next_target_queue_ndx(KafkaSourceDriver *self, guint *rr)
   return target_queue_ndx;
 }
 
-/* *************************************************************************
- * Strategy - assign/subscribe consumer poll and queueing or direct processing
- * *************************************************************************/
-
 /* runs in a dedicated thread */
 static void
 _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
@@ -312,87 +308,6 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   main_loop_worker_run_gc();
 }
 
-/* ***********************************************************
- * Strategy - batch consume and direct processing or queueing
- * ***********************************************************/
-
-/* runs in a dedicated thread */
-static void
-_consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-
-  rd_kafka_message_t **msgs = g_new0(rd_kafka_message_t *, self->options.fetch_limit);
-  guint rr = 0;
-
-  kafka_msg_debug("kafka: batch consumer poll run started",
-                  evt_tag_int("worker_num", self->super.num_workers),
-                  evt_tag_int("queue_num", self->used_queue_num ? self->used_queue_num - 1 : 0),
-                  evt_tag_int("queues_max_size", self->options.fetch_limit),
-                  evt_tag_str("group_id", self->group_id),
-                  evt_tag_str("driver", self->super.super.super.id));
-
-  while (1)
-    {
-      if (G_UNLIKELY(main_loop_worker_job_quit()))
-        break;
-
-      rd_kafka_poll(self->kafka, 0);
-
-      int qlen = (int)rd_kafka_outq_len(self->kafka);
-      ssize_t cnt = rd_kafka_consume_batch_queue(self->consumer_kafka_queue,
-                                                 self->options.super.poll_timeout,
-                                                 msgs,
-                                                 self->options.fetch_limit);
-      g_assert(cnt <= self->options.fetch_limit);
-      if (cnt < 0 || (cnt == 1 && msgs[0]->err))
-        {
-          msg_error("kafka: consume batch error",
-                    evt_tag_str("group_id", self->group_id),
-                    evt_tag_str("error", cnt < 0 ? rd_kafka_err2str(rd_kafka_last_error()) : rd_kafka_message_errstr(msgs[0])),
-                    evt_tag_str("driver", self->super.super.super.id));
-          if (cnt == 1)
-            rd_kafka_message_destroy(msgs[0]);
-          break;
-        }
-
-      for (ssize_t i = 0; i < cnt; i++)
-        {
-          rd_kafka_message_t *msg = msgs[i];
-          if (G_LIKELY(FALSE == main_loop_worker_job_quit()))
-            {
-              if (self->used_queue_num > 0)
-                {
-                  if (G_LIKELY(_queue_message(worker, msg, _next_target_queue_ndx(self, &rr))))
-                    continue;
-                }
-              else
-                {
-                  _process_message(worker, msg);
-                  rd_kafka_poll(self->kafka, 0);
-                  main_loop_worker_wait_for_exit_until(iteration_sleep_time);
-                  continue;
-                }
-            }
-          rd_kafka_message_destroy(msg);
-        }
-
-      if (cnt == 0)
-        {
-          kafka_msg_debug("kafka: consume_batch - no data", evt_tag_int("kafka_outq_len", qlen));
-          kafka_update_state(self, TRUE);
-        }
-    }
-  /* Stop consuming from all the topics */
-  kafka_consume_stop(self->topic_handle_list, self->assigned_partitions);
-
-  /* Wait for outstanding requests to finish, commit offsets */
-  kafka_final_flush(self, TRUE);
-
-  g_free(msgs);
-  main_loop_worker_run_gc();
-}
-
 static gboolean
 _restart_consumer(LogThreadedSourceWorker *worker, const gdouble iteration_sleep_time)
 {
@@ -430,19 +345,8 @@ _consumer_run(LogThreadedSourceWorker *worker)
     {
       kafka_update_state(self, TRUE);
 
-      switch(self->strategy)
-        {
-        case KSCS_ASSIGN:
-        case KSCS_SUBSCRIBE:
-          _consumer_run_consumer_poll(worker, iteration_sleep_time);
-          break;
+      _consumer_run_consumer_poll(worker, iteration_sleep_time);
 
-        case KSCS_BATCH_CONSUME:
-          _consumer_run_batch_consume(worker, iteration_sleep_time);
-          break;
-        default:
-          g_assert_not_reached();
-        }
       kafka_msg_debug("kafka: stopped consumer poll run",
                       evt_tag_str("group_id", self->group_id),
                       evt_tag_str("driver", self->super.super.super.id));

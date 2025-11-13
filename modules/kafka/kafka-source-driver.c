@@ -380,24 +380,17 @@ _has_wildcard_topic_or_partition(GList *requested_topics,
 static void
 _decide_strategy(KafkaSourceDriver *self)
 {
-  guint topic_num = g_list_length(self->requested_topics);
-  g_assert(topic_num > 0);
   gboolean wildcard_topic = FALSE, wildcard_partition = FALSE;
 
   _has_wildcard_topic_or_partition(self->requested_topics, &wildcard_topic, &wildcard_partition);
 
-  if (FALSE == wildcard_partition && FALSE == wildcard_topic && self->options.strategy_hint != KSCS_SUBSCRIBE)
-    self->strategy = KSCS_BATCH_CONSUME;
-  else if (wildcard_partition || wildcard_topic)
+  if (wildcard_partition || wildcard_topic || self->options.strategy_hint == KSCS_SUBSCRIBE)
     self->strategy = KSCS_SUBSCRIBE;
   else
     self->strategy = KSCS_ASSIGN;
 
   msg_verbose("kafka: selected consumer strategy",
-              evt_tag_str("strategy", self->strategy == KSCS_BATCH_CONSUME ? "batch_consume" :
-                          self->strategy == KSCS_SUBSCRIBE ? "subscribed_consume(subscribe)" : "subscribed_consume(assign)"),
-              evt_tag_str("strategy_hint", self->options.strategy_hint == KSCS_BATCH_CONSUME ?
-                          "batch_consume" : "subscribed_consume"),
+              evt_tag_str("strategy", self->strategy == KSCS_SUBSCRIBE ? "subscribe" : "assign"),
               evt_tag_str("group_id", self->group_id),
               evt_tag_str("driver", self->super.super.super.id));
 }
@@ -565,9 +558,9 @@ _compose_partition_list(KafkaSourceDriver *self)
   return parts;
 }
 
-/* *********************************
- * Strategy - assign poll and queue
- * *********************************
+/* **********************
+ * Strategy - assign poll
+ * **********************
  */
 static gboolean
 _setup_method_assigned_consumer(KafkaSourceDriver *self)
@@ -601,9 +594,9 @@ _setup_method_assigned_consumer(KafkaSourceDriver *self)
   return result;
 }
 
-/* ************************************
- * Strategy - subscribe poll and queue
- * ************************************
+/* *************************
+ * Strategy - subscribe poll
+ * *************************
  */
 static gboolean
 _setup_method_subscribed_consumer(KafkaSourceDriver *self)
@@ -639,86 +632,6 @@ _setup_method_subscribed_consumer(KafkaSourceDriver *self)
     }
   rd_kafka_topic_partition_list_destroy(parts);
   return result;
-}
-
-/* ***********************************************
- * Strategy - batch consume and direct processing
- * ***********************************************
- */
-static gboolean
-_setup_method_batch_consume(KafkaSourceDriver *self)
-{
-  g_assert(self->kafka);
-
-  rd_kafka_queue_t *new_kafka_queue = rd_kafka_queue_new(self->kafka);
-  rd_kafka_topic_partition_list_t *parts = rd_kafka_topic_partition_list_new(0);
-  GList *topic_handle_list = NULL;
-
-  for (GList *t = self->requested_topics; t; t = t->next)
-    {
-      KafkaTopicParts *tps_item = (KafkaTopicParts *)t->data;
-      const gchar *requested_topic = tps_item->topic;
-      GList *requested_topic_parts = tps_item->partitions;
-
-      rd_kafka_topic_t *new_topic = rd_kafka_topic_new(self->kafka, requested_topic,
-                                                       NULL); /* TODO: add support of per-topic config */
-      if (new_topic == NULL)
-        {
-          msg_error("kafka: rd_kafka_topic_new() failed",
-                    evt_tag_str("topic", requested_topic),
-                    evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
-                    evt_tag_str("driver", self->super.super.super.id));
-          goto failed;
-        }
-      topic_handle_list = g_list_append(topic_handle_list, new_topic);
-
-      for (GList *p = requested_topic_parts; p; p = p->next)
-        {
-          int32_t requested_partition = (int32_t)GPOINTER_TO_INT(p->data);
-
-          if (rd_kafka_consume_start_queue(new_topic,
-                                           requested_partition,
-                                           (int64_t) RD_KAFKA_OFFSET_STORED,
-                                           new_kafka_queue) != RD_KAFKA_RESP_ERR_NO_ERROR)
-            {
-              msg_error("kafka: rd_kafka_consume_start_queue() failed",
-                        evt_tag_str("group_id", self->group_id),
-                        evt_tag_str("topic", requested_topic),
-                        evt_tag_int("partition", requested_partition),
-                        evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
-                        evt_tag_str("driver", self->super.super.super.id));
-              goto failed;
-            }
-          else
-            {
-              /* Here we use the fact that the partition list is always ordered by partition number,
-               * so, if we find a wildcard partition, it must be the first and only one in the list
-               */
-              g_assert(requested_partition != RD_KAFKA_PARTITION_UA && "Wildcard partition cannot be used in batch consuming mode");
-
-              msg_verbose("kafka: batch consuming partition",
-                          evt_tag_str("topic", requested_topic),
-                          evt_tag_int("partition", requested_partition));
-              rd_kafka_topic_partition_list_add(parts, requested_topic, requested_partition);
-            }
-        }
-    }
-  self->consumer_kafka_queue = new_kafka_queue;
-  self->topic_handle_list = topic_handle_list;
-  self->assigned_partitions = parts;
-  _register_topic_stats(self);
-  return TRUE;
-
-failed:
-  if (topic_handle_list)
-    {
-      kafka_consume_stop(topic_handle_list, parts);
-      g_list_free_full(topic_handle_list, kafka_topic_free_func);
-    }
-  rd_kafka_topic_partition_list_destroy(parts);
-  rd_kafka_queue_destroy(new_kafka_queue);
-
-  return FALSE;
 }
 
 static void
@@ -1176,21 +1089,11 @@ _setup_kafka_client(KafkaSourceDriver *self)
     case KSCS_SUBSCRIBE:
       result = _setup_method_subscribed_consumer(self);
       break;
-    case KSCS_BATCH_CONSUME:
-      result = _setup_method_batch_consume(self);
-      break;
     default:
       g_assert_not_reached();
     }
   rd_kafka_poll(self->kafka, 0);
   return result;
-}
-
-static void
-_kafka_topic_free_func(gpointer data)
-{
-  rd_kafka_topic_t *topic_handle = (rd_kafka_topic_t *)data;
-  rd_kafka_topic_destroy(topic_handle);
 }
 
 static void
@@ -1201,11 +1104,9 @@ _destroy_kafka_client(LogDriver *s)
   kafka_msg_debug("kafka: destroying client",
                   evt_tag_str("group_id", self->group_id),
                   evt_tag_str("driver", self->super.super.super.id));
-  if  (self->topic_handle_list)
-    {
-      g_list_free_full(self->topic_handle_list, _kafka_topic_free_func);
-      self->topic_handle_list = NULL;
-    }
+
+  /* These are just borrowed temporally in _consumer_run_consumer_poll or should have been already destroyed*/
+  g_assert(self->consumer_kafka_queue == NULL && self->main_kafka_queue == NULL);
 
   if (self->assigned_partitions)
     {
@@ -1215,16 +1116,7 @@ _destroy_kafka_client(LogDriver *s)
 
   if (self->kafka)
     {
-      if (self->strategy == KSCS_BATCH_CONSUME)
         {
-          if (self->consumer_kafka_queue)
-            rd_kafka_queue_destroy(self->consumer_kafka_queue);
-          self->consumer_kafka_queue = NULL;
-        }
-      else
-        {
-          /* These are just borrowed temporally in _consumer_run_consumer_poll */
-          g_assert(self->consumer_kafka_queue == NULL && self->main_kafka_queue == NULL);
 
           if (self->strategy == KSCS_SUBSCRIBE)
             rd_kafka_unsubscribe(self->kafka);
@@ -1434,10 +1326,10 @@ kafka_sd_set_strategy_hint(LogDriver *d, const gchar *strategy_hint)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) d;
 
-  if (g_strcmp0(strategy_hint, "subscribed") == 0)
+  if (g_strcmp0(strategy_hint, "subscribe") == 0)
     self->options.strategy_hint = KSCS_SUBSCRIBE;
-  else if (g_strcmp0(strategy_hint, "batch-consume") == 0)
-    self->options.strategy_hint = KSCS_BATCH_CONSUME;
+  else if (g_strcmp0(strategy_hint, "assign") == 0)
+    self->options.strategy_hint = KSCS_ASSIGN;
   else
     return FALSE;
   return TRUE;
@@ -1536,7 +1428,7 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->format_options = &self->worker_options->parse_options;
 
   kafka_options_defaults(&self->super);
-  self->strategy_hint = KSCS_BATCH_CONSUME;
+  self->strategy_hint = KSCS_ASSIGN;
   self->time_reopen = 60;
 
   self->do_not_use_bookmark = FALSE;
