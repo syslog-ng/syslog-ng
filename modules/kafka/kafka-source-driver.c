@@ -286,7 +286,6 @@ _register_aggregated_stats(KafkaSourceDriver *self)
     stats_aggregator_lock();
     StatsClusterKey sc_key;
 
-    // msg_size_max
     stats_cluster_single_key_legacy_set_with_name(&sc_key,
                                                   super_options->stats_source | SCS_SOURCE,
                                                   stats_id,
@@ -294,7 +293,6 @@ _register_aggregated_stats(KafkaSourceDriver *self)
     stats_register_aggregator_maximum(super_options->stats_level, &sc_key,
                                       &self->max_message_size);
 
-    // msg_size_avg
     stats_cluster_single_key_legacy_set_with_name(&sc_key,
                                                   super_options->stats_source | SCS_SOURCE,
                                                   stats_id,
@@ -302,7 +300,6 @@ _register_aggregated_stats(KafkaSourceDriver *self)
     stats_register_aggregator_average(super_options->stats_level, &sc_key,
                                       &self->average_messages_size);
 
-    // eps
     stats_cluster_single_key_legacy_set_with_name(&sc_key,
                                                   super_options->stats_source | SCS_SOURCE,
                                                   stats_id,
@@ -405,10 +402,10 @@ kafka_log_state_changed(KafkaSourceDriver *self, KafkaConnectedState state, rd_k
   switch(state)
     {
     case KFS_CONNECTED:
-      state_str = "Connected";
+      state_str = "CONNECTED";
       break;
     case KFS_DISCONNECTED:
-      state_str = "Disconnected";
+      state_str = "DISCONNECTED";
       break;
     default:
       g_assert_not_reached();
@@ -790,6 +787,7 @@ kafka_sd_signal_queues(KafkaSourceDriver *self)
     kafka_sd_signal_queue_ndx(self, i);
 }
 
+/* Lazy check for empty queues */
 inline guint
 kafka_sd_worker_queues_len(KafkaSourceDriver *self)
 {
@@ -800,6 +798,8 @@ kafka_sd_worker_queues_len(KafkaSourceDriver *self)
   return len;
 }
 
+/* Drops all queued messages, but commits the latest offsets per topic-partition
+ */
 void
 kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
 {
@@ -808,18 +808,19 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
                   evt_tag_str("driver", self->super.super.super.id),
                   evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(self)));
   rd_kafka_message_t *msg;
+
   /* Intentionally not using the 0 index slot */
   for (guint i = 1; i < self->used_queue_num; ++i)
     {
+      GAsyncQueue *msg_queue = self->msg_queues[i];
+      while ((msg = g_async_queue_try_pop(msg_queue)) != NULL)
+        rd_kafka_message_destroy(msg);
+
+      /* Setting directly is still racy, but we can live with that */
       LogThreadedSourceWorker *target_worker = (self->options.separated_worker_queues ?
                                                 self->super.workers[i] :
                                                 self->super.workers[1]);
       const gchar *worker_name = kafka_src_worker_get_name(target_worker);
-      GAsyncQueue *msg_queue = self->msg_queues[i];
-
-      while ((msg = g_async_queue_try_pop(msg_queue)) != NULL)
-        rd_kafka_message_destroy(msg);
-      /* Setting directly is still racy, but we can live with that */
       guint msg_queue_len = g_async_queue_length(msg_queue);
       g_assert(msg_queue_len == 0);
       kafka_sd_set_msg_worker_stats(self, worker_name, msg_queue_len);
@@ -1093,8 +1094,8 @@ _construct_kafka_client(KafkaSourceDriver *self)
     goto err_exit;
   if (FALSE == kafka_conf_set_prop(conf, "enable.auto.commit", "true"))
     goto err_exit;
-  /* Like RD_KAFKA_OFFSET_XXX of rd_kafka_consume_start for the high-level consumer API
-   * this is just a fallback if the offset cannot be restored.
+  /* This is for the high-level consumer API Like RD_KAFKA_OFFSET_XXX of rd_kafka_consume_start for the low-level one.
+   * This is just a fallback if the offset cannot be restored.
    * NOTE: this is treated a per-topic option in the documentation, but seems to apply globally.
    */
   if (FALSE == kafka_conf_set_prop(conf, "auto.offset.reset", _get_start_fallback_offset_string(self)))
@@ -1209,7 +1210,7 @@ _destroy_kafka_client(LogDriver *s)
       /* Wait for outstanding requests to finish, there should be nothing to commit */
       kafka_final_flush(self, FALSE);
 
-      /* NOTE: If this call is blocking, we need to ensure that no resources are in use */
+      /* NOTE: If this call is hanging, we need to ensure that no resources are in use */
       rd_kafka_destroy(self->kafka);
       self->kafka = NULL;
     }
@@ -1343,8 +1344,7 @@ kafka_sd_new(GlobalConfig *cfg)
   /* The default number of workers is best to set to a minimum of 2
    * to allow parallelism between fetching and processing messages,
    * even for the single_topic/single_partition KSCS_BATCH_CONSUME processing strategy.
-   * User can override it later if needed, but can be reduced to 1 only if the processing
-   * strategy allows it (KSCS_BATCH_CONSUME).
+   * User can override it later if needed.
    */
   self->super.num_workers = 2;
 

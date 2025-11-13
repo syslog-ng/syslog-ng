@@ -193,7 +193,8 @@ kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions)
   for (int i = 0 ; i < partitions->cnt ; i++)
     msg_verbose("kafka: partition",
                 evt_tag_str("topic", partitions->elems[i].topic),
-                evt_tag_int("partition", (int) partitions->elems[i].partition));
+                evt_tag_int("partition", (int) partitions->elems[i].partition),
+                evt_tag_long("offset", (long) partitions->elems[i].offset));
 }
 
 void
@@ -271,8 +272,8 @@ kafka_unregister_counters(KafkaSourceDriver *self,
 void
 kafka_options_defaults(KafkaOptions *self)
 {
-  self->poll_timeout = 10000; /* 10 seconds */
-  self->state_update_timeout = 1000; /* 1 second */
+  self->poll_timeout = 10000; /* poll_timeout milliseconds - 10 seconds */
+  self->state_update_timeout = 1000; /* state_update_timeout milliseconds - 1 second */
   self->kafka_logging = KFL_DISABLED;
 }
 

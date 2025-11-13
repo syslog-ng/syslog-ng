@@ -222,7 +222,10 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
   rd_kafka_message_t *msg;
   guint rr = 0;
 
-  kafka_msg_debug("kafka: consumer poll run started - queued",
+  kafka_msg_debug("kafka: consumer poll run started",
+                  evt_tag_int("worker_num", self->super.num_workers),
+                  evt_tag_int("queue_num", self->used_queue_num ? self->used_queue_num - 1 : 0),
+                  evt_tag_int("queues_max_size", self->options.fetch_limit),
                   evt_tag_str("group_id", self->group_id),
                   evt_tag_str("driver", self->super.super.super.id));
   if (self->strategy == KSCS_SUBSCRIBE)
@@ -241,6 +244,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
 
       rd_kafka_poll(self->kafka, 0);
       msg = rd_kafka_consumer_poll(self->kafka, self->options.super.poll_timeout);
+
       if (msg == NULL || msg->err)
         {
           kafka_update_state(self, TRUE);
@@ -326,9 +330,9 @@ _consumer_run_batch_consume(LogThreadedSourceWorker *worker, const gdouble itera
       if (G_UNLIKELY(main_loop_worker_job_quit()))
         break;
 
-      int qlen = (int)rd_kafka_outq_len(self->kafka);
-
       rd_kafka_poll(self->kafka, 0);
+
+      int qlen = (int)rd_kafka_outq_len(self->kafka);
       ssize_t cnt = rd_kafka_consume_batch_queue(self->consumer_kafka_queue,
                                                  self->options.super.poll_timeout,
                                                  msgs,
@@ -438,10 +442,11 @@ _consumer_run(LogThreadedSourceWorker *worker)
                       evt_tag_str("driver", self->super.super.super.id));
 
       exit_requested = main_loop_worker_job_quit();
-
-      /* this means an error happened, let's retry from ground */
       if (FALSE == exit_requested)
-        exit_requested = (FALSE == _restart_consumer(worker, iteration_sleep_time));
+        {
+          /* Getting here means an error happened in the consumer, let's retry from ground */
+          exit_requested = (FALSE == _restart_consumer(worker, iteration_sleep_time));
+        }
     }
   while (FALSE == exit_requested);
 
