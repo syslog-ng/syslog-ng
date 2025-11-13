@@ -38,6 +38,7 @@ gboolean kafka_sd_set_topics(LogDriver *d, GList *topics);
 gboolean kafka_sd_set_strategy_hint(LogDriver *d, const gchar *strategy_hint);
 void kafka_sd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers);
 void kafka_sd_set_log_fetch_delay(LogDriver *s, guint new_value);
+void kafka_sd_set_log_fetch_retry_delay(LogDriver *s, guint new_value);
 void kafka_sd_set_log_fetch_limit(LogDriver *s, guint new_value);
 void kafka_sd_set_log_fetch_queue_full_delay(LogDriver *s, guint new_value);
 void kafka_sd_set_poll_timeout(LogDriver *d, gint poll_timeout);

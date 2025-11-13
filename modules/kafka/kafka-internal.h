@@ -158,7 +158,8 @@ struct _KafkaSourceOptions
 
   gboolean do_not_use_bookmark;
   guint fetch_delay;
-  guint fetch_limit;
+  guint fetch_retry_delay;
+  guint fetch_limit; // TODO: use together with "queued.max.messages.kbytes", if 0 kafka's own setting is used automatically
   guint fetch_queue_full_delay;
   gboolean separated_worker_queues;
 };

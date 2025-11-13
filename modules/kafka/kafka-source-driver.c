@@ -1477,6 +1477,12 @@ kafka_sd_set_log_fetch_delay(LogDriver *s, guint new_value)
   self->options.fetch_delay = new_value;
 }
 
+void kafka_sd_set_log_fetch_retry_delay(LogDriver *s, guint new_value)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)s;
+  self->options.fetch_retry_delay = new_value;
+}
+
 void
 kafka_sd_set_log_fetch_limit(LogDriver *s, guint new_value)
 {
@@ -1513,10 +1519,11 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->time_reopen = 60;
 
   self->do_not_use_bookmark = FALSE;
-  self->fetch_delay = 10000; /* 1 second / 10000 */
-  self->fetch_limit = 1000;
-  self->fetch_queue_full_delay = 1000; /* 1 second */
   self->separated_worker_queues = FALSE;
+  self->fetch_queue_full_delay = 1000; /* fetch_queue_full_delay milliseconds - 1 second */
+  self->fetch_delay = 1000; /* 1 second / fetch_delay * 1000000 = 1 millisecond */
+  self->fetch_retry_delay = 10000; /* 1 second / fetch_retry_delay * 1000000 = 10 milliseconds */
+  self->fetch_limit = 10000;
 
   log_template_options_defaults(&self->template_options);
 }

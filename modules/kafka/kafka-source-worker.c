@@ -60,10 +60,9 @@ _send(LogThreadedSourceWorker *worker, LogMessage *msg)
 }
 
 static inline gdouble
-_iteration_sleep_time(LogThreadedSourceWorker *worker)
+_mainloop_sleep_time(const gdouble delay)
 {
-  KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-  return self->options.fetch_delay ? 1.0 / self->options.fetch_delay : 0;
+  return delay > 0 ? 1.0 / delay : 0.0;
 }
 
 static gboolean
@@ -139,7 +138,8 @@ _processor_run(LogThreadedSourceWorker *worker)
                   evt_tag_str("driver", self->super.super.super.id));
 
   GAsyncQueue *msg_queue = kafka_sd_worker_queue(self, worker);
-  const gdouble iteration_sleep_time = _iteration_sleep_time(worker);
+  const gdouble iteration_sleep_time = _mainloop_sleep_time(self->options.fetch_delay);
+  const gdouble fetch_retry_sleep_time = _mainloop_sleep_time(self->options.fetch_retry_delay);
   rd_kafka_message_t *msg = NULL;
 
   while (1)
@@ -161,9 +161,11 @@ _processor_run(LogThreadedSourceWorker *worker)
               _process_message(worker, msg);
               rd_kafka_poll(self->kafka, 0);
               main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+              continue;
             }
-          else
-            break;
+
+          main_loop_worker_wait_for_exit_until(fetch_retry_sleep_time);
+          break;
         }
     }
   kafka_msg_debug("kafka: stopped queue processor",
@@ -410,7 +412,7 @@ static void
 _consumer_run(LogThreadedSourceWorker *worker)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
-  const gdouble iteration_sleep_time = _iteration_sleep_time(worker);
+  const gdouble iteration_sleep_time = _mainloop_sleep_time(self->options.fetch_delay);
   gboolean exit_requested = FALSE;
 
   g_atomic_counter_inc(&self->running_thread_num);
