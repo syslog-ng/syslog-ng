@@ -1116,13 +1116,6 @@ _destroy_kafka_client(LogDriver *s)
 
   if (self->kafka)
     {
-        {
-
-          if (self->strategy == KSCS_SUBSCRIBE)
-            rd_kafka_unsubscribe(self->kafka);
-          else
-            rd_kafka_assign(self->kafka, NULL);
-        }
       /* Wait for outstanding requests to finish, there should be nothing to commit */
       kafka_final_flush(self, FALSE);
 

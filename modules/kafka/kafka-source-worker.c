@@ -296,6 +296,12 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
    * committed offsets to broker, and left the consumer group (if applicable).
    */
   rd_kafka_consumer_close(self->kafka);
+
+  if (self->strategy == KSCS_SUBSCRIBE)
+    rd_kafka_unsubscribe(self->kafka);
+  else
+    rd_kafka_assign(self->kafka, NULL);
+
   /* We just stole these, the reference must be released */
   rd_kafka_queue_destroy(self->consumer_kafka_queue);
   self->consumer_kafka_queue = NULL;
