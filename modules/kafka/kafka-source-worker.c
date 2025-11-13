@@ -106,21 +106,18 @@ _fetch(LogThreadedSourceWorker *worker, rd_kafka_message_t **msg)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
   GAsyncQueue *msg_queue = kafka_sd_worker_queue(self, worker);
-  do
+
+  *msg = g_async_queue_try_pop(msg_queue);
+  if (G_LIKELY(*msg != NULL))
     {
-      *msg = g_async_queue_try_pop(msg_queue);
-      if (G_LIKELY(*msg != NULL))
-        {
-          LogThreadedSourceWorker *target_worker = (self->options.separated_worker_queues ?
-                                                    self->super.workers[worker->worker_index] :
-                                                    self->super.workers[1]); /* Intentionally not using the 0 index slot */
-          /* Setting directly is still racy, but we can live with that */
-          guint msg_queue_len = g_async_queue_length(msg_queue);
-          kafka_sd_set_msg_worker_stats(self, kafka_src_worker_get_name(target_worker), msg_queue_len);
-          return THREADED_FETCH_SUCCESS;
-        }
+      LogThreadedSourceWorker *target_worker = (self->options.separated_worker_queues ?
+                                                self->super.workers[worker->worker_index] :
+                                                self->super.workers[1]); /* Intentionally not using the 0 index slot */
+      /* Setting directly is still racy, but we can live with that */
+      guint msg_queue_len = g_async_queue_length(msg_queue);
+      kafka_sd_set_msg_worker_stats(self, kafka_src_worker_get_name(target_worker), msg_queue_len);
+      return THREADED_FETCH_SUCCESS;
     }
-  while (g_async_queue_length(msg_queue) && FALSE == main_loop_worker_job_quit());
   return THREADED_FETCH_NO_DATA;
 }
 
@@ -182,23 +179,30 @@ _queue_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg, guint t
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) worker->control;
 
-  while (1)
+  msg_trace("kafka: queuing message",
+            evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
+            evt_tag_int("partition", msg->partition),
+            evt_tag_int("offset", msg->offset),
+            evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+            evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(self)));
+  do
     {
+      gint msg_queues_len = kafka_sd_worker_queues_len(self);
+
+      if (G_LIKELY(msg_queues_len < self->options.fetch_limit))
+        break;
+
+      kafka_msg_debug("kafka: message queue full, waiting",
+                      evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
+                      evt_tag_int("worker_queues_len", msg_queues_len));
+      kafka_sd_signal_queues(self);
+      rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
+
       if (G_UNLIKELY(main_loop_worker_job_quit()))
         return FALSE;
-
-      gint msg_queues_len = kafka_sd_worker_queues_len(self);
-      if (msg_queues_len >= self->options.fetch_limit)
-        {
-          kafka_msg_debug("kafka: message queue full, waiting",
-                          evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                          evt_tag_int("worker_queues_len", msg_queues_len));
-          kafka_sd_signal_queues(self);
-          rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
-          continue;
-        }
-      break;
     }
+  while (1);
+
   g_async_queue_push(self->msg_queues[target_queue_ndx], msg);
   kafka_sd_signal_queue_ndx(self, target_queue_ndx);
 
@@ -210,9 +214,18 @@ _queue_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg, guint t
   return TRUE;
 }
 
-/* ****************************************************
- * Strategy - assign/subscribe consumer poll and queue
- * ****************************************************/
+static inline guint
+_next_target_queue_ndx(KafkaSourceDriver *self, guint *rr)
+{
+  guint target_queue_ndx = (self->options.separated_worker_queues ?
+                            ((*rr)++ % (self->super.num_workers - 1)) + 1 :
+                            1); /* Intentionally not using the 0 index slot */
+  return target_queue_ndx;
+}
+
+/* *************************************************************************
+ * Strategy - assign/subscribe consumer poll and queueing or direct processing
+ * *************************************************************************/
 
 /* runs in a dedicated thread */
 static void
@@ -270,17 +283,17 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
         }
       else
         {
-          msg_trace("kafka: got message",
-                    evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
-                    evt_tag_int("partition", msg->partition),
-                    evt_tag_int("offset", msg->offset),
-                    evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(self->kafka)),
-                    evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(self)));
-          guint target_queue_ndx = (self->options.separated_worker_queues ?
-                                    (rr++ % (self->super.num_workers - 1)) + 1 :
-                                    1); /* Intentionally not using the 0 index slot */
-          if (G_UNLIKELY(FALSE == _queue_message(worker, msg, target_queue_ndx)))
-            rd_kafka_message_destroy(msg);
+          if (self->used_queue_num > 0)
+            {
+              if (G_UNLIKELY(FALSE == _queue_message(worker, msg, _next_target_queue_ndx(self, &rr))))
+                rd_kafka_message_destroy(msg);
+            }
+          else
+            {
+              _process_message(worker, msg);
+              rd_kafka_poll(self->kafka, 0);
+              main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+            }
         }
     }
   /* This call will block until the consumer has revoked its assignment, calling the rebalance_cb if it is configured,
