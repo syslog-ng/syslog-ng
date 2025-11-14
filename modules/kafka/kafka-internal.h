@@ -2,6 +2,7 @@
  * Copyright (c) 2020 Balabit
  * Copyright (c) 2020 Balazs Scheidler
  * Copyright (c) 2020 Vivin Peris
+ * Copyright (c) 2025 Hofi <hofione@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
