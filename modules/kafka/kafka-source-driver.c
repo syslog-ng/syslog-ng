@@ -795,10 +795,15 @@ kafka_final_flush(KafkaSourceDriver *self, gboolean commit)
 void
 kafka_sd_wakeup_kafka_queues(KafkaSourceDriver *self)
 {
+#if SYSLOG_NG_HAVE_RD_KAFKA_QUEUE_YIELD
   if (self->consumer_kafka_queue)
     rd_kafka_queue_yield(self->consumer_kafka_queue);
   if (self->main_kafka_queue)
     rd_kafka_queue_yield(self->main_kafka_queue);
+#else
+  msg_warning("kafka: rd_kafka_queue_yield() is not available in the linked librdkafka version, syslog-ng shutdown latency may increase to `poll_timeout` value",
+              evt_tag_str("driver", self->super.super.super.id));
+#endif
 }
 
 static void
