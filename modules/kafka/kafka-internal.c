@@ -188,6 +188,62 @@ kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_
   return TRUE;
 }
 
+inline gchar *
+kafka_format_partition_key(const gchar *topic, int32_t partition, gchar *key, gsize key_size)
+{
+  g_snprintf(key, key_size, "%s#%d", topic, partition);
+  return key;
+}
+
+gboolean
+kafka_seek_partitions(KafkaSourceDriver *self,
+                      rd_kafka_topic_partition_list_t *partitions,
+                      int timeout_ms)
+{
+  gboolean success = TRUE;
+
+#if SYSLOG_NG_HAVE_RD_KAFKA_SEEK_PARTITIONS
+  rd_kafka_error_t *seek_err = rd_kafka_seek_partitions(self->kafka, partitions, timeout_ms);
+  if (seek_err)
+    {
+      msg_error("kafka: failed to seek to the restored offset for partitions (seek_partitions)",
+                evt_tag_str("error", rd_kafka_error_string(seek_err)));
+      rd_kafka_error_destroy(seek_err);
+      success = FALSE;
+    }
+#else
+  /* Fallback: call rd_kafka_seek() for every entry in the topic-partition list */
+  for (int pi = 0; pi < partitions->cnt; ++pi)
+    {
+      rd_kafka_topic_partition_t *p = &partitions->elems[pi];
+
+      /* rd_kafka_seek() needs a rd_kafka_topic_t*, so create a temporary handle */
+      rd_kafka_topic_t *rkt = rd_kafka_topic_new(self->kafka, p->topic, NULL);
+      if (!rkt)
+        {
+          msg_error("kafka: rd_kafka_topic_new() failed in fallback seek",
+                    evt_tag_str("topic", p->topic),
+                    evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())));
+          success = FALSE;
+          break;
+        }
+
+      rd_kafka_resp_err_t r = rd_kafka_seek(rkt, p->partition, p->offset, timeout_ms);
+      if (r != RD_KAFKA_RESP_ERR_NO_ERROR)
+        {
+          msg_error("kafka: failed to seek to the restored offset (legacy rd_kafka_seek)",
+                    evt_tag_str("topic", p->topic),
+                    evt_tag_int("partition", (int)p->partition),
+                    evt_tag_long("offset", p->offset),
+                    evt_tag_str("error", rd_kafka_err2str(r)));
+          success = FALSE;
+        }
+      rd_kafka_topic_destroy(rkt);
+    }
+#endif
+  return success;
+}
+
 void
 kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions)
 {

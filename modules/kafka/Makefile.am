@@ -19,6 +19,8 @@ modules_kafka_libkafka_la_SOURCES = \
   modules/kafka/kafka-source-driver.c \
   modules/kafka/kafka-source-worker.h \
   modules/kafka/kafka-source-worker.c \
+  modules/kafka/kafka-source-persist.h \
+  modules/kafka/kafka-source-persist.c \
   modules/kafka/kafka-internal.h \
   modules/kafka/kafka-internal.c \
   modules/kafka/kafka-topic-parts.h \

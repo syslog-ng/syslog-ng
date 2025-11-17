@@ -13,6 +13,7 @@ if(NOT ENABLE_KAFKA)
 endif()
 
 check_library_exists(rdkafka rd_kafka_init_transactions "" SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS)
+check_library_exists(rdkafka rd_kafka_seek_partitions "" SYSLOG_NG_HAVE_RD_KAFKA_SEEK_PARTITIONS)
 check_library_exists(rdkafka rd_kafka_queue_yield "" SYSLOG_NG_HAVE_RD_KAFKA_QUEUE_YIELD)
 
 set(CMAKE_REQUIRED_INCLUDES ${RDKAFKA_INCLUDE_DIR})
@@ -29,6 +30,8 @@ set(KAFKA_SOURCES
   kafka-source-driver.c
   kafka-source-worker.h
   kafka-source-worker.c
+  kafka-source-persist.h
+  kafka-source-persist.c
   kafka-props.h
   kafka-props.c
   kafka-internal.h

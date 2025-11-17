@@ -21,6 +21,7 @@
  */
 
 #include "kafka-source-worker.h"
+#include "kafka-source-persist.h"
 #include "kafka-internal.h"
 #include "kafka-props.h"
 #include "kafka-topic-parts.h"
@@ -65,14 +66,38 @@ _mainloop_sleep_time(const gdouble delay)
   return delay > 0 ? 1.0 / delay : 0.0;
 }
 
-static gboolean
-_process_message(LogThreadedSourceWorker *self, rd_kafka_message_t *msg)
+gboolean
+_persist_store_msg_offset(KafkaSourceWorker *self,
+                          const gchar *msg_topic_name,
+                          int32_t msg_partition,
+                          int64_t msg_offset)
 {
-  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->control;
+  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->super.control;
+  gboolean success = TRUE;
+  gchar key[300];
+  kafka_format_partition_key(msg_topic_name, msg_partition, key, sizeof(key));
+  Bookmark *bookmark = ack_tracker_request_bookmark(self->super.super.ack_tracker);
+  KafkaSourcePersist *persist = (KafkaSourcePersist *) g_hash_table_lookup(driver->persists, key);
+  kafka_source_persist_fill_bookmark(persist, bookmark, msg_offset);
+  msg_trace("kafka: bookmark created",
+            evt_tag_long("offset", msg_offset),
+            evt_tag_str("topic", msg_topic_name),
+            evt_tag_int("partition", msg_partition),
+            evt_tag_str("driver", driver->super.super.super.id));
+
+  return success;
+}
+
+static gboolean
+_process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
+{
+  KafkaSourceDriver *driver = (KafkaSourceDriver *) worker->control;
+  KafkaSourceWorker *self = (KafkaSourceWorker *) worker;
+  const gchar *topic_name = rd_kafka_topic_name(msg->rkt);
 
   msg_trace("kafka: processing message",
             evt_tag_str("group_id", driver->group_id),
-            evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
+            evt_tag_str("topic", topic_name),
             evt_tag_int("partition", msg->partition),
             evt_tag_str("message", (gchar *)msg->payload),
             evt_tag_str("driver", driver->super.super.super.id));
@@ -80,20 +105,14 @@ _process_message(LogThreadedSourceWorker *self, rd_kafka_message_t *msg)
   LogMessage *log_msg;
   gsize msg_len = _log_message_from_string((gchar *)msg->payload, driver->options.format_options, &log_msg);
   log_msg_set_value_to_string(log_msg, LM_V_TRANSPORT, "local+kafka");
+
+  _persist_store_msg_offset(self, topic_name, msg->partition, msg->offset);
+
+  _send(worker, log_msg);
+
   kafka_sd_update_msg_length_stats(driver, msg_len);
   log_msg_set_recvd_rawmsg_size(log_msg, msg->len);
   kafka_sd_inc_msg_topic_stats(driver, rd_kafka_topic_name(msg->rkt));
-
-  _send(self, log_msg);
-
-  rd_kafka_error_t *err = rd_kafka_offset_store_message(msg);
-  if (err)
-    msg_warning("kafka: error storing message offset",
-                evt_tag_str("group_id", driver->group_id),
-                evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
-                evt_tag_int("partition", msg->partition),
-                evt_tag_str("error", rd_kafka_error_string(err)),
-                evt_tag_str("driver", driver->super.super.super.id));
 
   rd_kafka_message_destroy(msg);
   main_loop_worker_run_gc();
@@ -106,6 +125,13 @@ _fetch(LogThreadedSourceWorker *self, rd_kafka_message_t **msg)
 {
   KafkaSourceDriver *driver = (KafkaSourceDriver *) self->control;
   GAsyncQueue *msg_queue = kafka_sd_worker_queue(driver, self);
+
+  // TODO: Check what sets driver->super->auto_close_batches and if batching support is really needed here
+  // if (G_UNLIKELY(self->curr_fetch_in_run >= self->options.fetch_limit))
+  //   {
+  //   log_threaded_source_worker_close_batch(self);
+  //   return THREADED_FETCH_TRY_AGAIN
+  //   }
 
   *msg = g_async_queue_try_pop(msg_queue);
   if (G_LIKELY(*msg != NULL))
@@ -170,9 +196,9 @@ _processor_run(LogThreadedSourceWorker *self)
 }
 
 static gboolean
-_queue_message(LogThreadedSourceWorker *self, rd_kafka_message_t *msg, guint target_queue_ndx)
+_queue_message(KafkaSourceWorker *self, rd_kafka_message_t *msg, guint target_queue_ndx)
 {
-  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->control;
+  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->super.control;
 
   msg_trace("kafka: queuing message",
             evt_tag_str("topic", rd_kafka_topic_name(msg->rkt)),
@@ -215,11 +241,43 @@ _next_target_queue_ndx(KafkaSourceDriver *driver, guint *rr)
   return target_queue_ndx;
 }
 
+static void
+_wait_for_queue_processors_to_exit(KafkaSourceDriver *driver, const gdouble iteration_sleep_time)
+{
+  /* Wake-up sleeping/waiting (queue) processor workers */
+  kafka_sd_signal_queues(driver);
+  /* Wait for all the (queue) processor workers to exit */
+  while (g_atomic_counter_get(&driver->running_thread_num) > 1)
+    {
+      main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+      kafka_sd_signal_queues(driver);
+    }
+}
+
+static void
+_stop_consumer(KafkaSourceWorker *worker, const gdouble iteration_sleep_time)
+{
+  KafkaSourceDriver *driver = (KafkaSourceDriver *) worker->super.control;
+
+  /* This call will block until the consumer has revoked its assignment, calling the rebalance_cb if it is configured,
+   * committed offsets to broker, and left the consumer group (if applicable).
+   */
+  rd_kafka_consumer_close(driver->kafka);
+
+  if (driver->strategy == KSCS_SUBSCRIBE)
+    rd_kafka_unsubscribe(driver->kafka);
+  else
+    rd_kafka_assign(driver->kafka, NULL);
+
+  /* Wait for outstanding requests to finish */
+  kafka_final_flush(driver);
+}
+
 /* runs in a dedicated thread */
 static void
-_consumer_run_consumer_poll(LogThreadedSourceWorker *self, const gdouble iteration_sleep_time)
+_run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
 {
-  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->control;
+  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->super.control;
   rd_kafka_message_t *msg;
   guint rr = 0;
 
@@ -233,11 +291,6 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *self, const gdouble iterati
     kafka_msg_debug("kafka: waiting for group rebalancer",
                     evt_tag_str("group_id", driver->group_id),
                     evt_tag_str("driver", driver->super.super.super.id));
-
-  /* We just steal these from the main/consumer event loops to be able to stop the blocking rd_kafka_consumer_poll */
-  driver->consumer_kafka_queue = rd_kafka_queue_get_consumer(driver->kafka);
-  driver->main_kafka_queue = rd_kafka_queue_get_main(driver->kafka);
-
   while (1)
     {
       if (G_UNLIKELY(main_loop_worker_job_quit()))
@@ -278,38 +331,19 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *self, const gdouble iterati
             }
           else
             {
-              _process_message(self, msg);
+              _process_message(&self->super, msg);
               rd_kafka_poll(driver->kafka, 0);
               main_loop_worker_wait_for_exit_until(iteration_sleep_time);
             }
         }
     }
-  /* This call will block until the consumer has revoked its assignment, calling the rebalance_cb if it is configured,
-   * committed offsets to broker, and left the consumer group (if applicable).
-   */
-  rd_kafka_consumer_close(driver->kafka);
-
-  if (driver->strategy == KSCS_SUBSCRIBE)
-    rd_kafka_unsubscribe(driver->kafka);
-  else
-    rd_kafka_assign(driver->kafka, NULL);
-
-  /* We just stole these, the reference must be released */
-  rd_kafka_queue_destroy(driver->consumer_kafka_queue);
-  driver->consumer_kafka_queue = NULL;
-  rd_kafka_queue_destroy(driver->main_kafka_queue);
-  driver->main_kafka_queue = NULL;
-
-  /* Wait for outstanding requests to finish, commit offsets */
-  kafka_final_flush(driver, TRUE);
-
-  main_loop_worker_run_gc();
+  _wait_for_queue_processors_to_exit(driver, iteration_sleep_time);
 }
 
 static gboolean
-_restart_consumer(LogThreadedSourceWorker *self, const gdouble iteration_sleep_time)
+_restart_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
 {
-  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->control;
+  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->super.control;
 
   main_loop_worker_wait_for_exit_until(driver->options.time_reopen);
 
@@ -332,23 +366,34 @@ _restart_consumer(LogThreadedSourceWorker *self, const gdouble iteration_sleep_t
 
 /* runs in a dedicated thread */
 static void
-_consumer_run(LogThreadedSourceWorker *self)
+_consumer_run(LogThreadedSourceWorker *worker)
 {
-  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->control;
+  KafkaSourceWorker *self = (KafkaSourceWorker *) worker;
+  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->super.control;
   const gdouble iteration_sleep_time = _mainloop_sleep_time(driver->options.fetch_delay);
   gboolean exit_requested = FALSE;
 
   g_atomic_counter_inc(&driver->running_thread_num);
   do
     {
+      /* We just steal these from the main/consumer event loops to be able to stop the blocking rd_kafka_consumer_poll */
+      driver->consumer_kafka_queue = rd_kafka_queue_get_consumer(driver->kafka);
+      driver->main_kafka_queue = rd_kafka_queue_get_main(driver->kafka);
+
       kafka_update_state(driver, TRUE);
 
-      _consumer_run_consumer_poll(self, iteration_sleep_time);
+      _run_consumer(self, iteration_sleep_time);
+      _stop_consumer(self, iteration_sleep_time);
 
       kafka_msg_debug("kafka: stopped consumer poll run",
                       evt_tag_str("group_id", driver->group_id),
                       evt_tag_str("driver", driver->super.super.super.id));
+      rd_kafka_queue_destroy(driver->consumer_kafka_queue);
+      driver->consumer_kafka_queue = NULL;
+      rd_kafka_queue_destroy(driver->main_kafka_queue);
+      driver->main_kafka_queue = NULL;
 
+      main_loop_worker_run_gc();
       exit_requested = main_loop_worker_job_quit();
       if (FALSE == exit_requested)
         {
@@ -358,15 +403,6 @@ _consumer_run(LogThreadedSourceWorker *self)
     }
   while (FALSE == exit_requested);
 
-  /* Wake-up sleeping/waiting (queue) processor workers */
-  kafka_sd_signal_queues(driver);
-  /* Wait for all the (queue) processor workers to exit, see _processor_run why not just for the _consumer_run_consumer_poll case */
-  while (g_atomic_counter_get(&driver->running_thread_num) > 1)
-    {
-      main_loop_worker_wait_for_exit_until(iteration_sleep_time);
-      kafka_sd_signal_queues(driver);
-    }
-
   if (driver->allocated_queue_num > 0)
     kafka_sd_drop_queued_messages(driver);
 
@@ -375,22 +411,24 @@ _consumer_run(LogThreadedSourceWorker *self)
 }
 
 static void
-_exit_requested(LogThreadedSourceWorker *self)
+_exit_requested(LogThreadedSourceWorker *worker)
 {
-  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->control;
+  KafkaSourceDriver *driver = (KafkaSourceDriver *) worker->control;
   /* We need to wake-up the possibly blocking rd_kafka_consumer_poll/rd_kafka_poll */
   kafka_sd_wakeup_kafka_queues(driver);
 }
 
 static gboolean
-_kafka_src_worker_init(LogThreadedSourceWorker *worker)
+_kafka_src_worker_init(LogThreadedSourceWorker *worker,
+                       /* cannot use worker->control, not yet set */
+                       LogThreadedSourceDriver *owner)
 {
   KafkaSourceWorker *self = (KafkaSourceWorker *) worker;
 
-  int ret = g_snprintf(self->name, sizeof(self->name), "worker#%d", worker->worker_index);
+  int ret = g_snprintf(self->name, sizeof(self->name), "worker#%d", self->super.worker_index);
   g_assert((gsize)ret < sizeof(self->name));
 
-  if (worker->worker_index == 0)
+  if (self->super.worker_index == 0)
     {
       self->super.run = _consumer_run;
       self->super.request_exit = _exit_requested;
@@ -417,8 +455,9 @@ LogThreadedSourceWorker *kafka_src_worker_new(LogThreadedSourceDriver *owner, gi
   /* NOTE: Cannot use self->super.thread_init, as kafka_src_worker_get_name might be called before thread_init is called
    *       also, name cannot be a dynamically allocated GString, as it might be used during shutdown/cleanups etc.,
    *       like the worker_index, and currently there is no LogThreadedSourceDriver thread.free hook to free such resources.
+   *       It also means that the control pointer still not set when thread_init is called, we must pass the owner explicitly.
    */
-  _kafka_src_worker_init(&self->super);
+  _kafka_src_worker_init(&self->super, owner);
 
   return &self->super;
 }

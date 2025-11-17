@@ -22,6 +22,7 @@
 
 #include "kafka-source-driver.h"
 #include "kafka-source-worker.h"
+#include "kafka-source-persist.h"
 #include "kafka-internal.h"
 #include "kafka-props.h"
 #include "kafka-topic-parts.h"
@@ -534,6 +535,128 @@ _kafka_error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
   kafka_opaque_state_unlock(&self->opaque);
 }
 
+static gboolean
+_find_msg_offset(KafkaSourceDriver *self, const gchar *key, int64_t *offset)
+{
+  gboolean found = FALSE;
+  KafkaSourcePersist *persist = g_hash_table_lookup(self->persists, key);
+  int64_t value = -1;
+
+  kafka_source_persist_load_position(persist, &value);
+  if (value > 0)
+    {
+      *offset = value;
+      found = TRUE;
+    }
+  return found;
+}
+
+static gboolean
+_restore_msg_offsets(KafkaSourceDriver *self)
+{
+  gboolean success = TRUE;
+  gchar key[300];
+
+  for (int i = 0 ; i < self->assigned_partitions->cnt ; i++)
+    {
+      rd_kafka_topic_partition_t *partition = &self->assigned_partitions->elems[i];
+      kafka_format_partition_key(partition->topic, partition->partition, key, sizeof(key));
+      int64_t offset = _get_start_fallback_offset_code(self);
+      gboolean found = _find_msg_offset(self, key, &offset);
+
+      if (found)
+        {
+          partition->offset = offset >= 0 ? offset + 1 : offset;
+          kafka_msg_debug("kafka: restoring latest offset for partition",
+                          evt_tag_str("topic", partition->topic),
+                          evt_tag_int("partition", (int) partition->partition),
+                          evt_tag_long("restored_offset", offset));
+        }
+      else
+        {
+          partition->offset = offset;
+          kafka_msg_debug("kafka: no latest offset found, using fallback offset for partition",
+                          evt_tag_str("topic", partition->topic),
+                          evt_tag_int("partition", (int) partition->partition),
+                          evt_tag_str("fallback_offset", _get_start_fallback_offset_string(self)));
+        }
+    }
+  kafka_seek_partitions(self, self->assigned_partitions, self->options.super.state_update_timeout);
+
+  return success;
+}
+
+static void
+_persist_destroy(gpointer data)
+{
+  KafkaSourcePersist *persist = (KafkaSourcePersist *)data;
+  kafka_source_persist_free(persist);
+}
+
+static void
+_partitions_persists_create(KafkaSourceDriver *self)
+{
+  g_assert(self->persists == NULL);
+  gchar key[300];
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
+
+  self->persists = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, _persist_destroy);
+
+  for (int i = 0 ; i < self->assigned_partitions->cnt ; i++)
+    {
+      const gchar *topic = self->assigned_partitions->elems[i].topic;
+      kafka_format_partition_key(topic, self->assigned_partitions->elems[i].partition, key, sizeof(key));
+      g_assert(FALSE == g_hash_table_contains(self->persists, key));
+
+      gboolean persist_use_offset_tracker = self->super.num_workers > 2;
+      KafkaSourcePersist *persist = kafka_source_persist_new(persist_use_offset_tracker);
+      kafka_source_persist_init(persist, cfg->state, key);
+      g_hash_table_insert(self->persists, g_strdup(key), persist);
+    }
+}
+
+static void
+_partitions_persists_destroy(KafkaSourceDriver *self)
+{
+  if (self->persists)
+    {
+      g_hash_table_destroy(self->persists);
+      self->persists = NULL;
+    }
+}
+
+static gboolean
+_apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_list_t *parts)
+{
+  gboolean result = TRUE;
+  rd_kafka_resp_err_t err;
+  if ((err = rd_kafka_assign(self->kafka, parts)) == RD_KAFKA_RESP_ERR_NO_ERROR)
+    {
+      self->assigned_partitions = parts;
+
+      _partitions_persists_destroy(self);
+      _partitions_persists_create(self);
+
+      /* Force a poll to ensure the assignment is active immediately, this seems to be mandatory
+       * before we can seek in _restore_msg_offsets if the partitions are manually assigned */
+      rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
+      _restore_msg_offsets(self);
+
+      kafka_log_partition_list(parts);
+      _register_topic_stats(self);
+    }
+  else
+    {
+      msg_error("kafka: rd_kafka_assign() failed",
+                evt_tag_str("group_id", self->group_id),
+                evt_tag_str("error", rd_kafka_err2str(err)),
+                evt_tag_str("driver", self->super.super.super.id));
+      rd_kafka_topic_partition_list_destroy(parts);
+      result = FALSE;
+    }
+  return result;
+}
+
 static rd_kafka_topic_partition_list_t *
 _compose_partition_list(KafkaSourceDriver *self)
 {
@@ -577,29 +700,16 @@ static gboolean
 _setup_method_assigned_consumer(KafkaSourceDriver *self)
 {
   g_assert(self->kafka);
-  gboolean result = TRUE;
   const guint topics_num = g_list_length(self->requested_topics);
   g_assert(topics_num > 0);
 
   rd_kafka_topic_partition_list_t *parts = _compose_partition_list(self);
-  rd_kafka_resp_err_t err;
-  if ((err = rd_kafka_assign(self->kafka, parts)) == RD_KAFKA_RESP_ERR_NO_ERROR)
+  gboolean result = TRUE;
+  if ((result = _apply_assigned_partitions(self, parts)))
     {
       msg_debug("kafka: partitions assigned",
                 evt_tag_str("group_id", self->group_id),
                 evt_tag_str("driver", self->super.super.super.id));
-      self->assigned_partitions = parts;
-      kafka_log_partition_list(parts);
-      _register_topic_stats(self);
-    }
-  else
-    {
-      msg_error("kafka: rd_kafka_assign() failed",
-                evt_tag_str("group_id", self->group_id),
-                evt_tag_str("error", rd_kafka_err2str(err)),
-                evt_tag_str("driver", self->super.super.super.id));
-      rd_kafka_topic_partition_list_destroy(parts);
-      result = FALSE;
     }
 
   return result;
@@ -649,7 +759,7 @@ static void
 _alloc_msg_queues(KafkaSourceDriver *self)
 {
   g_assert(self->msg_queues == NULL);
-  if (self->super.num_workers - 1 <= 0)
+  if (self->super.num_workers <= 1)
     return;
 
   /* Intentionally not using the 0 index slot */
@@ -746,8 +856,6 @@ kafka_sd_worker_queues_len(KafkaSourceDriver *self)
   return len;
 }
 
-/* Drops all queued messages, but commits the latest offsets per topic-partition
- */
 void
 kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
 {
@@ -769,14 +877,11 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
 }
 
 void
-kafka_final_flush(KafkaSourceDriver *self, gboolean commit)
+kafka_final_flush(KafkaSourceDriver *self)
 {
   const gint poll_timeout = 50;
-
-  if (commit)
-    rd_kafka_commit(self->kafka, NULL, FALSE); // synchronous commit of current offsets
-
   gint remaining_time = self->options.super.poll_timeout;
+
   while (rd_kafka_outq_len(self->kafka) > 0 && remaining_time > 0)
     {
       rd_kafka_poll(self->kafka, poll_timeout);
@@ -824,13 +929,11 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
       msg_verbose("kafka: group rebalanced - assigned",
                   evt_tag_str("group_id", self->group_id),
                   evt_tag_str("member_id", rd_kafka_memberid(rk)));
+
       if (self->assigned_partitions)
         rd_kafka_topic_partition_list_destroy(self->assigned_partitions);
-      self->assigned_partitions = rd_kafka_topic_partition_list_copy(partitions);
-      kafka_log_partition_list(self->assigned_partitions);
       /* Broker assigned the partitions → assign to the consumers too */
-      rd_kafka_assign(self->kafka, self->assigned_partitions);
-      _register_topic_stats(self);
+      _apply_assigned_partitions(self, rd_kafka_topic_partition_list_copy(partitions));
       break;
 
     case RD_KAFKA_RESP_ERR__REVOKE_PARTITIONS:
@@ -1010,40 +1113,19 @@ _construct_kafka_client(KafkaSourceDriver *self)
   if (FALSE == kafka_conf_set_prop(conf, "metadata.broker.list", self->options.super.bootstrap_servers))
     goto err_exit;
   /* NOTE:
-   * 1. The callback-based consumer API's offset store granularity is not sufficient.
+   * 1. The consumer API's automatic offset store granularity is not sufficient.
    * 2. We want to control the offset storage process ourselves and only mark a message as processed
    *    once it has been fully delivered — especially in the single topic/single partition case
-   *    (with the low-level API, `consume_start`), where message order matters and must be preserved.
-   * 3. The `auto.offset.store = true` + `enable.auto.commit = true` combination
-   *    would generally work well in the latest versions of librdkafka, but only if the consumer
-   *    reads *all* available messages within a single poll cycle. This is not always guaranteed,
-   *    as we might need to exit the poll loop early (e.g. due to shutdown or reconfiguration).
-   *    In such cases, we must terminate as soon as possible and discard any remaining messages
-   *    after exiting the poll cycle. This can result in messages being marked as processed and committed
-   *    (due to automatic offset store and commit, which we cannot control),
-   *    even though their delivery was not guaranteed — leading to potential message loss on restart/reload.
-   * 4. The `auto.offset.store = false` + `enable.auto.commit = true` combination
-   *    can work well if we explicitly store offsets after each message is fully processed and delivered.
-   *    However, when using the high-level consumer API (`subscribe`/`assign`),
-   *    this requires `rd_kafka_offset_store_message()`, which is only available in librdkafka 2.1.0 and later.
-   *    TODO: Even in this case, precision is not perfect — a few messages may still be reprocessed
-   *          after a restart/reload (even if the broker indicates all messages have been processed, see point nr1.).
-   *          This behavior requires further investigation.
+   *    where message order matters and must be preserved.
+   * 3. As we can process messages in multiple threads/workers, we have to handle offset storage
+   *    and commiting manually for the scenarios when messages are processed out-of-order.
    *
-   * So, now we disable the automatic offset store, do it explicitly per-message in
-   * the message processor of the consume callback/batch_loop instead.
-   * Also, this controls only the high-level consumer API scenario, for the low-lewel
-   * version we should use our persist state backup/restore and RD_KAFKA_OFFSET_STORED
-   * in rd_kafka_consume_start */
+   * So, now we disable the automatic offset store and commit, do it explicitly per-message in
+   * the message processor of the consume loop instead, using our ack tracker.
+   */
   if (FALSE == kafka_conf_set_prop(conf, "enable.auto.offset.store", "false"))
     goto err_exit;
-  if (FALSE == kafka_conf_set_prop(conf, "enable.auto.commit", "true"))
-    goto err_exit;
-  /* This is for the high-level consumer API Like RD_KAFKA_OFFSET_XXX of rd_kafka_consume_start for the low-level one.
-   * This is just a fallback if the offset cannot be restored.
-   * NOTE: this is treated a per-topic option in the documentation, but seems to apply globally.
-   */
-  if (FALSE == kafka_conf_set_prop(conf, "auto.offset.reset", _get_start_fallback_offset_string(self)))
+  if (FALSE == kafka_conf_set_prop(conf, "enable.auto.commit", "false"))
     goto err_exit;
 
   static gchar *protected_properties[] =
@@ -1124,8 +1206,8 @@ _destroy_kafka_client(LogDriver *s)
 
   if (self->kafka)
     {
-      /* Wait for outstanding requests to finish, there should be nothing to commit */
-      kafka_final_flush(self, FALSE);
+      /* Wait for outstanding requests to finish */
+      kafka_final_flush(self);
 
       /* NOTE: If this call is hanging, we need to ensure that no resources are in use */
       rd_kafka_destroy(self->kafka);
@@ -1230,6 +1312,8 @@ kafka_sd_deinit(LogPipe *s)
   kafka_opaque_deinit(&self->opaque);
   _destroy_msg_queues(self);
 
+  _partitions_persists_destroy(self);
+
   _unregister_aggregated_stats(self);
   _unregister_worker_stats(self);
   _unregister_topic_stats(self);
@@ -1267,12 +1351,8 @@ kafka_sd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = kafka_sd_free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
 
-  // FIXME: consecutive_ack_tracker_factory_new(); crashing on reload
-  //            return consecutive_ack_record_container_static_new(log_source_get_init_window_size(source));
-  //                ring_buffer_alloc(&self->ack_records, sizeof(ConsecutiveAckRecord), size);
-  //                  g_assert(capacity > 0);
-  self->super.worker_options.ack_tracker_factory =
-    instant_ack_tracker_bookmarkless_factory_new();// consecutive_ack_tracker_factory_new();
+  self->super.worker_options.ack_tracker_factory = consecutive_ack_tracker_factory_new();
+
   self->super.worker_construct = kafka_src_worker_new;
 
   self->super.format_stats_key = _format_stats_key;

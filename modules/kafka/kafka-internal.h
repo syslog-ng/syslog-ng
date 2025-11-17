@@ -39,8 +39,10 @@
 
 #if SYSLOG_NG_ENABLE_DEBUG
 #define kafka_msg_debug msg_verbose
+#define kafka_msg_trace msg_verbose
 #else
 #define kafka_msg_debug msg_debug
+#define kafka_msg_trace msg_trace
 #endif
 
 #define TOPIC_NAME_ERROR topic_name_error_quark()
@@ -79,6 +81,10 @@ gboolean kafka_conf_get_prop(const rd_kafka_conf_t *conf, const gchar *name, gch
 gboolean kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value);
 gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_properties,
                                   gsize protected_properties_num);
+gboolean kafka_seek_partitions(KafkaSourceDriver *self,
+                               rd_kafka_topic_partition_list_t *partitions,
+                               int timeout_ms);
+gchar *kafka_format_partition_key(const gchar *topic, int32_t partition, gchar *key, gsize key_size);
 void kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
 
@@ -88,7 +94,7 @@ void kafka_unregister_counters(KafkaSourceDriver *self, const gchar *label, cons
                                StatsCounterItem *counter, const gchar **counter_names);
 
 rd_kafka_resp_err_t kafka_update_state(KafkaSourceDriver *self, gboolean lock);
-void kafka_final_flush(KafkaSourceDriver *self, gboolean commit);
+void kafka_final_flush(KafkaSourceDriver *self);
 
 typedef struct _KafkaOptions
 {
@@ -195,6 +201,7 @@ struct _KafkaSourceDriver
 
   GAtomicCounter running_thread_num;
   GAtomicCounter sleeping_thread_num;
+  GHashTable *persists;
 
   const gchar *persist_name;
   const gchar *stat_persist_name;
