@@ -26,7 +26,6 @@ from typing import List, Optional
 import pexpect
 import sys
 
-from cdn import CDN
 from remote_storage_synchronizer import RemoteStorageSynchronizer
 
 from indexer import Indexer
@@ -52,7 +51,6 @@ class RPMIndexer(Indexer):
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
         incoming_sub_dir: Path,
         dist_dir: Path,
-        cdn: CDN,
         gpg_key_path: Path,
         gpg_key_passphrase: Optional[str],
         gpg_key_name: Optional[str],
@@ -62,7 +60,6 @@ class RPMIndexer(Indexer):
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
             incoming_sub_dir=incoming_sub_dir,
             indexed_sub_dir=Path("yum", dist_dir),
-            cdn=cdn,
         )
         self.__gpg_key_path = gpg_key_path.expanduser()
         self.__gpg_key_passphrase = gpg_key_passphrase
@@ -222,7 +219,6 @@ class StableRPMIndexer(RPMIndexer):
         incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
         run_id: str,
-        cdn: CDN,
         gpg_key_path: Path,
         gpg_key_passphrase: Optional[str],
         gpg_key_name: Optional[str],
@@ -232,7 +228,6 @@ class StableRPMIndexer(RPMIndexer):
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
             incoming_sub_dir=Path("stable", run_id),
             dist_dir=Path("stable"),
-            cdn=cdn,
             gpg_key_path=gpg_key_path,
             gpg_key_passphrase=gpg_key_passphrase,
             gpg_key_name=gpg_key_name,
@@ -246,7 +241,6 @@ class NightlyRPMIndexer(RPMIndexer):
         self,
         incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
-        cdn: CDN,
         run_id: str,
         gpg_key_path: Path,
         gpg_key_passphrase: Optional[str],
@@ -257,7 +251,6 @@ class NightlyRPMIndexer(RPMIndexer):
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
             incoming_sub_dir=Path("nightly", run_id),
             dist_dir=Path("nightly"),
-            cdn=cdn,
             gpg_key_path=gpg_key_path,
             gpg_key_passphrase=gpg_key_passphrase,
             gpg_key_name=gpg_key_name,
