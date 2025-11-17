@@ -233,7 +233,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
 
   kafka_msg_debug("kafka: consumer poll run started",
                   evt_tag_int("worker_num", self->super.num_workers),
-                  evt_tag_int("queue_num", self->used_queue_num ? self->used_queue_num - 1 : 0),
+                  evt_tag_int("queue_num", self->allocated_queue_num ? self->allocated_queue_num - 1 : 0),
                   evt_tag_int("queues_max_size", self->options.fetch_limit),
                   evt_tag_str("group_id", self->group_id),
                   evt_tag_str("driver", self->super.super.super.id));
@@ -279,7 +279,7 @@ _consumer_run_consumer_poll(LogThreadedSourceWorker *worker, const gdouble itera
         }
       else
         {
-          if (self->used_queue_num > 0)
+          if (self->allocated_queue_num > 0)
             {
               if (G_UNLIKELY(FALSE == _queue_message(worker, msg, _next_target_queue_ndx(self, &rr))))
                 rd_kafka_message_destroy(msg);
@@ -375,7 +375,7 @@ _consumer_run(LogThreadedSourceWorker *worker)
       kafka_sd_signal_queues(self);
     }
 
-  if (self->used_queue_num > 0)
+  if (self->allocated_queue_num > 0)
     kafka_sd_drop_queued_messages(self);
 
   gint running_thread_num = g_atomic_counter_dec_and_test(&self->running_thread_num);

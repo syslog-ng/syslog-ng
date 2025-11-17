@@ -190,7 +190,7 @@ struct _KafkaSourceDriver
   GAsyncQueue **msg_queues;
   GCond *queue_conds;
   GMutex *queue_cond_mutexes;
-  guint used_queue_num;
+  guint allocated_queue_num;
 
   GAtomicCounter running_thread_num;
   GAtomicCounter sleeping_thread_num;

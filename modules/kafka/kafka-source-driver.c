@@ -214,7 +214,7 @@ _register_worker_stats(KafkaSourceDriver *self)
 {
   const gchar *counter_names[] = { "queued", NULL };
 
-  for (int i = 1 ; i < self->used_queue_num; i++)
+  for (int i = 1 ; i < self->allocated_queue_num; i++)
     {
       const gchar *label_value_ptr = kafka_src_worker_get_name(self->super.workers[i]);
       gchar label_value[64];
@@ -642,14 +642,14 @@ _alloc_msg_queues(KafkaSourceDriver *self)
     return;
 
   /* Intentionally not using the 0 index slot */
-  self->used_queue_num = (self->options.separated_worker_queues ? self->super.num_workers : 2);
+  self->allocated_queue_num = (self->options.separated_worker_queues ? self->super.num_workers : 2);
 
-  self->msg_queues = g_new0(GAsyncQueue *, self->used_queue_num);
-  self->queue_cond_mutexes = g_new0(GMutex, self->used_queue_num);
-  self->queue_conds = g_new0(GCond, self->used_queue_num);
+  self->msg_queues = g_new0(GAsyncQueue *, self->allocated_queue_num);
+  self->queue_cond_mutexes = g_new0(GMutex, self->allocated_queue_num);
+  self->queue_conds = g_new0(GCond, self->allocated_queue_num);
 
   /* Intentionally not using the 0 index slot */
-  for (guint i = 1; i < self->used_queue_num; ++i)
+  for (guint i = 1; i < self->allocated_queue_num; ++i)
     {
       self->msg_queues[i] = g_async_queue_new();
       g_mutex_init(&self->queue_cond_mutexes[i]);
@@ -664,7 +664,7 @@ _destroy_msg_queues(KafkaSourceDriver *self)
     return;
 
   /* Intentionally not using the 0 index slot */
-  for (guint i = 1; i < self->used_queue_num; ++i)
+  for (guint i = 1; i < self->allocated_queue_num; ++i)
     {
       GAsyncQueue *queue = self->msg_queues[i];
       g_assert(g_async_queue_length(queue) == 0);
@@ -679,7 +679,7 @@ _destroy_msg_queues(KafkaSourceDriver *self)
   self->queue_cond_mutexes = NULL;
   g_free(self->queue_conds);
   self->queue_conds = NULL;
-  self->used_queue_num = 0;
+  self->allocated_queue_num = 0;
 }
 
 inline GAsyncQueue *
@@ -720,7 +720,7 @@ inline void
 kafka_sd_signal_queues(KafkaSourceDriver *self)
 {
   /* Intentionally not using the 0 index slot */
-  for (guint i = 1; i < self->used_queue_num; ++i)
+  for (guint i = 1; i < self->allocated_queue_num; ++i)
     kafka_sd_signal_queue_ndx(self, i);
 }
 
@@ -730,7 +730,7 @@ kafka_sd_worker_queues_len(KafkaSourceDriver *self)
 {
   guint len = 0;
   /* Intentionally not using the 0 index slot */
-  for (guint i = 1; i < self->used_queue_num; ++i)
+  for (guint i = 1; i < self->allocated_queue_num; ++i)
     len += g_async_queue_length(self->msg_queues[i]);
   return len;
 }
@@ -747,7 +747,7 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
   rd_kafka_message_t *msg;
 
   /* Intentionally not using the 0 index slot */
-  for (guint i = 1; i < self->used_queue_num; ++i)
+  for (guint i = 1; i < self->allocated_queue_num; ++i)
     {
       GAsyncQueue *msg_queue = self->msg_queues[i];
       while ((msg = g_async_queue_try_pop(msg_queue)) != NULL)
