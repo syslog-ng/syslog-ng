@@ -202,11 +202,21 @@ kafka_sd_inc_msg_topic_stats(KafkaSourceDriver *self, const gchar *topic)
   stats_counter_inc(counter);
 }
 
-void
-kafka_sd_set_msg_worker_stats(KafkaSourceDriver *self, const gchar *worker_id, gssize value)
+static inline const gchar *
+_worker_get_name(KafkaSourceDriver *self, gint index)
 {
-  StatsCounterItem *counter = g_hash_table_lookup(self->stats_workers, worker_id);
-  stats_counter_set(counter, value);
+  if (FALSE == self->options.separated_worker_queues && self->super.num_workers > 2)
+    return self->single_queue_name;
+  else
+    return kafka_src_worker_get_name(self->super.workers[index]);
+}
+
+void
+kafka_sd_update_msg_worker_stats(KafkaSourceDriver *self, gint worker_ndx)
+{
+  StatsCounterItem *counter = g_hash_table_lookup(self->stats_workers, _worker_get_name(self, worker_ndx));
+  guint msg_queue_len = g_async_queue_length(self->msg_queues[self->options.separated_worker_queues ? worker_ndx : 1]);
+  stats_counter_set(counter, msg_queue_len);
 }
 
 static void
@@ -214,16 +224,17 @@ _register_worker_stats(KafkaSourceDriver *self)
 {
   const gchar *counter_names[] = { "queued", NULL };
 
+  /* Intentionally not using the 0 index slot */
   for (int i = 1 ; i < self->allocated_queue_num; i++)
     {
-      const gchar *label_value_ptr = kafka_src_worker_get_name(self->super.workers[i]);
-      gchar label_value[64];
+      const gchar *label_value_ptr = _worker_get_name(self, i);
       if (FALSE == self->options.separated_worker_queues && self->super.num_workers > 2)
         {
-          g_snprintf(label_value, sizeof(label_value), "%s-%d", label_value_ptr, self->super.num_workers - 1);
-          label_value_ptr = label_value;
+          g_snprintf(self->single_queue_name, sizeof(self->single_queue_name), "%s-%d",
+                     kafka_src_worker_get_name(self->super.workers[1]),
+                     self->super.num_workers - 1);
+          label_value_ptr = self->single_queue_name;
         }
-
       if (FALSE == g_hash_table_contains(self->stats_workers, label_value_ptr))
         kafka_register_counters(self, self->stats_workers, "worker", label_value_ptr, counter_names, STATS_LEVEL2);
     }
@@ -752,15 +763,7 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
       GAsyncQueue *msg_queue = self->msg_queues[i];
       while ((msg = g_async_queue_try_pop(msg_queue)) != NULL)
         rd_kafka_message_destroy(msg);
-
-      /* Setting directly is still racy, but we can live with that */
-      LogThreadedSourceWorker *target_worker = (self->options.separated_worker_queues ?
-                                                self->super.workers[i] :
-                                                self->super.workers[1]);
-      const gchar *worker_name = kafka_src_worker_get_name(target_worker);
-      guint msg_queue_len = g_async_queue_length(msg_queue);
-      g_assert(msg_queue_len == 0);
-      kafka_sd_set_msg_worker_stats(self, worker_name, msg_queue_len);
+      kafka_sd_update_msg_worker_stats(self, i);
     }
   g_assert(kafka_sd_worker_queues_len(self) == 0);
 }

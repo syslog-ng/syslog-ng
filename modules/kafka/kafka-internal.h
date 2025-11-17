@@ -191,6 +191,7 @@ struct _KafkaSourceDriver
   GCond *queue_conds;
   GMutex *queue_cond_mutexes;
   guint allocated_queue_num;
+  gchar single_queue_name[64];
 
   GAtomicCounter running_thread_num;
   GAtomicCounter sleeping_thread_num;
@@ -223,7 +224,7 @@ void kafka_sd_wakeup_kafka_queues(KafkaSourceDriver *self);
 
 void kafka_sd_update_msg_length_stats(KafkaSourceDriver *self, gsize len);
 void kafka_sd_inc_msg_topic_stats(KafkaSourceDriver *self, const gchar *topic);
-void kafka_sd_set_msg_worker_stats(KafkaSourceDriver *self, const gchar *worker_id, gssize value);
+void kafka_sd_update_msg_worker_stats(KafkaSourceDriver *self, gint worker_ndx);
 
 /* Kafka Destination */
 

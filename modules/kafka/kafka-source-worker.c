@@ -110,12 +110,7 @@ _fetch(LogThreadedSourceWorker *worker, rd_kafka_message_t **msg)
   *msg = g_async_queue_try_pop(msg_queue);
   if (G_LIKELY(*msg != NULL))
     {
-      LogThreadedSourceWorker *target_worker = (self->options.separated_worker_queues ?
-                                                self->super.workers[worker->worker_index] :
-                                                self->super.workers[1]); /* Intentionally not using the 0 index slot */
-      /* Setting directly is still racy, but we can live with that */
-      guint msg_queue_len = g_async_queue_length(msg_queue);
-      kafka_sd_set_msg_worker_stats(self, kafka_src_worker_get_name(target_worker), msg_queue_len);
+      kafka_sd_update_msg_worker_stats(self, worker->worker_index);
       return THREADED_FETCH_SUCCESS;
     }
   return THREADED_FETCH_NO_DATA;
@@ -206,10 +201,7 @@ _queue_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg, guint t
   g_async_queue_push(self->msg_queues[target_queue_ndx], msg);
   kafka_sd_signal_queue_ndx(self, target_queue_ndx);
 
-  /* Setting queue stats directly is still racy, but we can live with that */
-  gint msg_queue_len = g_async_queue_length(self->msg_queues[target_queue_ndx]);
-  const gchar *worker_name = kafka_src_worker_get_name(self->super.workers[target_queue_ndx]);
-  kafka_sd_set_msg_worker_stats(self, worker_name, msg_queue_len);
+  kafka_sd_update_msg_worker_stats(self, target_queue_ndx);
 
   return TRUE;
 }
@@ -409,7 +401,7 @@ _kafka_src_worker_init(LogThreadedSourceWorker *worker)
   return TRUE;
 }
 
-const gchar *
+inline const gchar *
 kafka_src_worker_get_name(LogThreadedSourceWorker *worker)
 {
   KafkaSourceWorker *self = (KafkaSourceWorker *) worker;
