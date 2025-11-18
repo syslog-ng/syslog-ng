@@ -24,9 +24,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any
 
-from cdn import CDN
 from remote_storage_synchronizer import RemoteStorageSynchronizer
 
 
@@ -37,14 +35,12 @@ class Indexer(ABC):
         incoming_sub_dir: Path,
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
         indexed_sub_dir: Path,
-        cdn: CDN,
     ) -> None:
         self.__incoming_remote_storage_synchronizer = incoming_remote_storage_synchronizer
         self.__indexed_remote_storage_synchronizer = indexed_remote_storage_synchronizer
         self._incoming_sub_dir = incoming_sub_dir
         self._indexed_sub_dir = indexed_sub_dir
 
-        self.__cdn = cdn
         self.__logger = Indexer.__create_logger()
 
     def __sync_from_remote(self) -> None:
@@ -72,11 +68,7 @@ class Indexer(ABC):
         self.__incoming_remote_storage_synchronizer.sync_to_remote()
         self.__indexed_remote_storage_synchronizer.sync_to_remote()
 
-    def __refresh_cdn_cache(self, wait: bool = False) -> Any:
-        path = Path(self.__indexed_remote_storage_synchronizer.remote_dir.working_dir, "*")
-        return self.__cdn.refresh_cache(path, wait=wait)
-
-    def index(self) -> Any:
+    def index(self) -> None:
         self.__sync_from_remote()
 
         incoming_dir = self.__incoming_remote_storage_synchronizer.local_dir.working_dir
@@ -89,10 +81,6 @@ class Indexer(ABC):
 
         self.__create_snapshot_of_indexed()
         self.__sync_to_remote()
-        return self.__refresh_cdn_cache()
-
-    def flush_cdn_cache(self) -> Any:
-        return self.__refresh_cdn_cache(wait=True)
 
     @staticmethod
     def __create_logger() -> logging.Logger:

@@ -42,7 +42,7 @@ class CDN(ABC):
         pass
 
     @abstractmethod
-    def refresh_cache(self, path: Path, wait: bool) -> None:
+    def refresh_cache(self, path: Path) -> None:
         pass
 
     @staticmethod
