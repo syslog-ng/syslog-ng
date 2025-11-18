@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017 Balabit
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,10 +29,14 @@
 
 #if ! SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R
 
+#ifdef _WIN32
+#include "compat/socket.h"
+#else
 #include <sys/types.h>
 #include <grp.h>
 #include <pwd.h>
 #include <netdb.h>
+#endif
 
 int _compat_generic__getprotobynumber_r(int proto,
                                         struct protoent *result_buf, char *buf,

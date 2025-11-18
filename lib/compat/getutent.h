@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +30,24 @@
 #include <inttypes.h>
 #include <time.h>
 
+#ifdef _WIN32
+/* Windows: no utmp/utmpx — provide minimal stubs */
+typedef struct
+{
+  int _unused;
+} utmp;
+
+static inline struct utmp *getutent(void)
+{
+  return NULL;
+}
+static inline void endutent(void)
+{
+  return;
+}
+
+#else  /* POSIX */
+
 #if SYSLOG_NG_HAVE_UTMPX_H
 #include <utmpx.h>
 #else
@@ -40,4 +59,6 @@ struct utmp *getutent(void);
 void endutent(void);
 #endif
 
-#endif
+#endif /* _WIN32 */
+
+#endif /* COMPAT_GETUTENT_H_INCLUDED */

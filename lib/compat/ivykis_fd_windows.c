@@ -24,46 +24,21 @@
 #ifdef _WIN32
 
 #include "compat/ivykis_fd.h"
-#include <iv.h>
-#include <iv_timer.h>
-#include <iv_task.h>
 #include <stdlib.h>
 #include <string.h>
 
 struct win_impl
 {
   int registered;
-  struct iv_timer tick;
-  struct iv_task  immed;
 };
-
-static void tick_cb(void *cookie)
-{
-  struct compat_iv_fd *w = (struct compat_iv_fd *)cookie;
-  /* call out if handlers are set; you can refine readiness checks later */
-  if (w->handler_in)  w->handler_in(w->cookie);
-  if (w->handler_out) w->handler_out(w->cookie);
-  if (w->handler_err) { /* no explicit ERR trigger here; keep for future */ }
-  /* rearm timer for a short interval */
-  iv_validate_now();
-  ((struct win_impl *)w->impl)->tick.expires = iv_now;
-  ((struct win_impl *)w->impl)->tick.expires.tv_sec  += 0;
-  ((struct win_impl *)w->impl)->tick.expires.tv_nsec += 50 * 1000 * 1000; /* 50ms */
-  iv_timer_register(&((struct win_impl *)w->impl)->tick);
-}
 
 void compat_iv_fd_init(struct compat_iv_fd *w)
 {
   struct win_impl *impl = (struct win_impl *)malloc(sizeof(*impl));
+  if (!impl)
+    return;
   memset(impl, 0, sizeof(*impl));
   w->impl = impl;
-  IV_TIMER_INIT(&impl->tick);
-  impl->tick.cookie  = w;
-  impl->tick.handler = tick_cb;
-
-  IV_TASK_INIT(&impl->immed);
-  impl->immed.cookie  = w;
-  impl->immed.handler = NULL; /* not used yet */
 }
 
 void compat_iv_fd_set_handler_in (struct compat_iv_fd *w, void (*fn)(void *))
@@ -90,26 +65,27 @@ int  compat_iv_fd_register_try(struct compat_iv_fd *w)
 void compat_iv_fd_register(struct compat_iv_fd *w)
 {
   ((struct win_impl *)w->impl)->registered = 1;
-  tick_cb(w);
 }
 
 void compat_iv_fd_unregister(struct compat_iv_fd *w)
 {
   struct win_impl *impl = (struct win_impl *)w->impl;
-  if (iv_timer_registered(&impl->tick)) iv_timer_unregister(&impl->tick);
-  ((struct win_impl *)w->impl)->registered = 0;
+  if (!impl)
+    return;
+  impl->registered = 0;
 }
 
 int  compat_iv_fd_registered(struct compat_iv_fd *w)
 {
-  return ((struct win_impl *)w->impl)->registered;
+  struct win_impl *impl = (struct win_impl *)w->impl;
+  return impl ? impl->registered : 0;
 }
 
 void compat_iv_fd_deinit(struct compat_iv_fd *w)
 {
   struct win_impl *impl = (struct win_impl *)w->impl;
-  if (!impl) return;
-  if (iv_timer_registered(&impl->tick)) iv_timer_unregister(&impl->tick);
+  if (!impl)
+    return;
   free(impl);
   w->impl = NULL;
 }

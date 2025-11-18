@@ -49,6 +49,10 @@
 typedef int socklen_t;
 #endif
 
+#ifndef in_addr_t
+typedef u_long in_addr_t;
+#endif
+
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
@@ -82,7 +86,7 @@ struct sockaddr_storage
 };
 #endif /* !SYSLOG_NG_HAVE_STRUCT_SOCKADDR_STORAGE */
 
-#endif
+#endif /* POSIX */
 
 #if ! SYSLOG_NG_HAVE_INET_ATON
 int inet_aton(const char *cp, struct in_addr *dst);
