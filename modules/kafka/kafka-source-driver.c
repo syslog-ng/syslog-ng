@@ -446,12 +446,16 @@ kafka_update_state(KafkaSourceDriver *self, gboolean lock)
                                               self->options.super.state_update_timeout);
   if (err == RD_KAFKA_RESP_ERR_NO_ERROR)
     {
+      KafkaConnectedState prev_state = state;
+
       state = KFS_CONNECTED;
       kafka_opaque_state_set(&self->opaque, state);
-      if (kafka_opaque_state_get_last_error(&self->opaque))
+      kafka_opaque_state_set_last_error(&self->opaque, 0);
+
+      if (prev_state != state)
         {
-          kafka_opaque_state_set_last_error(&self->opaque, 0);
           kafka_log_state_changed(self, state, err, NULL);
+          kafka_sd_wakeup_kafka_queues(self);
         }
       rd_kafka_metadata_destroy(metadata);
     }
@@ -502,11 +506,29 @@ _kafka_error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
   kafka_opaque_state_lock(&self->opaque);
 
   KafkaConnectedState old_state = kafka_opaque_state_get(&self->opaque);
-  if (kafka_update_state(self, FALSE) != RD_KAFKA_RESP_ERR_NO_ERROR)
-    kafka_opaque_state_set(&self->opaque, KFS_DISCONNECTED);
+  /* NOTE: Normally the kafka_update_state call should be enough here.
+   *       Once we can query the metadata we are connected, so we can set the state to connected, and
+   *       let librdkafka handle all the recovery internally.
+   *       Even this works well for the subscribe strategy, but for the assign strategy it seems that
+   *       if the connection cannot be established before the assignment, then the assignment never happens correctly again.
+   *       More strange that once the connection established correctly, the lib handles further disconnects/reconnects well
+   *       even in assign mode. Subscribe mode seems to work well from the beginning, in each situation.
+   *       I think it is a bug in librdkafka, but that must be confirmed.
+   *
+   *       So this one is important for the assign strategy, for now if we are disconnected, and the error callback
+   *       is called with an error, we set the state to disconnected (not calling kafka_update_state), so the
+   *       main-consumer (_consumer_run) loop will try to re-establish the connection and do the assignment again from the ground.
+   */
+  if ((err != RD_KAFKA_RESP_ERR_NO_ERROR && old_state == KFS_DISCONNECTED) ||
+      kafka_update_state(self, FALSE) != RD_KAFKA_RESP_ERR_NO_ERROR)
+    {
+      kafka_opaque_state_set(&self->opaque, KFS_DISCONNECTED);
+    }
 
   if (kafka_opaque_state_get(&self->opaque) == KFS_DISCONNECTED)
     {
+      kafka_sd_wakeup_kafka_queues(self);
+
       if(old_state != KFS_DISCONNECTED)
         kafka_log_state_changed(self, KFS_DISCONNECTED, (rd_kafka_resp_err_t) err, reason);
 
@@ -879,13 +901,14 @@ kafka_sd_drop_queued_messages(KafkaSourceDriver *self)
 void
 kafka_final_flush(KafkaSourceDriver *self)
 {
-  const gint poll_timeout = 50;
+  const gint single_poll_timeout = 50;
   gint remaining_time = self->options.super.poll_timeout;
 
   while (rd_kafka_outq_len(self->kafka) > 0 && remaining_time > 0)
     {
-      rd_kafka_poll(self->kafka, poll_timeout);
-      remaining_time -= poll_timeout;
+      if (kafka_opaque_state_get(&self->opaque) == KFS_CONNECTED)
+        rd_kafka_poll(self->kafka, single_poll_timeout);
+      remaining_time -= single_poll_timeout;
     }
 
   if (rd_kafka_outq_len(self->kafka) > 0)
@@ -1510,7 +1533,6 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
 
   kafka_options_defaults(&self->super);
   self->strategy_hint = KSCS_ASSIGN;
-  self->time_reopen = 60;
 
   self->do_not_use_bookmark = FALSE;
   self->separated_worker_queues = FALSE;
@@ -1518,6 +1540,7 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->fetch_delay = 1000; /* 1 second / fetch_delay * 1000000 = 1 millisecond */
   self->fetch_retry_delay = 10000; /* 1 second / fetch_retry_delay * 1000000 = 10 milliseconds */
   self->fetch_limit = 10000;
+  self->time_reopen = 60; /* time_reopen seconds */
 
   log_template_options_defaults(&self->template_options);
 }

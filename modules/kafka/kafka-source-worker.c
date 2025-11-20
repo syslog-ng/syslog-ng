@@ -302,8 +302,15 @@ _run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
       if (msg == NULL || msg->err)
         {
           kafka_update_state(driver, TRUE);
+
           if (msg == NULL || msg->err == RD_KAFKA_RESP_ERR__PARTITION_EOF)
             {
+              if (kafka_opaque_state_get(&driver->opaque) != KFS_CONNECTED)
+                {
+                  main_loop_worker_wait_for_exit_until(driver->options.time_reopen);
+                  kafka_update_state(driver, TRUE);
+                  continue;
+                }
               kafka_msg_debug("kafka: consumer_poll - no data",
                               evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(driver->kafka)),
                               evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(driver)));
@@ -380,14 +387,22 @@ _consumer_run(LogThreadedSourceWorker *worker)
       driver->consumer_kafka_queue = rd_kafka_queue_get_consumer(driver->kafka);
       driver->main_kafka_queue = rd_kafka_queue_get_main(driver->kafka);
 
+      /* The order and the conditonal entering to the _run_consumer loop is very important here now for the assign strategy
+       * see _kafka_error_cb for details */
       kafka_update_state(driver, TRUE);
+      rd_kafka_poll(driver->kafka, 0);
 
-      _run_consumer(self, iteration_sleep_time);
-      _stop_consumer(self, iteration_sleep_time);
+      if (kafka_opaque_state_get(&driver->opaque) == KFS_CONNECTED ||
+          driver->strategy == KSCS_SUBSCRIBE) // see _kafka_error_cb for details
+        {
+          _run_consumer(self, iteration_sleep_time);
+          _stop_consumer(self, iteration_sleep_time);
 
-      kafka_msg_debug("kafka: stopped consumer poll run",
-                      evt_tag_str("group_id", driver->group_id),
-                      evt_tag_str("driver", driver->super.super.super.id));
+          kafka_msg_debug("kafka: stopped consumer poll run",
+                          evt_tag_str("group_id", driver->group_id),
+                          evt_tag_str("driver", driver->super.super.super.id));
+        }
+
       rd_kafka_queue_destroy(driver->consumer_kafka_queue);
       driver->consumer_kafka_queue = NULL;
       rd_kafka_queue_destroy(driver->main_kafka_queue);
@@ -403,11 +418,12 @@ _consumer_run(LogThreadedSourceWorker *worker)
     }
   while (FALSE == exit_requested);
 
+  _wait_for_queue_processors_to_exit(driver, iteration_sleep_time);
   if (driver->allocated_queue_num > 0)
     kafka_sd_drop_queued_messages(driver);
 
-  gint running_thread_num = g_atomic_counter_dec_and_test(&driver->running_thread_num);
-  g_assert(running_thread_num == 1);
+  gboolean all_threads_exited = g_atomic_counter_dec_and_test(&driver->running_thread_num);
+  g_assert(all_threads_exited);
 }
 
 static void
