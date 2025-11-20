@@ -184,9 +184,7 @@ _exit_cond_destroy(void)
 static inline void
 _exit_cond_signal(void)
 {
-  g_mutex_lock(&exit_cond.lock);
   g_cond_broadcast(&exit_cond.cond);
-  g_mutex_unlock(&exit_cond.lock);
 }
 
 void
