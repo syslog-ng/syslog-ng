@@ -84,7 +84,8 @@ source_darwinosl_option
       free($3);
     }
   | KW_GO_REVERSE '(' yesno ')'  { darwinosl_sd_set_go_reverse(last_driver, $3); }
-  | KW_DO_NOT_USE_BOOKMARK '(' yesno ')'  { darwinosl_sd_set_do_not_use_bookmark(last_driver, $3); }
+  | KW_DISABLE_BOOKMARKS '(' yesno ')'  { darwinosl_sd_set_disable_bookmarks(last_driver, $3); }
+  | KW_IGNORE_SAVED_BOOKMARKS '(' yesno ')'  { darwinosl_sd_set_ignore_saved_bookmarks(last_driver, $3); }
   | KW_MAX_BOOKMARK_DISTANCE '(' nonnegative_integer ')'  { darwinosl_sd_set_max_bookmark_distance(last_driver, $3); }
   | KW_LOG_FETCH_DELAY '(' nonnegative_integer ')'  { darwinosl_sd_set_log_fetch_delay(last_driver, $3); }
   | KW_LOG_FETCH_RETRY_DELAY '(' nonnegative_integer ')'  { darwinosl_sd_set_log_fetch_retry_delay(last_driver, $3); }
