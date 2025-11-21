@@ -44,7 +44,8 @@ void kafka_sd_set_log_fetch_queue_full_delay(LogDriver *s, guint new_value);
 void kafka_sd_set_poll_timeout(LogDriver *d, gint poll_timeout);
 void kafka_sd_set_state_update_timeout(LogDriver *d, gint state_update_timeout);
 void kafka_sd_set_time_reopen(LogDriver *d, gint time_reopen);
-void kafka_sd_set_do_not_use_bookmark(LogDriver *s, gboolean new_value);
+void kafka_sd_set_ignore_saved_bookmarks(LogDriver *s, gboolean new_value);
+void kafka_sd_set_disable_bookmarks(LogDriver *s, gboolean new_value);
 void kafka_sd_set_single_worker_queue(LogDriver *s, gboolean new_value);
 void kafka_sd_set_message_ref(LogDriver *d, LogTemplate *message);
 

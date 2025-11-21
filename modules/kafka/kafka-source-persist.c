@@ -28,13 +28,17 @@
 
 #define KAFKA_SOURCE_PERSIST_VERSION_1 1
 #define MIN_WINDOW_SIZE 2048
+#define MAX_KAFKA_TOPIC_NAME_LEN 249 // TODO: get from librdkafka?
 
 typedef struct _OffsetTracker
 {
   guint64 committed;      // last fully confirmed offset
   guint64 window_start;   // first bit in bitmap corresponds to this offset
   guint64 window_size;    // number of bits allocated
+  gboolean end_offset_resolved; // whether RD_KAFKA_OFFSET_END has been resolved to a concrete offset
   guint8 *bitmap;         // the bit array
+
+  gchar persist_name[MAX_KAFKA_TOPIC_NAME_LEN + 1]; // This is just for easier debugging
 } OffsetTracker;
 
 typedef struct _KafkaSourcePersistData
@@ -60,19 +64,31 @@ typedef struct _KafkaSourceBookmark
 
 
 OffsetTracker *
-offset_tracker_new(gint64 committed_offset)
+offset_tracker_new(gint64 committed_offset, const gchar *persist_name)
 {
   OffsetTracker *t = g_new0(OffsetTracker, 1);
 
-  /* normalize, if no previous offset, start from -1 (means next valid is 0) */
+  /* normalize, if no previous offset, start from -1 (means next valid is 0)
+   *      RD_KAFKA_OFFSET_BEGINNING - start from beginning
+   *      RD_KAFKA_OFFSET_END - start from end
+   *
+   * RD_KAFKA_OFFSET_BEGINNING - is the same if there is no committed offset
+   * RD_KAFKA_OFFSET_END       - means we don't know the end offset here (librdkafka cannot provide it if there was no committed offset yet),
+   *                             so we hav to handle it at the first message consumption time in offset_tracker_bitmap_set.
+   *                             It is needed to eliminate a huge gap if there are no committed offsets yet and the topic has a high offset.
+   */
+  t->end_offset_resolved = (committed_offset != RD_KAFKA_OFFSET_END);
+
   if (committed_offset < 0)
     committed_offset = -1;
 
   t->committed = committed_offset;
-  t->window_start = committed_offset + 1;  // next expected offset
+  t->window_start = t->committed + 1;  // next expected offset
   t->window_size = MIN_WINDOW_SIZE;
 
   t->bitmap = g_malloc0((t->window_size + 7) / 8);
+
+  g_strlcpy(t->persist_name, persist_name, sizeof(t->persist_name));
 
   return t;
 }
@@ -85,19 +101,19 @@ offset_tracker_free(OffsetTracker *t)
   gboolean has_uncommitted = FALSE;
 
   for (guint64 i = 0; i < total_bytes; i++)
-    {
-      if (t->bitmap[i] != 0)
-        {
-          has_uncommitted = TRUE;
-          break;
-        }
-    }
+    if (t->bitmap[i] != 0)
+      {
+        has_uncommitted = TRUE;
+        break;
+      }
 
+  /* This is acceptable if not all messages are processed yet and e.g. we exit */
   if (has_uncommitted)
     kafka_msg_debug("kafka: offset_tracker being freed with uncommitted offsets",
                     evt_tag_long("window_start", t->window_start),
                     evt_tag_long("committed", t->committed),
-                    evt_tag_int("window_size", t->window_size));
+                    evt_tag_int("window_size", t->window_size),
+                    evt_tag_str("persist_name", t->persist_name));
 
   g_free(t->bitmap);
   g_free(t);
@@ -106,6 +122,15 @@ offset_tracker_free(OffsetTracker *t)
 static inline void
 offset_tracker_bitmap_set(OffsetTracker *t, guint64 offset)
 {
+  /* Handle RD_KAFKA_OFFSET_END resolution on the first message, see offset_tracker_new for details */
+  if (G_UNLIKELY(FALSE == t->end_offset_resolved))
+    {
+      t->end_offset_resolved = TRUE;
+
+      t->committed = offset - 1;
+      t->window_start = t->committed + 1;
+    }
+
   /* Sanity check: if offset is way behind window_start, something is wrong */
   g_assert(offset >= t->window_start);
   guint64 idx = offset - t->window_start;
@@ -120,7 +145,8 @@ offset_tracker_bitmap_set(OffsetTracker *t, guint64 offset)
                           evt_tag_long("window_start", t->window_start),
                           evt_tag_long("committed", t->committed),
                           evt_tag_int("current_window_size", t->window_size),
-                          evt_tag_long("gap", idx - t->window_size));
+                          evt_tag_long("gap", idx - t->window_size),
+                          evt_tag_str("persist_name", t->persist_name));
         }
 
       guint64 new_size = MAX(idx + 1, t->window_size * 2);
@@ -136,7 +162,8 @@ offset_tracker_bitmap_set(OffsetTracker *t, guint64 offset)
                           evt_tag_int("new_size", new_size),
                           evt_tag_long("offset", offset),
                           evt_tag_long("window_start", t->window_start),
-                          evt_tag_long("committed", t->committed));
+                          evt_tag_long("committed", t->committed),
+                          evt_tag_str("persist_name", t->persist_name));
         }
       t->window_size = new_size;
     }
@@ -191,7 +218,8 @@ offset_tracker_try_bitmap_shift(OffsetTracker *t)
               //                 evt_tag_int("shift_bits", shift_bytes * 8),
               //                 evt_tag_long("new_window_start", t->window_start),
               //                 evt_tag_long("committed", t->committed),
-              //                 evt_tag_int("window_size", t->window_size));
+              //                 evt_tag_int("window_size", t->window_size),
+              //                 evt_tag_str("persist_name", t->persist_name));
 
               /* TODO: add shrinking */
             }
@@ -242,8 +270,18 @@ _check_compatibility(KafkaSourcePersist *self, PersistEntryHandle persist_handle
   return TRUE;
 }
 
+static void
+_persist_data_defaults(KafkaSourcePersistData *persist_data)
+{
+  memset(persist_data, 0, sizeof(KafkaSourcePersistData));
+
+  persist_data->header.version = KAFKA_SOURCE_PERSIST_VERSION_1;
+  persist_data->header.big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
+  persist_data->position = RD_KAFKA_OFFSET_INVALID;
+}
+
 static gboolean
-_load_persist_entry(KafkaSourcePersist *self, const gchar *persist_name)
+_load_persist_entry(KafkaSourcePersist *self, const gchar *persist_name, int64_t override_position)
 {
   PersistEntryHandle persist_handle = _lookup_handle(self, persist_name);
 
@@ -256,25 +294,20 @@ _load_persist_entry(KafkaSourcePersist *self, const gchar *persist_name)
   if (self->use_offset_tracker)
     {
       KafkaSourcePersistData *persist_data = persist_state_map_entry(self->persist_state, persist_handle);
-      self->tracker = offset_tracker_new(persist_data->position);
+
+      /* RD_KAFKA_OFFSET_INVALID - Means no override, use saved offsets if available */
+      self->tracker = offset_tracker_new(override_position != RD_KAFKA_OFFSET_INVALID ?
+                                         override_position :
+                                         persist_data->position,
+                                         persist_name);
       persist_state_unmap_entry(self->persist_state, persist_handle);
     }
 
   return TRUE;
 }
 
-static void
-_persist_data_defaults(KafkaSourcePersistData *persist_data)
-{
-  memset(persist_data, 0, sizeof(KafkaSourcePersistData));
-
-  persist_data->header.version = KAFKA_SOURCE_PERSIST_VERSION_1;
-  persist_data->header.big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
-  persist_data->position = RD_KAFKA_OFFSET_INVALID;
-}
-
 static gboolean
-_create_persist_entry(KafkaSourcePersist *self, const gchar *persist_name)
+_create_persist_entry(KafkaSourcePersist *self, const gchar *persist_name, int64_t override_position)
 {
   PersistEntryHandle persist_handle = persist_state_alloc_entry(self->persist_state, persist_name,
                                       sizeof(KafkaSourcePersistData));
@@ -293,8 +326,10 @@ _create_persist_entry(KafkaSourcePersist *self, const gchar *persist_name)
 
   _persist_data_defaults(persist_data);
   if (self->use_offset_tracker)
-    self->tracker = offset_tracker_new(RD_KAFKA_OFFSET_INVALID);
-
+    self->tracker = offset_tracker_new(override_position != RD_KAFKA_OFFSET_INVALID ?
+                                       override_position :
+                                       RD_KAFKA_OFFSET_BEGINNING,
+                                       persist_name);
   persist_state_unmap_entry(self->persist_state, persist_handle);
 
   self->handle = persist_handle;
@@ -363,12 +398,15 @@ kafka_source_persist_load_position(KafkaSourcePersist *self,
 }
 
 gboolean
-kafka_source_persist_init(KafkaSourcePersist *self, PersistState *persist_state, const gchar *persist_name)
+kafka_source_persist_init(KafkaSourcePersist *self,
+                          PersistState *persist_state,
+                          const gchar *persist_name,
+                          int64_t override_position)
 {
   self->persist_state = persist_state;
 
-  return _load_persist_entry(self, persist_name) ||
-         _create_persist_entry(self, persist_name);
+  return _load_persist_entry(self, persist_name, override_position) ||
+         _create_persist_entry(self, persist_name, override_position);
 }
 
 KafkaSourcePersist *

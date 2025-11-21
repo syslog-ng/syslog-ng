@@ -32,7 +32,8 @@ KafkaSourcePersist *kafka_source_persist_new(gboolean use_offset_tracker);
 void kafka_source_persist_free(KafkaSourcePersist *self);
 gboolean kafka_source_persist_init(KafkaSourcePersist *self,
                                    PersistState *state,
-                                   const gchar *persist_name);
+                                   const gchar *persist_name,
+                                   int64_t override_position);
 
 void kafka_source_persist_fill_bookmark(KafkaSourcePersist *self,
                                         Bookmark *bookmark,

@@ -106,7 +106,8 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   gsize msg_len = _log_message_from_string((gchar *)msg->payload, driver->options.format_options, &log_msg);
   log_msg_set_value_to_string(log_msg, LM_V_TRANSPORT, "local+kafka");
 
-  _persist_store_msg_offset(self, topic_name, msg->partition, msg->offset);
+  if (FALSE == driver->options.disable_bookmarks)
+    _persist_store_msg_offset(self, topic_name, msg->partition, msg->offset);
 
   _send(worker, log_msg);
 
@@ -126,7 +127,7 @@ _fetch(LogThreadedSourceWorker *self, rd_kafka_message_t **msg)
   KafkaSourceDriver *driver = (KafkaSourceDriver *) self->control;
   GAsyncQueue *msg_queue = kafka_sd_worker_queue(driver, self);
 
-  // TODO: Check what sets driver->super->auto_close_batches and if batching support is really needed here
+  // TODO: Add if batched_ack_tracker_factory_new support is added
   // if (G_UNLIKELY(self->curr_fetch_in_run >= self->options.fetch_limit))
   //   {
   //   log_threaded_source_worker_close_batch(self);

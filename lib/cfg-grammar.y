@@ -263,7 +263,8 @@
 %token KW_USE_SYSLOGNG_PID            10182
 
 %token KW_READ_OLD_RECORDS            10185
-%token KW_DO_NOT_USE_BOOKMARK         10186
+%token KW_IGNORE_SAVED_BOOKMARKS      10186
+%token KW_DISABLE_BOOKMARKS           10187
 
 /* log statement options */
 %token KW_FLAGS                       10190

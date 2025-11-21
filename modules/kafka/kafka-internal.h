@@ -162,7 +162,8 @@ struct _KafkaSourceOptions
   LogTemplate *message;
   gint time_reopen;
 
-  gboolean do_not_use_bookmark;
+  gboolean ignore_saved_bookmarks;
+  gboolean disable_bookmarks;
   guint fetch_delay;
   guint fetch_retry_delay;
   guint fetch_limit; // TODO: use together with "queued.max.messages.kbytes", if 0 kafka's own setting is used automatically

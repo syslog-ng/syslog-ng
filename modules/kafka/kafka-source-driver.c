@@ -344,17 +344,14 @@ _unregister_aggregated_stats(KafkaSourceDriver *self)
   stats_aggregator_unlock();
 }
 
-static int64_t
+static inline int64_t
 _get_start_fallback_offset_code(KafkaSourceDriver *self)
 {
-  int64_t code = RD_KAFKA_OFFSET_END;
-  if (self->options.do_not_use_bookmark)
-    if (self->options.worker_options->super.read_old_records)
-      code = RD_KAFKA_OFFSET_BEGINNING;
+  int64_t code = self->options.worker_options->super.read_old_records ? RD_KAFKA_OFFSET_BEGINNING : RD_KAFKA_OFFSET_END;
   return code;
 }
 
-static const gchar *
+static inline const gchar *
 _get_start_fallback_offset_string(KafkaSourceDriver *self)
 {
   int64_t code = _get_start_fallback_offset_code(self);
@@ -558,7 +555,7 @@ _kafka_error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
 }
 
 static gboolean
-_find_msg_offset(KafkaSourceDriver *self, const gchar *key, int64_t *offset)
+_find_stored_msg_offset(KafkaSourceDriver *self, const gchar *key, int64_t *offset)
 {
   gboolean found = FALSE;
   KafkaSourcePersist *persist = g_hash_table_lookup(self->persists, key);
@@ -583,9 +580,9 @@ _restore_msg_offsets(KafkaSourceDriver *self)
     {
       rd_kafka_topic_partition_t *partition = &self->assigned_partitions->elems[i];
       kafka_format_partition_key(partition->topic, partition->partition, key, sizeof(key));
-      int64_t offset = _get_start_fallback_offset_code(self);
-      gboolean found = _find_msg_offset(self, key, &offset);
 
+      int64_t offset = _get_start_fallback_offset_code(self);
+      gboolean found = (self->options.ignore_saved_bookmarks ? FALSE : _find_stored_msg_offset(self, key, &offset));
       if (found)
         {
           partition->offset = offset >= 0 ? offset + 1 : offset;
@@ -597,7 +594,10 @@ _restore_msg_offsets(KafkaSourceDriver *self)
       else
         {
           partition->offset = offset;
-          kafka_msg_debug("kafka: no latest offset found, using fallback offset for partition",
+          const gchar *log_txt = (self->options.ignore_saved_bookmarks ?
+                                  "kafka: ignoring saved bookmarks, using fallback offset for partition" :
+                                  "kafka: no latest offset found, using fallback offset for partition");
+          kafka_msg_debug(log_txt,
                           evt_tag_str("topic", partition->topic),
                           evt_tag_int("partition", (int) partition->partition),
                           evt_tag_str("fallback_offset", _get_start_fallback_offset_string(self)));
@@ -616,7 +616,7 @@ _persist_destroy(gpointer data)
 }
 
 static void
-_partitions_persists_create(KafkaSourceDriver *self)
+_partitions_persists_create(KafkaSourceDriver *self, int64_t override_start_offset)
 {
   g_assert(self->persists == NULL);
   gchar key[300];
@@ -632,7 +632,7 @@ _partitions_persists_create(KafkaSourceDriver *self)
 
       gboolean persist_use_offset_tracker = self->super.num_workers > 2;
       KafkaSourcePersist *persist = kafka_source_persist_new(persist_use_offset_tracker);
-      kafka_source_persist_init(persist, cfg->state, key);
+      kafka_source_persist_init(persist, cfg->state, key, override_start_offset);
       g_hash_table_insert(self->persists, g_strdup(key), persist);
     }
 }
@@ -657,7 +657,9 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
       self->assigned_partitions = parts;
 
       _partitions_persists_destroy(self);
-      _partitions_persists_create(self);
+      _partitions_persists_create(self, self->options.ignore_saved_bookmarks ?
+                                  _get_start_fallback_offset_code(self) :
+                                  RD_KAFKA_OFFSET_INVALID); // Means no override, use saved offsets if available
 
       /* Force a poll to ensure the assignment is active immediately, this seems to be mandatory
        * before we can seek in _restore_msg_offsets if the partitions are manually assigned */
@@ -1302,6 +1304,10 @@ kafka_sd_init(LogPipe *s)
   self->stats_workers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   kafka_opaque_init(&self->opaque, &self->super.super.super, &self->options.super);
 
+  /* TODO: Add batched_ack_tracker_factory_new support */
+  self->super.worker_options.ack_tracker_factory = self->options.disable_bookmarks ?
+                                                   instant_ack_tracker_bookmarkless_factory_new() :
+                                                   consecutive_ack_tracker_factory_new();
   if (FALSE == log_threaded_source_driver_init_method(s))
     return FALSE;
 
@@ -1373,8 +1379,6 @@ kafka_sd_new(GlobalConfig *cfg)
   self->super.super.super.super.deinit = kafka_sd_deinit;
   self->super.super.super.super.free_fn = kafka_sd_free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
-
-  self->super.worker_options.ack_tracker_factory = consecutive_ack_tracker_factory_new();
 
   self->super.worker_construct = kafka_src_worker_new;
 
@@ -1481,10 +1485,17 @@ kafka_sd_get_template_options(LogDriver *d)
 }
 
 void
-kafka_sd_set_do_not_use_bookmark(LogDriver *s, gboolean new_value)
+kafka_sd_set_ignore_saved_bookmarks(LogDriver *s, gboolean new_value)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)s;
-  self->options.do_not_use_bookmark = new_value;
+  self->options.ignore_saved_bookmarks = new_value;
+}
+
+void
+kafka_sd_set_disable_bookmarks(LogDriver *s, gboolean new_value)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)s;
+  self->options.disable_bookmarks = new_value;
 }
 
 void
@@ -1534,7 +1545,8 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   kafka_options_defaults(&self->super);
   self->strategy_hint = KSCS_ASSIGN;
 
-  self->do_not_use_bookmark = FALSE;
+  self->ignore_saved_bookmarks = FALSE;
+  self->disable_bookmarks = FALSE;
   self->separated_worker_queues = FALSE;
   self->fetch_queue_full_delay = 1000; /* fetch_queue_full_delay milliseconds - 1 second */
   self->fetch_delay = 1000; /* 1 second / fetch_delay * 1000000 = 1 millisecond */
