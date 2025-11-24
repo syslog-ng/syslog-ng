@@ -124,7 +124,6 @@ kafka_src_option
         | KW_IGNORE_SAVED_BOOKMARKS '(' yesno ')'               { kafka_sd_set_ignore_saved_bookmarks(last_driver, $3); }
         | KW_DISABLE_BOOKMARKS '(' yesno ')'                    { kafka_sd_set_disable_bookmarks(last_driver, $3); }
         | KW_SINGLE_WORKER_QUEUE '(' yesno ')'                  { kafka_sd_set_single_worker_queue(last_driver, $3); }
-        | KW_MESSAGE '(' template_name_or_content ')'           { kafka_sd_set_message_ref(last_driver, $3); }
         | threaded_source_driver_option
         | threaded_source_driver_workers_option
         ;
