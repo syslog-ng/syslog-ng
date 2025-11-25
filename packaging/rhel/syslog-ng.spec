@@ -469,6 +469,7 @@ ryslog is not on the system.
 %if %{with grpc}
     --enable-cpp --enable-grpc \
 %endif
+    --disable-stackdump \
     --disable-java-modules \
     --with-python=%{py_ver} \
     %{?with_kafka:--enable-kafka} \
