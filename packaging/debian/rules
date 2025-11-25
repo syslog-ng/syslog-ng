@@ -132,6 +132,7 @@ override_dh_auto_configure:
 		--enable-mqtt=auto \
 		--enable-grpc=auto \
 		--enable-cloud-auth=auto \
+		--disable-stackdump \
 		\
 		--with-mongoc=system \
 		--with-ivykis=internal \
