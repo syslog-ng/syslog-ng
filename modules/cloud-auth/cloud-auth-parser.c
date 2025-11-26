@@ -44,6 +44,16 @@ static CfgLexerKeyword cloud_auth_keywords[] =
   { "app_id",                        KW_APP_ID },
   { "app_secret",                    KW_APP_SECRET },
   { "scope",                         KW_SCOPE },
+  { "client_id",                     KW_CLIENT_ID },
+  { "client_secret",                 KW_CLIENT_SECRET },
+  { "token_url",                     KW_TOKEN_URL },
+  { "resource",                      KW_RESOURCE },
+  { "authorization_details",         KW_AUTHORIZATION_DETAILS },
+  { "refresh_offset",                KW_REFRESH_OFFSET },
+  { "oauth2",                        KW_OAUTH2 },
+  { "auth_method",                   KW_AUTH_METHOD },
+  { "basic",                         KW_BASIC },
+  { "post_body",                     KW_POST_BODY },
   { NULL }
 };
 
