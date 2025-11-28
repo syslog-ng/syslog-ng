@@ -34,13 +34,18 @@
 typedef struct _KafkaSourcePersist KafkaSourcePersist;
 
 KafkaSourcePersist *kafka_source_persist_new(KafkaSourceDriver *owner);
-void kafka_source_persist_free(KafkaSourcePersist *self);
+void kafka_source_persist_release(KafkaSourcePersist *self);
 gboolean kafka_source_persist_init(KafkaSourcePersist *self,
                                    PersistState *state,
-                                   const gchar *persist_name,
-                                   rd_kafka_topic_partition_t *partition,
+                                   const gchar *topic,
+                                   int32_t partition,
                                    int64_t override_position,
                                    gboolean use_offset_tracker);
+void kafka_source_persist_invalidate(KafkaSourcePersist *self);
+gboolean kafka_source_persist_is_ready(KafkaSourcePersist *self);
+gboolean kafka_source_persist_matching(KafkaSourcePersist *self,
+                                      const gchar *topic,
+                                      int32_t partition);
 
 void kafka_source_persist_fill_bookmark(KafkaSourcePersist *self,
                                         Bookmark *bookmark,

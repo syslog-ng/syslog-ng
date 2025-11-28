@@ -54,6 +54,7 @@ static CfgLexerKeyword kafka_keywords[] =
   { "single_worker_queue", KW_SINGLE_WORKER_QUEUE },
   { "log_fetch_queue_full_delay", KW_LOG_FETCH_QUEUE_FULL_DELAY },
   { "state_update_timeout",   KW_STATE_UPDATE_TIMEOUT },
+  { "persist_store",  KW_PERSIST_STORE },
 
   { NULL }
 };

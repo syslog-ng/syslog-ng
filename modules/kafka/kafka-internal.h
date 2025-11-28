@@ -45,6 +45,9 @@
 #define kafka_msg_trace msg_trace
 #endif
 
+#define MAX_KAFKA_TOPIC_NAME_LEN 249 // TODO: get from librdkafka?
+#define MAX_KAFKA_PARTITION_KEY_NAME_LEN (MAX_KAFKA_TOPIC_NAME_LEN + 1 + 32) /* extra for partition number */
+
 #define TOPIC_NAME_ERROR topic_name_error_quark()
 
 typedef enum _KafkaLogging
@@ -81,6 +84,10 @@ gboolean kafka_conf_get_prop(const rd_kafka_conf_t *conf, const gchar *name, gch
 gboolean kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value);
 gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_properties,
                                   gsize protected_properties_num);
+gboolean kafka_store_offset(KafkaSourceDriver *self,
+                            const gchar *topic,
+                            int32_t partition,
+                            int64_t offset);
 gboolean kafka_seek_partitions(KafkaSourceDriver *self,
                                rd_kafka_topic_partition_list_t *partitions,
                                int timeout_ms);
@@ -148,6 +155,12 @@ typedef enum _KafkaSrcConsumerStrategy
   KSCS_UNDEFINED
 } KafkaSrcConsumerStrategy;
 
+typedef enum _KafkaSrcPersistStore
+{
+  KSPS_LOCAL,
+  KSPS_REMOTE,
+} KafkaSrcPersistStore;
+
 struct _KafkaSourceOptions
 {
   KafkaOptions super;
@@ -162,6 +175,7 @@ struct _KafkaSourceOptions
 
   gboolean ignore_saved_bookmarks;
   gboolean disable_bookmarks;
+  KafkaSrcPersistStore persist_store;
   guint fetch_delay;
   guint fetch_retry_delay;
   guint fetch_limit; // TODO: use together with "queued.max.messages.kbytes", if 0 kafka's own setting is used automatically
@@ -200,11 +214,13 @@ struct _KafkaSourceDriver
 
   GAtomicCounter running_thread_num;
   GAtomicCounter sleeping_thread_num;
+
+  GMutex persists_mutex;
   GHashTable *persists;
-
+  gboolean all_persists_ready;
   const gchar *persist_name;
-  const gchar *stat_persist_name;
 
+  const gchar *stat_persist_name;
   GHashTable *stats_topics;
   GHashTable *stats_workers;
   StatsAggregator *max_message_size;
@@ -227,6 +243,16 @@ void kafka_sd_signal_queue_ndx(KafkaSourceDriver *self, guint ndx);
 void kafka_sd_signal_queues(KafkaSourceDriver *self);
 void kafka_sd_drop_queued_messages(KafkaSourceDriver *self);
 void kafka_sd_wakeup_kafka_queues(KafkaSourceDriver *self);
+gboolean kafka_sd_persist_store_msg_offset(KafkaSourceDriver *self,
+                                           AckTracker *ack_tracker,
+                                           const gchar *msg_topic_name,
+                                           int32_t msg_partition,
+                                           int64_t msg_offset);
+gboolean kafka_sd_parallel_processing(KafkaSourceDriver *self);
+gboolean kafka_sd_persist_is_ready(KafkaSourceDriver *self,
+                                   const gchar *msg_topic_name,
+                                   int32_t msg_partition,
+                                   gboolean *all_persists_ready);
 
 void kafka_sd_update_msg_length_stats(KafkaSourceDriver *self, gsize len);
 void kafka_sd_inc_msg_topic_stats(KafkaSourceDriver *self, const gchar *topic);

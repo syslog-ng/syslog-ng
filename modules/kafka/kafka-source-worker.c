@@ -66,28 +66,6 @@ _mainloop_sleep_time(const gdouble delay)
   return delay > 0 ? 1.0 / delay : 0.0;
 }
 
-gboolean
-_persist_store_msg_offset(KafkaSourceWorker *self,
-                          const gchar *msg_topic_name,
-                          int32_t msg_partition,
-                          int64_t msg_offset)
-{
-  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->super.control;
-  gboolean success = TRUE;
-  gchar key[300];
-  kafka_format_partition_key(msg_topic_name, msg_partition, key, sizeof(key));
-  Bookmark *bookmark = ack_tracker_request_bookmark(self->super.super.ack_tracker);
-  KafkaSourcePersist *persist = (KafkaSourcePersist *) g_hash_table_lookup(driver->persists, key);
-  kafka_source_persist_fill_bookmark(persist, bookmark, msg_offset);
-  msg_trace("kafka: bookmark created",
-            evt_tag_long("offset", msg_offset),
-            evt_tag_str("topic", msg_topic_name),
-            evt_tag_int("partition", msg_partition),
-            evt_tag_str("driver", driver->super.super.super.id));
-
-  return success;
-}
-
 static gboolean
 _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
 {
@@ -100,6 +78,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
             evt_tag_str("topic", topic_name),
             evt_tag_int("partition", msg->partition),
             evt_tag_str("message", (gchar *)msg->payload),
+            evt_tag_long("offset", msg->offset),
             evt_tag_str("driver", driver->super.super.super.id));
 
   LogMessage *log_msg;
@@ -107,7 +86,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   log_msg_set_value_to_string(log_msg, LM_V_TRANSPORT, "local+kafka");
 
   if (FALSE == driver->options.disable_bookmarks)
-    _persist_store_msg_offset(self, topic_name, msg->partition, msg->offset);
+    kafka_sd_persist_store_msg_offset(driver, self->super.super.ack_tracker, topic_name, msg->partition, msg->offset);
 
   _send(worker, log_msg);
 
@@ -116,6 +95,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   kafka_sd_inc_msg_topic_stats(driver, rd_kafka_topic_name(msg->rkt));
 
   rd_kafka_message_destroy(msg);
+
   main_loop_worker_run_gc();
 
   return TRUE;
@@ -279,6 +259,8 @@ static void
 _run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
 {
   KafkaSourceDriver *driver = (KafkaSourceDriver *) self->super.control;
+  gboolean persist_use_offset_tracker = kafka_sd_parallel_processing(driver);
+  gboolean all_persists_ready = (FALSE == persist_use_offset_tracker);
   rd_kafka_message_t *msg;
   guint rr = 0;
 
@@ -286,6 +268,7 @@ _run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
                   evt_tag_int("worker_num", driver->super.num_workers),
                   evt_tag_int("queue_num", driver->allocated_queue_num ? driver->allocated_queue_num - 1 : 0),
                   evt_tag_int("queues_max_size", driver->options.fetch_limit),
+                  evt_tag_str("persist_store", driver->options.persist_store == KSPS_LOCAL ? "local" : "remote"),
                   evt_tag_str("group_id", driver->group_id),
                   evt_tag_str("driver", driver->super.super.super.id));
   if (driver->strategy == KSCS_SUBSCRIBE)
@@ -332,7 +315,21 @@ _run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
         }
       else
         {
-          if (driver->allocated_queue_num > 0)
+          gboolean can_use_queue = driver->allocated_queue_num > 0;
+          /* This is needed for now because offset tracker readiness for topics which has no stored offsets yet
+           * is only guaranteed after the first message is consumed for a given topic-partition
+           * (see kafka_source_persist_is_ready implementation and offset_tracker_new comments for details)
+           * TODO: improve offset tracker readiness handling to avoid this check per message
+           */
+          if (G_UNLIKELY(can_use_queue && FALSE == all_persists_ready))
+            {
+              gboolean persist_is_ready = kafka_sd_persist_is_ready(driver, rd_kafka_topic_name(msg->rkt), msg->partition,
+                                                                    &all_persists_ready);
+              if (FALSE == persist_is_ready)
+                can_use_queue = FALSE;
+            }
+
+          if (can_use_queue)
             {
               if (G_UNLIKELY(FALSE == _queue_message(self, msg, _next_target_queue_ndx(driver, &rr))))
                 rd_kafka_message_destroy(msg);

@@ -196,6 +196,43 @@ kafka_format_partition_key(const gchar *topic, int32_t partition, gchar *key, gs
 }
 
 gboolean
+kafka_store_offset(KafkaSourceDriver *self,
+                   const gchar *topic,
+                   int32_t partition,
+                   int64_t offset)
+{
+  gboolean success = TRUE;
+
+  /* NOTE: Unlike in rd_kafka_offset_store_message, in rd_kafka_offsets_store the .offset field is stored as is, it will NOT be + 1 */
+  ++offset;
+  rd_kafka_resp_err_t err = rd_kafka_topic_partition_list_set_offset(self->assigned_partitions,
+                            topic, partition, offset);
+  if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
+    {
+      msg_error("kafka: failed to set the offset for partition (set_offset)",
+                evt_tag_str("topic", topic),
+                evt_tag_int("partition", (int) partition),
+                evt_tag_long("offset", offset),
+                evt_tag_str("error", rd_kafka_err2str(err)));
+      success = FALSE;
+    }
+  else
+    {
+      err = rd_kafka_offsets_store(self->kafka, self->assigned_partitions);
+      if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
+        {
+          msg_error("kafka: failed to store the offset for partitions (offsets_store)",
+                    evt_tag_str("topic", topic),
+                    evt_tag_int("partition", (int) partition),
+                    evt_tag_long("offset", offset),
+                    evt_tag_str("error", rd_kafka_err2str(err)));
+          success = FALSE;
+        }
+    }
+  return success;
+}
+
+gboolean
 kafka_seek_partitions(KafkaSourceDriver *self,
                       rd_kafka_topic_partition_list_t *partitions,
                       int timeout_ms)
