@@ -103,8 +103,8 @@ static void _py_add_logging_level(PyObject *m, const gchar* level_name, glong le
     }
 
 exit:
-  Py_XDECREF(add_level_function);
   Py_XDECREF(add_level_retval);
+  Py_XDECREF(add_level_function);
 }
 
 int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds)
@@ -141,9 +141,9 @@ int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds)
   Py_DECREF(init_ret);
 
 exit:
-  Py_XDECREF(logging_module);
-  Py_XDECREF(super);
   Py_XDECREF(init_function);
+  Py_XDECREF(super);
+  Py_XDECREF(logging_module);
 
   return ret;
 }
@@ -216,12 +216,12 @@ void py_loghandler_global_init(void)
 {
   PyObject *logging_module = NULL;
   PyObject *bases = NULL;
-
+  PyObject *handler = NULL;  
   logging_module = _py_do_import("logging");
   if (!logging_module)
     goto exit;
 
-  PyObject *handler = PyObject_GetAttrString(logging_module, "Handler");
+  handler = PyObject_GetAttrString(logging_module, "Handler");
   if (!handler)
     {
       gchar buf[256];
@@ -234,7 +234,6 @@ void py_loghandler_global_init(void)
   bases = PyTuple_Pack(1, handler);
   if (!bases)
     {
-      Py_XDECREF(handler);
       goto exit;
     }
 
@@ -269,6 +268,7 @@ void py_loghandler_global_init(void)
   py_log_levels.info = _py_fetch_log_level(logging_module, "INFO");
 
 exit:
-  Py_XDECREF(logging_module);
   Py_XDECREF(bases);
+  Py_XDECREF(handler);
+  Py_XDECREF(logging_module);
 }
