@@ -30,6 +30,7 @@
 #include "cloud-auth.h"
 #include "google-auth.h"
 #include "azure-auth.h"
+#include "oauth2-auth.h"
 
 LogDriverPlugin *last_plugin;
 CloudAuthenticator *last_authenticator;
@@ -62,6 +63,16 @@ CloudAuthenticator *last_authenticator;
 %token KW_APP_ID
 %token KW_APP_SECRET
 %token KW_SCOPE
+%token KW_CLIENT_ID
+%token KW_CLIENT_SECRET
+%token KW_TOKEN_URL
+%token KW_RESOURCE
+%token KW_AUTHORIZATION_DETAILS
+%token KW_REFRESH_OFFSET
+%token KW_OAUTH2
+%token KW_AUTH_METHOD
+%token KW_BASIC
+%token KW_POST_BODY
 
 %%
 
@@ -92,6 +103,14 @@ inner_destination_cloud_auth_option
       last_authenticator = azure_authenticator_new();
     }
     '(' azure_dest_auth_options ')'
+    {
+      cloud_auth_dest_plugin_set_authenticator(last_plugin, last_authenticator);
+    }
+  | KW_OAUTH2
+    {
+      last_authenticator = oauth2_authenticator_new();
+    }
+    '(' oauth2_dest_auth_options ')'
     {
       cloud_auth_dest_plugin_set_authenticator(last_plugin, last_authenticator);
     }
@@ -159,6 +178,27 @@ azure_dest_monitor_option
   | KW_APP_ID '(' string ')' {azure_authenticator_set_app_id(last_authenticator, $3); free($3);}
   | KW_APP_SECRET '(' string ')' {azure_authenticator_set_app_secret(last_authenticator, $3); free($3);}
   | KW_SCOPE '(' string ')' {azure_authenticator_set_scope(last_authenticator, $3); free($3);}
+  ;
+
+oauth2_dest_auth_options
+  : oauth2_dest_auth_option oauth2_dest_auth_options
+  |
+  ;
+
+oauth2_dest_auth_option
+  : KW_CLIENT_ID '(' string ')' {oauth2_authenticator_set_client_id(last_authenticator, $3); free($3);}
+  | KW_CLIENT_SECRET '(' string ')' {oauth2_authenticator_set_client_secret(last_authenticator, $3); free($3);}
+  | KW_TOKEN_URL '(' string ')' {oauth2_authenticator_set_token_url(last_authenticator, $3); free($3);}
+  | KW_SCOPE '(' string ')' {oauth2_authenticator_set_scope(last_authenticator, $3); free($3);}
+  | KW_RESOURCE '(' string ')' {oauth2_authenticator_set_resource(last_authenticator, $3); free($3);}
+  | KW_AUTHORIZATION_DETAILS '(' string ')' {oauth2_authenticator_set_authorization_details(last_authenticator, $3); free($3);}
+  | KW_REFRESH_OFFSET '(' nonnegative_integer64 ')' {oauth2_authenticator_set_refresh_offset(last_authenticator, $3);}
+  | KW_AUTH_METHOD '(' oauth2_auth_method_value ')' 
+  ;
+
+oauth2_auth_method_value
+  : KW_BASIC { oauth2_authenticator_set_auth_method(last_authenticator, OAUTH2_AUTH_METHOD_BASIC); }
+  | KW_POST_BODY { oauth2_authenticator_set_auth_method(last_authenticator, OAUTH2_AUTH_METHOD_POST_BODY); }
   ;
 
 /* INCLUDE_RULES */

@@ -29,6 +29,9 @@ set(CLOUD_AUTH_CPP_SOURCES
   azure-auth.h
   azure-auth.cpp
   azure-auth.hpp
+  oauth2-auth.h
+  oauth2-auth.cpp
+  oauth2-auth.hpp
 )
 
 set(OTEL_SOURCES
