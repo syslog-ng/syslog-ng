@@ -271,6 +271,64 @@ _check_compatibility(KafkaSourcePersist *self, PersistEntryHandle persist_handle
 }
 
 static void
+_save_bookmark(Bookmark *bookmark)
+{
+  KafkaSourceBookmark *kafka_source_bookmark = (KafkaSourceBookmark *)(&bookmark->container);
+  KafkaSourcePersist *persist = kafka_source_bookmark->persist;
+  KafkaSourcePersistData *persistable_data = &kafka_source_bookmark->data;
+
+  KafkaSourcePersistData *persist_entry = persist_state_map_entry(bookmark->persist_state,
+                                          kafka_source_bookmark->persist_handle);
+  if (persist->use_offset_tracker)
+    {
+      /* TODO: Intentionally not using guards/locks currently, check if bookmark saving
+       *       can be called concurrently, as multiple threads can process the same topic/partition
+       *       in which case only a single persist is allocated for the given topic/partition combination */
+      OffsetTracker *tracker = persist->tracker;
+
+      offset_tracker_bitmap_set(tracker, persistable_data->position);
+      /* Persist only if committed advanced */
+      if (offset_tracker_try_bitmap_shift(tracker))
+        {
+          persist_entry->position = persistable_data->position;
+          // kafka_msg_trace("kafka: message got confirmed", evt_tag_long("offset", persistable_data->position));
+        }
+    }
+  else
+    {
+      persist_entry->position = persistable_data->position;
+      // kafka_msg_trace("kafka: message got confirmed", evt_tag_long("offset", persistable_data->position));
+    }
+
+  persist_state_unmap_entry(bookmark->persist_state, kafka_source_bookmark->persist_handle);
+}
+
+void
+kafka_source_persist_fill_bookmark(KafkaSourcePersist *self, Bookmark *bookmark, int64_t offset)
+{
+  KafkaSourceBookmark *kafka_source_bookmark = (KafkaSourceBookmark *)(&bookmark->container);
+  KafkaSourcePersistData *persistable_data = &kafka_source_bookmark->data;
+
+  kafka_source_bookmark->persist_handle = self->handle;
+  kafka_source_bookmark->persist = self;
+  persistable_data->position = offset;
+
+  bookmark->save = _save_bookmark;
+}
+
+void
+kafka_source_persist_load_position(KafkaSourcePersist *self,
+                                   int64_t *offset)
+{
+  KafkaSourcePersistData *persist_data = persist_state_map_entry(self->persist_state, self->handle);
+  g_assert(persist_data);
+
+  *offset = persist_data->position;
+
+  persist_state_unmap_entry(self->persist_state, self->handle);
+}
+
+static void
 _persist_data_defaults(KafkaSourcePersistData *persist_data)
 {
   memset(persist_data, 0, sizeof(KafkaSourcePersistData));
@@ -337,64 +395,6 @@ _create_persist_entry(KafkaSourcePersist *self, const gchar *persist_name, int64
   msg_trace("kafka: kafka-source persist entry created", evt_tag_str("persist_name", persist_name));
 
   return TRUE;
-}
-
-static void
-_save_bookmark(Bookmark *bookmark)
-{
-  KafkaSourceBookmark *kafka_source_bookmark = (KafkaSourceBookmark *)(&bookmark->container);
-  KafkaSourcePersist *persist = kafka_source_bookmark->persist;
-  KafkaSourcePersistData *persistable_data = &kafka_source_bookmark->data;
-
-  KafkaSourcePersistData *persist_entry = persist_state_map_entry(bookmark->persist_state,
-                                          kafka_source_bookmark->persist_handle);
-  if (persist->use_offset_tracker)
-    {
-      /* TODO: Intentionally not using guards/locks currently, check if bookmark saving
-       *       can be called concurrently, as multiple threads can process the same topic/partition
-       *       in which case only a single persist is allocated for the given topic/partition combination */
-      OffsetTracker *tracker = persist->tracker;
-
-      offset_tracker_bitmap_set(tracker, persistable_data->position);
-      /* Persist only if committed advanced */
-      if (offset_tracker_try_bitmap_shift(tracker))
-        {
-          persist_entry->position = persistable_data->position;
-          // kafka_msg_trace("kafka: message got confirmed", evt_tag_long("offset", persistable_data->position));
-        }
-    }
-  else
-    {
-      persist_entry->position = persistable_data->position;
-      // kafka_msg_trace("kafka: message got confirmed", evt_tag_long("offset", persistable_data->position));
-    }
-
-  persist_state_unmap_entry(bookmark->persist_state, kafka_source_bookmark->persist_handle);
-}
-
-void
-kafka_source_persist_fill_bookmark(KafkaSourcePersist *self, Bookmark *bookmark, int64_t offset)
-{
-  KafkaSourceBookmark *kafka_source_bookmark = (KafkaSourceBookmark *)(&bookmark->container);
-  KafkaSourcePersistData *persistable_data = &kafka_source_bookmark->data;
-
-  kafka_source_bookmark->persist_handle = self->handle;
-  kafka_source_bookmark->persist = self;
-  persistable_data->position = offset;
-
-  bookmark->save = _save_bookmark;
-}
-
-void
-kafka_source_persist_load_position(KafkaSourcePersist *self,
-                                   int64_t *offset)
-{
-  KafkaSourcePersistData *persist_data = persist_state_map_entry(self->persist_state, self->handle);
-  g_assert(persist_data);
-
-  *offset = persist_data->position;
-
-  persist_state_unmap_entry(self->persist_state, self->handle);
 }
 
 gboolean
