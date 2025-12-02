@@ -964,6 +964,12 @@ tls_context_set_ocsp_stapling_verify(TLSContext *self, gboolean ocsp_stapling_ve
   self->ocsp_stapling_verify = ocsp_stapling_verify;
 }
 
+void
+tls_context_set_extended_key_usage_verify(TLSContext *self, gboolean extended_key_usage_verify)
+{
+  self->extended_key_usage_verify = extended_key_usage_verify;
+}
+
 /* NOTE: location is a string description where this tls context was defined, e.g. the location in the config */
 TLSContext *
 tls_context_new(TLSMode mode, const gchar *location)

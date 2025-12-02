@@ -233,15 +233,15 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
 }
 
 static void
-_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
+_log_certificate_validation_progress(int ok,
+                                     X509_STORE_CTX *ctx,
+                                     gboolean peer_is_server)
 {
-  X509 *xs;
-  GString *subject_name, *issuer_name;
+  X509 *xs = X509_STORE_CTX_get_current_cert(ctx);
+  g_assert(xs);
+  GString *subject_name = g_string_sized_new(128);
+  GString *issuer_name = g_string_sized_new(128);
 
-  xs = X509_STORE_CTX_get_current_cert(ctx);
-
-  subject_name = g_string_sized_new(128);
-  issuer_name = g_string_sized_new(128);
   tls_x509_format_dn(X509_get_subject_name(xs), subject_name);
   tls_x509_format_dn(X509_get_issuer_name(xs), issuer_name);
 
@@ -253,16 +253,29 @@ _log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
     }
   else
     {
-      gint errnum, errdepth;
+      int errnum = X509_STORE_CTX_get_error(ctx);
+      int errdepth = X509_STORE_CTX_get_error_depth(ctx);
 
-      errnum = X509_STORE_CTX_get_error(ctx);
-      errdepth = X509_STORE_CTX_get_error_depth(ctx);
-      msg_error("Certificate validation failed",
-                evt_tag_str("subject", subject_name->str),
-                evt_tag_str("issuer", issuer_name->str),
-                evt_tag_str("error", X509_verify_cert_error_string(errnum)),
-                evt_tag_int("depth", errdepth));
+      if (errnum == X509_V_ERR_INVALID_PURPOSE)
+        {
+          EXTENDED_KEY_USAGE *eku = X509_get_ext_d2i(xs, NID_ext_key_usage, NULL, NULL);
+          msg_error("Certificate validation failed (invalid purpose)",
+                    evt_tag_str("subject", subject_name->str),
+                    evt_tag_str("issuer", issuer_name->str),
+                    evt_tag_str("expected_purpose", peer_is_server ? "TLS server" : "TLS client"),
+                    evt_tag_str("eku", eku ? "present" : "absent"),
+                    evt_tag_int("depth", errdepth));
+          if (eku)
+            sk_ASN1_OBJECT_pop_free(eku, ASN1_OBJECT_free);
+        }
+      else
+        msg_error("Certificate validation failed",
+                  evt_tag_str("subject", subject_name->str),
+                  evt_tag_str("issuer", issuer_name->str),
+                  evt_tag_str("error", X509_verify_cert_error_string(errnum)),
+                  evt_tag_int("depth", errdepth));
     }
+
   g_string_free(subject_name, TRUE);
   g_string_free(issuer_name, TRUE);
 }
@@ -272,12 +285,13 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
 {
   SSL *ssl = (SSL *)X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
   TLSSession *self = SSL_get_app_data(ssl);
+  X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
   /* NOTE: Sometimes libssl calls this function
      with no current_cert. This happens when
      some global error is happen. At this situation
      we do not need to call any other check and callback
    */
-  if (X509_STORE_CTX_get_current_cert(ctx) == NULL)
+  if (cert == NULL)
     {
       int ctx_error = X509_STORE_CTX_get_error(ctx);
       switch (ctx_error)
@@ -299,9 +313,23 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
     }
   else
     {
+      gboolean peer_is_server = (self->ctx->mode == TM_CLIENT);
+
       ok = tls_session_verify(self, ok, ctx);
 
-      _log_certificate_validation_progress(ok, ctx);
+      /* Validate Extended Key Usage, but only on leaf certs, not on root or intermediate */
+      if (ok && self->ctx->extended_key_usage_verify && X509_STORE_CTX_get_error_depth(ctx) == 0)
+        {
+          int purpose = peer_is_server ? X509_PURPOSE_SSL_SERVER : X509_PURPOSE_SSL_CLIENT;
+
+          if (X509_check_purpose(cert, purpose, 0) != 1)
+            {
+              ok = 0;
+              X509_STORE_CTX_set_error(ctx, X509_V_ERR_INVALID_PURPOSE);
+            }
+        }
+
+      _log_certificate_validation_progress(ok, ctx, peer_is_server);
 
       if (self->verifier && self->verifier->verify_func)
         return self->verifier->verify_func(ok, ctx, self->verifier->verify_data);
