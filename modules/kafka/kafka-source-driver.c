@@ -626,13 +626,16 @@ _partitions_persists_create(KafkaSourceDriver *self, int64_t override_start_offs
 
   for (int i = 0 ; i < self->assigned_partitions->cnt ; i++)
     {
-      const gchar *topic = self->assigned_partitions->elems[i].topic;
-      kafka_format_partition_key(topic, self->assigned_partitions->elems[i].partition, key, sizeof(key));
+      rd_kafka_topic_partition_t *partition = &self->assigned_partitions->elems[i];
+      const gchar *topic = partition->topic;
+      int32_t partition_num = partition->partition;
+      kafka_format_partition_key(topic, partition_num, key, sizeof(key));
       g_assert(FALSE == g_hash_table_contains(self->persists, key));
 
       gboolean persist_use_offset_tracker = self->super.num_workers > 2;
-      KafkaSourcePersist *persist = kafka_source_persist_new(persist_use_offset_tracker);
-      kafka_source_persist_init(persist, cfg->state, key, override_start_offset);
+      KafkaSourcePersist *persist = kafka_source_persist_new(self);
+      kafka_source_persist_init(persist, cfg->state, key, partition,
+                                override_start_offset, persist_use_offset_tracker);
       g_hash_table_insert(self->persists, g_strdup(key), persist);
     }
 }

@@ -25,15 +25,22 @@
 
 #include "syslog-ng.h"
 #include "persist-state.h"
+#include "kafka-source-driver.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#include <librdkafka/rdkafka.h>
+#pragma GCC diagnostic pop
 
 typedef struct _KafkaSourcePersist KafkaSourcePersist;
 
-KafkaSourcePersist *kafka_source_persist_new(gboolean use_offset_tracker);
+KafkaSourcePersist *kafka_source_persist_new(KafkaSourceDriver *owner);
 void kafka_source_persist_free(KafkaSourcePersist *self);
 gboolean kafka_source_persist_init(KafkaSourcePersist *self,
                                    PersistState *state,
                                    const gchar *persist_name,
-                                   int64_t override_position);
+                                   rd_kafka_topic_partition_t *partition,
+                                   int64_t override_position,
+                                   gboolean use_offset_tracker);
 
 void kafka_source_persist_fill_bookmark(KafkaSourcePersist *self,
                                         Bookmark *bookmark,
