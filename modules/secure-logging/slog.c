@@ -63,18 +63,94 @@ static unsigned char GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] =  EP
  */
 gboolean deriveSubKeys(unsigned char *mainKey, unsigned char *encKey, unsigned char *MACKey)
 {
-    return deriveEncSubKey(mainKey, encKey) && deriveMACSubKey(mainKey, MACKey);
+  return deriveEncSubKey(mainKey, encKey) && deriveMACSubKey(mainKey, MACKey);
 }
 
 gboolean deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey)
 {
-    return PRF(mainKey, KEYPATTERN, sizeof(KEYPATTERN), encKey, KEY_LENGTH);
+  return PRF(mainKey, KEYPATTERN, sizeof(KEYPATTERN), encKey, KEY_LENGTH);
 }
 
 gboolean deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey)
 {
-    return PRF(mainKey, MACPATTERN, sizeof(MACPATTERN), MACKey, KEY_LENGTH);
+  return PRF(mainKey, MACPATTERN, sizeof(MACPATTERN), MACKey, KEY_LENGTH);
 }
+
+
+// return TRUE on success, else FALSE
+gboolean create_initial_mac0( unsigned char mainKey[KEY_LENGTH], unsigned char mac[CMAC_LENGTH])
+{
+  unsigned char encKey[KEY_LENGTH];
+  unsigned char MACKey[KEY_LENGTH];
+  memset(encKey, 0, G_N_ELEMENTS(encKey));
+  memset(MACKey, 0, G_N_ELEMENTS(MACKey));
+
+  if(!deriveSubKeys(mainKey, encKey, MACKey))
+    {
+      return FALSE;
+    }
+  gsize outlen = 0;
+
+  // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
+  // Binary data cannot be larger than its base64 encoding
+  unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
+  gsize nb = G_N_ELEMENTS(bigBuf);
+  memset(bigBuf, 0, nb);
+
+  // This is where are ciphertext related data starts
+  unsigned char *ctBuf = &bigBuf[AES_BLOCKSIZE];
+  unsigned char *iv = ctBuf;
+
+  unsigned char outputBigMac[CMAC_LENGTH];
+  gsize outputBigMac_capacity = G_N_ELEMENTS(outputBigMac);
+  memset(outputBigMac, 0, outputBigMac_capacity);
+
+  // Generate random nonce
+  if (RAND_bytes(iv, IV_LENGTH) == 1)
+    {
+      if(!cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE, outputBigMac, &outlen,
+               outputBigMac_capacity))
+        {
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("File: ", __FILE__),
+                    evt_tag_long("Line: ", __LINE__),
+                    evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
+                    evt_tag_str("Reason: ", "Bad CMAC")
+                   );
+          return FALSE;
+        }
+      memcpy(mac, outputBigMac, CMAC_LENGTH);
+      msg_info("[SLOG] INFO: MAC0 has been created");
+    }
+  return TRUE;
+}
+
+
+// return TRUE on success, else FALSE
+gboolean get_path_mac0(char *pathAggMac, char *pathMac0, int sizePathMac0)
+{
+  gboolean retval = FALSE;
+  if ((NULL == pathAggMac) || (NULL == pathMac0))
+    {
+      msg_error("[SLOG] ERROR: Invalid path: pathAggMac or pathMac0");
+      return FALSE; //-- ERROR, never ever
+    }
+  memset(pathMac0, 0, sizePathMac0);
+  gchar *dirname = g_path_get_dirname(pathAggMac);
+  if (NULL != dirname)
+    {
+      if(g_file_test(dirname, G_FILE_TEST_IS_DIR))
+        {
+          strncat(pathMac0, dirname, sizePathMac0 - strlen(pathMac0) - 1);
+          strncat(pathMac0, "/mac0.dat", sizePathMac0 - strlen(pathMac0) - 10);
+          pathMac0[sizePathMac0-1]='\0';
+          retval = TRUE;
+        }
+    }
+  g_free (dirname);
+  return retval;
+}
+
 
 /*
  * AES256-GCM encryption
@@ -98,81 +174,81 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
                 unsigned char *key, unsigned char *iv,
                 unsigned char *ciphertext, unsigned char *tag)
 {
-    /*
-     * This function is largely borrowed from
-     *
-     * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_GCM_mode
-     *
-     */
-    EVP_CIPHER_CTX *ctx;
+  /*
+   * This function is largely borrowed from
+   *
+   * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_GCM_mode
+   *
+   */
+  EVP_CIPHER_CTX *ctx;
 
-    int len;
-    int ciphertext_len;
+  int len;
+  int ciphertext_len;
 
-    /* Create and initialise the context */
-    if(!(ctx = EVP_CIPHER_CTX_new()))
+  /* Create and initialise the context */
+  if(!(ctx = EVP_CIPHER_CTX_new()))
     {
-        msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
+      return 0;
     }
 
-    /* Initialise the encryption operation. */
-    if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
+  /* Initialise the encryption operation. */
+  if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
     {
-        msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
+      return 0;
     }
 
-    if (IV_LENGTH!=12)
+  if (IV_LENGTH!=12)
     {
-        /* Set IV length if default 12 bytes (96 bits) is not appropriate */
-        if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
+      /* Set IV length if default 12 bytes (96 bits) is not appropriate */
+      if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
         {
-            msg_error("[SLOG] ERROR: Unable to set IV length");
-            return 0;
+          msg_error("[SLOG] ERROR: Unable to set IV length");
+          return 0;
         }
     }
 
-    /* Initialise key and IV */
-    if(1 != EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv))
+  /* Initialise key and IV */
+  if(1 != EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv))
     {
-        msg_error("[SLOG] ERROR: Unable to initialize encryption key and IV");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable to initialize encryption key and IV");
+      return 0;
     }
 
-    /* Provide the message to be encrypted, and obtain the encrypted output.
-     * EVP_EncryptUpdate can be called multiple times if necessary
-     */
-    if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
+  /* Provide the message to be encrypted, and obtain the encrypted output.
+   * EVP_EncryptUpdate can be called multiple times if necessary
+   */
+  if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
     {
-        msg_error("[SLOG] ERROR: Unable to encrypt data");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable to encrypt data");
+      return 0;
     }
 
-    ciphertext_len = len;
+  ciphertext_len = len;
 
-    /* Finalise the encryption. Normally ciphertext bytes may be written at
-     * this stage, but this does not occur in GCM mode
-     */
-    if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
+  /* Finalise the encryption. Normally ciphertext bytes may be written at
+   * this stage, but this does not occur in GCM mode
+   */
+  if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
     {
-        msg_error("[SLOG] ERROR: Unable to complete encryption of data");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable to complete encryption of data");
+      return 0;
     }
 
-    ciphertext_len += len;
+  ciphertext_len += len;
 
-    /* Get the tag */
-    if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, AES_BLOCKSIZE, tag))
+  /* Get the tag */
+  if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, AES_BLOCKSIZE, tag))
     {
-        msg_error("[SLOG] ERROR: Unable to acquire encryption tag");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable to acquire encryption tag");
+      return 0;
     }
 
-    /* Clean up */
-    EVP_CIPHER_CTX_free(ctx);
+  /* Clean up */
+  EVP_CIPHER_CTX_free(ctx);
 
-    return ciphertext_len;
+  return ciphertext_len;
 }
 
 /*
@@ -198,77 +274,77 @@ int sLogDecrypt(unsigned char *ciphertext,
                 unsigned char *iv,
                 unsigned char *plaintext)
 {
-    EVP_CIPHER_CTX *ctx;
-    int len;
-    int plaintext_len;
-    int ret;
+  EVP_CIPHER_CTX *ctx;
+  int len;
+  int plaintext_len;
+  int ret;
 
-    /* Create and initialise the context */
-    if(!(ctx = EVP_CIPHER_CTX_new()))
+  /* Create and initialise the context */
+  if(!(ctx = EVP_CIPHER_CTX_new()))
     {
-        msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
+      return 0;
     }
 
-    /* Initialise the decryption operation. */
-    if(!EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
+  /* Initialise the decryption operation. */
+  if(!EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
     {
-        msg_error("[SLOG] ERROR: Unable initiate decryption operation");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable initiate decryption operation");
+      return 0;
     }
 
-    if(IV_LENGTH!=12)
+  if(IV_LENGTH!=12)
     {
-        /* Set IV length. Not necessary if this is 12 bytes (96 bits) */
-        if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
+      /* Set IV length. Not necessary if this is 12 bytes (96 bits) */
+      if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
         {
-            msg_error("[SLOG] ERROR: Unable set IV length");
-            return 0;
+          msg_error("[SLOG] ERROR: Unable set IV length");
+          return 0;
         }
     }
 
-    /* Initialise key and IV */
-    if(!EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv))
+  /* Initialise key and IV */
+  if(!EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv))
     {
-        msg_error("[SLOG] ERROR: Unable to initialize key and IV");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable to initialize key and IV");
+      return 0;
     }
 
-    /* Provide the message to be decrypted, and obtain the plaintext output.
-     * EVP_DecryptUpdate can be called multiple times if necessary
-     */
-    if(!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+  /* Provide the message to be decrypted, and obtain the plaintext output.
+   * EVP_DecryptUpdate can be called multiple times if necessary
+   */
+  if(!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
     {
-        msg_error("Unable to decrypt");
-        return 0;
+      msg_error("Unable to decrypt");
+      return 0;
     }
 
-    plaintext_len = len;
+  plaintext_len = len;
 
-    /* Set expected tag value. Works in OpenSSL 1.0.1d and later */
-    if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, AES_BLOCKSIZE, tag))
+  /* Set expected tag value. Works in OpenSSL 1.0.1d and later */
+  if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, AES_BLOCKSIZE, tag))
     {
-        msg_error("[SLOG] ERROR: Unable set tag value");
-        return 0;
+      msg_error("[SLOG] ERROR: Unable set tag value");
+      return 0;
     }
 
-    /* Finalise the decryption. A positive return value indicates success,
-     * anything else is a failure - the plaintext is not trustworthy.
-     */
-    ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
+  /* Finalise the decryption. A positive return value indicates success,
+   * anything else is a failure - the plaintext is not trustworthy.
+   */
+  ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
 
-    /* Clean up */
-    EVP_CIPHER_CTX_free(ctx);
-    if(ret > 0)
+  /* Clean up */
+  EVP_CIPHER_CTX_free(ctx);
+  if(ret > 0)
     {
-        /* Success */
-        plaintext_len += len;
-        return plaintext_len;
+      /* Success */
+      plaintext_len += len;
+      return plaintext_len;
     }
-    else
+  else
     {
-        /* Verify failed */
-        return -1;
+      /* Verify failed */
+      return -1;
     }
 }
 
@@ -286,110 +362,91 @@ int sLogDecrypt(unsigned char *ciphertext,
  * 7. Parameter: The capacity of the newly updated MAC buffer
 */
 gboolean sLogEntry(
-    guint64 numberOfLogEntries,
-    GString *text,
-    unsigned char *mainKey,
-    unsigned char *inputBigMac,
-    GString *output,
-    unsigned char *outputBigMac,
-    gsize outputBigMac_capacity)
+  guint64 numberOfLogEntries,
+  GString *text,
+  unsigned char *mainKey,
+  unsigned char *inputBigMac,
+  GString *output,
+  unsigned char *outputBigMac,
+  gsize outputBigMac_capacity)
 {
+  unsigned char encKey[KEY_LENGTH];
+  unsigned char MACKey[KEY_LENGTH];
 
-    unsigned char encKey[KEY_LENGTH];
-    unsigned char MACKey[KEY_LENGTH];
-
-    if(!deriveSubKeys(mainKey, encKey, MACKey))
+  //-- according sub functions mainKey is also  most likely of length KEY_LENGTH
+  if(!deriveSubKeys(mainKey, encKey, MACKey))
     {
-        return FALSE;
+      return FALSE;
     }
 
-    // Compute current log entry number
-    gchar *counterString = g_base64_encode((const guchar*)&numberOfLogEntries, sizeof(numberOfLogEntries));
+  // Compute current log entry number
+  gchar *counterString = g_base64_encode((const guchar *)&numberOfLogEntries, sizeof(numberOfLogEntries));
 
-    int slen = (int) text->len;
+  int slen = (int) text->len;
 
-    // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
-    // Binary data cannot be larger than its base64 encoding
-    unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
+  // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
+  // Binary data cannot be larger than its base64 encoding
+  unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
 
-    // This is where are ciphertext related data starts
-    unsigned char *ctBuf = &bigBuf[AES_BLOCKSIZE];
-    unsigned char *iv = ctBuf;
-    unsigned char *tag = &bigBuf[AES_BLOCKSIZE+IV_LENGTH];
-    unsigned char *ciphertext = &bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
+  // This is where are ciphertext related data starts
+  unsigned char *ctBuf = &bigBuf[AES_BLOCKSIZE];
+  unsigned char *iv = ctBuf;
+  unsigned char *tag = &bigBuf[AES_BLOCKSIZE+IV_LENGTH];
+  unsigned char *ciphertext = &bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
 
-    // Generate random nonce
-    if (RAND_bytes(iv, IV_LENGTH) == 1)
+// Generate random nonce
+  if (RAND_bytes(iv, IV_LENGTH) == 1)
     {
-        // Encrypt log data
-        int ct_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, ciphertext, tag);
-        if(ct_length <= 0)
+      // Encrypt log data
+      int ct_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, ciphertext, tag);
+      if(ct_length <= 0)
         {
-            msg_error("[SLOG] ERROR: Unable to correctly encrypt log message");
+          msg_error("[SLOG] ERROR: Unable to correctly encrypt log message");
 
-            g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
-                            "[SLOG] ERROR: Unable to correctly encrypt the following log message:", text->str);
-            g_free(counterString);
+          g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
+                          "[SLOG] ERROR: Unable to correctly encrypt the following log message:", text->str);
+          g_free(counterString);
 
-            return FALSE;
+          return FALSE;
         }
 
-        // Write current log entry number
-        g_string_printf (output, "%*.*s:", COUNTER_LENGTH, COUNTER_LENGTH, counterString);
-        g_free(counterString);
+      // Write current log entry number
+      g_string_printf (output, "%*.*s:", COUNTER_LENGTH, COUNTER_LENGTH, counterString);
+      g_free(counterString);
 
+      // Write IV, tag, and ciphertext at once
+      gchar *encodedCtBuf = g_base64_encode(ctBuf, IV_LENGTH+AES_BLOCKSIZE + ct_length);
+      g_string_append(output, encodedCtBuf);
+      g_free(encodedCtBuf);
 
-        // Write IV, tag, and ciphertext at once
-        gchar *encodedCtBuf = g_base64_encode(ctBuf, IV_LENGTH+AES_BLOCKSIZE + ct_length);
-        g_string_append(output, encodedCtBuf);
-        g_free(encodedCtBuf);
-
-        // Compute aggregated MAC
-        // Not the first aggregated MAC
-        if (numberOfLogEntries > 0)
+      // Compute aggregated MAC
+      gsize outlen = 0;
+      //-- The initial MAC file has been created, so there is no need
+      //   anymore to check whether this is the very first encryption.
+      memcpy(bigBuf, inputBigMac, AES_BLOCKSIZE);
+      if(!cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen, outputBigMac_capacity))
         {
-            memcpy(bigBuf, inputBigMac, AES_BLOCKSIZE);
-
-            gsize outlen;
-            if(!cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen, outputBigMac_capacity))
-            {
-                msg_error(SLOG_ERROR_PREFIX,
-                          evt_tag_str("File: ", __FILE__),
-                          evt_tag_long("Line: ", __LINE__),
-                          evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
-                          evt_tag_str("Reason: ", "Bad CMAC")
-                         );
-                return FALSE;
-            }
-        }
-        else   // First aggregated MAC
-        {
-            gsize outlen = 0;
-
-            if(!cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen, outputBigMac_capacity))
-            {
-                msg_error(SLOG_ERROR_PREFIX,
-                          evt_tag_str("File: ", __FILE__),
-                          evt_tag_long("Line: ", __LINE__),
-                          evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
-                          evt_tag_str("Reason: ", "Bad CMAC")
-                         );
-                return FALSE;
-            }
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("File: ", __FILE__),
+                    evt_tag_long("Line: ", __LINE__),
+                    evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
+                    evt_tag_str("Reason: ", "Bad CMAC")
+                   );
+          return FALSE;
         }
     }
-    else
+  else
     {
-        // We did not get enough random bytes
-        msg_error("[SLOG] ERROR: Could not obtain enough random bytes");
+      // We did not get enough random bytes
+      msg_error("[SLOG] ERROR: Could not obtain enough random bytes");
 
-        g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
-                        "[SLOG] ERROR: Could not obtain enough random bytes for the following log message:", text->str);
-        g_free(counterString);
+      g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
+                      "[SLOG] ERROR: Could not obtain enough random bytes for the following log message:", text->str);
+      g_free(counterString);
 
-        return FALSE;
+      return FALSE;
     }
-    return TRUE;
+  return TRUE;
 }
 
 /*
@@ -404,13 +461,13 @@ gboolean sLogEntry(
  */
 gboolean deriveKey(unsigned char *dst, guint64 index, guint64 currentKey)
 {
-    gboolean result = TRUE;
+  gboolean result = TRUE;
 
-    for (guint64 i = currentKey; i<index; i++)
+  for (guint64 i = currentKey; i<index; i++)
     {
-        result = evolveKey(dst);
+      result = evolveKey(dst);
     }
-    return result;
+  return result;
 }
 
 /*
@@ -436,139 +493,139 @@ gboolean cmac(unsigned char *key, const void *input,
               gsize length, unsigned char *out,
               gsize *outlen, gsize out_capacity)
 {
-    size_t output_len;
+  size_t output_len;
 
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
-    EVP_MAC *mac = EVP_MAC_fetch(NULL, "CMAC", NULL);
-    if(mac == NULL)
+  EVP_MAC *mac = EVP_MAC_fetch(NULL, "CMAC", NULL);
+  if(mac == NULL)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
-                  evt_tag_str("Reason: ", "EVP_MAC_fetch() returned NULL")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
+                evt_tag_str("Reason: ", "EVP_MAC_fetch() returned NULL")
+               );
+      return FALSE;
     }
 
-    OSSL_PARAM params[] =
-    {
-        OSSL_PARAM_utf8_string("cipher", "aes-256-cbc", 0),
-        OSSL_PARAM_END,
-    };
+  OSSL_PARAM params[] =
+  {
+    OSSL_PARAM_utf8_string("cipher", "aes-256-cbc", 0),
+    OSSL_PARAM_END,
+  };
 
-    EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
-    if(ctx == NULL)
+  EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
+  if(ctx == NULL)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
-                  evt_tag_str("Reason: ", "EVP_MAC_CTX_new() returned NULL")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
+                evt_tag_str("Reason: ", "EVP_MAC_CTX_new() returned NULL")
+               );
+      return FALSE;
     }
 
-    if(EVP_MAC_init(ctx, key, KEY_LENGTH, params) == 0)
+  if(EVP_MAC_init(ctx, key, KEY_LENGTH, params) == 0)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
-                  evt_tag_str("Reason: ", "EVP_MAC_init() returned 0")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
+                evt_tag_str("Reason: ", "EVP_MAC_init() returned 0")
+               );
+      return FALSE;
     }
 
-    if(EVP_MAC_update(ctx, input, length) == 0)
+  if(EVP_MAC_update(ctx, input, length) == 0)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
-                  evt_tag_str("Reason: ", "EVP_MAC_update() returned 0")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
+                evt_tag_str("Reason: ", "EVP_MAC_update() returned 0")
+               );
+      return FALSE;
     }
 
-    if(EVP_MAC_final(ctx, out, &output_len, out_capacity) == 0)
+  if(EVP_MAC_final(ctx, out, &output_len, out_capacity) == 0)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
-                  evt_tag_str("Reason: ", "EVP_MAC_final() returned 0")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
+                evt_tag_str("Reason: ", "EVP_MAC_final() returned 0")
+               );
+      return FALSE;
     }
 
-    EVP_MAC_CTX_free(ctx);
-    EVP_MAC_free(mac);
+  EVP_MAC_CTX_free(ctx);
+  EVP_MAC_free(mac);
 #else
-    CMAC_CTX *ctx = CMAC_CTX_new();
-    if(ctx == NULL)
+  CMAC_CTX *ctx = CMAC_CTX_new();
+  if(ctx == NULL)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
-                  evt_tag_str("Reason: ", "CMAC_CTX_new() returned NULL")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
+                evt_tag_str("Reason: ", "CMAC_CTX_new() returned NULL")
+               );
+      return FALSE;
     }
 
-    if(CMAC_Init(ctx, key, KEY_LENGTH, EVP_aes_256_cbc(), NULL) == 0)
+  if(CMAC_Init(ctx, key, KEY_LENGTH, EVP_aes_256_cbc(), NULL) == 0)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
-                  evt_tag_str("Reason: ", "CMAC_Init() returned 0")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
+                evt_tag_str("Reason: ", "CMAC_Init() returned 0")
+               );
+      return FALSE;
     }
 
-    if(CMAC_Update(ctx, input, length) == 0)
+  if(CMAC_Update(ctx, input, length) == 0)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
-                  evt_tag_str("Reason: ", "CMAC_Update() returned 0")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
+                evt_tag_str("Reason: ", "CMAC_Update() returned 0")
+               );
+      return FALSE;
     }
 
-    if(CMAC_Final(ctx, out, &output_len) == 0)
+  if(CMAC_Final(ctx, out, &output_len) == 0)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
-                  evt_tag_str("Reason: ", "CMAC_Final() returned 0")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
+                evt_tag_str("Reason: ", "CMAC_Final() returned 0")
+               );
+      return FALSE;
     }
-    CMAC_CTX_free(ctx);
+  CMAC_CTX_free(ctx);
 #endif
 
-    // CMAC length must be 16 bytes
-    if(output_len != CMAC_LENGTH)
+  // CMAC length must be 16 bytes
+  if(output_len != CMAC_LENGTH)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
-                  evt_tag_str("Reason: ", "CMAC output incorrect"),
-                  evt_tag_long("Expected bytes: ", CMAC_LENGTH),
-                  evt_tag_long("Got bytes: ", output_len)
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
+                evt_tag_str("Reason: ", "CMAC output incorrect"),
+                evt_tag_long("Expected bytes: ", CMAC_LENGTH),
+                evt_tag_long("Got bytes: ", output_len)
+               );
+      return FALSE;
     }
 
-    *outlen = (gsize)output_len;
+  *outlen = (gsize)output_len;
 
-    return TRUE;
+  return TRUE;
 }
 
 /*
@@ -579,16 +636,15 @@ gboolean cmac(unsigned char *key, const void *input,
  */
 gboolean evolveKey(unsigned char *key)
 {
-
-    unsigned char buf[KEY_LENGTH];
-    if(PRF(key, GAMMA, sizeof(GAMMA), buf, KEY_LENGTH))
+  unsigned char buf[KEY_LENGTH];
+  if(PRF(key, GAMMA, sizeof(GAMMA), buf, KEY_LENGTH))
     {
-        memcpy(key, buf, KEY_LENGTH);
-        return TRUE;
+      memcpy(key, buf, KEY_LENGTH);
+      return TRUE;
     }
-    else
+  else
     {
-        return FALSE;
+      return FALSE;
     }
 }
 
@@ -615,79 +671,79 @@ gboolean PRF(unsigned char *key, unsigned char *originalInput,
              guint64 originalInputLength, unsigned char *output,
              guint64 outputLength)
 {
-    // First, extraction
-    guchar ktmp[KEY_LENGTH];
-    // Initialize to all zero, in case CMAC_LENGTH < KEY_LENGTH
-    bzero(ktmp, KEY_LENGTH);
-    gsize outlen = -1;
+  // First, extraction
+  guchar ktmp[KEY_LENGTH];
+  // Initialize to all zero, in case CMAC_LENGTH < KEY_LENGTH
+  bzero(ktmp, KEY_LENGTH);
+  gsize outlen = -1;
 
-    // Assume KEY_LENGTH >= CMAC_LENGTH
-    if(!cmac(key, originalInput, originalInputLength, ktmp, &outlen, CMAC_LENGTH))
+  // Assume KEY_LENGTH >= CMAC_LENGTH
+  if(!cmac(key, originalInput, originalInputLength, ktmp, &outlen, CMAC_LENGTH))
     {
-        msg_error("[SLOG] ERROR: Bad CMAC",
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__));
-        return FALSE;
+      msg_error("[SLOG] ERROR: Bad CMAC",
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__));
+      return FALSE;
     }
 
-    // Then, expansion
-    gsize n = outputLength / CMAC_LENGTH;
+  // Then, expansion
+  gsize n = outputLength / CMAC_LENGTH;
 
-    gchar label[] = "key-expansion";
-    gchar context[] = "context";
+  gchar label[] = "key-expansion";
+  gchar context[] = "context";
 
-    size_t label_len = strlen(label);
-    size_t context_len = strlen(context);
-    size_t output_len = sizeof(outputLength);
-    size_t gsize_len = sizeof(gsize);
+  size_t label_len = strlen(label);
+  size_t context_len = strlen(context);
+  size_t output_len = sizeof(outputLength);
+  size_t gsize_len = sizeof(gsize);
 
-    // i || Label || 00 || Context || outputLength;
-    gsize myInputLength = sizeof(gsize) + label_len + 1 + context_len + output_len;
+  // i || Label || 00 || Context || outputLength;
+  gsize myInputLength = sizeof(gsize) + label_len + 1 + context_len + output_len;
 
-    guchar *input = g_new0(guchar, myInputLength);
+  guchar *input = g_new0(guchar, myInputLength);
 
-    for (gsize i = 0 ; i < n ; i++)
+  for (gsize i = 0 ; i < n ; i++)
     {
-        // input = i || Label || 00 || Context || outputLength;
-        memcpy(input, &i, gsize_len);
-        memcpy(input + gsize_len, label, label_len);
-        input[gsize_len + label_len] = 0;
+      // input = i || Label || 00 || Context || outputLength;
+      memcpy(input, &i, gsize_len);
+      memcpy(input + gsize_len, label, label_len);
+      input[gsize_len + label_len] = 0;
 
-        memcpy(input + gsize_len + label_len + 1, context, context_len);
-        memcpy(input + gsize_len + label_len + 1 + context_len, &outputLength, output_len);
+      memcpy(input + gsize_len + label_len + 1, context, context_len);
+      memcpy(input + gsize_len + label_len + 1 + context_len, &outputLength, output_len);
 
-        if(!cmac(ktmp, input, myInputLength, output + i * CMAC_LENGTH, &outlen, CMAC_LENGTH))
+      if(!cmac(ktmp, input, myInputLength, output + i * CMAC_LENGTH, &outlen, CMAC_LENGTH))
         {
-            msg_error("[SLOG] ERROR: Bad CMAC",
-                      evt_tag_str("File: ", __FILE__),
-                      evt_tag_long("Line: ", __LINE__));
-            return FALSE;
+          msg_error("[SLOG] ERROR: Bad CMAC",
+                    evt_tag_str("File: ", __FILE__),
+                    evt_tag_long("Line: ", __LINE__));
+          return FALSE;
         }
 
     }
 
-    if (outputLength % CMAC_LENGTH != 0)
+  if (outputLength % CMAC_LENGTH != 0)
     {
-        guchar buf[CMAC_LENGTH];
+      guchar buf[CMAC_LENGTH];
 
-        memcpy (input, &n, gsize_len);
-        memcpy(input + gsize_len, label, label_len);
-        input[gsize_len + label_len] = 0;
-        memcpy(input + gsize_len + label_len + 1, context, context_len);
-        memcpy(input + gsize_len + label_len + 1 + context_len, &outputLength, output_len);
+      memcpy (input, &n, gsize_len);
+      memcpy(input + gsize_len, label, label_len);
+      input[gsize_len + label_len] = 0;
+      memcpy(input + gsize_len + label_len + 1, context, context_len);
+      memcpy(input + gsize_len + label_len + 1 + context_len, &outputLength, output_len);
 
-        if(!cmac(ktmp, input, myInputLength, buf, &outlen, CMAC_LENGTH))
+      if(!cmac(ktmp, input, myInputLength, buf, &outlen, CMAC_LENGTH))
         {
-            msg_error("[SLOG] ERROR: Bad CMAC",
-                      evt_tag_str("File: ", __FILE__),
-                      evt_tag_long("Line: ", __LINE__));
-            return FALSE;
+          msg_error("[SLOG] ERROR: Bad CMAC",
+                    evt_tag_str("File: ", __FILE__),
+                    evt_tag_long("Line: ", __LINE__));
+          return FALSE;
         }
 
-        memcpy(output + n*CMAC_LENGTH, buf, outputLength % CMAC_LENGTH);
+      memcpy(output + n*CMAC_LENGTH, buf, outputLength % CMAC_LENGTH);
     }
-    g_free(input);
-    return TRUE;
+  g_free(input);
+  return TRUE;
 }
 
 /*
@@ -702,7 +758,7 @@ gboolean PRF(unsigned char *key, unsigned char *originalInput,
  */
 gboolean generateMasterKey(guchar *masterkey)
 {
-    return RAND_bytes(masterkey, KEY_LENGTH) == 1 ? TRUE : FALSE;
+  return RAND_bytes(masterkey, KEY_LENGTH) == 1 ? TRUE : FALSE;
 }
 
 /*
@@ -717,15 +773,33 @@ gboolean generateMasterKey(guchar *masterkey)
  * S/N) and requires 32 bytes of storage. The caller has to allocate this
  * memory.
  */
+
+
+/*
+In release version, there was a warning due to -Wstringop-overflow=
+because gcc could not check whether the destination buffer size was large enough.
+Why only the release version was affected by the warning is still unclear.
+
 gboolean deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *hostkey)
 {
-    gchar concatString[strlen(macAddr) + strlen(serial) + 1];
-    concatString[0] = 0;
-    strncat(concatString, macAddr, strlen(macAddr));
-    strncat(concatString, serial, strlen(serial));
+  gchar concatString[strlen(macAddr) + strlen(serial) + 1];
+  concatString[0] = 0;
+  strncat(concatString, macAddr, strlen(macAddr));
+  strncat(concatString, serial, strlen(serial));
 
-    return PRF(masterkey, (guchar *) concatString, strlen(concatString), hostkey, KEY_LENGTH);
+  return PRF(masterkey, (guchar *) concatString, strlen(concatString), hostkey, KEY_LENGTH);
 }
+*/
+
+gboolean deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *hostkey)
+{
+  gchar concatString[strlen(macAddr) + strlen(serial) + 1];
+  concatString[0] = 0;
+  strncat(concatString, macAddr, sizeof(concatString) - strlen(concatString) - 1);
+  strncat(concatString, serial, sizeof(concatString) - strlen(concatString) - 1);
+  return PRF(masterkey, (guchar *) concatString, strlen(concatString), hostkey, KEY_LENGTH);
+}
+
 
 /*
  *  Write whole log MAC to file
@@ -734,65 +808,64 @@ gboolean deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar 
  * TRUE on success
  * FALSE on error
  */
-gboolean writeAggregatedMAC(gchar *filename, char *outputBuffer)
+gboolean writeAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
 {
-    SLogFile *f = create_file(filename, "w+");
+  SLogFile *f = create_file(filename, "w+");
 
-    if(f == NULL)
+  if(f == NULL)
     {
-        return FALSE;
+      return FALSE;
     }
 
-    gboolean volatile result = TRUE;
-    gboolean volatile cmacOk = TRUE;
+  gboolean volatile result = TRUE;
+  gboolean volatile cmacOk = TRUE;
 
-    SLOG_SECT_START
-    result = open_file(f);
-    if(!result)
+  SLOG_SECT_START(f)
+  result = open_file(f);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    // Write aggregated MAC
-    result = write_to_file(f, outputBuffer, CMAC_LENGTH);
-    if(!result)
+  // Write aggregated MAC
+  result = write_to_file(f, (gchar *) outputBuffer, CMAC_LENGTH);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    // Compute new aggregated MAC
-    gchar outputmacdata[CMAC_LENGTH];
-    gsize outlen;
-    gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
-    unsigned char keyBuffer[KEY_LENGTH];
-    bzero(keyBuffer, KEY_LENGTH);
-    unsigned char zeroBuffer[CMAC_LENGTH];
-    bzero(zeroBuffer, CMAC_LENGTH);
-    memcpy(keyBuffer, outputBuffer, MIN(CMAC_LENGTH, KEY_LENGTH));
+  // Compute new aggregated MAC
+  gchar outputmacdata[CMAC_LENGTH];
+  gsize outlen;
+  gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
+  unsigned char keyBuffer[KEY_LENGTH];
+  bzero(keyBuffer, KEY_LENGTH);
+  unsigned char zeroBuffer[CMAC_LENGTH];
+  bzero(zeroBuffer, CMAC_LENGTH);
+  memcpy(keyBuffer, outputBuffer, MIN(CMAC_LENGTH, KEY_LENGTH));
 
-    if(!cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, (guchar*)outputmacdata, &outlen, outputmacdata_capacity))
+  if(!cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, (guchar *)outputmacdata, &outlen, outputmacdata_capacity))
     {
-        msg_error("[SLOG] ERROR: Bad CMAC");
-        cmacOk = FALSE;
+      msg_error("[SLOG] ERROR: Bad CMAC");
+      cmacOk = FALSE;
     }
 
-    // Write new aggregated MAC to file
-    result = write_to_file(f, outputmacdata, CMAC_LENGTH);
-    if(!result)
+  // Write new aggregated MAC to file
+  result = write_to_file(f, outputmacdata, CMAC_LENGTH);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    // Close file
-    result = close_file(f);
-    if(!result)
+  // Close file
+  result = close_file(f);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
+  SLOG_SECT_END(f)
 
-    SLOG_SECT_END(f)
-
-    return result && cmacOk;
+  return result && cmacOk;
 }
 
 /*
@@ -802,79 +875,80 @@ gboolean writeAggregatedMAC(gchar *filename, char *outputBuffer)
  * TRUE on success
  * FALSE on error
  */
-gboolean readAggregatedMAC(gchar *filename, char *outputBuffer)
+gboolean readAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
 {
-    SLogFile *f = create_file(filename, "r");
+  SLogFile *f = create_file(filename, "r");
 
-    if(f == NULL)
+  if(f == NULL)
     {
-        return FALSE;
+      return FALSE;
     }
 
-    gboolean volatile result = TRUE;
-    gboolean volatile cmacOk = TRUE;
-    gchar macdata[2*CMAC_LENGTH];
+  gboolean volatile result = TRUE;
+  gboolean volatile cmacOk = TRUE;
+  gchar macdata[2*CMAC_LENGTH];
 
-    // If file does not exist there is nothing to do
-    if(!g_file_test(filename, G_FILE_TEST_IS_REGULAR))
+  // If file does not exist there is nothing to do
+  if(!g_file_test(filename, G_FILE_TEST_IS_REGULAR))
     {
-        msg_info("[SLOG] INFO: MAC does not yet exist and will be created");
-        close_file(f);
-        return TRUE;
+      msg_info("[SLOG] INFO: MAC does not yet exist and will be created");
+      close_file(f);
+      return TRUE;
     }
 
-    SLOG_SECT_START
-    result = open_file(f);
-    if(!result)
+
+  SLOG_SECT_START(f)
+  result = open_file(f);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    result = read_from_file(f, macdata, 2*CMAC_LENGTH);
-    if(!result)
+  result = read_from_file(f, macdata, 2*CMAC_LENGTH);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    gsize outlen = 0;
-    unsigned char keyBuffer[KEY_LENGTH];
-    bzero(keyBuffer, KEY_LENGTH);
-    unsigned char zeroBuffer[CMAC_LENGTH];
-    bzero(zeroBuffer, CMAC_LENGTH);
-    memcpy(keyBuffer, macdata, MIN(CMAC_LENGTH, KEY_LENGTH));
+  gsize outlen = 0;
+  unsigned char keyBuffer[KEY_LENGTH];
+  bzero(keyBuffer, KEY_LENGTH);
+  unsigned char zeroBuffer[CMAC_LENGTH];
+  bzero(zeroBuffer, CMAC_LENGTH);
+  memcpy(keyBuffer, macdata, MIN(CMAC_LENGTH, KEY_LENGTH));
 
-    unsigned char testOutput[CMAC_LENGTH];
-    gsize testOutput_capacity = G_N_ELEMENTS(testOutput);
+  unsigned char testOutput[CMAC_LENGTH];
+  gsize testOutput_capacity = G_N_ELEMENTS(testOutput);
 
-    if(!cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, testOutput, &outlen, testOutput_capacity))
+  if(!cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, testOutput, &outlen, testOutput_capacity))
     {
-        msg_error("[SLOG] ERROR: Bad CMAC",
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__));
-        cmacOk = FALSE;
+      msg_error("[SLOG] ERROR: Bad CMAC",
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__));
+      cmacOk = FALSE;
     }
 
-    if (0 != memcmp(testOutput, &macdata[CMAC_LENGTH], CMAC_LENGTH))
+  if (0 != memcmp(testOutput, &macdata[CMAC_LENGTH], CMAC_LENGTH))
     {
-        msg_warning("[SLOG] ERROR: MAC computation invalid");
-        cmacOk = FALSE;
+      msg_warning("[SLOG] ERROR: MAC computation invalid");
+      cmacOk = FALSE;
     }
-    else
+  else
     {
-        msg_info("[SLOG] INFO: MAC successfully loaded");
-    }
-
-    result = close_file(f);
-    if(!result)
-    {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_info("[SLOG] INFO: MAC successfully loaded");
     }
 
-    memcpy(outputBuffer, macdata, CMAC_LENGTH);
+  result = close_file(f);
+  if(!result)
+    {
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+    }
 
-    SLOG_SECT_END(f)
+  memcpy(outputBuffer, macdata, CMAC_LENGTH);
 
-    return result && cmacOk;
+  SLOG_SECT_END(f)
+
+  return result && cmacOk;
 }
 
 /*
@@ -884,76 +958,77 @@ gboolean readAggregatedMAC(gchar *filename, char *outputBuffer)
  * TRUE on success
  * FALSE on error
  */
-gboolean readKey(char *destKey, guint64 *destCounter, gchar *keypath)
+gboolean readKey(unsigned char *destKey, guint64 *destCounter, gchar *keypath)
 {
-    SLogFile *f = create_file(keypath, "r");
+  SLogFile *f = create_file(keypath, "r");
 
-    if(f == NULL)
+  if(f == NULL)
     {
-        return FALSE;
+      return FALSE;
     }
 
-    gboolean volatile result = TRUE;
-    gboolean volatile cmacOk = TRUE;
-    gchar keydata[KEY_LENGTH + CMAC_LENGTH];
-    guint64 littleEndianCounter;
+  gboolean volatile result = TRUE;
+  gboolean volatile cmacOk = TRUE;
+  gchar keydata[KEY_LENGTH + CMAC_LENGTH];
+  guint64 littleEndianCounter;
 
-    SLOG_SECT_START
-    result = open_file(f);
-    if(!result)
+  SLOG_SECT_START(f)
+  result = open_file(f);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    // Key file contains
-    // 1. The number of log entries already logged (and therefore the
-    //    index of the key). This is at the end of the key file
-    // 2. The actual 32 byte key stored this is at the beginning of the key file
-    // 3. A 16 byte CMAC of the two previous data stored after the actual key
+  // Key file contains
+  // 1. The number of log entries already logged (and therefore the
+  //    index of the key). This is at the end of the key file
+  // 2. The actual 32 byte key stored this is at the beginning of the key file
+  // 3. A 16 byte CMAC of the two previous data stored after the actual key
 
-    result = read_from_file(f, keydata, KEY_LENGTH + CMAC_LENGTH);
-    if(!result)
+  result = read_from_file(f, keydata, KEY_LENGTH + CMAC_LENGTH);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    result = read_from_file(f, (gchar*)&littleEndianCounter, sizeof(littleEndianCounter));
-    if(!result)
+  result = read_from_file(f, (gchar *)&littleEndianCounter, sizeof(littleEndianCounter));
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    gsize outlen = 0;
-    unsigned char testOutput[CMAC_LENGTH];
-    gsize testOutputCapacity = G_N_ELEMENTS(testOutput);
+  gsize outlen = 0;
+  unsigned char testOutput[CMAC_LENGTH];
+  gsize testOutputCapacity = G_N_ELEMENTS(testOutput);
 
-    if(!cmac((guchar*)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen, testOutputCapacity))
+  if(!cmac((guchar *)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen,
+           testOutputCapacity))
     {
-        msg_error("[SLOG] ERROR: Bad CMAC",
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__));
-        cmacOk = FALSE;
+      msg_error("[SLOG] ERROR: Bad CMAC",
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__));
+      cmacOk = FALSE;
     }
 
-    if (0 != memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH))
+  if (0 != memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH))
     {
-        msg_warning("[SLOG] ERROR: Host key corrupted. CMAC in key file not matching");
-        result = FALSE;
+      msg_warning("[SLOG] ERROR: Host key corrupted. CMAC in key file not matching");
+      result = FALSE;
     }
 
-    // Close file
-    result = close_file(f);
-    if(!result)
+  // Close file
+  result = close_file(f);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    SLOG_SECT_END(f)
+  SLOG_SECT_END(f)
 
-    memcpy(destKey, keydata, KEY_LENGTH);
-    *destCounter = GUINT64_FROM_LE(littleEndianCounter);
+  memcpy(destKey, keydata, KEY_LENGTH);
+  *destCounter = GUINT64_FROM_LE(littleEndianCounter);
 
-    return result && cmacOk;
+  return result && cmacOk;
 }
 
 /*
@@ -963,352 +1038,328 @@ gboolean readKey(char *destKey, guint64 *destCounter, gchar *keypath)
  * TRUE on success
  * FALSE on error
  */
-gboolean writeKey(char *key, guint64 counter, gchar *keypath)
+gboolean writeKey(unsigned char *key, guint64 counter, gchar *keypath)
 {
-    SLogFile *f = create_file(keypath, "w+");
+  SLogFile *f = create_file(keypath, "w+");
 
-    if(f == NULL)
+  if(f == NULL)
     {
-        return FALSE;
+      return FALSE;
     }
 
-    gboolean volatile result = TRUE;
-    gboolean volatile cmacOk = TRUE;
+  gboolean volatile result = TRUE;
+  gboolean volatile cmacOk = TRUE;
 
-    SLOG_SECT_START
-    result = open_file(f);
-    if(!result)
+  SLOG_SECT_START(f)
+  result = open_file(f);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    // Write key
-    result = write_to_file(f, key, KEY_LENGTH);
-    if(!result)
+  // Write key
+  result = write_to_file(f, (gchar *) key, KEY_LENGTH);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    guint64 littleEndianCounter = GINT64_TO_LE(counter);
-    gchar outputmacdata[CMAC_LENGTH];
-    gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
-    gsize outlen = 0;
+  guint64 littleEndianCounter = GINT64_TO_LE(counter);
+  gchar outputmacdata[CMAC_LENGTH];
+  gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
+  gsize outlen = 0;
 
-    // Create CMAC for key
-    if(!cmac((guchar *)key, &littleEndianCounter, sizeof(littleEndianCounter),
-             (guchar *)outputmacdata, &outlen, outputmacdata_capacity))
+  // Create CMAC for key
+  if(!cmac((guchar *)key, &littleEndianCounter, sizeof(littleEndianCounter),
+           (guchar *)outputmacdata, &outlen, outputmacdata_capacity))
     {
-        msg_error("[SLOG] ERROR: Bad CMAC",
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__));
-        cmacOk = FALSE;
+      msg_error("[SLOG] ERROR: Bad CMAC",
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__));
+      cmacOk = FALSE;
     }
 
-    // Write CMAC
-    result = write_to_file(f, outputmacdata, CMAC_LENGTH);
-    if(!result)
+  // Write CMAC
+  result = write_to_file(f, outputmacdata, CMAC_LENGTH);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    // Write counter
-    result = write_to_file(f, (gchar *)&littleEndianCounter,  sizeof(littleEndianCounter));
-    if(!result)
+  // Write counter
+  result = write_to_file(f, (gchar *)&littleEndianCounter,  sizeof(littleEndianCounter));
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    result = close_file(f);
-    if(!result)
+  result = close_file(f);
+  if(!result)
     {
-        SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-    SLOG_SECT_END(f)
+  SLOG_SECT_END(f)
 
-    return result && cmacOk;
+  return result && cmacOk;
 }
 
 // Iterate through log entries contained in a buffer and verify them
 gboolean iterateBuffer(
-    guint64 entriesInBuffer,
-    GPtrArray *input,
-    guint64 *nextLogEntry,
-    unsigned char *mainKey,
-    unsigned char *keyZero,
-    guint keyNumber,
-    GPtrArray *output,
-    guint64 *numberOfLogEntries,
-    unsigned char *cmac_tag,
-    gsize cmac_tag_capacity,
-    GHashTable *tab)
+  guint64 entriesInBuffer,
+  GPtrArray *input,
+  guint64 *nextLogEntry,
+  unsigned char *mainKey,
+  unsigned char *keyZero,
+  guint keyNumber,
+  GPtrArray *output,
+  guint64 *numberOfLogEntries,
+  unsigned char *cmac_tag,
+  gsize cmac_tag_capacity,
+  GHashTable *tab)
 {
-    gboolean result = TRUE;
-    for (guint64 i = 0; i < entriesInBuffer; i++)
+  gboolean result = TRUE;
+  for (guint64 i = 0; i < entriesInBuffer; i++)
     {
-        g_ptr_array_add(output, g_string_new(NULL));
+      g_ptr_array_add(output, g_string_new(NULL));
 
-        GString *entry = (GString*)g_ptr_array_index(input, i);
-        guint64 len = entry->len;
-        guint64 logEntryOnDisk;
+      GString *entry = (GString *)g_ptr_array_index(input, i);
+      guint64 len = entry->len;
+      guint64 logEntryOnDisk;
 
-        if (len > (COUNTER_LENGTH + 1))
+      if (len > (COUNTER_LENGTH + 1))
         {
-            if(!getCounter(entry, &logEntryOnDisk))
+          if(!getCounter(entry, &logEntryOnDisk))
             {
-                // Cannot determine counter value -> Jump to next entry
-                logEntryOnDisk = *nextLogEntry;
+              // Cannot determine counter value -> Jump to next entry
+              logEntryOnDisk = *nextLogEntry;
             }
 
-            // Subtract counter from log entry
-            len = len - (COUNTER_LENGTH+1);
+          // Subtract counter from log entry
+          len = len - (COUNTER_LENGTH+1);
 
-            if (logEntryOnDisk != *nextLogEntry)
+          if (logEntryOnDisk != *nextLogEntry)
             {
-                if(tableContainsKey(tab, logEntryOnDisk))
+              if(tableContainsKey(tab, logEntryOnDisk))
                 {
-                    msg_error("[SLOG] ERROR: Duplicate entry detected", evt_tag_long("entry", logEntryOnDisk));
-                    result = FALSE;
+                  msg_error("[SLOG] ERROR: Duplicate entry detected", evt_tag_long("entry", logEntryOnDisk));
+                  result = FALSE;
                 }
-                if (logEntryOnDisk < (*nextLogEntry))
+              if (logEntryOnDisk < (*nextLogEntry))
                 {
-                    if (logEntryOnDisk < keyNumber)
+                  if (logEntryOnDisk < keyNumber)
                     {
-                        msg_error("[SLOG] ERROR: Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.",
-                                  evt_tag_long("entry", logEntryOnDisk));
-                        result = FALSE;
+                      msg_error("[SLOG] ERROR: Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.",
+                                evt_tag_long("entry", logEntryOnDisk));
+                      result = FALSE;
                     }
-                    else
+                  else
                     {
-                        msg_error("[SLOG] ERROR: Log claims to be past entry. We rewind from first known key, this might take some time",
-                                  evt_tag_long("entry", logEntryOnDisk));
-                        // Rewind key to k0
-                        memcpy(mainKey, keyZero, KEY_LENGTH);
-                        deriveKey(mainKey, logEntryOnDisk, keyNumber);
-                        *nextLogEntry = logEntryOnDisk;
-                        result = FALSE;
+                      msg_error("[SLOG] ERROR: Log claims to be past entry. We rewind from first known key, this might take some time",
+                                evt_tag_long("entry", logEntryOnDisk));
+                      // Rewind key to k0
+                      memcpy(mainKey, keyZero, KEY_LENGTH);
+                      deriveKey(mainKey, logEntryOnDisk, keyNumber);
+                      *nextLogEntry = logEntryOnDisk;
+                      result = FALSE;
                     }
                 }
-                if (logEntryOnDisk - (*nextLogEntry) > 1000000)
+              if (logEntryOnDisk - (*nextLogEntry) > 1000000)
                 {
-                    msg_info("[SLOG] INFO: Deriving key for distant future. This might take some time.",
-                             evt_tag_long("next log entry should be", *nextLogEntry), evt_tag_long("key to derive to", logEntryOnDisk),
-                             evt_tag_long("number of log entries", *numberOfLogEntries));
+                  msg_info("[SLOG] INFO: Deriving key for distant future. This might take some time.",
+                           evt_tag_long("next log entry should be", *nextLogEntry), evt_tag_long("key to derive to", logEntryOnDisk),
+                           evt_tag_long("number of log entries", *numberOfLogEntries));
                 }
-                deriveKey(mainKey, logEntryOnDisk, *nextLogEntry);
-                *nextLogEntry = logEntryOnDisk;
+              deriveKey(mainKey, logEntryOnDisk, *nextLogEntry);
+              *nextLogEntry = logEntryOnDisk;
             }
 
-            GString *line = (GString *)g_ptr_array_index(input, i);
-            GString *out = (GString *)g_ptr_array_index(output, i);
+          GString *line = (GString *)g_ptr_array_index(input, i);
+          GString *out = (GString *)g_ptr_array_index(output, i);
 
-            char *ct = &(line->str)[COUNTER_LENGTH+1];
-            gsize outputLength;
+          char *ct = &(line->str)[COUNTER_LENGTH+1];
+          gsize outputLength;
 
-            // binBuf = IV + TAG + CT
-            guchar *binBuf = g_base64_decode(ct, &outputLength);
-            int pt_length = 0;
+          // binBuf = IV + TAG + CT
+          guchar *binBuf = g_base64_decode(ct, &outputLength);
+          int pt_length = 0;
 
-            // Check whether something weird has happened during conversion
-            if (outputLength > IV_LENGTH + AES_BLOCKSIZE)
+          // Check whether something weird has happened during conversion
+          if (outputLength > IV_LENGTH + AES_BLOCKSIZE)
             {
-                unsigned char pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
+              unsigned char pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
+              unsigned char encKey[KEY_LENGTH];
+              deriveEncSubKey(mainKey, encKey);
+              pt_length = sLogDecrypt(&binBuf[IV_LENGTH+AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE, &binBuf[IV_LENGTH],
+                                      encKey, binBuf, pt);
 
-                unsigned char encKey[KEY_LENGTH];
-                deriveEncSubKey(mainKey, encKey);
-
-                pt_length = sLogDecrypt(&binBuf[IV_LENGTH+AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE, &binBuf[IV_LENGTH],
-                                        encKey, binBuf, pt);
-
-                if (pt_length > 0)
+              if (pt_length > 0)
                 {
-                    // Include colon, whitespace, and \0
-                    g_string_append_printf(out, "%0*"G_GINT64_MODIFIER"x: %.*s", CTR_LEN_SIMPLE, logEntryOnDisk, pt_length, pt);
+                  // Include colon, whitespace, and \0
+                  g_string_append_printf(out, "%0*"G_GINT64_MODIFIER"x: %.*s", CTR_LEN_SIMPLE, logEntryOnDisk, pt_length, pt);
 
-                    // Add to table
-                    if (!addValueToTable(tab, logEntryOnDisk))
+                  // Add to table
+                  if (!addValueToTable(tab, logEntryOnDisk))
                     {
-                        msg_warning("[SLOG] WARNING: Table entry exists", evt_tag_long("Entry: ",
-                                    logEntryOnDisk));
-                        result = FALSE;
+                      msg_warning("[SLOG] WARNING: Table entry exists", evt_tag_long("Entry: ",
+                                  logEntryOnDisk));
+                      result = FALSE;
                     }
 
-                    // Update BigHMAC
-                    if ((*numberOfLogEntries) == 0UL)   // First aggregated MAC
+                  // Update BigHMAC
+                  gsize outlen = 0;
+                  unsigned char MACKey[KEY_LENGTH];
+                  deriveMACSubKey(mainKey, MACKey);
+                  //-- now that an inital aggregated MAC exists, do the
+                  //   same for first entry as for any other entries!
+                  unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length];
+                  memcpy(bigBuf, cmac_tag, AES_BLOCKSIZE);
+                  memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length);
+                  if(!cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen, cmac_tag_capacity))
                     {
-                        gsize outlen = 0;
-
-                        unsigned char MACKey[KEY_LENGTH];
-                        deriveMACSubKey(mainKey, MACKey);
-
-                        if(!cmac(MACKey, binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen, cmac_tag_capacity))
-                        {
-                            msg_error("[SLOG] ERROR: Bad CMAC",
-                                      evt_tag_str("File: ", __FILE__),
-                                      evt_tag_long("Line: ", __LINE__));
-                            result = FALSE;
-                        }
-                    }
-                    else
-                    {
-                        // numberOfEntries > 0
-                        gsize outlen;
-                        unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length];
-                        memcpy(bigBuf, cmac_tag, AES_BLOCKSIZE);
-                        memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length);
-
-                        unsigned char MACKey[KEY_LENGTH];
-                        deriveMACSubKey(mainKey, MACKey);
-
-                        if(!cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen, cmac_tag_capacity))
-                        {
-                            msg_error("[SLOG] ERROR: Bad CMAC",
-                                      evt_tag_str("File: ", __FILE__),
-                                      evt_tag_long("Line: ", __LINE__));
-                            result = FALSE;
-                        }
-
+                      msg_error("[SLOG] ERROR: Bad CMAC",
+                                evt_tag_str("File: ", __FILE__),
+                                evt_tag_long("Line: ", __LINE__));
+                      result = FALSE;
                     }
                 }
             }
 
-            if (pt_length<=0)
+          if (pt_length<=0)
             {
-                msg_warning("[SLOG] WARNING: Decryption not successful",
-                            evt_tag_long("entry", logEntryOnDisk));
-                result = FALSE;
+              msg_warning("[SLOG] WARNING: Decryption not successful",
+                          evt_tag_long("entry", logEntryOnDisk));
+              result = FALSE;
             }
 
-            g_free(binBuf);
+          g_free(binBuf);
 
-            evolveKey(mainKey);
-            (*numberOfLogEntries)++;
-            (*nextLogEntry)++;
-
+          evolveKey(mainKey);
+          (*numberOfLogEntries)++;
+          (*nextLogEntry)++;
         }
-        else
+      else
         {
-            msg_error("[SLOG] ERROR: Cannot read log entry", evt_tag_long("", *nextLogEntry));
-            result = FALSE;
+          msg_error("[SLOG] ERROR: Cannot read log entry", evt_tag_long("", *nextLogEntry));
+          result = FALSE;
         }
 
     } // for
 
-    return result;
+  return result;
 }
 
 // Perform the final verification step
 gboolean finalizeVerify(
-    guint64 startingEntry,
-    guint64 entriesInFile,
-    unsigned char *aggMAC,
-    unsigned char *cmac_tag,
-    GHashTable *tab)
+  guint64 startingEntry,
+  guint64 entriesInFile,
+  unsigned char *aggMAC,
+  unsigned char *cmac_tag,
+  GHashTable *tab)
 {
+  int ret = TRUE;
 
-    int ret = TRUE;
-
-    // Check which entries are missing
-    guint64 notRecovered = 0;
-    for (guint64 i = startingEntry; i < startingEntry + entriesInFile; i++)
+  // Check which entries are missing
+  guint64 notRecovered = 0;
+  for (guint64 i = startingEntry; i < startingEntry + entriesInFile; i++)
     {
-        if (tab != NULL)
+      if (tab != NULL)
         {
-            // Hashtable key
-            char key[CTR_LEN_SIMPLE+1];
-            snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, i);
-
-            if(!g_hash_table_contains(tab, key))
+          // Hashtable key
+          char key[CTR_LEN_SIMPLE+1];
+          snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, i);
+          if(!g_hash_table_contains(tab, key))
             {
-                notRecovered++;
-                msg_warning("[SLOG] WARNING: Unable to recover", evt_tag_long("entry", i));
-                ret = FALSE;
+              notRecovered++;
+              msg_warning("[SLOG] WARNING: Unable to recover", evt_tag_long("entry", i));
+              ret = FALSE;
             }
         }
     }
 
-    if ((notRecovered == 0) && (tab != NULL))
+  if ((notRecovered == 0) && (tab != NULL))
     {
-        msg_info("[SLOG] INFO: All entries recovered successfully");
+      msg_info("[SLOG] INFO: All entries recovered successfully");
     }
 
-    int equal = memcmp(aggMAC, cmac_tag, CMAC_LENGTH);
+  int equal = memcmp(aggMAC, cmac_tag, CMAC_LENGTH);
 
-    if (equal != 0)
+  if (equal != 0)
     {
-        msg_warning("[SLOG] WARNING: Aggregated MAC mismatch. Log might be incomplete");
-        ret = FALSE;
+      // TODO cmac_tag most likely wrong
+      msg_warning("[SLOG] WARNING: Aggregated MAC mismatch. Log might be incomplete");
+      ret = FALSE;
     }
-    else
+  else
     {
-        msg_info("[SLOG] Aggregated MAC matches. Log contains all expected log messages.");
+      msg_info("[SLOG] Aggregated MAC matches. Log contains all expected log messages.");
     }
 
-    g_hash_table_unref(tab);
+  g_hash_table_unref(tab);
 
-    return ret;
+  return ret;
 }
 
 // Initialize log verification
 gboolean initVerify(
-    guint64 entriesInFile,
-    unsigned char *mainKey,
-    guint64 *nextLogEntry,
-    guint64 *startingEntry,
-    GPtrArray *input,
-    GHashTable **tab)
+  guint64 entriesInFile,
+  unsigned char *mainKey,
+  guint64 *nextLogEntry,
+  guint64 *startingEntry,
+  GPtrArray *input,
+  GHashTable **tab)
 {
-    if (entriesInFile == 0)
+  if (entriesInFile == 0)
     {
-        return FALSE;
+      return FALSE;
     }
 
-    // Create hash table
-    *tab = g_hash_table_new(g_str_hash, g_str_equal);
-    if (*tab == NULL)
+  // Create hash table
+  *tab = g_hash_table_new(g_str_hash, g_str_equal);
+  if (*tab == NULL)
     {
-        msg_error("[SLOG] ERROR: Cannot create hash table");
-        return FALSE;
+      msg_error("[SLOG] ERROR: Cannot create hash table");
+      return FALSE;
     }
 
-    GString *str = (GString *)g_ptr_array_index(input, 0);
+  GString *str = (GString *)g_ptr_array_index(input, 0);
 
-    if (str->len>(COUNTER_LENGTH+1))
+  if (str->len>(COUNTER_LENGTH+1))
     {
-        gsize outLen;
-        char buf[COUNTER_LENGTH+1];
-        memcpy(buf, str->str, COUNTER_LENGTH);
-        buf[COUNTER_LENGTH] = 0;
-        guchar *tempInt = g_base64_decode(buf, &outLen);
-        if (outLen != sizeof(guint64))
+      gsize outLen;
+      char buf[COUNTER_LENGTH+1];
+      memcpy(buf, str->str, COUNTER_LENGTH);
+      buf[COUNTER_LENGTH] = 0;
+      guchar *tempInt = g_base64_decode(buf, &outLen);
+      if (outLen != sizeof(guint64))
         {
-            msg_warning("[SLOG] WARNING: Cannot derive integer value from first input line counter");
-            (*startingEntry) = 0UL;
-            g_free(tempInt);
-            return FALSE;
+          msg_warning("[SLOG] WARNING: Cannot derive integer value from first input line counter");
+          (*startingEntry) = 0UL;
+          g_free(tempInt);
+          return FALSE;
         }
-        else
+      else
         {
-            memcpy(startingEntry, tempInt, sizeof(guint64));
-            g_free(tempInt);
+          memcpy(startingEntry, tempInt, sizeof(guint64));
+          g_free(tempInt);
         }
 
-        if((*startingEntry) > 0)
+      if((*startingEntry) > 0)
         {
-            msg_warning("[SLOG] WARNING: Log does not start with index 0",
-                        evt_tag_long("index", (*startingEntry)));
-            (*nextLogEntry) = (*startingEntry);
-            deriveKey(mainKey, (*nextLogEntry), 0);
-            return FALSE;
+          msg_warning("[SLOG] WARNING: Log does not start with index 0",
+                      evt_tag_long("index", (*startingEntry)));
+          (*nextLogEntry) = (*startingEntry);
+          deriveKey(mainKey, (*nextLogEntry), 0);
+          return FALSE;
         }
     }
-    else
+  else
     {
-        msg_warning("[SLOG] WARNING: Problems reading log entry at first line.");
-        return FALSE;
+      msg_warning("[SLOG] WARNING: Problems reading log entry at first line.");
+      return FALSE;
     }
 
-    return TRUE;
+  return TRUE;
 }
 
 
@@ -1320,231 +1371,230 @@ gboolean initVerify(
  * FALSE on error
  */
 gboolean iterativeFileVerify(
-    unsigned char *previousMAC,
-    unsigned char *mainKey,
-    char *inputFileName,
-    unsigned char *aggMAC,
-    char *outputFileName,
-    guint64 entriesInFile,
-    int chunkLength,
-    guint64 keyNumber)
+  unsigned char *previousMAC,
+  unsigned char *mainKey,
+  char *inputFileName,
+  unsigned char *aggMAC,
+  char *outputFileName,
+  guint64 entriesInFile,
+  int chunkLength,
+  guint64 keyNumber)
 {
 
-    if(entriesInFile == 0)
+  if(entriesInFile == 0)
     {
-        msg_error("[SLOG] ERROR: Nothing to verify");
-        return FALSE;
+      msg_error("[SLOG] ERROR: Nothing to verify");
+      return FALSE;
     }
 
-    unsigned char keyZero[KEY_LENGTH];
-    memcpy(keyZero, mainKey, KEY_LENGTH);
-    int startedWithZero = 0;
+  unsigned char keyZero[KEY_LENGTH];
+  memcpy(keyZero, mainKey, KEY_LENGTH);
+  int startedWithZero = 0;
 
-    if (keyNumber != 0)
+  if (keyNumber != 0)
     {
-        msg_info("[SLOG] INFO: Verification using a key different from k0.", evt_tag_long("Key number: ", keyNumber));
+      msg_info("[SLOG] INFO: Verification using a key different from k0.", evt_tag_long("Key number: ", keyNumber));
     }
-    else
+  else
     {
-        msg_info("[SLOG] INFO: Verification starting with k0. Is this really what you want?");
-        startedWithZero = 1;
-    }
-
-    // Create input and output files
-    SLogFile *inf = create_file(inputFileName, "r");
-    if(inf == NULL)
-    {
-        return FALSE;
-    }
-    SLogFile *outf = create_file(outputFileName, "w+");
-    if(outf == NULL)
-    {
-        close_file(inf);
-        g_free(inf);
-        return FALSE;
+      msg_info("[SLOG] INFO: Verification starting with k0. Is this really what you want?");
+      startedWithZero = 1;
     }
 
-    gboolean volatile result = TRUE;
-
-    GPtrArray *inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
-    GPtrArray *outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
-
-    SLOG_SECT_START
-    // Allocate buffers
-    if (inputBuffer == NULL)
+  // Create input and output files
+  SLogFile *inf = create_file(inputFileName, "r");
+  if(inf == NULL)
     {
-        SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
+      return FALSE;
+    }
+  SLogFile *outf = create_file(outputFileName, "w+");
+  if(outf == NULL)
+    {
+      close_file(inf);
+      g_free(inf);
+      return FALSE;
     }
 
-    SLOG_SECT_START
-    if (outputBuffer == NULL)
+  gboolean volatile result = TRUE;
+
+  GPtrArray *inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
+  GPtrArray *outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
+
+  SLOG_SECT_START(inputBuffer)
+  // Allocate buffers
+  if (inputBuffer == NULL)
     {
-        SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
+      SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
     }
 
-    SLOG_SECT_START
-    // Open input and output files
-    result = open_file(inf);
-    if(!result)
+  SLOG_SECT_START(outputBuffer)
+  if (outputBuffer == NULL)
     {
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-        SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
     }
 
-    SLOG_SECT_START
-    result = open_file(outf);
-    if(!result)
+  SLOG_SECT_START(inf)
+  // Open input and output files
+  result = open_file(inf);
+  if(!result)
     {
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-        SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+      SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
     }
 
-    unsigned char cmac_tag[CMAC_LENGTH];
-    gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
-    memcpy(cmac_tag, previousMAC, CMAC_LENGTH);
-
-    guint64 nextLogEntry = keyNumber;
-    guint64 startingEntry = keyNumber;
-    guint64 numberOfLogEntries = keyNumber;
-
-    // This is only to avoid updating the aggregated MAC during the first iteration
-    if (keyNumber == 0)
+  SLOG_SECT_START(outf)
+  result = open_file(outf);
+  if(!result)
     {
-        numberOfLogEntries = 1;
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+      SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
     }
 
-    if (chunkLength > entriesInFile)
+  unsigned char cmac_tag[CMAC_LENGTH];
+  gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
+  memcpy(cmac_tag, previousMAC, CMAC_LENGTH);
+
+  guint64 nextLogEntry = keyNumber;
+  guint64 startingEntry = keyNumber;
+  guint64 numberOfLogEntries = keyNumber;
+
+  // This is only to avoid updating the aggregated MAC during the first iteration
+  //
+  if (keyNumber == 0)
     {
-        chunkLength = entriesInFile;
+      numberOfLogEntries = 1;
     }
 
-    // Create the hash table
-    GHashTable *tab = g_hash_table_new(g_str_hash, g_str_equal);
-    if (tab == NULL)
+  if (chunkLength > entriesInFile)
     {
-        msg_error("[SLOG] ERROR: Cannot create hash table");
-        result = FALSE;
-        // Cannot continue -> Release memory and file resources prematurely
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-        handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
-        SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+      chunkLength = entriesInFile;
     }
 
-    // Process file in chunks
-    for (int j = 0; j < (entriesInFile / chunkLength); j++)
+  // Create the hash table
+  GHashTable *tab = g_hash_table_new(g_str_hash, g_str_equal);
+  if (tab == NULL)
     {
-        for (guint64 i = 0; i < chunkLength; i++)
+      msg_error("[SLOG] ERROR: Cannot create hash table");
+      result = FALSE;
+      // Cannot continue -> Release memory and file resources prematurely
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+      handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
+      SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+    }
+
+  // Process file in chunks
+  for (int j = 0; j < (entriesInFile / chunkLength); j++)
+    {
+      for (guint64 i = 0; i < chunkLength; i++)
         {
-            GString *line = getLogEntry(inf);
+          GString *line = getLogEntry(inf);
 
-            if(line != NULL)
+          if(line != NULL)
             {
-                // Add line to buffer
-                g_ptr_array_add(inputBuffer, line);
+              // Add line to buffer
+              g_ptr_array_add(inputBuffer, line);
             }
-            else
+          else
             {
-                msg_error("[SLOG] ERROR: Invalid log entry (= NULL)");
-                result = FALSE;
-                // Cannot continue -> Release memory and file resources prematurely
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
-                SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+              msg_error("[SLOG] ERROR: Invalid log entry (= NULL)");
+              result = FALSE;
+              // Cannot continue -> Release memory and file resources prematurely
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+              handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
+              SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
             }
         }
+      result = iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber, outputBuffer,
+                             &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
 
-        result = iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber, outputBuffer,
-                               &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
-
-        // ...and write to file
-        for (guint64 i = 0; i < chunkLength; i++)
+      // ...and write to file
+      for (guint64 i = 0; i < chunkLength; i++)
         {
-            GString *line = (GString*)g_ptr_array_index(outputBuffer, i);
-            if (line->len != 0)
+          GString *line = (GString *)g_ptr_array_index(outputBuffer, i);
+          if (line->len != 0)
             {
-                result = putLogEntry(outf, line);
-                if(!result)
+              result = putLogEntry(outf, line);
+              if(!result)
                 {
-                    handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-                    handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                    handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
-                    SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+                  handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+                  handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+                  handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
+                  SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
                 }
             }
         }
     }
 
-    if ((entriesInFile % chunkLength) > 0)
+  if ((entriesInFile % chunkLength) > 0)
     {
-        for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
+      for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
-            GString *line = getLogEntry(inf);
+          GString *line = getLogEntry(inf);
 
-            if(line != NULL)
+          if(line != NULL)
             {
-                // Add line to buffer
-                g_ptr_array_add(inputBuffer, line);
+              // Add line to buffer
+              g_ptr_array_add(inputBuffer, line);
             }
-            else
+          else
             {
-                msg_error("[SLOG] ERROR: Invalid log entry (= NULL)");
-                result = FALSE;
-                // Cannot continue -> Release memory and file resources prematurely
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, outf);
-                SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
+              msg_error("[SLOG] ERROR: Invalid log entry (= NULL)");
+              result = FALSE;
+              // Cannot continue -> Release memory and file resources prematurely
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+              handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, outf);
+              SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
             }
         }
 
-        result = iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber,
-                               outputBuffer, &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
+      result = iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber,
+                             outputBuffer, &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
 
-        for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
+      for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
-            GString *line = (GString*)g_ptr_array_index(outputBuffer, i);
-            if (line->len != 0)
+          GString *line = (GString *)g_ptr_array_index(outputBuffer, i);
+          if (line->len != 0)
             {
-                result = putLogEntry(outf, line);
-                if(!result)
+              result = putLogEntry(outf, line);
+              if(!result)
                 {
-                    handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-                    handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                    handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
-                    SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+                  handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+                  handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+                  handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
+                  SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
                 }
             }
         }
     }
 
-    if (startedWithZero == 1)
+  if (startedWithZero == 1)
     {
-        msg_info("[SLOG] INFO: We started with key key0. There might be a lot of warnings about missing log entries.");
+      msg_info("[SLOG] INFO: We started with key key0. There might be a lot of warnings about missing log entries.");
+    }
+  if(!finalizeVerify(startingEntry, entriesInFile, aggMAC, cmac_tag, tab))
+    {
+      result = FALSE;
     }
 
-    if(!finalizeVerify(startingEntry, entriesInFile, aggMAC, cmac_tag, tab))
-    {
-        result = FALSE;
-    }
+  // Close files
+  close_file(outf);
+  close_file(inf);
 
-    // Close files
-    close_file(inf);
-    close_file(outf);
+  // Release memory resources
+  g_ptr_array_free(outputBuffer, TRUE);
+  g_ptr_array_free(inputBuffer, TRUE);
 
-    // Release memory resources
-    g_ptr_array_free(inputBuffer, TRUE);
-    g_ptr_array_free(outputBuffer, TRUE);
+  SLOG_SECT_END(outf)
+  SLOG_SECT_END(inf)
+  SLOG_SECT_END(outputBuffer)
+  SLOG_SECT_END(inputBuffer)
 
-    SLOG_SECT_END(inf)
-    SLOG_SECT_END(outf)
-    SLOG_SECT_END(inputBuffer)
-    SLOG_SECT_END(outputBuffer)
-
-    return result;
+  return result;
 }
 
 /*
@@ -1556,258 +1606,266 @@ gboolean iterativeFileVerify(
  */
 gboolean fileVerify(unsigned char *mainKey, char *inputFileName,
                     char *outputFileName, unsigned char *aggMAC,
-                    guint64 entriesInFile, int chunkLength)
+                    guint64 entriesInFile, int chunkLength, unsigned char mac0[CMAC_LENGTH])
 {
-    gboolean volatile result = TRUE;
+  gboolean volatile result = TRUE;
 
-    if(entriesInFile==0)
+  if(entriesInFile==0)
     {
-        msg_error("[SLOG] ERROR: Nothing to verify");
-        return 0;
+      msg_error("[SLOG] ERROR: Nothing to verify");
+      return 0;
     }
 
-    SLogFile *inf = create_file(inputFileName, "r");
-    if(inf == NULL)
+  SLogFile *inf = create_file(inputFileName, "r");
+  if(inf == NULL)
     {
-        return FALSE;
+      return FALSE;
     }
-    SLogFile *outf = create_file(outputFileName, "w+");
-    if(outf == NULL)
+  SLogFile *outf = create_file(outputFileName, "w+");
+  if(outf == NULL)
     {
-        close_file(inf);
-        g_free(inf);
-        return FALSE;
-    }
-
-    unsigned char keyZero[KEY_LENGTH];
-    memcpy(keyZero, mainKey, KEY_LENGTH);
-
-    GHashTable *tab = NULL;
-    GPtrArray *inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
-    GPtrArray *outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
-
-    SLOG_SECT_START
-    // Allocate input buffer
-    if (inputBuffer == NULL)
-    {
-        SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
+      close_file(inf);
+      g_free(inf);
+      return FALSE;
     }
 
-    SLOG_SECT_START
-    // Allocate output buffer
-    if (outputBuffer == NULL)
+  unsigned char keyZero[KEY_LENGTH];
+  memcpy(keyZero, mainKey, KEY_LENGTH);
+
+  GHashTable *tab = NULL;
+  GPtrArray *inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
+  GPtrArray *outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
+
+  SLOG_SECT_START(inputBuffer)
+  // Allocate input buffer
+  if (inputBuffer == NULL)
     {
-        SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
+      SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
     }
 
-    // Open input and output files
-    SLOG_SECT_START
-    result = open_file(inf);
-    if(!result)
+  SLOG_SECT_START(outputBuffer)
+  // Allocate output buffer
+  if (outputBuffer == NULL)
     {
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-        SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
+      SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
     }
 
-    SLOG_SECT_START
-    result = open_file(outf);
-    if(!result)
+  // Open input and output files
+  SLOG_SECT_START(inf)
+  result = open_file(inf);
+  if(!result)
     {
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-        handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-        SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+      SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
     }
 
-    guint64 nextLogEntry = 0UL;
-    guint64 startingEntry = 0UL;
-    unsigned char cmac_tag[CMAC_LENGTH];
-    gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
-    guint64 numberOfLogEntries = 0UL;
-
-    if (chunkLength>entriesInFile)
+  SLOG_SECT_START(outf)
+  result = open_file(outf);
+  if(!result)
     {
-        chunkLength = entriesInFile;
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+      SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
     }
 
-    for (guint64 i = 0; i < chunkLength; i++)
-    {
-        g_ptr_array_add(inputBuffer, g_string_new(NULL));
-        result = read_line_from_file(inf,  (GString*)g_ptr_array_index(inputBuffer, i));
+  guint64 nextLogEntry = 0UL;
+  guint64 startingEntry = 0UL;
+  unsigned char cmac_tag[CMAC_LENGTH];
+  gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
+  guint64 numberOfLogEntries = 0UL;
 
-        if (!result)
+  memcpy(cmac_tag, mac0, CMAC_LENGTH); //-- here the initial MAC file content is needed now
+
+  if (chunkLength>entriesInFile)
+    {
+      chunkLength = entriesInFile;
+    }
+
+  for (guint64 i = 0; i < chunkLength; i++)
+    {
+      g_ptr_array_add(inputBuffer, g_string_new(NULL));
+      result = read_line_from_file(inf,  (GString *)g_ptr_array_index(inputBuffer, i));
+
+      if (!result)
         {
-            handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-            handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-            close_file(outf);
-            SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
+          handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+          handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+          close_file(outf);
+          SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
         }
 
-        // Cut last character to remove the trailing new line
-        GString *str = (GString*)g_ptr_array_index(inputBuffer, i);
-        g_string_truncate(str, (str->len) - 1);
+      // Cut last character to remove the trailing new line
+      GString *str = (GString *)g_ptr_array_index(inputBuffer, i);
+      g_string_truncate(str, (str->len) - 1);
     }
 
-    if(!initVerify(entriesInFile, mainKey, &nextLogEntry, &startingEntry, inputBuffer, &tab))
+  if(!initVerify(entriesInFile, mainKey, &nextLogEntry, &startingEntry, inputBuffer, &tab))
     {
-        result = FALSE;
+      result = FALSE;
     }
 
-    if(!iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                      &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
+  if(!iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
+                    &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
     {
-        result = FALSE;
+      result = FALSE;
     }
 
-    // Write to file
-    for (guint64 i = 0; i < chunkLength; i++)
+  // Write to file
+  for (guint64 i = 0; i < chunkLength; i++)
     {
-        GString *str = (GString *)g_ptr_array_index(outputBuffer, i);
-        if (str->len!=0)
+      GString *str = (GString *)g_ptr_array_index(outputBuffer, i);
+      if (str->len!=0)
         {
-            // Add newline
-            g_string_append(str, "\n");
-
-            result = write_to_file(outf, str->str, str->len);
-
-            if (!result)
+          // Add newline
+          g_string_append(str, "\n");
+          result = write_to_file(outf, str->str, str->len);
+          if (!result)
             {
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                close_file(inf);
-                SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+              close_file(inf);
+              SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
             }
         }
     }
 
-    // Process file in chunks
-    for (int j = 0; j<(entriesInFile/chunkLength)-1; j++)
+  // Process file in chunks
+  for (int j = 0; j<(entriesInFile/chunkLength)-1; j++)
     {
-        for (guint64 i = 0; i < chunkLength; i++)
+      for (guint64 i = 0; i < chunkLength; i++)
         {
-            g_ptr_array_add(inputBuffer, g_string_new(NULL));
-            result = read_line_from_file(inf,  (GString*)g_ptr_array_index(inputBuffer, i));
+          g_ptr_array_add(inputBuffer, g_string_new(NULL));
+          result = read_line_from_file(inf,  (GString *)g_ptr_array_index(inputBuffer, i));
 
-            if (!result)
+          if (!result)
             {
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                close_file(outf);
-                SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+              close_file(outf);
+              SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
             }
 
-            // Cut last character to remove the trailing new line...
-            GString *str = (GString *)g_ptr_array_index(inputBuffer, i);
-            g_string_truncate(str, (str->len) - 1);
-        }
-        if(!iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                          &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
-        {
-            result = FALSE;
+          // Cut last character to remove the trailing new line...
+          GString *str = (GString *)g_ptr_array_index(inputBuffer, i);
+          g_string_truncate(str, (str->len) - 1);
         }
 
-        // ...and write to file
-        for (guint64 i = 0; i < chunkLength; i++)
+      if(!iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
+                        &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
         {
-            GString *str = (GString *)g_ptr_array_index(inputBuffer, i);
+          result = FALSE;
+        }
 
-            if (str->len!=0)
+      // ...and write to file
+      for (guint64 i = 0; i < chunkLength; i++)
+        {
+          GString *str = (GString *)g_ptr_array_index(inputBuffer, i);
+
+          if (str->len!=0)
             {
-                // Add newline
-                g_string_append(str, "\n");
+              // Add newline
+              g_string_append(str, "\n");
 
-                result = write_to_file(outf, str->str, str->len);
+              result = write_to_file(outf, str->str, str->len);
 
-                if (!result)
+              if (!result)
                 {
-                    handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-                    handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                    close_file(inf);
-                    SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+                  handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+                  handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+                  close_file(inf);
+                  SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
                 }
             }
         }
     }
 
-    if ((entriesInFile % chunkLength) > 0)
+  if ((entriesInFile % chunkLength) > 0)
     {
-        for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
+      for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
-            g_ptr_array_add(inputBuffer, g_string_new(NULL));
-            result = read_line_from_file(inf,  (GString*)g_ptr_array_index(inputBuffer, i));
+          g_ptr_array_add(inputBuffer, g_string_new(NULL));
+          result = read_line_from_file(inf,  (GString *)g_ptr_array_index(inputBuffer, i));
 
-            if (!result)
+          if (!result)
             {
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-                handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                close_file(outf);
-                SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+              close_file(outf);
+              SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
             }
 
-            // Cut last character to remove the trailing new line
-            GString *str = (GString *)g_ptr_array_index(inputBuffer, i);
-            g_string_truncate(str, (str->len) - 1);
-        }
-        if(!iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                          &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
-        {
-            result = FALSE;
+          // Cut last character to remove the trailing new line
+          GString *str = (GString *)g_ptr_array_index(inputBuffer, i);
+          g_string_truncate(str, (str->len) - 1);
         }
 
-        for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
+      if(!iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
+                        &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
         {
-            GString *str = (GString *)g_ptr_array_index(outputBuffer, i);
-            if (str->len!=0)
+          result = FALSE;
+        }
+
+      for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
+        {
+          GString *str = (GString *)g_ptr_array_index(outputBuffer, i);
+          if (str->len!=0)
             {
-                // Add newline
-                g_string_append(str, "\n");
-                result = write_to_file(outf, str->str, str->len);
+              // Add newline
+              g_string_append(str, "\n");
+              result = write_to_file(outf, str->str, str->len);
 
-                if (!result)
+              if (!result)
                 {
-                    handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-                    handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                    close_file(inf);
-                    SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
+                  handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+                  handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+                  close_file(inf);
+                  SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
                 }
             }
         }
     }
-
-    if(!finalizeVerify(startingEntry, entriesInFile, aggMAC, cmac_tag, tab))
+  if(!finalizeVerify(startingEntry, entriesInFile, aggMAC, cmac_tag, tab))
     {
-        result = FALSE;
+      result = FALSE;
     }
 
-    // Release memory
-    g_ptr_array_free(inputBuffer, TRUE);
-    g_ptr_array_free(outputBuffer, TRUE);
+  // Release memory
+  //
+  g_ptr_array_free(outputBuffer, TRUE);
+  g_ptr_array_free(inputBuffer, TRUE);
 
-    // Close files
-    close_file(inf);
-    close_file(outf);
+  // Close files
+  close_file(outf);
+  close_file(inf);
+  SLOG_SECT_END(outf)
+  SLOG_SECT_END(inf)
+  SLOG_SECT_END(outputBuffer)
+  SLOG_SECT_END(inputBuffer)
 
-    SLOG_SECT_END(inputBuffer)
-    SLOG_SECT_END(outputBuffer)
-    SLOG_SECT_END(inf)
-    SLOG_SECT_END(outf)
-
-    return result;
+  return result;
 }
 
 // Print usage message and clean up
 int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg)
 {
-    if(errormsg != NULL)
+  if(errormsg != NULL)
     {
-        g_print ("\nERROR: %s\n\n", errormsg->str);
-        g_string_free(errormsg, TRUE);
+      g_print ("\nERROR: %s\n\n", errormsg->str);
+      g_string_free(errormsg, TRUE);
     }
 
-    g_print("%s", g_option_context_get_help(ctx, TRUE, NULL));
-    g_option_context_free(ctx);
+  g_print("%s", g_option_context_get_help(ctx, TRUE, NULL));
 
-    return 1;
+  // if (NULL != grp) {
+  //    g_print("%s", g_option_context_get_help(ctx, TRUE, grp));
+  // } else {
+  //    g_print("%s", g_option_context_get_help(ctx, TRUE, NULL));
+  // }
+
+  g_option_context_free(ctx);
+
+  return 1;
 }
 
 /*
@@ -1819,201 +1877,314 @@ int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg)
  */
 gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer data, GError **error)
 {
-    gboolean isValid = FALSE;
-    GString *currentOption = g_string_new(option_name);
-    GString *currentValue = g_string_new(value);
-    GString *longOption = g_string_new(LONG_OPT_INDICATOR);
-    GString *shortOption = g_string_new(SHORT_OPT_INDICATOR);
+  gboolean isValid = FALSE;
+  GString *currentOption = g_string_new(option_name);
+  GString *currentValue = g_string_new(value);
+  GString *longOption = g_string_new(LONG_OPT_INDICATOR);
+  GString *shortOption = g_string_new(SHORT_OPT_INDICATOR);
 
-    SLogOptions *opts = (SLogOptions *)data;
+  SLogOptions *opts = (SLogOptions *)data;
 
-    for(SLogOptions *option = opts; option != NULL && option->longname != NULL; option++)
+  for(SLogOptions *option = opts; option != NULL && option->longname != NULL; option++)
     {
-        g_string_append(longOption, option->longname);
-        g_string_append_c(shortOption, option->shortname);
+      g_string_append(longOption, option->longname);
+      g_string_append_c(shortOption, option->shortname);
 
-        if(g_string_equal(currentOption, longOption) || g_string_equal(currentOption, shortOption))
+      if(g_string_equal(currentOption, longOption) || g_string_equal(currentOption, shortOption))
         {
-            if(g_file_test(value, G_FILE_TEST_IS_REGULAR))
+          if(g_file_test(value, G_FILE_TEST_IS_REGULAR))
             {
-                option->arg = currentValue->str;
-                isValid = TRUE;
-                break;
+              option->arg = currentValue->str;
+              isValid = TRUE;
+              break;
             }
         }
 
-        // Reset for next option argument to check
-        g_string_assign(longOption, LONG_OPT_INDICATOR);
-        g_string_assign(shortOption, SHORT_OPT_INDICATOR);
+      // Reset for next option argument to check
+      g_string_assign(longOption, LONG_OPT_INDICATOR);
+      g_string_assign(shortOption, SHORT_OPT_INDICATOR);
     }
 
-    if (!isValid)
+  if (!isValid)
     {
-        *error = g_error_new(G_FILE_ERROR, G_OPTION_ERROR_FAILED, "Invalid path or non existing regular file: %s", value);
+      *error = g_error_new(G_FILE_ERROR, G_OPTION_ERROR_FAILED, "Invalid path or non existing regular file: %s", value);
     }
 
-    g_string_free(currentOption, TRUE);
-    g_string_free(currentValue, FALSE);
-    g_string_free(longOption, TRUE);
-    g_string_free(shortOption, TRUE);
+  g_string_free(currentOption, TRUE);
+  g_string_free(currentValue, FALSE);
+  g_string_free(longOption, TRUE);
+  g_string_free(shortOption, TRUE);
 
-    return isValid;
+  return isValid;
 }
+
+
+
+/*
+ * Callback function to check whether a command line argument provides a valid directory with given full file name
+ *
+ * Return:
+ * TRUE on success
+ * FALSE on error
+ */
+gboolean validFileNameArgCheckDirOnly(const gchar *option_name, const gchar *value, gpointer data, GError **error)
+{
+  gboolean isValid = FALSE;
+  GString *currentOption = g_string_new(option_name);
+  GString *currentValue = g_string_new(value);
+  GString *longOption = g_string_new(LONG_OPT_INDICATOR);
+  GString *shortOption = g_string_new(SHORT_OPT_INDICATOR);
+
+  SLogOptions *opts = (SLogOptions *)data;
+
+  for(SLogOptions *option = opts; option != NULL && option->longname != NULL; option++)
+    {
+      g_string_append(longOption, option->longname);
+      g_string_append_c(shortOption, option->shortname);
+
+      if(g_string_equal(currentOption, longOption) || g_string_equal(currentOption, shortOption))
+        {
+          if(g_file_test(value, G_FILE_TEST_IS_REGULAR))
+            {
+              option->arg = currentValue->str;
+              isValid = TRUE;
+              break;
+            }
+
+          // If isValid is still FALSE check whether directory exits.
+          // This is usefull when a file shall be created, e.g. in case of mac dat
+          gchar *dirname = g_path_get_dirname(value);
+          if (NULL != dirname)
+            {
+              if(g_file_test(dirname, G_FILE_TEST_IS_DIR))
+                {
+                  option->arg = currentValue->str;
+                  isValid = TRUE;
+                  g_print("directory exits: %s\n", dirname);
+                  break;
+                }
+            }
+          g_free (dirname);
+
+        }
+
+      // Reset for next option argument to check
+      g_string_assign(longOption, LONG_OPT_INDICATOR);
+      g_string_assign(shortOption, SHORT_OPT_INDICATOR);
+    }
+
+  if (!isValid)
+    {
+      *error = g_error_new(G_FILE_ERROR, G_OPTION_ERROR_FAILED, "Invalid path or non existing regular file: %s", value);
+    }
+
+  g_string_free(currentOption, TRUE);
+  g_string_free(currentValue, FALSE);
+  g_string_free(longOption, TRUE);
+  g_string_free(shortOption, TRUE);
+
+  return isValid;
+}
+
+
 
 // Error handler for file errors
 void handleFileError(const char *file, int line, int code, void *object)
 {
-    SLogFile *f =(SLogFile *)object;
-    msg_error(SLOG_ERROR_PREFIX,
-              evt_tag_str("File ", file),
-              evt_tag_long("Line ", line),
-              evt_tag_long("Code ", code),
-              evt_tag_str("Reason ", f->message->str)
-             );
+  SLogFile *f =(SLogFile *)object;
+  msg_error(SLOG_ERROR_PREFIX,
+            evt_tag_str("File ", file),
+            evt_tag_long("Line ", line),
+            evt_tag_long("Code ", code),
+            evt_tag_str("Reason ", f->message->str)
+           );
 
-    if(!close_file(f))
+  if(!close_file(f))
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("Unable to close file stream, File: ", __FILE__),
-                  evt_tag_long("Line ", __LINE__),
-                  evt_tag_long("Code ", SLOG_FILE_GENERAL_ERROR),
-                  evt_tag_str("Reason ", "General file stream error")
-                 );
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Unable to close file stream, File: ", __FILE__),
+                evt_tag_long("Line ", __LINE__),
+                evt_tag_long("Code ", SLOG_FILE_GENERAL_ERROR),
+                evt_tag_str("Reason ", "General file stream error")
+               );
     }
 }
 
 // Error handler for memory errors
 void handleGPtrArrayMemoryError(const char *file, int line, int code, void *object)
 {
-    GPtrArray *pa =(GPtrArray *)object;
-    const gchar *msg1 = "Premature memory release of GPtrArray";
-    const gchar *msg2 = "GPtrArray address is NULL";
-    const gchar *msg;
+  GPtrArray *pa =(GPtrArray *)object;
+  const gchar *msg1 = "Premature memory release of GPtrArray";
+  const gchar *msg2 = "GPtrArray address is NULL";
+  const gchar *msg;
 
-    if(pa != NULL)
+  if(pa != NULL)
     {
-        g_ptr_array_free(pa, TRUE);
-        msg = msg1;
+      g_ptr_array_free(pa, TRUE);
+      msg = msg1;
     }
-    else
+  else
     {
-        msg = msg2;
+      msg = msg2;
     }
-    msg_error(SLOG_ERROR_PREFIX,
-              evt_tag_str("File: ", file),
-              evt_tag_long("Line: ", line),
-              evt_tag_long("Code: ", code),
-              evt_tag_str("Reason: ", msg)
-             );
+  msg_error(SLOG_ERROR_PREFIX,
+            evt_tag_str("File: ", file),
+            evt_tag_long("Line: ", line),
+            evt_tag_long("Code: ", code),
+            evt_tag_str("Reason: ", msg)
+           );
 }
 
 // Retrieve counter from encrypted log entry
 gboolean getCounter(GString *entry, guint64 *logEntryOnDisk)
 {
-    // Interpret the first COUNTER_LENGTH+1 characters
-    char ctrbuf[COUNTER_LENGTH+1];
-    memcpy(ctrbuf, entry->str, COUNTER_LENGTH);
-    ctrbuf[COUNTER_LENGTH] = 0;
+  // Interpret the first COUNTER_LENGTH+1 characters
+  char ctrbuf[COUNTER_LENGTH+1];
+  memcpy(ctrbuf, entry->str, COUNTER_LENGTH);
+  ctrbuf[COUNTER_LENGTH] = 0;
 
-    gsize outLen;
-    guchar *ctr = g_base64_decode((const char*)ctrbuf, &outLen);
-    gboolean ret;
+  gsize outLen;
+  guchar *ctr = g_base64_decode((const char *)ctrbuf, &outLen);
+  gboolean ret;
 
-    if (outLen != sizeof(guint64))
+  if (outLen != sizeof(guint64))
     {
-        msg_error("[SLOG] ERROR: Cannot derive integer value from counter field",
-                  evt_tag_str("Log entry number", (const char*)ctr));
-        ret = FALSE;
+      msg_error("[SLOG] ERROR: Cannot derive integer value from counter field",
+                evt_tag_str("Log entry number", (const char *)ctr));
+      ret = FALSE;
     }
-    else
+  else
     {
-        memcpy(logEntryOnDisk, ctr, sizeof(guint64));
-        ret = TRUE;
+      memcpy(logEntryOnDisk, ctr, sizeof(guint64));
+      ret = TRUE;
     }
 
-    g_free(ctr);
-    return ret;
+  g_free(ctr);
+  return ret;
 }
 
 // Check whether value is contained in table
 gboolean tableContainsKey(GHashTable *table, guint64 key)
 {
-    if(table == NULL)
+  if(table == NULL)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
-                  evt_tag_str("Reason: ", "Table == NULL")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
+                evt_tag_str("Reason: ", "Table == NULL")
+               );
+      return FALSE;
     }
 
-    // Convert to string
-    char keystr[CTR_LEN_SIMPLE+1];
-    snprintf(keystr, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, key);
+  // Convert to string
+  char keystr[CTR_LEN_SIMPLE+1];
+  snprintf(keystr, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, key);
 
-    return g_hash_table_contains(table, keystr);
+  return g_hash_table_contains(table, keystr);
 }
 
 // Add new value to table
 gboolean addValueToTable(GHashTable *table, guint64 value)
 {
-    if(table == NULL)
+  if(table == NULL)
     {
-        msg_error(SLOG_ERROR_PREFIX,
-                  evt_tag_str("File: ", __FILE__),
-                  evt_tag_long("Line: ", __LINE__),
-                  evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
-                  evt_tag_str("Reason: ", "Table == NULL")
-                 );
-        return FALSE;
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
+                evt_tag_str("Reason: ", "Table == NULL")
+               );
+      return FALSE;
     }
 
-    // Create new key to string and use value as key
-    char *key = g_new0(char, CTR_LEN_SIMPLE+1);
-    snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, value);
+  // Create new key to string and use value as key
+  char *key = g_new0(char, CTR_LEN_SIMPLE+1);
+  snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, value);
 
-    return g_hash_table_insert(table, key, (gpointer)value);
+  return g_hash_table_insert(table, key, (gpointer)value);
 }
 
 // Get a single line from a log file
-GString* getLogEntry(SLogFile *f)
+GString *getLogEntry(SLogFile *f)
 {
-    GString *line = g_string_new(NULL);
+  GString *line = g_string_new(NULL);
 
-    if(!read_line_from_file(f, line))
+  if(!read_line_from_file(f, line))
     {
-        g_string_free(line, TRUE);
-        line = NULL;
+      g_string_free(line, TRUE);
+      line = NULL;
     }
-    else
+  else
     {
-        // Cut last character to remove the trailing new line...
-        g_string_truncate(line, line->len - 1);
+      // Cut last character to remove the trailing new line...
+      g_string_truncate(line, line->len - 1);
     }
 
-    return line;
+  return line;
 }
-\
+
+
 // Put a single line into a log file
-gboolean putLogEntry(SLogFile *f, GString* line)
+gboolean putLogEntry(SLogFile *f, GString *line)
 {
-    if(line == NULL)
+  if(line == NULL)
     {
-        return FALSE;
+      return FALSE;
     }
 
-    if(line->len != 0)
+  if(line->len != 0)
     {
-        // Add newline
-        g_string_append(line, "\n");
+      // Add newline
+      g_string_append(line, "\n");
     }
 
-    return write_to_file(f, line->str, line->len);
+  return write_to_file(f, line->str, line->len);
 }
 
 // Clean up routine for GPtrArray
-void SLogStringFree(gpointer *arg) {
-    gchar *result = g_string_free((GString*)arg, TRUE);
+void SLogStringFree(gpointer *arg)
+{
+  (void) g_string_free((GString *)arg, TRUE);
 }
+
+
+
+//----------------------------------------------------------------------
+// truncate_uft8_gstring
+//
+// Ensures that when a log string must be truncated, no invalid
+// UTF-8 characters is created.
+// Also ensured: When truncation takes place, a '\n' character is added
+// at the new end of the string.
+//
+// in/out gslog: GString to be truncated in a valid way
+// in max_octet_len: Maximal allowed count of octets in gslog
+// return -
+
+void truncate_utf8_gstring(GString *gslog, gsize max_octet_len)
+{
+  if (NULL == gslog)
+    {
+      return;
+    }
+  if (gslog->len <= max_octet_len)
+    {
+      return;
+    }
+  if (0 == max_octet_len)
+    {
+      g_string_truncate(gslog, 0);
+      return;
+    }
+  gsize max_text_len = max_octet_len - 1; //-- reserve one byte for '\n'
+  gsize new_len = max_text_len;
+  //--Walk backwards to find a valid UTF-8 character / Symbol (Emoij) boundary.
+  while (new_len > 0 && (gslog->str[new_len] & 0xC0) == 0x80)
+    {
+      new_len--;
+    }
+  g_string_truncate(gslog, new_len);
+  g_string_append_c(gslog, '\n');
+}
+

@@ -26,6 +26,10 @@
 
 #include "slog_file.h"
 
+//-- 2025-10-20, The code is designed to work with any length of log line.
+//   For security reason the length of the utf-8 string is limited.
+#define MESSAGE_LEN 2048 //-- The max length in bytes (octets) of a log line
+
 #define AES_BLOCKSIZE 16
 #define IV_LENGTH 12
 #define KEY_LENGTH 32
@@ -55,11 +59,11 @@
 // Command line arguments of template and utilities
 typedef struct
 {
-    char *longname;
-    char shortname;
-    char *description;
-    char *type;
-    char *arg;
+  char *longname;
+  char shortname;
+  char *description;
+  char *type;
+  char *arg;
 } SLogOptions;
 
 /*
@@ -191,8 +195,8 @@ gboolean deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar 
  * TRUE on success
  * FALSE on error
  */
-gboolean readAggregatedMAC(gchar *filename, char *outputBuffer);
-gboolean writeAggregatedMAC(gchar *filename, char *outputBuffer);
+gboolean readAggregatedMAC(gchar *filename, unsigned char *outputBuffer);
+gboolean writeAggregatedMAC(gchar *filename, unsigned char *outputBuffer);
 
 /*
  * Read key from file
@@ -201,7 +205,7 @@ gboolean writeAggregatedMAC(gchar *filename, char *outputBuffer);
  * TRUE on success
  * FALSE on error
  */
-gboolean readKey(char *destKey, guint64 *destCounter, gchar *keypath);
+gboolean readKey(unsigned char *destKey, guint64 *destCounter, gchar *keypath);
 
 /*
  * Write key to file
@@ -210,7 +214,7 @@ gboolean readKey(char *destKey, guint64 *destCounter, gchar *keypath);
  * TRUE on success
  * FALSE on error
  */
-gboolean writeKey(char *key, guint64 counter, gchar *keypath);
+gboolean writeKey(unsigned char *key, guint64 counter, gchar *keypath);
 
 /*
  * Verify the integrity of an existing log file
@@ -221,7 +225,8 @@ gboolean writeKey(char *key, guint64 counter, gchar *keypath);
  */
 gboolean fileVerify(unsigned char *key, char *inputFileName,
                     char *outputFileName, unsigned char *bigMac,
-                    guint64 entriesInFile, int chunkLength);
+                    guint64 entriesInFile, int chunkLength,
+                    unsigned char mac0[CMAC_LENGTH]);
 
 /*
  * Iteratively verify the integrity of a log archive
@@ -261,6 +266,13 @@ gboolean deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey);
 // Key derivation for HMAC
 gboolean deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
 
+// Create initial MAC mac0 before first encryption happens to provide this data
+// later for verification. Note: Does not write the file mac0.dat.
+gboolean create_initial_mac0(unsigned char mainKey[KEY_LENGTH], unsigned char mac[CMAC_LENGTH]);
+
+// Get path of aggregated MAC file and provides full file name for mac0.dat
+gboolean get_path_mac0(char *pathAggMac, char *pathMac0, int sizePathMac0);
+
 // Pseudo-random function implementation
 gboolean PRF(unsigned char *key, unsigned char *originalInput,
              guint64 inputLength, unsigned char *output,
@@ -278,6 +290,15 @@ int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg);
  */
 gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 
+/*
+ * Callback function to check whether a command line argument represents a valid directory
+ *
+ * Return:
+ * TRUE on success
+ * FALSE on error
+ */
+gboolean validFileNameArgCheckDirOnly(const gchar *option_name, const gchar *value, gpointer data, GError **error);
+
 // Error handlers
 void handleFileError(const char *file, int line, int code, void *object);
 void handleGPtrArrayMemoryError(const char *file, int line, int code, void *object);
@@ -294,12 +315,15 @@ gboolean tableContainsKey(GHashTable *table, guint64 value);
 gboolean addValueToTable(GHashTable *table, guint64 value);
 
 // Get a single line from a log file
-GString* getLogEntry(SLogFile *f);
+GString *getLogEntry(SLogFile *f);
 
 // Put a single line into a log file
-gboolean putLogEntry(SLogFile *f, GString* line);
+gboolean putLogEntry(SLogFile *f, GString *line);
 
 // Clean up routine for GPtrArray
 void SLogStringFree(gpointer *arg);
+
+// Limit length of an utf-8 log line, in a way, that no invalid character / symbol is created.
+void truncate_utf8_gstring(GString *gslog, gsize max_octet_len);
 
 #endif

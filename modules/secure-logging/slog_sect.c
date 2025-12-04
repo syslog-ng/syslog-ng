@@ -32,59 +32,59 @@ static slog_error_info_t ErrorInfo;
 
 slog_sect_t SLogSectInit(void)
 {
-    static slog_sect_t const sect;
-    return sect;
+  static slog_sect_t const sect;
+  return sect;
 }
 
 gboolean SLogSectCondition(slog_sect_t *sect)
 {
-    switch(sect->state)
+  switch(sect->state)
     {
     case SLOG_SECT_INIT:
-        sect->parent = SLogSectHead;
-        SLogSectHead = sect;
-        sect->state = SLOG_SECT_NORMAL;
-        return TRUE;
+      sect->parent = SLogSectHead;
+      SLogSectHead = sect;
+      sect->state = SLOG_SECT_NORMAL;
+      return TRUE;
     case SLOG_SECT_FORWARD:
     case SLOG_SECT_NORMAL:
     case SLOG_SECT_HANDLE:
-        SLogSectHead = sect->parent;
-        return FALSE;
+      SLogSectHead = sect->parent;
+      return FALSE;
     default:
-        break;
+      break;
     } // switch
-    return FALSE;
+  return FALSE;
 }
 
 _Noreturn
 void SLogSectForward(char const *file, int line, int code, slog_error_handler_t handler)
 {
-    ErrorInfo = (slog_error_info_t)
-    {
-        .file = file,
-        .line = line,
-        .code = code,
-        .handler = handler
-    };
+  ErrorInfo = (slog_error_info_t)
+  {
+    .file = file,
+    .line = line,
+    .code = code,
+    .handler = handler
+  };
 
-    // Abort on unhanded errors
-    if(SLogSectHead == NULL)
+  // Abort on unhanded errors
+  if(SLogSectHead == NULL)
     {
-        fprintf(stderr, "%s Unhandled error in file %s at line %d. Aborting.\n",
-                SLOG_ERROR_PREFIX,
-                file,
-                line
-               );
-        abort();
+      fprintf(stderr, "%s Unhandled error in file %s at line %d. Aborting.\n",
+              SLOG_ERROR_PREFIX,
+              file,
+              line
+             );
+      abort();
     }
-    SLogSectHead->state = SLOG_SECT_FORWARD;
-    longjmp(SLogSectHead->env, 1);
+  SLogSectHead->state = SLOG_SECT_FORWARD;
+  longjmp(SLogSectHead->env, 1);
 }
 
 void SLogSectHandleError(slog_sect_t *sect, void *object)
 {
-    SLogSectHead->state = SLOG_SECT_HANDLE;
+  SLogSectHead->state = SLOG_SECT_HANDLE;
 
-    // Call actual error handler
-    ErrorInfo.handler(ErrorInfo.file, ErrorInfo.line, ErrorInfo.code, object);
+  // Call actual error handler
+  ErrorInfo.handler(ErrorInfo.file, ErrorInfo.line, ErrorInfo.code, object);
 }

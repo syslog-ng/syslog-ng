@@ -46,13 +46,13 @@
 // File abstraction
 typedef struct
 {
-    const gchar *filename;
-    const gchar *mode;
-    GIOChannel *channel;
-    GError *error;
-    GIOStatus status;
-    GString *message;
-    unsigned int state;
+  const gchar *filename;
+  const gchar *mode;
+  GIOChannel *channel;
+  GError *error;
+  GIOStatus status;
+  GString *message;
+  unsigned int state;
 } SLogFile;
 
 // File operations

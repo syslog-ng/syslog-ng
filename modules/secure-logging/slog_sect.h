@@ -44,20 +44,25 @@
 #define SLOG_MEM_ALLOC_ERROR 3000
 #define SLOG_OPENSSL_LIBRARY_ERROR 4000
 
-#define SLOG_SECT_START   \
-  for(slog_sect_t sect = SLogSectInit(); SLogSectCondition(&sect); ) { \
-    if(setjmp(sect.env) == 0) {
+/*
+TODO Test SLOG_SECT_START(OBJ) and SLOG_SECT_END(OBJ). Just builds without warning now. There are no tests available!
+TODO clarify: CRITERION tests do call macro only ever in case of #OBJ == "f"! Missing tests?
+*/
+
+#define SLOG_SECT_START(OBJ) \
+  for(slog_sect_t sect_##OBJ = SLogSectInit(); SLogSectCondition(&sect_##OBJ); ) { \
+    if(setjmp(sect_##OBJ.env) == 0) {
 
 #define SLOG_SECT_END(OBJ) \
       } else { \
-      SLogSectHandleError(&sect, OBJ); } }
+      SLogSectHandleError(&sect_##OBJ, OBJ); } }
 
 enum SLogSectState
 {
-    SLOG_SECT_INIT,      // Initial state
-    SLOG_SECT_NORMAL,    // Normal operation
-    SLOG_SECT_FORWARD,   // Forwarding
-    SLOG_SECT_HANDLE,    // Handle error
+  SLOG_SECT_INIT,      // Initial state
+  SLOG_SECT_NORMAL,    // Normal operation
+  SLOG_SECT_FORWARD,   // Forwarding
+  SLOG_SECT_HANDLE,    // Handle error
 };
 
 // Error handler
@@ -71,18 +76,18 @@ typedef struct SLogSect slog_sect_t;
 // Error information
 typedef struct SLogErrorInfo
 {
-    const char *file;
-    int line;
-    int code;
-    slog_error_handler_t handler;
+  const char *file;
+  int line;
+  int code;
+  slog_error_handler_t handler;
 } slog_error_info_t;
 
 // Linked list for error section
 struct SLogSect
 {
-    jmp_buf env;
-    slog_sect_t *parent;
-    slog_sect_state_t state;
+  jmp_buf env;
+  slog_sect_t *parent;
+  slog_sect_state_t state;
 };
 
 slog_sect_t SLogSectInit(void);
