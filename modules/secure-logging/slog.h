@@ -29,6 +29,8 @@
 //-- 2025-10-20, The code is designed to work with any length of log line.
 //   For security reason the length of the utf-8 string is limited.
 #define MESSAGE_LEN 2048 //-- The max length in bytes (octets) of a log line
+//-- 2025-12-04
+#define IS_LIMIT_LOGSTR 0 //-- 0: Do not truncate log string to length of MESSAGE_LEN octets
 
 #define AES_BLOCKSIZE 16
 #define IV_LENGTH 12

@@ -674,7 +674,7 @@ gboolean PRF(unsigned char *key, unsigned char *originalInput,
   // First, extraction
   guchar ktmp[KEY_LENGTH];
   // Initialize to all zero, in case CMAC_LENGTH < KEY_LENGTH
-  bzero(ktmp, KEY_LENGTH);
+  memset(ktmp, 0, KEY_LENGTH);
   gsize outlen = -1;
 
   // Assume KEY_LENGTH >= CMAC_LENGTH
@@ -839,9 +839,9 @@ gboolean writeAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
   gsize outlen;
   gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
   unsigned char keyBuffer[KEY_LENGTH];
-  bzero(keyBuffer, KEY_LENGTH);
+  memset(keyBuffer, 0, KEY_LENGTH);
   unsigned char zeroBuffer[CMAC_LENGTH];
-  bzero(zeroBuffer, CMAC_LENGTH);
+  memset(zeroBuffer, 0, CMAC_LENGTH);
   memcpy(keyBuffer, outputBuffer, MIN(CMAC_LENGTH, KEY_LENGTH));
 
   if(!cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, (guchar *)outputmacdata, &outlen, outputmacdata_capacity))
@@ -912,9 +912,9 @@ gboolean readAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
 
   gsize outlen = 0;
   unsigned char keyBuffer[KEY_LENGTH];
-  bzero(keyBuffer, KEY_LENGTH);
+  memset(keyBuffer, 0, KEY_LENGTH);
   unsigned char zeroBuffer[CMAC_LENGTH];
-  bzero(zeroBuffer, CMAC_LENGTH);
+  memset(zeroBuffer, 0, CMAC_LENGTH);
   memcpy(keyBuffer, macdata, MIN(CMAC_LENGTH, KEY_LENGTH));
 
   unsigned char testOutput[CMAC_LENGTH];

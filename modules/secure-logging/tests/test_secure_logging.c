@@ -793,16 +793,21 @@ int make_executable(const char *filepath)
   struct stat st;
   if (stat(filepath, &st) == -1)
     {
-      return -1;
+      cr_log_warn("make_executable, stat fails for %s\n", filepath);
+      msg_warning("make_executable, stat fails for ", evt_tag_str("file", filepath));
+      return -1; //-- ERROR
     }
-  mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
+  //mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
+  mode_t new_mode = SCRIPT_PERMISSIONS;
   if (chmod(filepath, new_mode) == 0)
     {
-      return 0;
+      return 0; //-- SUCCESS
     }
   else
     {
-      return -1;
+      cr_log_info("make_executable, chmod fails for %s\n", filepath);
+      msg_warning("make_executable, chmod fails for ", evt_tag_str("file", filepath));
+      return -1; //-- ERROR
     }
 }
 
@@ -813,43 +818,63 @@ void test_slog_cli_smoke_tests(void)
 
 #if defined(RUN_CLI_SMOKETEST) && ((RUN_CLI_SMOKETEST) == 1)
   g_print("-- test_slog_cli_smoke_tests\n");
-  const char *ArrayNames[] =
+
+  const char *ShortScriptName[] =
   {
+    //-- Test scripts
     "cli01_syslog.sh",
     "cli02_crypt_verify.sh",
     "cli03_loggen.sh",
     "cli04_loggen_file.sh",
-    "cli06_syslog.sh"
+    "cli06_syslog.sh",
+
+    //-- Helper scripts
+    "get_git_info.sh",
+    "get_prefix.sh",
+    "start_syslog-ng.sh",
+    "stop_syslog-ng.sh",
+
+    //-- not counted by G_N_ELEMENTS
+    NULL
   };
-  int num_ArrayNames = sizeof(ArrayNames) / sizeof(ArrayNames[0]);
-  int retval = 42;
+
   const char *file_path = __FILE__;
+  const guint COUNT_SCRIPTS = G_N_ELEMENTS(ShortScriptName);
+  const guint COUNT_TEST_SCRIPTS = 5;
   gchar *dirname = g_path_get_dirname(file_path);
+
+  cr_assert(COUNT_TEST_SCRIPTS <= COUNT_SCRIPTS, "Invalid config test_slog_cli_smoke_tests!");
+
+  //-- ensure scripts are executable ---
   if (NULL != dirname)
     {
-      for (int i = 0; i < num_ArrayNames; i++)
+      for (guint i = 0; i < COUNT_SCRIPTS; i++)
         {
-          char *full_path = g_build_filename(dirname, ArrayNames[i], NULL);
-
-          int retexe = make_executable(full_path);
-          if (0 == retexe)
-            {
-              retval = system(full_path);
-              g_print("Script %s returns error count: %d\n", full_path, retval);
-              cr_assert(retval == 0, "Script %s returns error count: %d", full_path, retval);
-            }
-          else
-            {
-              cr_assert(0 == retexe, "Script not executeable!");
-            }
-
-          g_free(full_path);
+          char *fullpath = g_build_filename(dirname, ShortScriptName[i], NULL);
+          cr_log_info("fullpath: %s\n", fullpath);
+          int retexe = make_executable(fullpath);
+          g_free(fullpath);
+          cr_assert(0 == retexe, "Script not executeable or wrong path!");
         }
-      g_free (dirname);
     }
   else
     {
       cr_assert(NULL != dirname, "File path to tests scripts not found!");
+    }
+
+  //-- execute test scripts ---
+  int retval = 42;
+  if (NULL != dirname)
+    {
+      for (int i = 0; i < COUNT_TEST_SCRIPTS; i++)
+        {
+          char *fullpath = g_build_filename(dirname, ShortScriptName[i], NULL);
+          retval = system(fullpath);
+          g_print("Script %s returns error count: %d\n", fullpath, retval);
+          cr_assert(retval == 0, "Script %s returns error count: %d", fullpath, retval);
+          g_free(fullpath);
+        }
+      g_free (dirname);
     }
 #endif /* RUN_CLI_SMOKETEST */
 }

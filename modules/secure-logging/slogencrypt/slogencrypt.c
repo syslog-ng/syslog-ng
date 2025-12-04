@@ -249,6 +249,14 @@ int main(int argc, char *argv[])
       GString *result = g_string_new(NULL);
       GString *inputGString = g_string_new(line);
 
+#if defined(IS_LIMIT_LOGSTR) && ((IS_LIMIT_LOGSTR) == 1)
+
+      //-- 2025-12-03
+      //   In the classic secure logging (not the crash recovery variant)
+      //   there shall be no limitation in regard to the length of a
+      //   log string.
+      //   No truncation might be a security risk and this might also cause
+      //   a problem when buffers are created on the stack instead of the heap.
 
       //-- 2025-10-20, The code is designed to work with any length of log line.
       //   For security reason the length of the utf-8 string is limited.
@@ -256,6 +264,7 @@ int main(int argc, char *argv[])
       //   is limited to 2048 bytes (MESSAGE_LEN, slog.h).
       truncate_utf8_gstring(inputGString, MESSAGE_LEN);
 
+#endif /* IS_LIMIT_LOGSTR, see slog.h */
 
       // Remove trailing '\n' from string
       g_string_truncate(inputGString, (inputGString->len)-1);
