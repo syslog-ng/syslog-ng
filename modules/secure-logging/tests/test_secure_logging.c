@@ -40,6 +40,12 @@
 #include <unistd.h>
 #include <limits.h>
 #include <glib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
+
 
 #define MAX_TEST_MESSAGES 1000
 #define MIN_TEST_MESSAGES 10
@@ -726,11 +732,11 @@ void test_slog_malicious_modifications(void)
     {
       if(1 == findInArray(i, entriesToModify, mods))
         {
-          cr_assert(1 == findInArray(i, brokenEntries, mods), "Modified entry %d not detected.", i);
+          cr_assert(1 == findInArray(i, brokenEntries, mods), "Modified entry %lu not detected.", i);
         }
       else
         {
-          cr_assert(0 == findInArray(i, brokenEntries, mods), "Unmodified entry %d detected as modified.", i);
+          cr_assert(0 == findInArray(i, brokenEntries, mods), "Unmodified entry %lu detected as modified.", i);
         }
     }
 
@@ -777,6 +783,30 @@ void test_slog_performance(void)
   closure(testData);
 }
 
+// Define the required permission constant:
+// S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
+// This translates to 755 (rwxr-xr-x)
+#define SCRIPT_PERMISSIONS (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
+
+int make_executable(const char *filepath)
+{
+  struct stat st;
+  if (stat(filepath, &st) == -1)
+    {
+      return -1;
+    }
+  mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
+  if (chmod(filepath, new_mode) == 0)
+    {
+      return 0;
+    }
+  else
+    {
+      return -1;
+    }
+}
+
+
 void test_slog_cli_smoke_tests(void)
 {
 #define RUN_CLI_SMOKETEST 1
@@ -800,9 +830,19 @@ void test_slog_cli_smoke_tests(void)
       for (int i = 0; i < num_ArrayNames; i++)
         {
           char *full_path = g_build_filename(dirname, ArrayNames[i], NULL);
-          retval = system(full_path);
-          g_print("Script %s returns error count: %d\n", full_path, retval);
-          cr_assert(retval == 0, "Script %s returns error count: %d", full_path, retval);
+
+          int retexe = make_executable(full_path);
+          if (0 == retexe)
+            {
+              retval = system(full_path);
+              g_print("Script %s returns error count: %d\n", full_path, retval);
+              cr_assert(retval == 0, "Script %s returns error count: %d", full_path, retval);
+            }
+          else
+            {
+              cr_assert(0 == retexe, "Script not executeable!");
+            }
+
           g_free(full_path);
         }
       g_free (dirname);

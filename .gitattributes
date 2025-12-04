@@ -1,0 +1,5 @@
+# Set the default behavior for text files
+* text=auto
+
+# Ensure all shell scripts get LF endings on checkout
+*.sh text eol=lf
