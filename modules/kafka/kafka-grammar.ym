@@ -74,6 +74,7 @@
 %token KW_BOOTSTRAP_SERVERS
 %token KW_SYNC_SEND
 %token KW_PERSIST_STORE
+%token KW_STORE_METADATA
 
 %%
 
@@ -126,6 +127,7 @@ kafka_src_option
         | KW_DISABLE_BOOKMARKS '(' yesno ')'                    { kafka_sd_set_disable_bookmarks(last_driver, $3); }
         | KW_SINGLE_WORKER_QUEUE '(' yesno ')'                  { kafka_sd_set_single_worker_queue(last_driver, $3); }
         | KW_PERSIST_STORE '(' string ')'                       { CHECK_ERROR(kafka_sd_set_persis_store(last_driver, $3), @3, "Persist store must be either `local` or `remote`, received: %s", $3); free($3); }
+        | KW_STORE_METADATA '(' yesno ')'                       { kafka_sd_set_store_kafka_metadata(last_driver, $3); }
         | threaded_source_driver_option
         | threaded_source_driver_workers_option
         ;

@@ -74,7 +74,7 @@ typedef struct _KafkaSourceBookmark
 } KafkaSourceBookmark;
 
 
-OffsetTracker *
+static OffsetTracker *
 offset_tracker_new(KafkaSourcePersist *owner, gint64 committed_offset)
 {
   OffsetTracker *t = g_new0(OffsetTracker, 1);
@@ -105,29 +105,61 @@ offset_tracker_new(KafkaSourcePersist *owner, gint64 committed_offset)
   return t;
 }
 
-void
+/* Search from the end of the bitmap backwards to find the highest set bit */
+static inline guint64
+offset_tracker_get_highest_tracked(OffsetTracker *t)
+{
+  guint64 total_bytes = (t->window_size + 7) / 8;
+  for (guint64 i = total_bytes; i > 0; i--)
+    {
+      if (t->bitmap[i - 1] != 0)
+        {
+          guint8 byte = t->bitmap[i - 1];
+          guint64 bit_offset = 0;
+
+          for (int bit = 7; bit >= 0; bit--)
+            {
+              if (byte & (1 << bit))
+                {
+                  bit_offset = bit;
+                  break;
+                }
+            }
+
+          guint64 index = (i - 1) * 8 + bit_offset;
+          return t->window_start + index;
+        }
+    }
+
+  /* No bits set, return committed offset */
+  return t->committed;
+}
+
+static void
 offset_tracker_free(OffsetTracker *t)
 {
   /* Sanity check: verify all offsets in the window have been committed */
-  guint64 total_bytes = (t->window_size + 7) / 8;
-  gboolean has_uncommitted = FALSE;
-
-  for (guint64 i = 0; i < total_bytes; i++)
-    if (t->bitmap[i] != 0)
-      {
-        has_uncommitted = TRUE;
-        break;
-      }
+  int64_t highest_tracked = (int64_t)offset_tracker_get_highest_tracked(t);
+  gboolean has_uncommitted = (highest_tracked != (gint64)t->committed);
 
   /* This is acceptable if not all messages are processed yet and e.g. we exit */
   if (has_uncommitted)
-    kafka_msg_debug("kafka: offset_tracker being freed with uncommitted offsets",
+    kafka_msg_trace("kafka: offset_tracker being freed with uncommitted offsets",
                     evt_tag_long("window_start", t->window_start),
                     evt_tag_long("committed", t->committed),
                     evt_tag_int("window_size", t->window_size),
+                    evt_tag_long("highest_tracked", highest_tracked),
+                    evt_tag_long("dropped", highest_tracked - t->committed),
                     evt_tag_str("topic", t->owner->topic),
                     evt_tag_int("partition", (int) t->owner->partition));
-
+  // else
+  //     kafka_msg_trace("kafka: offset_tracker being freed with all offsets committed",
+  //                     evt_tag_long("window_start", t->window_start),
+  //                     evt_tag_long("committed", t->committed),
+  //                     evt_tag_int("window_size", t->window_size),
+  //                     evt_tag_long("highest_tracked", highest_tracked),
+  //                     evt_tag_str("topic", t->owner->topic),
+  //                     evt_tag_int("partition", (int) t->owner->partition));
   g_free(t->bitmap);
   g_free(t);
 }

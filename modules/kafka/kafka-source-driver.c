@@ -789,7 +789,7 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
 
       _partitions_persists_create(self, self->options.ignore_saved_bookmarks ?
                                   _get_start_fallback_offset_code(self) :
-                                  RD_KAFKA_OFFSET_STORED     // Means no override, use saved offsets if available
+                                  RD_KAFKA_OFFSET_STORED
                                  );
       _restore_msg_offsets(self);
 
@@ -1669,6 +1669,12 @@ void kafka_sd_set_single_worker_queue(LogDriver *s, gboolean new_value)
   self->options.separated_worker_queues = (FALSE == new_value);
 }
 
+void kafka_sd_set_store_kafka_metadata(LogDriver *s, gboolean new_value)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)s;
+  self->options.store_kafka_metadata = new_value;
+}
+
 void
 kafka_sd_options_defaults(KafkaSourceOptions *self,
                           LogThreadedSourceWorkerOptions *worker_options)
@@ -1686,6 +1692,7 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->ignore_saved_bookmarks = FALSE;
   self->disable_bookmarks = FALSE;
   self->persist_store = KSPS_LOCAL;
+  self->store_kafka_metadata = TRUE;
   self->separated_worker_queues = FALSE;
   self->fetch_queue_full_delay = 1000; /* fetch_queue_full_delay milliseconds - 1 second */
   self->fetch_delay = 1000; /* 1 second / fetch_delay * 1000000 = 1 millisecond */

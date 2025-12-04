@@ -44,8 +44,8 @@ gboolean kafka_source_persist_init(KafkaSourcePersist *self,
 void kafka_source_persist_invalidate(KafkaSourcePersist *self);
 gboolean kafka_source_persist_is_ready(KafkaSourcePersist *self);
 gboolean kafka_source_persist_matching(KafkaSourcePersist *self,
-                                      const gchar *topic,
-                                      int32_t partition);
+                                       const gchar *topic,
+                                       int32_t partition);
 
 void kafka_source_persist_fill_bookmark(KafkaSourcePersist *self,
                                         Bookmark *bookmark,

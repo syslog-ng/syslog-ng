@@ -27,6 +27,7 @@
 #include "kafka-topic-parts.h"
 #include "ack-tracker/ack_tracker_factory.h"
 #include "stats/aggregator/stats-aggregator.h"
+#include "scratch-buffers.h"
 
 static gsize
 _log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_options, LogMessage **out_msg)
@@ -84,6 +85,22 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   LogMessage *log_msg;
   gsize msg_len = _log_message_from_string((gchar *)msg->payload, driver->options.format_options, &log_msg);
   log_msg_set_value_to_string(log_msg, LM_V_TRANSPORT, "local+kafka");
+  if (driver->options.store_kafka_metadata)
+    {
+      ScratchBuffersMarker mark;
+      GString *partition_str = scratch_buffers_alloc_and_mark(&mark);
+      g_string_printf(partition_str, "%d", msg->partition);
+      GString *offset_str = scratch_buffers_alloc();
+      g_string_printf(offset_str, "%" G_GINT64_FORMAT, msg->offset);
+
+      log_msg_set_value_by_name(log_msg, ".kafka.topic", topic_name, -1);
+      log_msg_set_value_by_name_with_type(log_msg, ".kafka.partition", partition_str->str, -1, LM_VT_INTEGER);
+      log_msg_set_value_by_name_with_type(log_msg, ".kafka.offset", offset_str->str, -1, LM_VT_INTEGER);
+      log_msg_set_value_by_name(log_msg, ".kafka.key", msg->key ? (gchar *)msg->key : "",
+                                msg->key_len ? (gssize)msg->key_len : -1);
+
+      scratch_buffers_reclaim_marked(mark);
+    }
 
   if (FALSE == driver->options.disable_bookmarks)
     kafka_sd_persist_store_msg_offset(driver, self->super.super.ack_tracker, topic_name, msg->partition, msg->offset);

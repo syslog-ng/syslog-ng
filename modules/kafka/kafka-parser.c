@@ -55,6 +55,7 @@ static CfgLexerKeyword kafka_keywords[] =
   { "log_fetch_queue_full_delay", KW_LOG_FETCH_QUEUE_FULL_DELAY },
   { "state_update_timeout",   KW_STATE_UPDATE_TIMEOUT },
   { "persist_store",  KW_PERSIST_STORE },
+  { "store_metadata",   KW_STORE_METADATA },
 
   { NULL }
 };

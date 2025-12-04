@@ -168,6 +168,7 @@ struct _KafkaSourceOptions
   LogThreadedSourceWorkerOptions *worker_options;
 
   MsgFormatOptions *format_options;
+  gboolean store_kafka_metadata;
 
   GList *requested_topics;
   KafkaSrcConsumerStrategy strategy_hint;
