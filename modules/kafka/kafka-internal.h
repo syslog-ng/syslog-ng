@@ -155,11 +155,9 @@ struct _KafkaSourceOptions
   LogThreadedSourceWorkerOptions *worker_options;
 
   MsgFormatOptions *format_options;
-  LogTemplateOptions template_options;
 
   GList *requested_topics;
   KafkaSrcConsumerStrategy strategy_hint;
-  LogTemplate *message;
   gint time_reopen;
 
   gboolean ignore_saved_bookmarks;

@@ -1317,8 +1317,6 @@ kafka_sd_init(LogPipe *s)
   _register_worker_stats(self);
   _register_aggregated_stats(self);
 
-  GlobalConfig *cfg = log_pipe_get_config(s);
-  log_template_options_init(&self->options.template_options, cfg);
   msg_verbose("kafka: Kafka source initialized",
               evt_tag_str("group_id", self->group_id),
               evt_tag_str("driver", self->super.super.super.id),
@@ -1468,23 +1466,6 @@ kafka_sd_set_time_reopen(LogDriver *d, gint time_reopen)
 }
 
 void
-kafka_sd_set_message_ref(LogDriver *d, LogTemplate *message)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *)d;
-
-  log_template_unref(self->options.message);
-  self->options.message = message;
-}
-
-LogTemplateOptions *
-kafka_sd_get_template_options(LogDriver *d)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *)d;
-
-  return &self->options.template_options;
-}
-
-void
 kafka_sd_set_ignore_saved_bookmarks(LogDriver *s, gboolean new_value)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)s;
@@ -1553,19 +1534,14 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->fetch_retry_delay = 10000; /* 1 second / fetch_retry_delay * 1000000 = 10 milliseconds */
   self->fetch_limit = 10000;
   self->time_reopen = 60; /* time_reopen seconds */
-
-  log_template_options_defaults(&self->template_options);
 }
 
 void
 kafka_sd_options_destroy(KafkaSourceOptions *self)
 {
   kafka_property_list_free(self->requested_topics);
-  log_template_unref(self->message);
-  self->message = NULL;
 
   kafka_options_destroy(&self->super);
-  log_template_options_destroy(&self->template_options);
 
   /* Just referenced, not copied */
   self->format_options = NULL;

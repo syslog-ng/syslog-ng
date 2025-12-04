@@ -30,8 +30,6 @@
 typedef struct _KafkaSourceOptions KafkaSourceOptions;
 typedef struct _KafkaSourceDriver KafkaSourceDriver;
 
-LogTemplateOptions *kafka_sd_get_template_options(LogDriver *d);
-
 void kafka_sd_merge_config(LogDriver *d, GList *props);
 gboolean kafka_sd_set_logging(LogDriver *d, const gchar *logging);
 gboolean kafka_sd_set_topics(LogDriver *d, GList *topics);
@@ -47,7 +45,6 @@ void kafka_sd_set_time_reopen(LogDriver *d, gint time_reopen);
 void kafka_sd_set_ignore_saved_bookmarks(LogDriver *s, gboolean new_value);
 void kafka_sd_set_disable_bookmarks(LogDriver *s, gboolean new_value);
 void kafka_sd_set_single_worker_queue(LogDriver *s, gboolean new_value);
-void kafka_sd_set_message_ref(LogDriver *d, LogTemplate *message);
 
 LogDriver *kafka_sd_new(GlobalConfig *cfg);
 
