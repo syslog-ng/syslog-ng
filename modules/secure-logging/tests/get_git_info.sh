@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ############################################################################
 # Copyright (c) 2025 Airbus Commercial Aircraft
 #
@@ -22,14 +21,12 @@
 #
 #############################################################################
 
-#-----------------------------------------------------------------------
 # File:   get_git_info.sh
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # Date:   2025-12-04
 #
 # Scipt to run a couple of git commands to show status of git branch in
 # a test.
-#-----------------------------------------------------------------------
 
 # SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 

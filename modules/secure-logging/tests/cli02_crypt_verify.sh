@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ############################################################################
 # Copyright (c) 2025 Airbus Commercial Aircraft
 #
@@ -22,16 +21,14 @@
 #
 #############################################################################
 
-#-----------------------------------------------------------------------
 # File:   cli02_crypt_verify.sh
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
-# Date:   2025-11-25
+# Date:   2025-12-05
 #
 # Smoke Test of cli tools slogkey, slogencrypt and slogverify
 # Needed keys are generated in test.
-#-----------------------------------------------------------------------
 
-VERSION="Version 1.2.2"
+VERSION="Version 1.2.3"
 
 # remove path and extension from $0
 s=$0

@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ############################################################################
 # Copyright (c) 2025 Airbus Commercial Aircraft
 #
@@ -22,10 +21,9 @@
 #
 #############################################################################
 
-#-----------------------------------------------------------------------
 # File:   cli06_syslog.sh
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
-# Date:   2025-11-25
+# Date:   2025-12-05
 #
 # Smoke Test of cli tools slogkey, syslog-ng, syslog-ng-cli, slogverify
 # In this test syslog-ng is only stopped after all log entries have been
@@ -55,9 +53,8 @@
 # Script artifacts from previous tests are overwritten without asking.
 # The destination folder /tmp/test/slog is expected to be used exclusive
 # only for one running instance of this script.
-#-----------------------------------------------------------------------
 
-VERSION="Version 1.0.1"
+VERSION="Version 1.0.2"
 
 # remove path and extension from $0
 s=$0

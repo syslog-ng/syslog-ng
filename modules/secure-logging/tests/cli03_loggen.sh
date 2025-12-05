@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ############################################################################
 # Copyright (c) 2025 Airbus Commercial Aircraft
 #
@@ -22,10 +21,9 @@
 #
 #############################################################################
 
-#-----------------------------------------------------------------------
 # File:   cli03_loggen.sh
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
-# Date:   2025-11-25
+# Date:   2025-12-05
 #
 # Smoke Test of cli tools loggen, slogkey, syslog-ng, syslog-ng-cli, slogverify
 #
@@ -47,9 +45,8 @@
 # Script artifacts from previous tests are overwritten without asking.
 # The destination folder /tmp/test/slog is expected to be used exclusive
 # only for one running instance of this script.
-#-----------------------------------------------------------------------
 
-VERSION="Version 1.2.2"
+VERSION="Version 1.2.3"
 
 # remove path and extension from $0
 s=$0

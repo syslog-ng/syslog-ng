@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ############################################################################
 # Copyright (c) 2025 Airbus Commercial Aircraft
 #
@@ -22,18 +21,16 @@
 #
 #############################################################################
 
-#-----------------------------------------------------------------------
 # File:   start_syslog-ng.sh
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
-# Date:   2025-11-25
+# Date:   2025-12-05
 #
 # Helper to start syslog-ng
 # Note: A already running instance is stopped first.
-# ----------------------------------------------------------------------
 
 # set -x
 
-VERSION="Version 1.0.4"
+VERSION="Version 1.0.5"
 # remove path and extension from $0
 s=$0
 SCRIPTNAME="$(

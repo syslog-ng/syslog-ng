@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ############################################################################
 # Copyright (c) 2025 Airbus Commercial Aircraft
 #
@@ -22,10 +21,9 @@
 #
 #############################################################################
 
-#-----------------------------------------------------------------------
 # File:   get_prefix.sh
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
-# Date:   2025-11-25
+# Date:   2025-12-05
 #
 # This script is expected being called from inside root of
 # syslog-ng source directory after the build process has finished.
@@ -33,7 +31,8 @@
 #
 # See --prefix argument of configure script
 #       e.g.: ../configure --prefix=/home/johndoe/Software/install
-#-----------------------------------------------------------------------
+
+# set -x
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 SEARCH_DIR="${SCRIPT_DIR}/../../../"
@@ -44,6 +43,24 @@ if [ -n "${CONFIG_FILE}" ]; then
     PATH_PREFIX_VALUE=$(grep '#define PATH_PREFIX' "${CONFIG_FILE}" | sed 's/.*"\([^"]*\)".*/\1/')
     echo "${PATH_PREFIX_VALUE}"
 else
-    echo "Error: No suitable config.h file was found." >&2
-    exit 1
+
+    CMAKE_INSTALL_FILE=$(find "${SEARCH_DIR}" -name "cmake_install.cmake" -type f | head -n 1)
+
+    if [ -n "${CMAKE_INSTALL_FILE}" ]; then
+        INSTALL_PATH=$(grep 'set(CMAKE_INSTALL_PREFIX' "${CMAKE_INSTALL_FILE}" |
+            sed -E 's/set\(CMAKE_INSTALL_PREFIX "(.*)"\)/\1/')
+
+        # Check if the path was successfully extracted
+        if [ -n "${INSTALL_PATH}" ]; then
+            echo "${INSTALL_PATH}"
+        else
+            echo "Error: Found 'cmake_install.cmake', but could not extract CMAKE_INSTALL_PREFIX." >&2
+            exit 1
+        fi
+    else
+        # Neither config.h nor cmake_install.cmake was found
+        echo "Error: No suitable 'config.h' or 'cmake_install.cmake' file was found to get installation path from." >&2
+        exit 1
+    fi
+
 fi

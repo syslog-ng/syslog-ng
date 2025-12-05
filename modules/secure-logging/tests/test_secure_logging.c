@@ -786,7 +786,7 @@ void test_slog_performance(void)
 // Define the required permission constant:
 // S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
 // This translates to 755 (rwxr-xr-x)
-#define SCRIPT_PERMISSIONS (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
+// #define SCRIPT_PERMISSIONS (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
 int make_executable(const char *filepath)
 {
@@ -797,8 +797,8 @@ int make_executable(const char *filepath)
       msg_warning("make_executable, stat fails for ", evt_tag_str("file", filepath));
       return -1; //-- ERROR
     }
-  //mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
-  mode_t new_mode = SCRIPT_PERMISSIONS;
+  mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
+  // mode_t new_mode = SCRIPT_PERMISSIONS;
   if (chmod(filepath, new_mode) == 0)
     {
       return 0; //-- SUCCESS
