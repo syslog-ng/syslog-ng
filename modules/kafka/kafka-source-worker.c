@@ -103,7 +103,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
     }
 
   if (FALSE == driver->options.disable_bookmarks)
-    kafka_sd_persist_store_msg_offset(driver, self->super.super.ack_tracker, topic_name, msg->partition, msg->offset);
+    kafka_sd_persist_add_msg_bookmark(driver, self->super.super.ack_tracker, topic_name, msg->partition, msg->offset);
 
   _send(worker, log_msg);
 
@@ -280,7 +280,6 @@ _run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
 {
   KafkaSourceDriver *driver = (KafkaSourceDriver *) self->super.control;
   gboolean persist_use_offset_tracker = kafka_sd_parallel_processing(driver);
-  gboolean all_persists_ready = (FALSE == persist_use_offset_tracker);
   rd_kafka_message_t *msg;
   guint rr = 0;
 
@@ -342,10 +341,9 @@ _run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
            * (see kafka_source_persist_is_ready implementation and offset_tracker_new comments for details)
            * TODO: improve offset tracker readiness handling to avoid this check per message
            */
-          if (G_UNLIKELY(can_use_queue && FALSE == all_persists_ready))
+          if (G_UNLIKELY(can_use_queue && persist_use_offset_tracker && FALSE == kafka_sd_persist_all_ready(driver)))
             {
-              gboolean persist_is_ready = kafka_sd_persist_is_ready(driver, rd_kafka_topic_name(msg->rkt), msg->partition,
-                                                                    &all_persists_ready);
+              gboolean persist_is_ready = kafka_sd_persist_is_ready(driver, rd_kafka_topic_name(msg->rkt), msg->partition);
               if (FALSE == persist_is_ready)
                 can_use_queue = FALSE;
             }

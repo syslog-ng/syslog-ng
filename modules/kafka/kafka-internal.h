@@ -244,16 +244,16 @@ void kafka_sd_signal_queue_ndx(KafkaSourceDriver *self, guint ndx);
 void kafka_sd_signal_queues(KafkaSourceDriver *self);
 void kafka_sd_drop_queued_messages(KafkaSourceDriver *self);
 void kafka_sd_wakeup_kafka_queues(KafkaSourceDriver *self);
-gboolean kafka_sd_persist_store_msg_offset(KafkaSourceDriver *self,
+gboolean kafka_sd_persist_add_msg_bookmark(KafkaSourceDriver *self,
                                            AckTracker *ack_tracker,
                                            const gchar *msg_topic_name,
                                            int32_t msg_partition,
                                            int64_t msg_offset);
 gboolean kafka_sd_parallel_processing(KafkaSourceDriver *self);
+gboolean kafka_sd_persist_all_ready(KafkaSourceDriver *self);
 gboolean kafka_sd_persist_is_ready(KafkaSourceDriver *self,
                                    const gchar *msg_topic_name,
-                                   int32_t msg_partition,
-                                   gboolean *all_persists_ready);
+                                   int32_t msg_partition);
 
 void kafka_sd_update_msg_length_stats(KafkaSourceDriver *self, gsize len);
 void kafka_sd_inc_msg_topic_stats(KafkaSourceDriver *self, const gchar *topic);

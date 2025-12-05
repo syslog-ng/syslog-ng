@@ -379,7 +379,7 @@ _save_bookmark(Bookmark *bookmark)
                     evt_tag_long("offset", position_to_store));
         }
     }
-  kafka_source_persist_release(persist);
+  kafka_source_persist_unref(persist);
 }
 
 void
@@ -557,7 +557,20 @@ _kafka_source_persist_free(KafkaSourcePersist *self)
   g_free(self);
 }
 
-void kafka_source_persist_release(KafkaSourcePersist *self)
+inline void
+kafka_source_persist_ref(KafkaSourcePersist *self, gboolean lock)
+{
+  if (lock)
+    g_mutex_lock(&self->mutex);
+
+  self->used_count++;
+
+  if (lock)
+    g_mutex_unlock(&self->mutex);
+}
+
+inline void
+kafka_source_persist_unref(KafkaSourcePersist *self)
 {
   g_mutex_lock(&self->mutex);
   self->used_count--;

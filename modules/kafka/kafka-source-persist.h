@@ -34,7 +34,8 @@
 typedef struct _KafkaSourcePersist KafkaSourcePersist;
 
 KafkaSourcePersist *kafka_source_persist_new(KafkaSourceDriver *owner);
-void kafka_source_persist_release(KafkaSourcePersist *self);
+void kafka_source_persist_ref(KafkaSourcePersist *self, gboolean lock);
+void kafka_source_persist_unref(KafkaSourcePersist *self);
 gboolean kafka_source_persist_init(KafkaSourcePersist *self,
                                    PersistState *state,
                                    const gchar *topic,

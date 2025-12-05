@@ -554,11 +554,20 @@ _kafka_error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
   kafka_opaque_state_unlock(&self->opaque);
 }
 
+KafkaSourcePersist *
+_find_persist(KafkaSourceDriver *self, const gchar *topic, int32_t partition)
+{
+  gchar key[MAX_KAFKA_PARTITION_KEY_NAME_LEN];
+  kafka_format_partition_key(topic, partition, key, sizeof(key));
+  return (KafkaSourcePersist *) g_hash_table_lookup(self->persists, key);
+}
+
 static gboolean
-_find_stored_msg_offset(KafkaSourceDriver *self, const gchar *key, int64_t *offset)
+_find_stored_msg_offset(KafkaSourceDriver *self, const gchar *topic, int32_t partition, int64_t *offset)
 {
   gboolean found = FALSE;
-  KafkaSourcePersist *persist = g_hash_table_lookup(self->persists, key);
+  KafkaSourcePersist *persist = _find_persist(self, topic, partition);
+  g_assert(persist);
   int64_t value = -1;
 
   kafka_source_persist_load_position(persist, &value);
@@ -581,15 +590,13 @@ _restore_msg_offsets(KafkaSourceDriver *self)
 
   if (self->options.persist_store == KSPS_LOCAL)
     {
-      gchar key[MAX_KAFKA_PARTITION_KEY_NAME_LEN];
-
       for (int i = 0 ; i < self->assigned_partitions->cnt ; i++)
         {
           rd_kafka_topic_partition_t *partition = &self->assigned_partitions->elems[i];
-          kafka_format_partition_key(partition->topic, partition->partition, key, sizeof(key));
 
           int64_t offset = _get_start_fallback_offset_code(self);
-          gboolean found = (self->options.ignore_saved_bookmarks ? FALSE : _find_stored_msg_offset(self, key, &offset));
+          gboolean found = (self->options.ignore_saved_bookmarks ? FALSE : _find_stored_msg_offset(self, partition->topic,
+                            partition->partition, &offset));
           if (found)
             {
               partition->offset = offset >= 0 ? offset + 1 : offset;
@@ -638,7 +645,7 @@ _persist_destroy(gpointer data)
   /* Bookmark-storing persists using the (remote) Kafka store should be invalidated here
   * to signal that there is no longer a valid Kafka connection to do so */
   kafka_source_persist_invalidate(persist);
-  kafka_source_persist_release(persist);
+  kafka_source_persist_unref(persist);
 }
 
 static void
@@ -679,7 +686,7 @@ _partitions_persists_destroy(KafkaSourceDriver *self)
 }
 
 gboolean
-kafka_sd_persist_store_msg_offset(KafkaSourceDriver *self,
+kafka_sd_persist_add_msg_bookmark(KafkaSourceDriver *self,
                                   AckTracker *ack_tracker,
                                   const gchar *msg_topic_name,
                                   int32_t msg_partition,
@@ -688,9 +695,7 @@ kafka_sd_persist_store_msg_offset(KafkaSourceDriver *self,
   g_mutex_lock(&self->persists_mutex);
 
   gboolean success = FALSE;
-  gchar key[MAX_KAFKA_PARTITION_KEY_NAME_LEN];
-  kafka_format_partition_key(msg_topic_name, msg_partition, key, sizeof(key));
-  KafkaSourcePersist *persist = (KafkaSourcePersist *) g_hash_table_lookup(self->persists, key);
+  KafkaSourcePersist *persist = _find_persist(self, msg_topic_name, msg_partition);
 
   if (persist)
     {
@@ -715,46 +720,44 @@ kafka_sd_persist_store_msg_offset(KafkaSourceDriver *self,
 }
 
 gboolean
-kafka_sd_persist_is_ready(KafkaSourceDriver *self,
-                          const gchar *msg_topic_name,
-                          int32_t msg_partition,
-                          gboolean *all_persists_ready)
+kafka_sd_persist_all_ready(KafkaSourceDriver *self)
 {
   if (self->all_persists_ready)
+    return TRUE;
+
+  gboolean all_persists_ready = TRUE;
+  GHashTableIter iter;
+  gpointer key, value;
+
+  g_hash_table_iter_init(&iter, self->persists);
+  while (g_hash_table_iter_next(&iter, &key, &value))
     {
-      *all_persists_ready = self->all_persists_ready;
-      return TRUE;
-    }
-
-  gboolean this_persis_ready = FALSE;
-  g_mutex_lock(&self->persists_mutex);
-
-  if (all_persists_ready != NULL)
-    {
-      *all_persists_ready = TRUE;
-
-      GHashTableIter iter;
-      gpointer key, value;
-      g_hash_table_iter_init(&iter, self->persists);
-      while (g_hash_table_iter_next(&iter, &key, &value))
+      KafkaSourcePersist *persist = (KafkaSourcePersist *)value;
+      if (FALSE == kafka_source_persist_is_ready(persist))
         {
-          KafkaSourcePersist *persist = (KafkaSourcePersist *)value;
-
-          if (FALSE == kafka_source_persist_is_ready(persist))
-            *all_persists_ready = FALSE;
-
-          if (kafka_source_persist_matching(persist, msg_topic_name, msg_partition))
-            this_persis_ready = kafka_source_persist_is_ready(persist);
+          all_persists_ready = FALSE;
+          break;
         }
     }
-  else
-    {
-      gchar key[MAX_KAFKA_PARTITION_KEY_NAME_LEN];
-      kafka_format_partition_key(msg_topic_name, msg_partition, key, sizeof(key));
-      KafkaSourcePersist *persist = (KafkaSourcePersist *) g_hash_table_lookup(self->persists, key);
-      g_assert(persist);
-      this_persis_ready = kafka_source_persist_is_ready(persist);
-    }
+  self->all_persists_ready = all_persists_ready;
+  return all_persists_ready;
+}
+
+gboolean
+kafka_sd_persist_is_ready(KafkaSourceDriver *self,
+                          const gchar *msg_topic_name,
+                          int32_t msg_partition)
+{
+  if (self->all_persists_ready)
+    return TRUE;
+
+  g_mutex_lock(&self->persists_mutex);
+
+  gboolean this_persis_ready = FALSE;
+  KafkaSourcePersist *persist = _find_persist(self, msg_topic_name, msg_partition);
+  g_assert(persist);
+
+  this_persis_ready = kafka_source_persist_is_ready(persist);
 
   g_mutex_unlock(&self->persists_mutex);
   return this_persis_ready;
@@ -768,12 +771,13 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
 
   g_mutex_lock(&self->persists_mutex);
 
+  _partitions_persists_destroy(self);
+
   if (self->assigned_partitions)
     {
       rd_kafka_topic_partition_list_destroy(self->assigned_partitions);
       self->assigned_partitions = NULL;
     }
-  _partitions_persists_destroy(self);
 
   /* No partitions to assign, just clearing the earlier assigned partitions */
   if (parts == NULL)
