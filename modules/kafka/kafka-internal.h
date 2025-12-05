@@ -92,7 +92,7 @@ gboolean kafka_seek_partitions(KafkaSourceDriver *self,
                                rd_kafka_topic_partition_list_t *partitions,
                                int timeout_ms);
 gchar *kafka_format_partition_key(const gchar *topic, int32_t partition, gchar *key, gsize key_size);
-void kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions);
+void kafka_log_partition_list(KafkaSourceDriver *self, const rd_kafka_topic_partition_list_t *partitions);
 void kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg);
 
 void kafka_register_counters(KafkaSourceDriver *self, GHashTable *stats_table, const gchar *label,

@@ -151,6 +151,7 @@ _processor_run(LogThreadedSourceWorker *self)
   kafka_msg_debug("kafka: started queue processor",
                   evt_tag_int("index", self->worker_index),
                   evt_tag_str("group_id", driver->group_id),
+                  evt_tag_str("driver", driver->super.super.super.id),
                   evt_tag_str("driver", driver->super.super.super.id));
 
   GAsyncQueue *msg_queue = kafka_sd_worker_queue(driver, self);
@@ -187,9 +188,9 @@ _processor_run(LogThreadedSourceWorker *self)
   kafka_msg_debug("kafka: stopped queue processor",
                   evt_tag_int("index", self->worker_index),
                   evt_tag_str("group_id", driver->group_id),
-                  evt_tag_str("driver", driver->super.super.super.id),
                   evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(driver->kafka)),
-                  evt_tag_int("worker_queue_len", g_async_queue_length(msg_queue)));
+                  evt_tag_int("worker_queue_len", g_async_queue_length(msg_queue)),
+                  evt_tag_str("driver", driver->super.super.super.id));
   g_atomic_counter_dec_and_test(&driver->running_thread_num);
 }
 
@@ -203,7 +204,8 @@ _queue_message(KafkaSourceWorker *self, rd_kafka_message_t *msg, guint target_qu
             evt_tag_int("partition", msg->partition),
             evt_tag_int("offset", msg->offset),
             evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(driver->kafka)),
-            evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(driver)));
+            evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(driver)),
+            evt_tag_str("driver", driver->super.super.super.id));
   do
     {
       gint msg_queues_len = kafka_sd_worker_queues_len(driver);
@@ -213,7 +215,8 @@ _queue_message(KafkaSourceWorker *self, rd_kafka_message_t *msg, guint target_qu
 
       kafka_msg_debug("kafka: message queue full, waiting",
                       evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(driver->kafka)),
-                      evt_tag_int("worker_queues_len", msg_queues_len));
+                      evt_tag_int("worker_queues_len", msg_queues_len),
+                      evt_tag_str("driver", driver->super.super.super.id));
       kafka_sd_signal_queues(driver);
       rd_kafka_poll(driver->kafka, driver->options.fetch_queue_full_delay);
 
@@ -314,7 +317,8 @@ _run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
                 }
               kafka_msg_debug("kafka: consumer_poll - no data",
                               evt_tag_int("kafka_outq_len", (int)rd_kafka_outq_len(driver->kafka)),
-                              evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(driver)));
+                              evt_tag_int("worker_queues_len", kafka_sd_worker_queues_len(driver)),
+                              evt_tag_str("driver", driver->super.super.super.id));
               if (msg)
                 rd_kafka_message_destroy(msg);
             }

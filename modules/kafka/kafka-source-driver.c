@@ -793,7 +793,7 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
                                  );
       _restore_msg_offsets(self);
 
-      kafka_log_partition_list(parts);
+      kafka_log_partition_list(self, parts);
       _register_topic_stats(self);
     }
   else
@@ -1088,7 +1088,8 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
     case RD_KAFKA_RESP_ERR__ASSIGN_PARTITIONS:
       msg_verbose("kafka: group rebalanced - assigned",
                   evt_tag_str("group_id", self->group_id),
-                  evt_tag_str("member_id", rd_kafka_memberid(rk)));
+                  evt_tag_str("member_id", rd_kafka_memberid(rk)),
+                  evt_tag_str("driver", self->super.super.super.id));
 
       /* Broker assigned the partitions → assign to the consumers too */
       _apply_assigned_partitions(self, rd_kafka_topic_partition_list_copy(partitions));
@@ -1097,8 +1098,9 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
     case RD_KAFKA_RESP_ERR__REVOKE_PARTITIONS:
       msg_verbose("kafka: group rebalanced - revoked",
                   evt_tag_str("group_id", self->group_id),
-                  evt_tag_str("member_id", rd_kafka_memberid(rk)));
-      kafka_log_partition_list(partitions);
+                  evt_tag_str("member_id", rd_kafka_memberid(rk)),
+                  evt_tag_str("driver", self->super.super.super.id));
+      kafka_log_partition_list(self, partitions);
 
       /* Revoke partitions from the consumers */
       _apply_assigned_partitions(self, NULL);
@@ -1107,7 +1109,8 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
     default:
       msg_error("kafka: rebalance error",
                 evt_tag_str("error", rd_kafka_err2str(err)),
-                evt_tag_str("group_id", self->group_id));
+                evt_tag_str("group_id", self->group_id),
+                evt_tag_str("driver", self->super.super.super.id));
       break;
     }
 }
@@ -1401,7 +1404,7 @@ kafka_sd_reopen(LogDriver *s)
   return TRUE;
 }
 
-gboolean inline
+inline gboolean
 kafka_sd_parallel_processing(KafkaSourceDriver *self)
 {
   return self->super.num_workers > 2;

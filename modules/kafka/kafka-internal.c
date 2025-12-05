@@ -282,10 +282,13 @@ kafka_seek_partitions(KafkaSourceDriver *self,
 }
 
 void
-kafka_log_partition_list(const rd_kafka_topic_partition_list_t *partitions)
+kafka_log_partition_list(KafkaSourceDriver *self, const rd_kafka_topic_partition_list_t *partitions)
 {
   for (int i = 0 ; i < partitions->cnt ; i++)
     msg_verbose("kafka: partition",
+                evt_tag_str("group_id", self->group_id),
+                evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
+                evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("topic", partitions->elems[i].topic),
                 evt_tag_int("partition", (int) partitions->elems[i].partition),
                 evt_tag_long("offset", (long) partitions->elems[i].offset));
