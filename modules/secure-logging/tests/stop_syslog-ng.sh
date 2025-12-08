@@ -1,18 +1,19 @@
 #!/bin/sh
-############################################################################
+#############################################################################
 # Copyright (c) 2025 Airbus Commercial Aircraft
 #
-# This program is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License version 2 as published
-# by the Free Software Foundation, or (at your option) any later version.
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # As an additional exemption you are allowed to compile & link against the
@@ -21,13 +22,14 @@
 #
 #############################################################################
 
-# File:   stop_syslog-ng.sh
+
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
-# Date:   2025-12-05
+# File:   stop_syslog-ng.sh
+# Date:   2025-12-08
 #
 # Helper to stop syslog-ng
 
-VERSION="Version 1.0.4"
+VERSION="Version 1.0.5"
 # remove path and extension from $0
 s=$0
 SCRIPTNAME="$(
