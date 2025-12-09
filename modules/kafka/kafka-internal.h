@@ -36,13 +36,21 @@
 #include "kafka-source-worker.h"
 #include "kafka-dest-driver.h"
 #include "kafka-dest-worker.h"
+#include "kafka-source-persist.h"
 
+#define KAFKA_DEEP_TRACE 0
 #if SYSLOG_NG_ENABLE_DEBUG
-#define kafka_msg_debug msg_verbose
-#define kafka_msg_trace msg_verbose
+# define kafka_msg_debug msg_verbose
+# define kafka_msg_trace msg_verbose
+# if KAFKA_DEEP_TRACE
+#  define kafka_msg_deep_trace msg_verbose
+# else
+#  define kafka_msg_deep_trace(msg, ...)
+# endif
 #else
-#define kafka_msg_debug msg_debug
-#define kafka_msg_trace msg_trace
+# define kafka_msg_debug msg_debug
+# define kafka_msg_trace msg_trace
+# define kafka_msg_deep_trace(msg, ...)
 #endif
 
 #define MAX_KAFKA_TOPIC_NAME_LEN 249 // TODO: get from librdkafka?
@@ -84,10 +92,10 @@ gboolean kafka_conf_get_prop(const rd_kafka_conf_t *conf, const gchar *name, gch
 gboolean kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value);
 gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_properties,
                                   gsize protected_properties_num);
-gboolean kafka_store_offset(KafkaSourceDriver *self,
-                            const gchar *topic,
-                            int32_t partition,
-                            int64_t offset);
+gboolean kafka_seek_partition(KafkaSourceDriver *self,
+                              rd_kafka_topic_partition_t *partition,
+                              int64_t offset,
+                              int timeout_ms);
 gboolean kafka_seek_partitions(KafkaSourceDriver *self,
                                rd_kafka_topic_partition_list_t *partitions,
                                int timeout_ms);
@@ -213,10 +221,12 @@ struct _KafkaSourceDriver
   guint allocated_queue_num;
   gchar single_queue_name[64];
 
+  GMutex rebalance_mutex;
+  gboolean rebalance_signaled;
+
   GAtomicCounter running_thread_num;
   GAtomicCounter sleeping_thread_num;
 
-  GMutex persists_mutex;
   GHashTable *persists;
   gboolean all_persists_ready;
   const gchar *persist_name;
@@ -236,19 +246,29 @@ void kafka_sd_options_destroy(KafkaSourceOptions *self);
 
 gboolean kafka_sd_reopen(LogDriver *s);
 
+gboolean kafka_sd_using_queues(KafkaSourceDriver *self);
+guint kafka_sd_used_queue_num(KafkaSourceDriver *self);
 guint kafka_sd_worker_queues_len(KafkaSourceDriver *self);
 GAsyncQueue *kafka_sd_worker_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *worker);
 void kafka_sd_wait_for_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *worker);
 void kafka_sd_signal_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *worker);
 void kafka_sd_signal_queue_ndx(KafkaSourceDriver *self, guint ndx);
 void kafka_sd_signal_queues(KafkaSourceDriver *self);
+gboolean kafka_sd_wait_for_queue_processors_to_sleep(KafkaSourceDriver *self, const gdouble iteration_sleep_time,
+                                                     gboolean poll_kafka);
+void kafka_sd_wait_for_queue_processors_to_exit(KafkaSourceDriver *self, const gdouble iteration_sleep_time);
 void kafka_sd_drop_queued_messages(KafkaSourceDriver *self);
 void kafka_sd_wakeup_kafka_queues(KafkaSourceDriver *self);
-gboolean kafka_sd_persist_add_msg_bookmark(KafkaSourceDriver *self,
-                                           AckTracker *ack_tracker,
-                                           const gchar *msg_topic_name,
-                                           int32_t msg_partition,
-                                           int64_t msg_offset);
+gboolean kafka_sd_rebalance_signaled(KafkaSourceDriver *self);
+void kafka_sd_reassign_partition(KafkaSourceDriver *self);
+void kafka_sd_persist_add_msg_bookmark(KafkaSourceDriver *self,
+                                       AckTracker *ack_tracker,
+                                       const gchar *msg_topic_name,
+                                       int32_t msg_partition,
+                                       int64_t msg_offset);
+gboolean kafka_sd_store_persist_offset(KafkaSourceDriver *self,
+                                       KafkaSourcePersist *persist,
+                                       int64_t offset);
 gboolean kafka_sd_parallel_processing(KafkaSourceDriver *self);
 gboolean kafka_sd_persist_all_ready(KafkaSourceDriver *self);
 gboolean kafka_sd_persist_is_ready(KafkaSourceDriver *self,

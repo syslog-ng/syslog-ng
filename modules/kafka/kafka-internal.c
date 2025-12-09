@@ -196,39 +196,33 @@ kafka_format_partition_key(const gchar *topic, int32_t partition, gchar *key, gs
 }
 
 gboolean
-kafka_store_offset(KafkaSourceDriver *self,
-                   const gchar *topic,
-                   int32_t partition,
-                   int64_t offset)
+kafka_seek_partition(KafkaSourceDriver *self,
+                     rd_kafka_topic_partition_t *partition,
+                     int64_t offset,
+                     int timeout_ms)
 {
   gboolean success = TRUE;
+  /* rd_kafka_seek() needs a rd_kafka_topic_t*, so create a temporary handle */
+  rd_kafka_topic_t *rkt = rd_kafka_topic_new(self->kafka, partition->topic, NULL);
+  if (!rkt)
+    {
+      msg_error("kafka: rd_kafka_topic_new() failed in fallback seek",
+                evt_tag_str("topic", partition->topic),
+                evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())));
+      return FALSE;
+    }
 
-  /* NOTE: Unlike in rd_kafka_offset_store_message, in rd_kafka_offsets_store the .offset field is stored as is, it will NOT be + 1 */
-  ++offset;
-  rd_kafka_resp_err_t err = rd_kafka_topic_partition_list_set_offset(self->assigned_partitions,
-                            topic, partition, offset);
+  rd_kafka_resp_err_t err = rd_kafka_seek(rkt, partition->partition, offset, timeout_ms);
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
-      msg_error("kafka: failed to set the offset for partition (set_offset)",
-                evt_tag_str("topic", topic),
-                evt_tag_int("partition", (int) partition),
+      msg_error("kafka: failed to seek to the restored offset (legacy rd_kafka_seek)",
+                evt_tag_str("topic", partition->topic),
+                evt_tag_int("partition", (int)partition->partition),
                 evt_tag_long("offset", offset),
                 evt_tag_str("error", rd_kafka_err2str(err)));
       success = FALSE;
     }
-  else
-    {
-      err = rd_kafka_offsets_store(self->kafka, self->assigned_partitions);
-      if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
-        {
-          msg_error("kafka: failed to store the offset for partitions (offsets_store)",
-                    evt_tag_str("topic", topic),
-                    evt_tag_int("partition", (int) partition),
-                    evt_tag_long("offset", offset),
-                    evt_tag_str("error", rd_kafka_err2str(err)));
-          success = FALSE;
-        }
-    }
+  rd_kafka_topic_destroy(rkt);
   return success;
 }
 
@@ -253,29 +247,8 @@ kafka_seek_partitions(KafkaSourceDriver *self,
   for (int pi = 0; pi < partitions->cnt; ++pi)
     {
       rd_kafka_topic_partition_t *p = &partitions->elems[pi];
-
-      /* rd_kafka_seek() needs a rd_kafka_topic_t*, so create a temporary handle */
-      rd_kafka_topic_t *rkt = rd_kafka_topic_new(self->kafka, p->topic, NULL);
-      if (!rkt)
-        {
-          msg_error("kafka: rd_kafka_topic_new() failed in fallback seek",
-                    evt_tag_str("topic", p->topic),
-                    evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())));
-          success = FALSE;
-          break;
-        }
-
-      rd_kafka_resp_err_t r = rd_kafka_seek(rkt, p->partition, p->offset, timeout_ms);
-      if (r != RD_KAFKA_RESP_ERR_NO_ERROR)
-        {
-          msg_error("kafka: failed to seek to the restored offset (legacy rd_kafka_seek)",
-                    evt_tag_str("topic", p->topic),
-                    evt_tag_int("partition", (int)p->partition),
-                    evt_tag_long("offset", p->offset),
-                    evt_tag_str("error", rd_kafka_err2str(r)));
-          success = FALSE;
-        }
-      rd_kafka_topic_destroy(rkt);
+      if (FALSE == kafka_seek_partition(self, p, p->offset, timeout_ms))
+        success = FALSE;
     }
 #endif
   return success;

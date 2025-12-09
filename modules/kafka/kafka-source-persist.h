@@ -34,7 +34,7 @@
 typedef struct _KafkaSourcePersist KafkaSourcePersist;
 
 KafkaSourcePersist *kafka_source_persist_new(KafkaSourceDriver *owner);
-void kafka_source_persist_ref(KafkaSourcePersist *self, gboolean lock);
+void kafka_source_persist_ref(KafkaSourcePersist *self);
 void kafka_source_persist_unref(KafkaSourcePersist *self);
 gboolean kafka_source_persist_init(KafkaSourcePersist *self,
                                    PersistState *state,
@@ -47,6 +47,14 @@ gboolean kafka_source_persist_is_ready(KafkaSourcePersist *self);
 gboolean kafka_source_persist_matching(KafkaSourcePersist *self,
                                        const gchar *topic,
                                        int32_t partition);
+
+void kafka_source_persist_lock(KafkaSourcePersist *self);
+void kafka_source_persist_unlock(KafkaSourcePersist *self);
+
+/* Lock must be held before calling */
+gboolean kafka_source_persist_valid(KafkaSourcePersist *self);
+int32_t kafka_source_persist_get_partition(KafkaSourcePersist *self);
+const gchar *kafka_source_persist_get_topic(KafkaSourcePersist *self);
 
 void kafka_source_persist_fill_bookmark(KafkaSourcePersist *self,
                                         Bookmark *bookmark,

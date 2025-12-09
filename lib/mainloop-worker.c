@@ -197,6 +197,12 @@ main_loop_worker_wait_for_exit(void)
   g_mutex_unlock(&exit_cond.lock);
 }
 
+inline gdouble
+mainloop_sleep_time(const gdouble delay)
+{
+  return delay > 0 ? 1.0 / delay : 0.0;
+}
+
 gboolean
 main_loop_worker_wait_for_exit_until(gdouble wait_time)
 {

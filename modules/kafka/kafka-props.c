@@ -52,7 +52,7 @@ _property_name_compare(const KafkaProperty *kp1, const KafkaProperty *kp2)
   return g_strcmp0(kp1->name, kp2->name);
 }
 
-const gchar *
+KafkaProperty *
 kafka_property_list_find_not_empty(GList *l, const gchar *name)
 {
   KafkaProperty key = { (gchar *)name, NULL };
@@ -63,7 +63,7 @@ kafka_property_list_find_not_empty(GList *l, const gchar *name)
 
   KafkaProperty *conf_data = (KafkaProperty *)li->data;
   if (conf_data != NULL && conf_data->value != NULL && conf_data->value[0] != '\0')
-    return conf_data->value;
+    return conf_data;
   return NULL;
 }
 

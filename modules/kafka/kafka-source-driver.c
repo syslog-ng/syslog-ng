@@ -30,6 +30,7 @@
 #include "stats/stats-cluster-single.h"
 #include "stats/aggregator/stats-aggregator-registry.h"
 #include "timeutils/misc.h"
+#include "host-id.h"
 
 // TODO: Move to a common lib place
 GList *
@@ -571,7 +572,7 @@ _find_stored_msg_offset(KafkaSourceDriver *self, const gchar *topic, int32_t par
   int64_t value = -1;
 
   kafka_source_persist_load_position(persist, &value);
-  if (value > 0)
+  if (value >= 0)
     {
       *offset = value;
       found = TRUE;
@@ -580,49 +581,79 @@ _find_stored_msg_offset(KafkaSourceDriver *self, const gchar *topic, int32_t par
 }
 
 static gboolean
-_restore_msg_offsets(KafkaSourceDriver *self)
+_restore_msg_offsets_from_local(KafkaSourceDriver *self)
+{
+  // rd_kafka_resp_err_t err = rd_kafka_offsets_for_times(self->kafka, self->assigned_partitions,
+  //                                                      self->options.super.state_update_timeout);
+
+  for (int i = 0 ; i < self->assigned_partitions->cnt ; i++)
+    {
+      rd_kafka_topic_partition_t *partition = &self->assigned_partitions->elems[i];
+      int64_t offset = RD_KAFKA_OFFSET_INVALID;
+      gboolean found = _find_stored_msg_offset(self, partition->topic, partition->partition, &offset);
+
+      if (found && self->options.ignore_saved_bookmarks == FALSE)
+        {
+          /* FIXME: this doesn not work either, it simply can return without any error even if the offset does not exist */
+          if (kafka_seek_partition(self, partition, offset, self->options.super.state_update_timeout))
+            {
+              partition->offset = offset >= 0 ? offset + 1 : offset;
+              kafka_msg_debug("kafka: restored locally stored offset for partition",
+                              evt_tag_str("topic", partition->topic),
+                              evt_tag_int("partition", (int) partition->partition),
+                              evt_tag_long("restored_offset", offset),
+                              evt_tag_str("driver", self->super.super.super.id));
+            }
+          else
+            {
+              kafka_msg_debug("kafka: locally stored offset does not exist, using fallback offset for partition",
+                              evt_tag_str("topic", partition->topic),
+                              evt_tag_int("partition", (int) partition->partition),
+                              evt_tag_long("restored_offset", offset),
+                              evt_tag_str("fallback_offset", _get_start_fallback_offset_string(self)),
+                              evt_tag_str("driver", self->super.super.super.id));
+              offset = _get_start_fallback_offset_code(self);
+              partition->offset = offset;
+            }
+        }
+      else
+        {
+          offset = _get_start_fallback_offset_code(self);
+          partition->offset = offset;
+          const gchar *log_txt = (self->options.ignore_saved_bookmarks ?
+                                  "kafka: ignoring saved bookmarks, using fallback offset for partition" :
+                                  "kafka: no latest offset found, using fallback offset for partition");
+          kafka_msg_debug(log_txt,
+                          evt_tag_str("topic", partition->topic),
+                          evt_tag_int("partition", (int) partition->partition),
+                          evt_tag_str("fallback_offset", _get_start_fallback_offset_string(self)),
+                          evt_tag_str("driver", self->super.super.super.id));
+        }
+    }
+  return kafka_seek_partitions(self, self->assigned_partitions, self->options.super.state_update_timeout);
+}
+
+static gboolean
+_restore_msg_offsets_from_remote(KafkaSourceDriver *self)
 {
   gboolean success = TRUE;
 
-  /* Force a poll to ensure the assignment is active immediately, this seems to be mandatory
-   * before we can seek in kafka_seek_partitions or rd_kafka_committed if the partitions are manually assigned */
-  rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
-
-  if (self->options.persist_store == KSPS_LOCAL)
+  if (self->options.ignore_saved_bookmarks)
     {
       for (int i = 0 ; i < self->assigned_partitions->cnt ; i++)
         {
           rd_kafka_topic_partition_t *partition = &self->assigned_partitions->elems[i];
-
           int64_t offset = _get_start_fallback_offset_code(self);
-          gboolean found = (self->options.ignore_saved_bookmarks ? FALSE : _find_stored_msg_offset(self, partition->topic,
-                            partition->partition, &offset));
-          if (found)
-            {
-              partition->offset = offset >= 0 ? offset + 1 : offset;
-              kafka_msg_debug("kafka: restoring locally stored offset for partition",
-                              evt_tag_str("topic", partition->topic),
-                              evt_tag_int("partition", (int) partition->partition),
-                              evt_tag_long("restored_offset", offset));
-            }
-          else
-            {
-              partition->offset = offset;
-              const gchar *log_txt = (self->options.ignore_saved_bookmarks ?
-                                      "kafka: ignoring saved bookmarks, using fallback offset for partition" :
-                                      "kafka: no latest offset found, using fallback offset for partition");
-              kafka_msg_debug(log_txt,
-                              evt_tag_str("topic", partition->topic),
-                              evt_tag_int("partition", (int) partition->partition),
-                              evt_tag_str("fallback_offset", _get_start_fallback_offset_string(self)));
-            }
+          partition->offset = offset;
+          /* TODO: Seems to be the same as a direct offset assignment, check the difference */
+          // rd_kafka_topic_partition_list_set_offset(self->assigned_partitions,
+          //                                          partition->topic, partition->partition, offset);
         }
       success = kafka_seek_partitions(self, self->assigned_partitions, self->options.super.state_update_timeout);
     }
-  else /* self->options.persist_store is KSPS_REMOTE */
+  else
     {
-      /* This does not actually restore offsets; it only updates them in the locally stored Kafka cache, which does not
-       * always happen for some reason when the partitions are assigned by the broker */
+      /* Restore the last commited offsets, as it seems does not happen for some reason when the partitions are assigned by the broker */
       rd_kafka_resp_err_t err = rd_kafka_committed(self->kafka, self->assigned_partitions,
                                                    self->options.super.state_update_timeout);
       if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
@@ -633,7 +664,39 @@ _restore_msg_offsets(KafkaSourceDriver *self)
                     evt_tag_str("driver", self->super.super.super.id));
           success = FALSE;
         }
+      /* rd_kafka_committed sets offsets in the assigned_partitions list to the next offset, adjust accordingly */
+      for (int i = 0 ; i < self->assigned_partitions->cnt ; i++)
+        {
+          rd_kafka_topic_partition_t *partition = &self->assigned_partitions->elems[i];
+          int64_t offset = _get_start_fallback_offset_code(self);
+          if (partition->offset > 0)
+            offset = partition->offset - 1;
+          partition->offset = offset;
+          /* TODO: Seems to be the same as a direct offset assignment, check the difference */
+          // rd_kafka_topic_partition_list_set_offset(self->assigned_partitions,
+          //                                          partition->topic, partition->partition, offset);
+        }
+      /* This is really a magic, though the doc of rd_kafka_offsets_store() mentions `avoid storing offsets after calling rd_kafka_seek()`
+       * but no mention of when it can be done correctly. It seems that calling it after rd_kafka_committed() will trigger an repeated
+       * fetching of the last committed offsets immediatelly, so, do not use it here. (we do not need it anyway, as we set the offsets directly already)
+       */
+      // success = kafka_seek_partitions(self, self->assigned_partitions, self->options.super.state_update_timeout);
     }
+  return success;
+}
+static gboolean
+_restore_msg_offsets(KafkaSourceDriver *self)
+{
+  gboolean success = TRUE;
+
+  /* Force a poll to ensure the assignment is active immediately, this seems to be mandatory
+   * before we can seek in kafka_seek_partitions or rd_kafka_committed if the partitions are manually assigned */
+  rd_kafka_poll(self->kafka, self->options.fetch_queue_full_delay);
+
+  if (self->options.persist_store == KSPS_LOCAL)
+    success = _restore_msg_offsets_from_local(self);
+  else
+    success = _restore_msg_offsets_from_remote(self);
   return success;
 }
 
@@ -649,11 +712,17 @@ _persist_destroy(gpointer data)
 }
 
 static void
-_partitions_persists_create(KafkaSourceDriver *self, int64_t override_start_offset)
+_partitions_persists_create(KafkaSourceDriver *self)
 {
   g_assert(self->persists == NULL);
   gchar key[MAX_KAFKA_PARTITION_KEY_NAME_LEN];
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
+
+  gboolean use__kafka_offsets = (self->options.persist_store == KSPS_REMOTE);
+  gboolean persist_use_offset_tracker = kafka_sd_parallel_processing(self);
+  int64_t override_start_offset = self->options.ignore_saved_bookmarks ?
+                                  _get_start_fallback_offset_code(self) :
+                                  RD_KAFKA_OFFSET_STORED;
 
   self->persists = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, _persist_destroy);
 
@@ -665,10 +734,9 @@ _partitions_persists_create(KafkaSourceDriver *self, int64_t override_start_offs
       kafka_format_partition_key(topic, partition_num, key, sizeof(key));
       g_assert(FALSE == g_hash_table_contains(self->persists, key));
 
-      gboolean persist_use_offset_tracker = kafka_sd_parallel_processing(self);
       KafkaSourcePersist *persist = kafka_source_persist_new(self);
       kafka_source_persist_init(persist, cfg->state, topic, partition_num,
-                                override_start_offset,
+                                use__kafka_offsets && partition->offset >= 0 ? partition->offset : override_start_offset,
                                 persist_use_offset_tracker);
       g_hash_table_insert(self->persists, g_strdup(key), persist);
     }
@@ -686,37 +754,80 @@ _partitions_persists_destroy(KafkaSourceDriver *self)
 }
 
 gboolean
+kafka_sd_store_persist_offset(KafkaSourceDriver *self,
+                              KafkaSourcePersist *persist,
+                              int64_t offset)
+{
+  gboolean success = TRUE;
+
+  /* Group rebalancing could happen meanwhile which will free or invalidate the persists and assigned_partitions lists,
+   * therefore we sould lock the persists_mutex too normally, however:
+   *    1) the rebalance callback tries to lock each persist (before tries to invalidate them)
+   *    2) the persist itself has an additional reference already in the caller, so cannot be released/altered during this call
+   *    3) so, as the persis is already locked (in the caller) the persists list cannot be changed anymore (see, _apply_assigned_partitions)
+   * NOTE: this still can fail in the kafka API calls below (as, at the time the kafka rebalance callback is called
+   *       the assigned_partitions are already modified/revoked/invalidated), but at least we avoid use-after-free issues */
+
+  /* If the persist is invalidated it means the topic assignment is changed, or there is no
+   * valid Kafka connection anymore to store the offset */
+  if (FALSE == kafka_source_persist_valid(persist))
+    {
+      kafka_msg_debug("kafka: persist is invalidated, cannot store offset remotely",
+                      evt_tag_str("topic", kafka_source_persist_get_topic(persist)),
+                      evt_tag_int("partition", (int) kafka_source_persist_get_partition(persist)),
+                      evt_tag_long("offset", offset),
+                      evt_tag_str("driver", self->super.super.super.id));
+      return FALSE;
+    }
+
+  /* NOTE: Unlike in rd_kafka_offset_store_message(), in rd_kafka_offsets_store() the .offset field is stored as is, it will NOT be + 1 */
+  ++offset;
+  rd_kafka_resp_err_t err = rd_kafka_topic_partition_list_set_offset(self->assigned_partitions,
+                            kafka_source_persist_get_topic(persist), kafka_source_persist_get_partition(persist), offset);
+  if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
+    {
+      msg_error("kafka: failed to set the offset for partition (set_offset)",
+                evt_tag_str("topic", kafka_source_persist_get_topic(persist)),
+                evt_tag_int("partition", (int) kafka_source_persist_get_partition(persist)),
+                evt_tag_long("offset", offset),
+                evt_tag_str("error", rd_kafka_err2str(err)),
+                evt_tag_str("driver", self->super.super.super.id));
+      success = FALSE;
+    }
+  else
+    {
+      err = rd_kafka_offsets_store(self->kafka, self->assigned_partitions);
+      if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
+        {
+          msg_error("kafka: failed to store the offset for partitions (offsets_store)",
+                    evt_tag_str("topic", kafka_source_persist_get_topic(persist)),
+                    evt_tag_int("partition", (int) kafka_source_persist_get_partition(persist)),
+                    evt_tag_long("offset", offset),
+                    evt_tag_str("error", rd_kafka_err2str(err)),
+                    evt_tag_str("driver", self->super.super.super.id));
+          success = FALSE;
+        }
+    }
+  return success;
+}
+
+inline void
 kafka_sd_persist_add_msg_bookmark(KafkaSourceDriver *self,
                                   AckTracker *ack_tracker,
                                   const gchar *msg_topic_name,
                                   int32_t msg_partition,
                                   int64_t msg_offset)
 {
-  g_mutex_lock(&self->persists_mutex);
-
-  gboolean success = FALSE;
   KafkaSourcePersist *persist = _find_persist(self, msg_topic_name, msg_partition);
+  g_assert(persist);
 
-  if (persist)
-    {
-      Bookmark *bookmark = ack_tracker_request_bookmark(ack_tracker);
-      kafka_source_persist_fill_bookmark(persist, bookmark, msg_offset);
-      msg_trace("kafka: bookmark created",
-                evt_tag_long("offset", msg_offset),
-                evt_tag_str("topic", msg_topic_name),
-                evt_tag_int("partition", msg_partition),
-                evt_tag_str("driver", self->super.super.super.id));
-      success = TRUE;
-    }
-  else
-    msg_debug("kafka: cannot find persist to store message offset, partition assignment might have changed",
-              evt_tag_str("topic", msg_topic_name),
-              evt_tag_int("partition", msg_partition),
-              evt_tag_long("offset", msg_offset),
-              evt_tag_str("driver", self->super.super.super.id));
-
-  g_mutex_unlock(&self->persists_mutex);
-  return success;
+  Bookmark *bookmark = ack_tracker_request_bookmark(ack_tracker);
+  kafka_source_persist_fill_bookmark(persist, bookmark, msg_offset);
+  msg_trace("kafka: bookmark created",
+            evt_tag_long("offset", msg_offset),
+            evt_tag_str("topic", msg_topic_name),
+            evt_tag_int("partition", msg_partition),
+            evt_tag_str("driver", self->super.super.super.id));
 }
 
 gboolean
@@ -740,6 +851,7 @@ kafka_sd_persist_all_ready(KafkaSourceDriver *self)
         }
     }
   self->all_persists_ready = all_persists_ready;
+
   return all_persists_ready;
 }
 
@@ -751,16 +863,49 @@ kafka_sd_persist_is_ready(KafkaSourceDriver *self,
   if (self->all_persists_ready)
     return TRUE;
 
-  g_mutex_lock(&self->persists_mutex);
-
   gboolean this_persis_ready = FALSE;
   KafkaSourcePersist *persist = _find_persist(self, msg_topic_name, msg_partition);
   g_assert(persist);
 
   this_persis_ready = kafka_source_persist_is_ready(persist);
 
-  g_mutex_unlock(&self->persists_mutex);
   return this_persis_ready;
+}
+
+inline guint
+kafka_sd_used_queue_num(KafkaSourceDriver *self)
+{
+  return self->allocated_queue_num - 1;
+}
+
+inline gboolean
+kafka_sd_using_queues(KafkaSourceDriver *self)
+{
+  return self->allocated_queue_num > 0;
+}
+
+inline gboolean
+kafka_sd_parallel_processing(KafkaSourceDriver *self)
+{
+  return self->super.num_workers > 2;
+}
+
+void
+kafka_sd_signal_rebalance(KafkaSourceDriver *self)
+{
+  g_mutex_lock(&self->rebalance_mutex);
+  self->rebalance_signaled = TRUE;
+  g_mutex_unlock(&self->rebalance_mutex);
+}
+
+gboolean
+kafka_sd_rebalance_signaled(KafkaSourceDriver *self)
+{
+  /* Lazzy check is enough here, by a good chance we dont need a mutex for this at all
+   * the variable itself is only written before pausing the workers and read after resuming them
+   * also, we cannot fully control the workers, when this is set the partitions are already revoked
+   * and some of the pending commits from the bookmarks will fail anyway */
+  return self->rebalance_signaled;
 }
 
 static gboolean
@@ -769,7 +914,11 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
   gboolean result = TRUE;
   rd_kafka_resp_err_t err;
 
-  g_mutex_lock(&self->persists_mutex);
+  if (kafka_sd_using_queues(self))
+    {
+      kafka_sd_signal_rebalance(self);
+      kafka_sd_wait_for_queue_processors_to_sleep(self, mainloop_sleep_time(self->options.fetch_retry_delay), FALSE);
+    }
 
   _partitions_persists_destroy(self);
 
@@ -783,19 +932,27 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
   if (parts == NULL)
     {
       rd_kafka_assign(self->kafka, NULL);
-      g_mutex_unlock(&self->persists_mutex);
+      kafka_msg_debug("kafka: partitions revoked",
+                      evt_tag_str("group_id", self->group_id),
+                      evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
+                      evt_tag_str("driver", self->super.super.super.id));
       return result;
     }
+
+  if (main_loop_worker_job_quit())
+    return FALSE;
 
   if ((err = rd_kafka_assign(self->kafka, parts)) == RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       self->assigned_partitions = parts;
 
-      _partitions_persists_create(self, self->options.ignore_saved_bookmarks ?
-                                  _get_start_fallback_offset_code(self) :
-                                  RD_KAFKA_OFFSET_STORED
-                                 );
+      if (self->options.persist_store == KSPS_LOCAL && FALSE == self->options.disable_bookmarks)
+        _partitions_persists_create(self);
+
       _restore_msg_offsets(self);
+
+      if (self->options.persist_store == KSPS_REMOTE && FALSE == self->options.disable_bookmarks)
+        _partitions_persists_create(self);
 
       kafka_log_partition_list(self, parts);
       _register_topic_stats(self);
@@ -804,14 +961,35 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
     {
       msg_error("kafka: rd_kafka_assign() failed",
                 evt_tag_str("group_id", self->group_id),
+                evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
                 evt_tag_str("error", rd_kafka_err2str(err)),
                 evt_tag_str("driver", self->super.super.super.id));
       rd_kafka_topic_partition_list_destroy(parts);
       result = FALSE;
     }
 
-  g_mutex_unlock(&self->persists_mutex);
+  if (kafka_sd_using_queues(self))
+    {
+      self->rebalance_signaled = FALSE;
+      kafka_sd_signal_queues(self);
+    }
+
+  if (result)
+    kafka_msg_debug("kafka: partitions assigned",
+                    evt_tag_str("group_id", self->group_id),
+                    evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
+                    evt_tag_str("driver", self->super.super.super.id));
   return result;
+}
+
+void
+kafka_sd_reassign_partition(KafkaSourceDriver *self)
+{
+  kafka_msg_debug("kafka: re-assigning partitions",
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
+                  evt_tag_str("driver", self->super.super.super.id));
+  _apply_assigned_partitions(self, rd_kafka_topic_partition_list_copy(self->assigned_partitions));
 }
 
 static rd_kafka_topic_partition_list_t *
@@ -861,15 +1039,7 @@ _setup_method_assigned_consumer(KafkaSourceDriver *self)
   g_assert(topics_num > 0);
 
   rd_kafka_topic_partition_list_t *parts = _compose_partition_list(self);
-  gboolean result = TRUE;
-  if ((result = _apply_assigned_partitions(self, parts)))
-    {
-      msg_debug("kafka: partitions assigned",
-                evt_tag_str("group_id", self->group_id),
-                evt_tag_str("driver", self->super.super.super.id));
-    }
-
-  return result;
+  return _apply_assigned_partitions(self, parts);
 }
 
 /* *************************
@@ -978,6 +1148,54 @@ kafka_sd_wait_for_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *worker
   g_cond_wait(&self->queue_conds[ndx], &self->queue_cond_mutexes[ndx]);
   g_atomic_counter_dec_and_test(&self->sleeping_thread_num);
   g_mutex_unlock(&self->queue_cond_mutexes[ndx]);
+}
+
+
+static inline gboolean
+kafka_sd_all_workers_exited(KafkaSourceDriver *self)
+{
+  return g_atomic_counter_get(&self->running_thread_num) <=
+         1; /* If no workers are started ever, even not the main one, this can be 0 as well */
+}
+
+void
+kafka_sd_wait_for_queue_processors_to_exit(KafkaSourceDriver *self, const gdouble iteration_sleep_time)
+{
+  kafka_msg_trace("kafka: waiting for queue processors to exit",
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("driver", self->super.super.super.id));
+  kafka_sd_signal_queues(self);
+
+  while (FALSE == kafka_sd_all_workers_exited(self))
+    {
+      main_loop_worker_wait_for_exit_until(iteration_sleep_time);
+      kafka_sd_signal_queues(self);
+    }
+}
+
+static inline gboolean
+kafka_sd_all_workers_sleeping(KafkaSourceDriver *self)
+{
+  return g_atomic_counter_get(&self->sleeping_thread_num) == self->super.num_workers - 1;
+}
+
+gboolean
+kafka_sd_wait_for_queue_processors_to_sleep(KafkaSourceDriver *self, const gdouble iteration_sleep_time,
+                                            gboolean poll_kafka)
+{
+  kafka_msg_trace("kafka: waiting for queue processors to sleep",
+                  evt_tag_str("group_id", self->group_id),
+                  evt_tag_str("driver", self->super.super.super.id));
+
+  while (FALSE == kafka_sd_all_workers_sleeping(self)&& FALSE == kafka_sd_all_workers_exited(self))
+    {
+      if (poll_kafka)
+        kafka_update_state(self, TRUE);
+
+      if (main_loop_worker_wait_for_exit_until(iteration_sleep_time))
+        return FALSE;
+    }
+  return TRUE;
 }
 
 inline void
@@ -1164,7 +1382,8 @@ _check_and_sort_partitions(KafkaSourceDriver *self, const gchar *partitions, GLi
     {
       if (original_length != g_list_length(list))
         msg_warning("kafka: dropped duplicated entries of partition numbers",
-                    evt_tag_str("partitions", partitions));
+                    evt_tag_str("partitions", partitions),
+                    evt_tag_str("driver", self->super.super.super.id));
       *requested_partitions = list;
     }
   return TRUE;
@@ -1195,7 +1414,8 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
             {
               msg_error("kafka: invalid topic name in the requested topics list",
                         evt_tag_str("topic", prop->name),
-                        evt_tag_str("error", err->message));
+                        evt_tag_str("error", err->message),
+                        evt_tag_str("driver", self->super.super.super.id));
               if (err)
                 g_error_free(err);
             }
@@ -1214,7 +1434,8 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
   if (apply)
     {
       if (original_length != g_list_length(requested_topics))
-        msg_warning("kafka: dropped duplicated entries of topics config option");
+        msg_warning("kafka: dropped duplicated entries of topics config option",
+                    evt_tag_str("driver", self->super.super.super.id));
       if (self->requested_topics)
         kafka_tps_list_free(self->requested_topics);
       self->requested_topics = requested_topics;
@@ -1225,30 +1446,63 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
   return TRUE;
 }
 
+gchar *
+_get_unique_group_id(KafkaSourceDriver *self)
+{
+  GString *sb = g_string_new(self->super.super.super.id);
+  host_id_append_formatted_id(sb, host_id_get());
+  return g_string_free(sb, FALSE);
+}
+
 static void
 _apply_group_id(KafkaSourceDriver *self)
 {
   const gchar *group_id_key = "group.id";
   gchar *group_id = NULL;
-  const gchar *conf_group_id = kafka_property_list_find_not_empty(self->options.super.config, group_id_key);
+  KafkaProperty *kp = kafka_property_list_find_not_empty(self->options.super.config, group_id_key);
+  const gchar *conf_group_id = kp ? kp->value : NULL;
 
-  if (conf_group_id )
+  /* Locally stored bookmarks could be inconsistent if multiple consumers share the same group.id as the rebalancing
+   * process could assign the same partition to multiple consumers from multiple instances/clients, therefore we disable the use of
+   * config group.id in this case by generating a unique one based on the driver ID + HOSTID.
+   * NOTE: Actually, this condition could be more strict using `&& driver->strategy == KSCS_SUBSCRIBE`, but
+           the strategy is not yet decided/applied at this point (and the decision cannot be moved now easily)
+   */
+  gboolean disable = (self->options.persist_store == KSPS_LOCAL);
+  if (conf_group_id)
     {
-      group_id = g_strdup(conf_group_id);
-      kafka_msg_debug("kafka: found config group.id",
-                      evt_tag_str("group_id", group_id),
+      if (disable)
+        {
+          group_id = _get_unique_group_id(self);
+          msg_warning("kafka: cannot use custom config group.id when using locally stored bookmarks, ignoring",
+                      evt_tag_str("group_id", conf_group_id),
+                      evt_tag_str("new_group_id", group_id),
                       evt_tag_str("driver", self->super.super.super.id));
+
+          g_free(kp->value);
+          kp->value = g_strdup(group_id);
+        }
+      else
+        {
+          group_id = g_strdup(conf_group_id);
+          kafka_msg_debug("kafka: found config group.id",
+                          evt_tag_str("group_id", group_id),
+                          evt_tag_str("driver", self->super.super.super.id));
+        }
     }
   else
     {
-      group_id = g_strdup(self->super.super.super.id);
+      group_id = _get_unique_group_id(self);
+      kafka_msg_debug((disable ?
+                       "kafka: using a self-generated group.id" :
+                       "kafka: config group.id not found, using a self-generated one"),
+                      evt_tag_str("group_id", group_id),
+                      evt_tag_str("driver", self->super.super.super.id));
+
       KafkaProperty *kp_groupid = g_new0(KafkaProperty, 1);
       kp_groupid->name = g_strdup(group_id_key);
       kp_groupid->value = g_strdup(group_id);
       self->options.super.config = g_list_prepend(self->options.super.config, kp_groupid);
-      kafka_msg_debug("kafka: config group.id not found, using a self-generated one",
-                      evt_tag_str("group_id", group_id),
-                      evt_tag_str("driver", group_id));
     }
 
   g_free(self->group_id);
@@ -1408,12 +1662,6 @@ kafka_sd_reopen(LogDriver *s)
   return TRUE;
 }
 
-inline gboolean
-kafka_sd_parallel_processing(KafkaSourceDriver *self)
-{
-  return self->super.num_workers > 2;
-}
-
 static gboolean
 kafka_sd_init(LogPipe *s)
 {
@@ -1447,7 +1695,7 @@ kafka_sd_init(LogPipe *s)
   _apply_options(self);
   _decide_strategy(self);
 
-  g_mutex_init(&self->persists_mutex);
+  g_mutex_init(&self->rebalance_mutex);
   _alloc_msg_queues(self);
   self->stats_topics = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->stats_workers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
@@ -1489,7 +1737,7 @@ kafka_sd_deinit(LogPipe *s)
   _destroy_msg_queues(self);
 
   _partitions_persists_destroy(self);
-  g_mutex_clear(&self->persists_mutex);
+  g_mutex_clear(&self->rebalance_mutex);
 
   _unregister_aggregated_stats(self);
   _unregister_worker_stats(self);

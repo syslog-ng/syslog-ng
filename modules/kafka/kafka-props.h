@@ -37,6 +37,6 @@ typedef struct _KafkaProperty
 KafkaProperty *kafka_property_new(const gchar *name, const gchar *value);
 void kafka_property_free(KafkaProperty *self);
 void kafka_property_list_free(GList *l);
-const gchar *kafka_property_list_find_not_empty(GList *l, const gchar *name);
+KafkaProperty *kafka_property_list_find_not_empty(GList *l, const gchar *name);
 
 #endif
