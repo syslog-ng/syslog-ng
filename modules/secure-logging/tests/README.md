@@ -112,10 +112,12 @@ into into the users home folder, see script variables HOME_BACKUP and
 COPY_TO_HOME_BACKUP (existing data is deleted or overwritten without asking).
 
 NOTE: In file test_secure_logging.c there is a preprocessor used:
-**RUN_CLI_SMOKETEST**
+**RUN_CLI_SLOG_SMOKETEST**
 When this is available and set to 1, tests based on shell scripts are
 triggered.
 Later this preprocessor might be defined in a different place.
+Currently the preprocessor is set to 0 directly in the module
+test_secure_logging.c due to issues with the CI test system on github.
 
 
 ## cli01_syslog.sh
