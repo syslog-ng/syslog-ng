@@ -833,6 +833,7 @@ void test_slog_cli_smoke_tests(void)
     "get_prefix.sh",
     "start_syslog-ng.sh",
     "stop_syslog-ng.sh",
+    "update_conf_path.sh",
 
     //-- not counted by G_N_ELEMENTS
     NULL

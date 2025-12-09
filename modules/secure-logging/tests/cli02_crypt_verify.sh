@@ -25,12 +25,12 @@
 
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   cli02_crypt_verify
-# Date:   2025-12-08
+# Date:   2025-12-09
 #
 # Smoke Test of cli tools slogkey, slogencrypt and slogverify
 # Needed keys are generated in test.
 
-VERSION="Version 1.2.4"
+VERSION="Version 1.3.0"
 
 # remove path and extension from $0
 s=$0
@@ -38,7 +38,19 @@ SCRIPTNAME="$(
     b="${s##*/}"
     echo "${b%.*}"
 )"
-NOW=$(date +%Y-%m-%d_%H%M_%S)
+echo "SCRIPTNAME: ${SCRIPTNAME}"
+
+PID=$$
+echo "PID: ${PID}"
+
+RANDOM_ID=$(
+    /bin/dd if=/dev/urandom bs=1 count=4 2>/dev/null |
+    od -An -N4 -tx
+)
+CLEAN_ID=$(echo "${RANDOM_ID}" | tr -d ' ')
+
+
+NOW=$(date +%Y-%m-%d_%H%M%S)
 echo " "
 echo " "
 echo "***********************************************************"
@@ -50,25 +62,35 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 echo "SCRIPT_DIR: ${SCRIPT_DIR}"
 
 PATH_PREFIX_VALUE=$("${SCRIPT_DIR}"/get_prefix.sh)
-
-# This path must fit the one given to configure script with option --prefix
-# In case the config.h file has not been found, PREFIX must be set manually.
+# This path must fit the one given to the build system where binaries are provided.
 PREFIX=${PATH_PREFIX_VALUE}
 echo "PREFIX: ${PREFIX}"
+if [ ! -e "${PREFIX}" ]; then
+    echo "Error: Required path PREFIX for binaries: '${PREFIX}' not found."
+    exit 1
+fi
 HOMESLOGTEST=${SCRIPT_DIR}
 SFNCONF=syslog-ng-test-udp-nc.conf
 # e.g.: /home/johndoe/Software/fork/modules/secure-logging/tests/syslog-ng-test-udp-nc.conf
+# The default path in conf is: mypath "/tmp/test_slog/data"
 MAX_LOOP=5
 STOP_WAIT_TIME=2
 BIN=${PREFIX}/bin
 SBIN=${PREFIX}/sbin
 ETC=${PREFIX}/etc
 VAR=${PREFIX}/var
-SUBFOLDER=slog
-SUBFOLDER_TEST="test"
-TEST=/tmp/${SUBFOLDER_TEST}/${SUBFOLDER}
+
+SUBFOLDER_TEST="test_slog"
+# Note: Test with KEEP_DATA and counter_value are only possible when
+# the same SUBFOLDER name is used for repeated call of this script.
+# SUBFOLDER="${SCRIPTNAME}"
+PATH_SUFFIX="${SCRIPTNAME}_${PID}_${CLEAN_ID}"
+SUBFOLDER="data"
+TEST=/tmp/${SUBFOLDER_TEST}/${SUBFOLDER}_${PATH_SUFFIX}
+echo "TEST: ${TEST}"
+
 HOME_BACKUP=${HOME}/${SUBFOLDER_TEST}/${SCRIPTNAME}
-COPY_TO_HOME_BACKUP=false
+COPY_TO_HOME_BACKUP="false"
 MACADDRESS="01:23:45:67:89:AB"
 SERIALNUMBER="12345678"
 
@@ -82,13 +104,11 @@ check_script_config() {
     echo " "
 
     # Prefix is provided by a script. When this is not working
-    # User can try to set it manually.
+    # User can try to set it manually its the place where binaries are provided.
     echo "PREFIX: ${PREFIX}"
 
     echo "BIN: ${BIN}"
     echo "SBIN: ${SBIN}"
-    echo "ETC: ${ETC}"
-    echo "VAR: ${VAR}"
     echo "TEST: ${TEST}"
 
     echo "COPY_TO_HOME_BACKUP: ${COPY_TO_HOME_BACKUP}"
@@ -156,8 +176,8 @@ check_missing "${TEST}" "${PREFIX}" "${BIN}" "${SBIN}"
 # -- Ensure syslog-ng engined is not running -----
 stop_syslog
 
-check_missing "${VAR}" "${ETC}" "${HOMESLOGTEST}" "${SBIN}/syslog-ng" "${SBIN}/syslog-ng-ctl" \
-    "${BIN}/slogencrypt" "${BIN}/slogverify" "${BIN}/slogkey" "${BIN}/loggen"
+check_missing "${HOMESLOGTEST}" "${SBIN}/syslog-ng" "${SBIN}/syslog-ng-ctl" \
+    "${BIN}/slogencrypt" "${BIN}/slogverify" "${BIN}/slogkey"
 
 # cleanup files from previous tests
 rm -f "${TEST}"/*.key "${TEST}"/*.dat "${TEST}"/*.txt "${TEST}"/*.chk 2>/dev/null
@@ -209,11 +229,7 @@ else
     echo " "
 fi
 
-check_missing "${TEST}/h0.key" "${TEST}/host.key" "${HOMESLOGTEST}/${SFNCONF}"
-
-cp -f "${HOMESLOGTEST}/${SFNCONF}" "${TEST}/syslog-ng.conf"
-
-check_missing "${TEST}/syslog-ng.conf"
+check_missing "${TEST}/h0.key" "${TEST}/host.key"
 
 # -- stop syslog-ng engine -----
 stop_syslog
@@ -500,7 +516,9 @@ done
 echo " "
 
 # cleanup /tmp/${SUBFOLDER_TEST}/
-rm -rf /tmp/"${SUBFOLDER_TEST}"/
+ls -alt /tmp/"${SUBFOLDER_TEST}"/
+rm -rf /tmp/"${SUBFOLDER_TEST}"/"${SUBFOLDER}_${PATH_SUFFIX}"/
+ls -alt /tmp/"${SUBFOLDER_TEST}"/
 
 echo " "
 echo " "
@@ -509,11 +527,11 @@ echo "----------------------------------------"
 echo "--- Used binaries"
 echo "----------------------------------------"
 echo " "
-echo "ls -al ${BIN}/"
-ls -al "${BIN}/"
+echo "ls -alt ${BIN}/"
+ls -alt "${BIN}/"
 echo " "
-echo "ls -al ${SBIN}/"
-ls -al "${SBIN}/"
+echo "ls -alt ${SBIN}/"
+ls -alt "${SBIN}/"
 echo " "
 
 sha256sum "${BIN}/slogkey"

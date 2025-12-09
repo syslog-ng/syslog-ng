@@ -25,7 +25,7 @@
 
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   cli01_syslog.sh
-# Date:   2025-12-08
+# Date:   2025-12-09
 #
 # Smoke Test of cli tools slogkey, syslog-ng, syslog-ng-cli, slogverify
 #
@@ -53,7 +53,9 @@
 # The destination folder /tmp/test/slog is expected to be used exclusive
 # only for one running instance of this script.
 
-VERSION="Version 1.2.5"
+set -x
+
+VERSION="Version 1.3.0"
 
 # remove path and extension from $0
 s=$0
@@ -61,8 +63,19 @@ SCRIPTNAME="$(
     b="${s##*/}"
     echo "${b%.*}"
 )"
+echo "SCRIPTNAME: ${SCRIPTNAME}"
 
-NOW=$(date +%Y-%m-%d_%H%M_%S)
+PID=$$
+echo "PID: ${PID}"
+
+RANDOM_ID=$(
+    /bin/dd if=/dev/urandom bs=1 count=4 2>/dev/null |
+    od -An -N4 -tx
+)
+CLEAN_ID=$(echo "${RANDOM_ID}" | tr -d ' ')
+
+
+NOW=$(date +%Y-%m-%d_%H%M%S)
 echo " "
 echo " "
 echo "***********************************************************"
@@ -82,14 +95,20 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 echo "SCRIPT_DIR: ${SCRIPT_DIR}"
 
 PATH_PREFIX_VALUE=$("${SCRIPT_DIR}"/get_prefix.sh)
-# This path must fit the one given to configure script with option --prefix
-# In case the config.h file has not been found, PREFIX must be set manually.
+# This path must fit the one given to the build system where binaries are provided.
 PREFIX=${PATH_PREFIX_VALUE}
 echo "PREFIX: ${PREFIX}"
+if [ ! -e "${PREFIX}" ]; then
+    echo "Error: Required path PREFIX for binaries: '${PREFIX}' not found."
+    exit 1
+fi
 HOMESLOGTEST=${SCRIPT_DIR}
+
 UDP_PORT=7777
 SFNCONF=syslog-ng-test-udp-nc.conf
 # e.g.: /home/johndoe/Software/fork/modules/secure-logging/tests/syslog-ng-test-udp-nc.conf
+# The default path in conf is: mypath "/tmp/test_slog/data"
+
 MAX_LOOP=3
 START_WAIT_TIME=3
 STOP_WAIT_TIME=2
@@ -99,11 +118,18 @@ BIN=${PREFIX}/bin
 SBIN=${PREFIX}/sbin
 ETC=${PREFIX}/etc
 VAR=${PREFIX}/var
-SUBFOLDER=slog
-SUBFOLDER_TEST="test"
-TEST=/tmp/${SUBFOLDER_TEST}/${SUBFOLDER}
+
+SUBFOLDER_TEST="test_slog"
+# Note: Test with KEEP_DATA and counter_value are only possible when
+# the same SUBFOLDER name is used for repeated call of this script.
+# SUBFOLDER="${SCRIPTNAME}"
+PATH_SUFFIX="${SCRIPTNAME}_${PID}_${CLEAN_ID}"
+SUBFOLDER="data"
+TEST=/tmp/${SUBFOLDER_TEST}/${SUBFOLDER}_${PATH_SUFFIX}
+echo "TEST: ${TEST}"
+
 HOME_BACKUP=${HOME}/${SUBFOLDER_TEST}/${SCRIPTNAME}
-COPY_TO_HOME_BACKUP=false
+COPY_TO_HOME_BACKUP="false"
 MACADDRESS="01:23:45:67:89:AB"
 SERIALNUMBER="12345678"
 
@@ -117,7 +143,7 @@ check_script_config() {
     echo " "
 
     # Prefix is provided by a script. When this is not working
-    # User can try to set it manually.
+    # User can try to set it manually its the place where binaries are provided.
     echo "PREFIX: ${PREFIX}"
 
     echo "BIN: ${BIN}"
@@ -226,7 +252,7 @@ stop_syslog
 check_missing "${VAR}" "${ETC}" "${HOMESLOGTEST}" "${SBIN}/syslog-ng" "${SBIN}/syslog-ng-ctl"
 check_missing "${BIN}/slogencrypt" "${BIN}/slogverify" "${BIN}/slogkey" "${BIN}/loggen"
 
-# cleanup /tmp/${SUBFOLDER_TEST}/
+# cleanup
 if [ "${KEEP_DATA}" = true ]; then
     echo " "
     echo "INFO: Data from previous test is not deleted!"
@@ -241,6 +267,18 @@ else
         rm -f "${HOME_BACKUP}"/*.out "${HOME_BACKUP}"/*.log "${HOME_BACKUP}"/*.slo* 2>/dev/null
     fi
 fi
+
+
+# config working path in syslog-ng.conf
+
+cp -f "${HOMESLOGTEST}/${SFNCONF}" "${TEST}/syslog-ng.conf"
+check_missing "${TEST}/syslog-ng.conf" "${SCRIPT_DIR}/update_conf_path.sh"
+echo "Update syslog-ng.conf template path .."
+RETVALUC=$("${SCRIPT_DIR}/update_conf_path.sh" "${TEST}/syslog-ng.conf" "${PATH_SUFFIX}" "add")
+echo "RETVALUC: ${RETVALUC}"
+
+
+# Generate Key or check existing
 
 if ! [ -f "${TEST}/host.key" ]; then
     if ! [ -f "${TEST}/master.key" ]; then
@@ -285,9 +323,6 @@ fi
 
 check_missing "${TEST}/h0.key" "${TEST}/host.key" "${HOMESLOGTEST}/${SFNCONF}"
 
-cp -f "${HOMESLOGTEST}/${SFNCONF}" "${TEST}/syslog-ng.conf"
-
-check_missing "${TEST}/syslog-ng.conf"
 
 # simple quick check whether udp port is found in conf file
 if grep -q "${UDP_PORT}" "${TEST}/syslog-ng.conf"; then
@@ -404,8 +439,8 @@ while [ "${i}" -lt "${MAX_LOOP}" ]; do
     fi
 
     echo " "
-    echo "ls -al ${TEST}"
-    ls -al "${TEST}"
+    echo "ls -alt ${TEST}"
+    ls -alt "${TEST}"
 
     # hexdump current
     echo " "
@@ -677,8 +712,8 @@ if [ "${COPY_TO_HOME_BACKUP}" = "true" ]; then
     cp -R "${TEST}/." "${HOME_BACKUP}/"
     # list content
     echo "#-11"
-    echo "ls -al ${HOME_BACKUP}/"
-    ls -al "${HOME_BACKUP}/"
+    echo "ls -alt ${HOME_BACKUP}/"
+    ls -alt "${HOME_BACKUP}/"
 fi
 
 echo " "
@@ -708,12 +743,15 @@ if ! [ -f "${TEST}/host.key" ]; then
     echo "ERROR: ${TEST}/host.key does not exist"
     cnt_error=$((cnt_error + 1))
 fi
-
+ 
+# TEST=/tmp/${SUBFOLDER_TEST}/${SUBFOLDER}_${PATH_SUFFIX}
 # cleanup /tmp/${SUBFOLDER_TEST}/
 if [ "${KEEP_DATA}" = true ]; then
-    echo "Data in /tmp/${SUBFOLDER_TEST}/ will not be deleted!"
+    echo "Data in ${TEST} will not be deleted!"
 else
-    rm -rf /tmp/"${SUBFOLDER_TEST}"/
+    ls -alt /tmp/"${SUBFOLDER_TEST}"/
+    rm -rf /tmp/"${SUBFOLDER_TEST}"/"${SUBFOLDER}_${PATH_SUFFIX}"/
+    ls -alt /tmp/"${SUBFOLDER_TEST}"/
 fi
 
 echo " "
@@ -723,11 +761,11 @@ echo "----------------------------------------"
 echo "--- Used binaries"
 echo "----------------------------------------"
 echo " "
-echo "ls -al ${BIN}/"
-ls -al "${BIN}/"
+echo "ls -alt ${BIN}/"
+ls -alt "${BIN}/"
 echo " "
-echo "ls -al ${SBIN}/"
-ls -al "${SBIN}/"
+echo "ls -alt ${SBIN}/"
+ls -alt "${SBIN}/"
 echo " "
 
 sha256sum "${BIN}/slogkey"
