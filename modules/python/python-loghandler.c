@@ -68,7 +68,6 @@ static glong _py_fetch_log_level(PyObject *obj, const gchar *level)
         evt_tag_str("level", level),
         evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      goto exit;
     }
 
 exit:
