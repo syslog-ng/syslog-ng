@@ -75,7 +75,7 @@ exit:
   return level_value;
 }
 
-static void _py_add_logging_level(PyObject *m, const gchar* level_name, glong level_value)
+static void _py_add_logging_level(PyObject *m, const gchar *level_name, glong level_value)
 {
   PyObject *add_level_function = NULL;
   PyObject *add_level_retval = NULL;
@@ -215,7 +215,7 @@ void py_loghandler_global_init(void)
 {
   PyObject *logging_module = NULL;
   PyObject *bases = NULL;
-  PyObject *handler = NULL;  
+  PyObject *handler = NULL;
   logging_module = _py_do_import("logging");
   if (!logging_module)
     goto exit;
