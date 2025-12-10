@@ -783,40 +783,10 @@ void test_slog_performance(void)
   closure(testData);
 }
 
-// Define the required permission constant:
-// S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
-// This translates to 755 (rwxr-xr-x)
-// #define SCRIPT_PERMISSIONS (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
-int make_executable(const char *filepath)
-{
-  struct stat st;
-  if (stat(filepath, &st) == -1)
-    {
-      cr_log_warn("make_executable, stat fails for %s\n", filepath);
-      msg_warning("make_executable, stat fails for ", evt_tag_str("file", filepath));
-      return -1; //-- ERROR
-    }
-  mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
-  // mode_t new_mode = SCRIPT_PERMISSIONS;
-  if (chmod(filepath, new_mode) == 0)
-    {
-      return 0; //-- SUCCESS
-    }
-  else
-    {
-      cr_log_info("make_executable, chmod fails for %s\n", filepath);
-      msg_warning("make_executable, chmod fails for ", evt_tag_str("file", filepath));
-      return -1; //-- ERROR
-    }
-}
-
-
-void test_slog_cli_smoke_tests(void)
-{
 #define RUN_CLI_SLOG_SMOKETEST 0
 
-  /* Notes in regard RUN_CLI_SLOG_SMOKETEST
+/* Notes in regard RUN_CLI_SLOG_SMOKETEST
    *
    * - For the time being, RUN_CLI_SLOG_SMOKETEST is set to 0 to disable
    *   the test of cli tools in context of unit tests.
@@ -829,7 +799,42 @@ void test_slog_cli_smoke_tests(void)
    *
    */
 
+
 #if defined(RUN_CLI_SLOG_SMOKETEST) && ((RUN_CLI_SLOG_SMOKETEST) == 1)
+
+// Define the required permission constant:
+// S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
+// This translates to 755 (rwxr-xr-x)
+// #define SCRIPT_PERMISSIONS (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
+
+/*
+int make_executable(const char* filepath)
+{
+  struct stat st;
+  if (stat(filepath, &st) == -1)
+  {
+    cr_log_warn("make_executable, stat fails for %s\n", filepath);
+    msg_warning("make_executable, stat fails for ", evt_tag_str("file", filepath));
+    return -1; //-- ERROR
+  }
+  mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
+  // mode_t new_mode = SCRIPT_PERMISSIONS;
+  if (chmod(filepath, new_mode) == 0)
+  {
+    return 0; //-- SUCCESS
+  }
+  else
+  {
+    cr_log_info("make_executable, chmod fails for %s\n", filepath);
+    msg_warning("make_executable, chmod fails for ", evt_tag_str("file", filepath));
+    return -1; //-- ERROR
+  }
+}
+*/
+
+void test_slog_cli_smoke_tests(void)
+{
+
   g_print("-- test_slog_cli_smoke_tests\n");
 
   const char *ShortScriptName[] =
@@ -859,6 +864,7 @@ void test_slog_cli_smoke_tests(void)
 
   cr_assert(COUNT_TEST_SCRIPTS <= COUNT_SCRIPTS, "Invalid config test_slog_cli_smoke_tests!");
 
+  /*
   //-- ensure scripts are executable ---
   if (NULL != dirname)
     {
@@ -875,6 +881,7 @@ void test_slog_cli_smoke_tests(void)
     {
       cr_assert(NULL != dirname, "File path to tests scripts not found!");
     }
+  */
 
   //-- execute test scripts ---
   int retval = 42;
@@ -890,8 +897,17 @@ void test_slog_cli_smoke_tests(void)
         }
       g_free (dirname);
     }
-#endif /* RUN_CLI_SLOG_SMOKETEST */
 }
+
+//-- Smoke Tests of CLI Tools by bash script ---
+
+Test(secure_logging, test_slog_cli_smoke_tests)
+{
+  test_slog_cli_smoke_tests();
+}
+
+#endif /* RUN_CLI_SLOG_SMOKETEST */
+
 
 
 Test(secure_logging, test_slog_template_format)
@@ -923,11 +939,3 @@ Test(secure_logging, test_slog_malicious_modifications)
 {
   test_slog_malicious_modifications();
 }
-
-//-- Smoke Tests of CLI Tools by bash script ---
-
-Test(secure_logging, test_slog_cli_smoke_tests)
-{
-  test_slog_cli_smoke_tests();
-}
-
