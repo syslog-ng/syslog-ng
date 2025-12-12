@@ -51,6 +51,7 @@ public:
   );
 
   void handle_http_header_request(HttpHeaderRequestSignalData *data);
+  void handle_grpc_metadata_request(GrpcMetadataRequestSignalData *data);
 
 protected:
   std::string client_id;
@@ -67,6 +68,7 @@ protected:
   std::chrono::system_clock::time_point refresh_token_after;
 
   void add_token_to_header(HttpHeaderRequestSignalData *data);
+  void add_token_to_grpc_metadata(GrpcMetadataRequestSignalData *data);
   bool send_token_post_request(std::string &response_payload_buffer);
   bool extract_token_from_response(const std::string &response);
   std::string build_post_body();
@@ -76,6 +78,11 @@ protected:
   virtual void prepare_auth_credentials(CURL *hnd, std::string &post_body);
 
   static size_t curl_write_callback(void *ptr, size_t size, size_t nmemb, void *userdata);
+
+private:
+  template<typename SignalDataT, typename ResultT, typename AddTokenFn>
+  void handle_token_request_impl(SignalDataT *data, AddTokenFn add_token_fn,
+                                 ResultT success_code, ResultT error_code);
 };
 
 }

@@ -58,41 +58,8 @@ OAuth2Authenticator::OAuth2Authenticator(
 void
 OAuth2Authenticator::handle_http_header_request(HttpHeaderRequestSignalData *data)
 {
-  lock.lock();
-
-  if (std::chrono::system_clock::now() <= refresh_token_after && !cached_token.empty())
-    {
-      add_token_to_header(data);
-      lock.unlock();
-
-      data->result = HTTP_SLOT_SUCCESS;
-      return;
-    }
-
-  cached_token.clear();
-
-  std::string response_payload_buffer;
-  if (!send_token_post_request(response_payload_buffer))
-    {
-      lock.unlock();
-
-      data->result = HTTP_SLOT_CRITICAL_ERROR;
-      return;
-    }
-
-  if (!extract_token_from_response(response_payload_buffer))
-    {
-      lock.unlock();
-
-      data->result = HTTP_SLOT_CRITICAL_ERROR;
-      return;
-    }
-
-  add_token_to_header(data);
-
-  lock.unlock();
-
-  data->result = HTTP_SLOT_SUCCESS;
+  handle_token_request_impl(data, &OAuth2Authenticator::add_token_to_header,
+                            HTTP_SLOT_SUCCESS, HTTP_SLOT_CRITICAL_ERROR);
 }
 
 void
@@ -103,6 +70,56 @@ OAuth2Authenticator::add_token_to_header(HttpHeaderRequestSignalData *data)
   g_string_append(auth_buffer, cached_token.c_str());
 
   list_append(data->request_headers, auth_buffer->str);
+}
+
+void
+OAuth2Authenticator::handle_grpc_metadata_request(GrpcMetadataRequestSignalData *data)
+{
+  handle_token_request_impl(data, &OAuth2Authenticator::add_token_to_grpc_metadata,
+                            GRPC_SLOT_SUCCESS, GRPC_SLOT_CRITICAL_ERROR);
+}
+
+void
+OAuth2Authenticator::add_token_to_grpc_metadata(GrpcMetadataRequestSignalData *data)
+{
+  GString *auth_buffer = scratch_buffers_alloc();
+  g_string_append(auth_buffer, "authorization: Bearer ");
+  g_string_append(auth_buffer, cached_token.c_str());
+
+  data->metadata_list = g_list_append(data->metadata_list, auth_buffer->str);
+}
+
+template<typename SignalDataT, typename ResultT, typename AddTokenFn>
+void
+OAuth2Authenticator::handle_token_request_impl(SignalDataT *data, AddTokenFn add_token_fn,
+                                               ResultT success_code, ResultT error_code)
+{
+  std::lock_guard<std::mutex> guard(lock);
+
+  if (std::chrono::system_clock::now() <= refresh_token_after && !cached_token.empty())
+    {
+      (this->*add_token_fn)(data);
+      data->result = success_code;
+      return;
+    }
+
+  cached_token.clear();
+
+  std::string response_payload_buffer;
+  if (!send_token_post_request(response_payload_buffer))
+    {
+      data->result = error_code;
+      return;
+    }
+
+  if (!extract_token_from_response(response_payload_buffer))
+    {
+      data->result = error_code;
+      return;
+    }
+
+  (this->*add_token_fn)(data);
+  data->result = success_code;
 }
 
 std::string
