@@ -46,6 +46,7 @@ typedef struct _KafkaSourcePersistData
   int64_t position;
   gboolean use_offset_tracker;
   KafkaSrcPersistStore persist_store;
+  KafkaSrcConsumerStrategy consumer_strategy;
 } KafkaSourcePersistData;
 
 struct _KafkaSourcePersist
@@ -278,7 +279,8 @@ offset_tracker_bitmap_set(OffsetTracker *t, guint64 offset, gboolean *partitions
 
   if (offset < t->window_start)
     {
-      /* This can happen if work with assign strategy and manually assigned partitions are removed and re-added */
+      /* This can happen no matter if we work with assign or subscribe strategy, explicitely assigned partitions which are removed and re-added
+       * will not signal any rebalance event, we have to deal with this case manually */
       kafka_msg_debug("kafka: offset_tracker detected an offset behind of the committed offset, possible partition reassignment in assign strategy",
                       evt_tag_str("topic", t->owner->topic),
                       evt_tag_int("partition", (int) t->owner->partition),
@@ -385,51 +387,57 @@ _save_bookmark(Bookmark *bookmark)
   gboolean should_store = TRUE;
   gboolean partitions_changed = FALSE;
 
-  if (persistable_data->use_offset_tracker)
-    {
-      OffsetTracker *tracker = persist->tracker;
+  kafka_source_persist_lock(persist);
 
-      /* Persist only if committed advanced */
-      if ((should_store = offset_tracker_bitmap_set(tracker, position_to_store, &partitions_changed)))
-        position_to_store = tracker->committed;
-    }
-
-  if (should_store)
+  if (kafka_source_persist_valid(persist))
     {
-      gboolean stored = TRUE;
-      if (persistable_data->persist_store == KSPS_REMOTE)
+      if (persistable_data->use_offset_tracker)
         {
-          kafka_source_persist_lock(persist);
-          stored = kafka_sd_store_persist_offset(persist->owner, persist, position_to_store);
-          kafka_source_persist_unlock(persist);
+          OffsetTracker *tracker = persist->tracker;
+
+          /* Persist only if committed advanced */
+          if ((should_store = offset_tracker_bitmap_set(tracker, position_to_store, &partitions_changed)))
+            position_to_store = tracker->committed;
+        }
+
+      if (should_store)
+        {
+          gboolean stored = TRUE;
+          if (persistable_data->persist_store == KSPS_REMOTE)
+            stored = kafka_sd_store_persist_offset(persist->owner, persist, position_to_store);
+          else
+            {
+              KafkaSourcePersistData *persist_entry = persist_state_map_entry(bookmark->persist_state,
+                                                      kafka_source_bookmark->persist_handle);
+              persist_entry->position = position_to_store;
+              persist_state_unmap_entry(bookmark->persist_state, kafka_source_bookmark->persist_handle);
+            }
+          if (stored)
+            {
+              persist->last_confirmed_offset = position_to_store;
+              kafka_msg_deep_trace("kafka: message got confirmed",
+                                   evt_tag_str("topic", persist->topic),
+                                   evt_tag_int("partition", (int) persist->partition),
+                                   evt_tag_long("offset", position_to_store));
+            }
         }
       else
-        {
-          KafkaSourcePersistData *persist_entry = persist_state_map_entry(bookmark->persist_state,
-                                                  kafka_source_bookmark->persist_handle);
-          persist_entry->position = position_to_store;
-          persist_state_unmap_entry(bookmark->persist_state, kafka_source_bookmark->persist_handle);
-        }
-      if (stored)
-        {
-          /* Lazy update is acceptable as the reference is kept till the function returns,
-           * and only one _save_bookmark can be active at a time for a given persist */
-          persist->last_confirmed_offset = position_to_store;
-          kafka_msg_deep_trace("kafka: message got confirmed",
-                               evt_tag_str("topic", persist->topic),
-                               evt_tag_int("partition", (int) persist->partition),
-                               evt_tag_long("offset", position_to_store));
-        }
+        kafka_msg_deep_trace("kafka: message got tracked but not confirmed yet",
+                             evt_tag_str("topic", persist->topic),
+                             evt_tag_int("partition", (int) persist->partition),
+                             evt_tag_long("offset", position_to_store));
+
+      /* As turned out, we cannot rely on the actual strategy, in either startegu case it can happen that there is no
+       * partition rebalance/reassignment/revocation notification from kafka, and it just simply continues serving
+       * messages from rd_kafka_consumer_poll, even if the consumed partition is changed/recreated externally
+       * (e.g. if a partition which is consumed using subscribe with explicitly assigned partition number - not with
+       * RD_KAFKA_PARTITION_UA - is deleted, but immediately re-created again)
+       * so, signal it to the main consumer that will handle it as described in _run_consumer of kafka-source-worker.c */
+      if (partitions_changed)
+        kafka_sd_signal_assignement_invalidated(persist->owner);
     }
-  else
-    kafka_msg_deep_trace("kafka: message got tracked but not confirmed yet",
-                         evt_tag_str("topic", persist->topic),
-                         evt_tag_int("partition", (int) persist->partition),
-                         evt_tag_long("offset", position_to_store));
 
-  if (partitions_changed)
-    kafka_sd_reassign_partition(persist->owner);
-
+  kafka_source_persist_unlock(persist);
   kafka_source_persist_unref(persist);
 }
 
@@ -446,6 +454,7 @@ kafka_source_persist_fill_bookmark(KafkaSourcePersist *self, Bookmark *bookmark,
   persistable_data->position = offset;
   persistable_data->use_offset_tracker = self->use_offset_tracker;
   persistable_data->persist_store = self->owner->options.persist_store;
+  persistable_data->consumer_strategy = self->owner->strategy;
 
   bookmark->save = _save_bookmark;
 }
@@ -623,7 +632,7 @@ kafka_source_persist_new(KafkaSourceDriver *owner)
 static void
 _kafka_source_persist_free(KafkaSourcePersist *self)
 {
-  kafka_msg_debug("kafka: last confirmed offset stored for persist",
+  kafka_msg_debug("kafka: deleting persist for partition, the last stored confirmed offset",
                   evt_tag_str("topic", self->topic),
                   evt_tag_int("partition", (int) self->partition),
                   evt_tag_long("offset", self->last_confirmed_offset));

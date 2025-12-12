@@ -185,9 +185,9 @@ _processor_run(LogThreadedSourceWorker *self)
       if (G_UNLIKELY(main_loop_worker_job_quit()))
         break;
 
-      if (G_UNLIKELY(kafka_sd_rebalance_signaled(driver)))
+      if (G_UNLIKELY(kafka_sd_reassign_signaled(driver)))
         {
-          kafka_msg_debug("kafka: pausing queue processor due to rebalance",
+          kafka_msg_debug("kafka: pausing queue processor due to rebalance/re-assignment signal",
                           evt_tag_int("index", self->worker_index),
                           evt_tag_str("group_id", driver->group_id),
                           evt_tag_str("driver", driver->super.super.super.id));
@@ -205,7 +205,7 @@ _processor_run(LogThreadedSourceWorker *self)
 
           if (G_LIKELY(_fetch(self, &msg) == THREADED_FETCH_SUCCESS))
             {
-              if (G_UNLIKELY(kafka_sd_rebalance_signaled(driver)))
+              if (G_UNLIKELY(kafka_sd_reassign_signaled(driver)))
                 {
                   /* In remote persist mode, the partition assignments might have changed already, so
                    * we need to stop processing messages here, as the saving of the bookmarks will fail
@@ -293,9 +293,13 @@ _stop_consumer(KafkaSourceWorker *worker, const gdouble iteration_sleep_time)
 {
   KafkaSourceDriver *driver = (KafkaSourceDriver *) worker->super.control;
 
+  kafka_msg_debug("kafka: stopping kafka consumer",
+                  evt_tag_str("group_id", driver->group_id),
+                  evt_tag_str("driver", driver->super.super.super.id));
+
   /* This call will block until the consumer has revoked its assignment, calling the rebalance_cb if it is configured,
-   * committed offsets to broker, and left the consumer group (if applicable).
-   */
+  * committed offsets to broker, and left the consumer group (if applicable).
+  */
   rd_kafka_consumer_close(driver->kafka);
 
   if (driver->strategy == KSCS_SUBSCRIBE)
@@ -305,6 +309,10 @@ _stop_consumer(KafkaSourceWorker *worker, const gdouble iteration_sleep_time)
 
   /* Wait for outstanding requests to finish */
   kafka_final_flush(driver);
+
+  kafka_msg_debug("kafka: consumer stopped",
+                  evt_tag_str("group_id", driver->group_id),
+                  evt_tag_str("driver", driver->super.super.super.id));
 }
 
 /* runs in a dedicated thread */
@@ -332,6 +340,19 @@ _run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
     {
       if (G_UNLIKELY(main_loop_worker_job_quit()))
         break;
+
+      if (G_UNLIKELY(kafka_sd_assignement_invalidated_signaled(driver)))
+        {
+          /* NOTE: a forced, manual partition reassignment could work here as well, but not in all scenarios
+           * (e.g. if the partitions are changed externally without any notification from Kafka side,
+           * like deleting and quckly re-creating a partition which were subscribed explicitly - not with RD_KAFKA_PARTITION_UA)
+           * so for simplicity just restart the consumer which will re-create the consumer with the new partition list
+           * from the ground */
+          kafka_msg_debug("kafka: restarting consumer due to partition assignement change signal",
+                          evt_tag_str("group_id", driver->group_id),
+                          evt_tag_str("driver", driver->super.super.super.id));
+          break;
+        }
 
       rd_kafka_poll(driver->kafka, 0);
       msg = rd_kafka_consumer_poll(driver->kafka, driver->options.super.poll_timeout);
@@ -396,6 +417,10 @@ _run_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
         }
     }
   kafka_sd_wait_for_queue_processors_to_sleep(driver, iteration_sleep_time, TRUE);
+
+  kafka_msg_debug("kafka: stopped consumer poll run",
+                  evt_tag_str("group_id", driver->group_id),
+                  evt_tag_str("driver", driver->super.super.super.id));
 }
 
 static gboolean
@@ -441,10 +466,6 @@ _consumer_run(LogThreadedSourceWorker *worker)
         {
           _run_consumer(self, iteration_sleep_time);
           _stop_consumer(self, iteration_sleep_time);
-
-          kafka_msg_debug("kafka: stopped consumer poll run",
-                          evt_tag_str("group_id", driver->group_id),
-                          evt_tag_str("driver", driver->super.super.super.id));
         }
 
       rd_kafka_queue_destroy(driver->consumer_kafka_queue);

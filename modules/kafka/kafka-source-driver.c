@@ -891,21 +891,36 @@ kafka_sd_parallel_processing(KafkaSourceDriver *self)
 }
 
 void
-kafka_sd_signal_rebalance(KafkaSourceDriver *self)
+kafka_sd_signal_reassign(KafkaSourceDriver *self)
 {
-  g_mutex_lock(&self->rebalance_mutex);
-  self->rebalance_signaled = TRUE;
-  g_mutex_unlock(&self->rebalance_mutex);
+  g_mutex_lock(&self->partition_assignement_mutex);
+  self->reassign_signaled = TRUE;
+  g_mutex_unlock(&self->partition_assignement_mutex);
+}
+
+void
+kafka_sd_signal_assignement_invalidated(KafkaSourceDriver *self)
+{
+  g_mutex_lock(&self->partition_assignement_mutex);
+  self->assignement_invalidated_signaled = TRUE;
+  g_mutex_unlock(&self->partition_assignement_mutex);
 }
 
 gboolean
-kafka_sd_rebalance_signaled(KafkaSourceDriver *self)
+kafka_sd_reassign_signaled(KafkaSourceDriver *self)
 {
   /* Lazzy check is enough here, by a good chance we dont need a mutex for this at all
    * the variable itself is only written before pausing the workers and read after resuming them
    * also, we cannot fully control the workers, when this is set the partitions are already revoked
    * and some of the pending commits from the bookmarks will fail anyway */
-  return self->rebalance_signaled;
+  return self->reassign_signaled;
+}
+
+gboolean
+kafka_sd_assignement_invalidated_signaled(KafkaSourceDriver *self)
+{
+  /* Lazy check like above */
+  return self->assignement_invalidated_signaled;
 }
 
 static gboolean
@@ -916,7 +931,7 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
 
   if (kafka_sd_using_queues(self))
     {
-      kafka_sd_signal_rebalance(self);
+      kafka_sd_signal_reassign(self);
       kafka_sd_wait_for_queue_processors_to_sleep(self, mainloop_sleep_time(self->options.fetch_retry_delay), FALSE);
     }
 
@@ -928,68 +943,57 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
       self->assigned_partitions = NULL;
     }
 
-  /* No partitions to assign, just clearing the earlier assigned partitions */
-  if (parts == NULL)
+  if (parts)
+    {
+      if ((err = rd_kafka_assign(self->kafka, parts)) == RD_KAFKA_RESP_ERR_NO_ERROR)
+        {
+          self->assigned_partitions = parts;
+
+          if (self->options.persist_store == KSPS_LOCAL && FALSE == self->options.disable_bookmarks)
+            _partitions_persists_create(self);
+
+          _restore_msg_offsets(self);
+
+          if (self->options.persist_store == KSPS_REMOTE && FALSE == self->options.disable_bookmarks)
+            _partitions_persists_create(self);
+
+          kafka_log_partition_list(self, parts);
+          _register_topic_stats(self);
+        }
+      else
+        {
+          msg_error("kafka: rd_kafka_assign() failed",
+                    evt_tag_str("group_id", self->group_id),
+                    evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
+                    evt_tag_str("error", rd_kafka_err2str(err)),
+                    evt_tag_str("driver", self->super.super.super.id));
+          rd_kafka_topic_partition_list_destroy(parts);
+          result = FALSE;
+        }
+
+      if (result)
+        kafka_msg_debug("kafka: partitions assigned",
+                        evt_tag_str("group_id", self->group_id),
+                        evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
+                        evt_tag_str("driver", self->super.super.super.id));
+    }
+  else /* No partitions to assign, just clearing the earlier assigned partitions */
     {
       rd_kafka_assign(self->kafka, NULL);
       kafka_msg_debug("kafka: partitions revoked",
                       evt_tag_str("group_id", self->group_id),
                       evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
                       evt_tag_str("driver", self->super.super.super.id));
-      return result;
-    }
-
-  if (main_loop_worker_job_quit())
-    return FALSE;
-
-  if ((err = rd_kafka_assign(self->kafka, parts)) == RD_KAFKA_RESP_ERR_NO_ERROR)
-    {
-      self->assigned_partitions = parts;
-
-      if (self->options.persist_store == KSPS_LOCAL && FALSE == self->options.disable_bookmarks)
-        _partitions_persists_create(self);
-
-      _restore_msg_offsets(self);
-
-      if (self->options.persist_store == KSPS_REMOTE && FALSE == self->options.disable_bookmarks)
-        _partitions_persists_create(self);
-
-      kafka_log_partition_list(self, parts);
-      _register_topic_stats(self);
-    }
-  else
-    {
-      msg_error("kafka: rd_kafka_assign() failed",
-                evt_tag_str("group_id", self->group_id),
-                evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
-                evt_tag_str("error", rd_kafka_err2str(err)),
-                evt_tag_str("driver", self->super.super.super.id));
-      rd_kafka_topic_partition_list_destroy(parts);
-      result = FALSE;
     }
 
   if (kafka_sd_using_queues(self))
     {
-      self->rebalance_signaled = FALSE;
+      self->reassign_signaled = FALSE;
+      self->assignement_invalidated_signaled = FALSE;
       kafka_sd_signal_queues(self);
     }
 
-  if (result)
-    kafka_msg_debug("kafka: partitions assigned",
-                    evt_tag_str("group_id", self->group_id),
-                    evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
-                    evt_tag_str("driver", self->super.super.super.id));
   return result;
-}
-
-void
-kafka_sd_reassign_partition(KafkaSourceDriver *self)
-{
-  kafka_msg_debug("kafka: re-assigning partitions",
-                  evt_tag_str("group_id", self->group_id),
-                  evt_tag_str("member_id", rd_kafka_memberid(self->kafka)),
-                  evt_tag_str("driver", self->super.super.super.id));
-  _apply_assigned_partitions(self, rd_kafka_topic_partition_list_copy(self->assigned_partitions));
 }
 
 static rd_kafka_topic_partition_list_t *
@@ -1017,7 +1021,7 @@ _compose_partition_list(KafkaSourceDriver *self)
           g_assert((requested_partition != RD_KAFKA_PARTITION_UA || requested_parts_num == 1)
                    && "Wildcard partition cannot be mixed with specific partitions");
           if (self->options.strategy_hint == KSCS_SUBSCRIBE && requested_partition != RD_KAFKA_PARTITION_UA)
-            msg_warning("kafka: none wildcard partition requested whilst using subscribe strategy hint, partition field(s) might be ignored!",
+            msg_warning("kafka: none wildcard partition requested whilst using subscribe strategy hint, topic() partition field(s) might be ignored, and all partitions will be subscribed",
                         evt_tag_str("topic", requested_topic),
                         evt_tag_int("partition", requested_partition),
                         evt_tag_str("group_id", self->group_id),
@@ -1695,7 +1699,7 @@ kafka_sd_init(LogPipe *s)
   _apply_options(self);
   _decide_strategy(self);
 
-  g_mutex_init(&self->rebalance_mutex);
+  g_mutex_init(&self->partition_assignement_mutex);
   _alloc_msg_queues(self);
   self->stats_topics = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->stats_workers = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
@@ -1737,7 +1741,7 @@ kafka_sd_deinit(LogPipe *s)
   _destroy_msg_queues(self);
 
   _partitions_persists_destroy(self);
-  g_mutex_clear(&self->rebalance_mutex);
+  g_mutex_clear(&self->partition_assignement_mutex);
 
   _unregister_aggregated_stats(self);
   _unregister_worker_stats(self);
