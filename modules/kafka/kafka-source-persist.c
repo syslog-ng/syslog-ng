@@ -281,7 +281,7 @@ offset_tracker_bitmap_set(OffsetTracker *t, guint64 offset, gboolean *partitions
     {
       /* This can happen no matter if we work with assign or subscribe strategy, explicitely assigned partitions which are removed and re-added
        * will not signal any rebalance event, we have to deal with this case manually */
-      kafka_msg_debug("kafka: offset_tracker detected an offset behind of the committed offset, possible partition reassignment in assign strategy",
+      kafka_msg_debug("kafka: offset_tracker detected an offset behind of the committed offset, possible partition reassignment or recreation",
                       evt_tag_str("topic", t->owner->topic),
                       evt_tag_int("partition", (int) t->owner->partition),
                       evt_tag_long("window_start", t->window_start),
@@ -389,7 +389,8 @@ _save_bookmark(Bookmark *bookmark)
 
   kafka_source_persist_lock(persist);
 
-  if (kafka_source_persist_valid(persist))
+  /* Local store can be used to save the bookmark, even if kafka connection and/or the partition assignment is invalidated */
+  if (kafka_source_persist_remote_is_valid(persist) || persistable_data->persist_store == KSPS_LOCAL)
     {
       if (persistable_data->use_offset_tracker)
         {
@@ -415,27 +416,33 @@ _save_bookmark(Bookmark *bookmark)
           if (stored)
             {
               persist->last_confirmed_offset = position_to_store;
-              kafka_msg_deep_trace("kafka: message got confirmed",
+              kafka_msg_deep_trace("kafka: bookmark message got confirmed",
                                    evt_tag_str("topic", persist->topic),
                                    evt_tag_int("partition", (int) persist->partition),
                                    evt_tag_long("offset", position_to_store));
             }
         }
-      else
-        kafka_msg_deep_trace("kafka: message got tracked but not confirmed yet",
+      else if (FALSE == partitions_changed)
+        kafka_msg_deep_trace("kafka: bookmark message got tracked but not confirmed yet",
                              evt_tag_str("topic", persist->topic),
                              evt_tag_int("partition", (int) persist->partition),
                              evt_tag_long("offset", position_to_store));
-
-      /* As turned out, we cannot rely on the actual strategy, in either startegu case it can happen that there is no
-       * partition rebalance/reassignment/revocation notification from kafka, and it just simply continues serving
-       * messages from rd_kafka_consumer_poll, even if the consumed partition is changed/recreated externally
-       * (e.g. if a partition which is consumed using subscribe with explicitly assigned partition number - not with
-       * RD_KAFKA_PARTITION_UA - is deleted, but immediately re-created again)
-       * so, signal it to the main consumer that will handle it as described in _run_consumer of kafka-source-worker.c */
-      if (partitions_changed)
-        kafka_sd_signal_assignement_invalidated(persist->owner);
+      else
+        {
+          /* As turned out, we cannot rely on the actual strategy, in either case it can happen that there is no
+           * partition rebalance/reassignment/revocation notification from kafka, and it just simply continues serving
+           * messages from rd_kafka_consumer_poll, even if the consumed partition is changed/recreated externally
+           * (e.g. if a partition which is consumed using subscribe with explicitly assigned partition number - not with
+           * RD_KAFKA_PARTITION_UA - is deleted, but immediately re-created again)
+           * so, signal it to the main consumer that will handle it as described in _run_consumer of kafka-source-worker.c */
+          kafka_sd_signal_assignement_invalidated(persist->owner);
+        }
     }
+  else
+    kafka_msg_debug("kafka: cannot save bookmark remotely, persist is invalidated",
+                    evt_tag_str("topic", persist->topic),
+                    evt_tag_int("partition", (int) persist->partition),
+                    evt_tag_long("offset", position_to_store));
 
   kafka_source_persist_unlock(persist);
   kafka_source_persist_unref(persist);
@@ -588,7 +595,7 @@ const gchar *kafka_source_persist_get_topic(KafkaSourcePersist *self)
 }
 
 /* Lock must be held before calling */
-gboolean kafka_source_persist_valid(KafkaSourcePersist *self)
+gboolean kafka_source_persist_remote_is_valid(KafkaSourcePersist *self)
 {
   return self->valid;
 }

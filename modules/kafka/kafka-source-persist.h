@@ -52,7 +52,7 @@ void kafka_source_persist_lock(KafkaSourcePersist *self);
 void kafka_source_persist_unlock(KafkaSourcePersist *self);
 
 /* Lock must be held before calling */
-gboolean kafka_source_persist_valid(KafkaSourcePersist *self);
+gboolean kafka_source_persist_remote_is_valid(KafkaSourcePersist *self);
 int32_t kafka_source_persist_get_partition(KafkaSourcePersist *self);
 const gchar *kafka_source_persist_get_topic(KafkaSourcePersist *self);
 

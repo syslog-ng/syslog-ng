@@ -400,6 +400,7 @@ _decide_strategy(KafkaSourceDriver *self)
     self->strategy = KSCS_ASSIGN;
 
   msg_verbose("kafka: selected consumer strategy",
+              evt_tag_str("strategy_hint", self->options.strategy_hint == KSCS_SUBSCRIBE ? "subscribe" : "assign"),
               evt_tag_str("strategy", self->strategy == KSCS_SUBSCRIBE ? "subscribe" : "assign"),
               evt_tag_str("group_id", self->group_id),
               evt_tag_str("driver", self->super.super.super.id));
@@ -770,7 +771,7 @@ kafka_sd_store_persist_offset(KafkaSourceDriver *self,
 
   /* If the persist is invalidated it means the topic assignment is changed, or there is no
    * valid Kafka connection anymore to store the offset */
-  if (FALSE == kafka_source_persist_valid(persist))
+  if (FALSE == kafka_source_persist_remote_is_valid(persist))
     {
       kafka_msg_debug("kafka: persist is invalidated, cannot store offset remotely",
                       evt_tag_str("topic", kafka_source_persist_get_topic(persist)),
