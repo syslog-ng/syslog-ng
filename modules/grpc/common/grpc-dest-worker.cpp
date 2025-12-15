@@ -33,7 +33,9 @@
 #pragma GCC diagnostic pop
 
 #include "compat/cpp-start.h"
+#include "grpc-signals.h"
 #include "scratch-buffers.h"
+#include "signal-slot-connector/signal-slot-connector.h"
 #include "compat/cpp-end.h"
 
 using namespace syslogng::grpc;
@@ -133,6 +135,37 @@ DestWorker::prepare_context_dynamic(::grpc::ClientContext &context, LogMessage *
       log_template_format(nv.value, msg, &options, buf);
       context.AddMetadata(nv.name, buf->str);
     }
+
+  GrpcMetadataRequestSignalData signal_data =
+  {
+    .result = GRPC_SLOT_SUCCESS,
+    .metadata_list = NULL
+  };
+
+  EMIT(this->owner.super->super.super.super.signal_slot_connector,
+       signal_grpc_metadata_request, &signal_data);
+
+  if (signal_data.result == GRPC_SLOT_SUCCESS || signal_data.result == GRPC_SLOT_RESOLVED)
+    {
+      for (GList *l = signal_data.metadata_list; l != NULL; l = l->next)
+        {
+          const gchar *item = (const gchar *)l->data;
+          const gchar *colon = strchr(item, ':');
+
+          if (!colon || colon == item)
+            continue;
+
+          const gchar *value = colon + 1;
+          while (*value == ' ' || *value == '\t')
+            value++;
+
+          gchar *key = g_strndup(item, colon - item);
+          context.AddMetadata(key, value);
+          g_free(key);
+        }
+    }
+
+  g_list_free(signal_data.metadata_list);
 
   scratch_buffers_reclaim_marked(marker);
 }

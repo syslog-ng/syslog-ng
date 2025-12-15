@@ -42,6 +42,9 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   CONNECT(d->signal_slot_connector, signal_http_header_request, cloud_authenticator_handle_http_header_request,
           self->authenticator);
 
+  CONNECT(d->signal_slot_connector, signal_grpc_metadata_request, cloud_authenticator_handle_grpc_metadata_request,
+          self->authenticator);
+
   return TRUE;
 }
 
@@ -53,6 +56,9 @@ _detach(LogDriverPlugin *s, LogDriver *d)
   cloud_authenticator_deinit(self->authenticator);
 
   DISCONNECT(d->signal_slot_connector, signal_http_header_request, cloud_authenticator_handle_http_header_request,
+             self->authenticator);
+
+  DISCONNECT(d->signal_slot_connector, signal_grpc_metadata_request, cloud_authenticator_handle_grpc_metadata_request,
              self->authenticator);
 }
 
