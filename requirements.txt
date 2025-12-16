@@ -1,20 +1,20 @@
-boto3<=1.28.33     # <= is used for python3.6 compatibility on centos-7
-botocore<=1.31.33  # <= is used for python3.6 compatibility on centos-7
-cachetools==4.2.4
-certifi>=2023.7.22
-charset-normalizer==2.0.12
-google-auth==2.13.0
+boto3>=1.37.38 # we would need  >= 1.40.44 (to sync with PE), but highest available on kira - ubuntu focal
+botocore>=1.37.38 # we would need  >= 1.40.44 (to sync with PE), but highest available on kira - ubuntu focal
+cachetools>=5.5.2 # we would need  >= 6.2.0 (to sync with PE), but highest available on kira - ubuntu focal
+certifi>=2025.8.3
+charset-normalizer==3.4.3
+google-auth==2.41.1
 idna==3.7
-kubernetes==25.3.0
-oauthlib==3.2.2
-pyasn1==0.4.8
-pyasn1-modules==0.2.8
-python-dateutil==2.8.2
-PyYAML==6.0.1
-requests>=2.27.1,<2.33
-requests-oauthlib==1.3.1
-rsa==4.9
-urllib3==1.26.*
-websocket-client==1.3.1
+kubernetes>=31.0.0  # we would need  >= 34.1.0 (to sync with PE), but highest available on kira - ubuntu focal
+oauthlib==3.3.1
+pyasn1==0.6.1
+pyasn1-modules==0.4.2
+python-dateutil==2.9.0.post0
+PyYAML==6.0.3
+requests>=2.32.4 # we would need  >= 2.32.5 (to sync with PE), but highest available on kira - ubuntu focal
+requests-oauthlib==2.0.0
+rsa==4.9.1
+urllib3>=1.26  # we would need  >= 2.6 (because high vulnerability), but botocore requires <1.27,>=1.25.4
+websocket-client==1.8.0
 ply==3.11
-tornado==6.4.2
+tornado>= 6.4.2 # we would need  >= 6.5 (because high vulnerability), but highest available on kira - ubuntu focal
