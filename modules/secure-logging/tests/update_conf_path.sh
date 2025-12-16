@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #############################################################################
 # Copyright (c) 2025 Airbus Commercial Aircraft
 #
@@ -22,7 +22,6 @@
 #
 #############################################################################
 
-
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   update_conf_path.sh
 # Date:   2025-12-09
@@ -45,16 +44,23 @@
 
 set -x
 
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <file_path> <suffix_string> <add|remove>" >&2
+if [[ $# -ne 3 ]]; then
+    echo "Usage: $0 <file_path> <suffix> <add|remove>" >&2
     exit 1
+fi
+
+# Fix some macOS machines
+if sed --version >/dev/null 2>&1; then
+    SED_INPLACE=(-i)
+else
+    SED_INPLACE=(-i '')
 fi
 
 FILE_PATH="$1"
 SUFFIX="$2"
 ACTION="$3"
 
-if [ ! -f "${FILE_PATH}" ]; then
+if [[ ! -f ${FILE_PATH} ]]; then
     echo "ERROR: File not found: ${FILE_PATH}" >&2
     exit 1
 fi
@@ -77,8 +83,14 @@ remove)
     ;;
 esac
 
-sed -i 's#^'"${SEARCH_LINE}"'$#'"${REPLACE_LINE}"'#' "${FILE_PATH}"
-if [ $? -eq 0 ]; then
+# GNU Linux: sed -i 's#^'"${SEARCH_LINE}"'$#'"${REPLACE_LINE}"'#' "${FILE_PATH}"
+# not working on github macOS15 intel CI machines
+
+sed "${SED_INPLACE[@]}" \
+    's#^'"${SEARCH_LINE}"'$#'"${REPLACE_LINE}"'#' \
+    "${FILE_PATH}"
+
+if [[ $? -eq 0 ]]; then
     echo "File '${FILE_PATH}' updated successfully."
 else
     echo "DEBUG: sed -i 's#^'${SEARCH_LINE}'$#'${REPLACE_LINE}'#' \"${FILE_PATH}\"" >&2

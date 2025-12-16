@@ -83,7 +83,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   gchar *macpathbuffer = NULL;
   GOptionContext *ctx;
   GOptionGroup *grp;
-  if ((mlock(state->key, KEY_LENGTH)!=0)||(mlock(state->aggMAC, CMAC_LENGTH)!=0))
+  if ( (mlock(state->key, KEY_LENGTH) != 0) || (mlock(state->aggMAC, CMAC_LENGTH) != 0) )
     {
       msg_warning("[SLOG] WARNING: Unable to acquire memory lock");
     }
