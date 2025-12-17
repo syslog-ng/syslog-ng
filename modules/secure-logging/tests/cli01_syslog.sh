@@ -22,10 +22,9 @@
 #
 #############################################################################
 
-
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   cli01_syslog.sh
-# Date:   2025-12-09
+# Date:   2025-12-17
 #
 # Smoke Test of cli tools slogkey, syslog-ng, syslog-ng-cli, slogverify
 #
@@ -55,7 +54,7 @@
 
 set -x
 
-VERSION="Version 1.3.0"
+VERSION="Version 1.4.0"
 
 # remove path and extension from $0
 s=$0
@@ -70,10 +69,9 @@ echo "PID: ${PID}"
 
 RANDOM_ID=$(
     /bin/dd if=/dev/urandom bs=1 count=4 2>/dev/null |
-    od -An -N4 -tx
+        od -An -N4 -tx
 )
 CLEAN_ID=$(echo "${RANDOM_ID}" | tr -d ' ')
-
 
 NOW=$(date +%Y-%m-%d_%H%M%S)
 echo " "
@@ -268,7 +266,6 @@ else
     fi
 fi
 
-
 # config working path in syslog-ng.conf
 
 cp -f "${HOMESLOGTEST}/${SFNCONF}" "${TEST}/syslog-ng.conf"
@@ -276,7 +273,6 @@ check_missing "${TEST}/syslog-ng.conf" "${SCRIPT_DIR}/update_conf_path.sh"
 echo "Update syslog-ng.conf template path .."
 RETVALUC=$("${SCRIPT_DIR}/update_conf_path.sh" "${TEST}/syslog-ng.conf" "${PATH_SUFFIX}" "add")
 echo "RETVALUC: ${RETVALUC}"
-
 
 # Generate Key or check existing
 
@@ -323,7 +319,6 @@ fi
 
 check_missing "${TEST}/h0.key" "${TEST}/host.key" "${HOMESLOGTEST}/${SFNCONF}"
 
-
 # simple quick check whether udp port is found in conf file
 if grep -q "${UDP_PORT}" "${TEST}/syslog-ng.conf"; then
     printf "Found UDP port %s in %s/syslog-ng.conf\n" "${UDP_PORT}" "${TEST}"
@@ -345,16 +340,15 @@ echo "Host.key counter: ${counter_value}"
 #-- check nc variant. On some systems, e.g. Ubuntu the option
 # -q is needed even when UDP is used, whereas on Rocky, -q causes an issue.
 NC_HAS_Q=0
-# Try to run nc with -q. We redirect stderr to grep.
-# The grep -q command is silent and looks for common error strings.
-if nc -q 0 localhost 1 2>&1 | grep -qE 'invalid|illegal|unknown option'; then
-    # If grep finds an error string, it means the option is NOT supported.
-    echo "INFO: This version of nc does not support the -q option."
-    NC_HAS_Q=0
-else
-    # If grep finds no error, the option is assumed to be supported.
-    echo "INFO: This version of nc supports the -q option."
+# -- Check if nc must be provided with q option
+if nc -h 2>&1 | grep -q "\-q" || nc --help 2>&1 | grep -q "\-q"; then
     NC_HAS_Q=1
+fi
+
+# -- Determine if we are on macOS (due to macOS15 intel machine problem on CI GitHub)
+IS_MAC=0
+if [ "$(uname)" = "Darwin" ]; then
+    IS_MAC=1
 fi
 
 echo " "
@@ -381,18 +375,18 @@ while [ "${i}" -lt "${MAX_LOOP}" ]; do
 
     echo "${LOG_MESSAGE}" >"${TEST}/plainlog_${i}.txt"
     sleep 0.25
-
-    # nc -q 3 -u 127.0.0.1 "${UDP_PORT}" <"${TEST}/plainlog_${i}.txt"
-    # on some platforms, e.g. ubuntu -q option is needed some platforms do not
-    # provide option q at all.
-    if [ "${NC_HAS_Q}" -eq 1 ]; then
-        nc -q 3 -u 127.0.0.1 "${UDP_PORT}" <"${TEST}/plainlog_${i}.txt"
+    if [ "${NC_HAS_Q}" -eq 1 ] && [ "${IS_MAC}" -eq 0 ]; then
+        nc -u -q 3 127.0.0.1 "${UDP_PORT}" <"${TEST}/plainlog_${i}.txt"
     else
-        nc -u 127.0.0.1 "${UDP_PORT}" <"${TEST}/plainlog_${i}.txt"
+        nc -u 127.0.0.1 "${UDP_PORT}" <"${TEST}/plainlog_${i}.txt" &
+        NC_PID=$!
+        # -- Wait for the Intel VM to process the network buffer
+        sleep 3
+        # Kill the process to prevent the 10-minute hang
+        kill -9 "${NC_PID}" 2>/dev/null || true
+        wait "${NC_PID}" 2>/dev/null || true
     fi
-
     sleep 0.25
-
     echo "LOOP ${i}: nc -u 127.0.0.1 ${UDP_PORT} < ${TEST}/plainlog_${i}.txt"
 
     if ! [ -f "${TEST}/mac.dat" ]; then
@@ -743,7 +737,7 @@ if ! [ -f "${TEST}/host.key" ]; then
     echo "ERROR: ${TEST}/host.key does not exist"
     cnt_error=$((cnt_error + 1))
 fi
- 
+
 # TEST=/tmp/${SUBFOLDER_TEST}/${SUBFOLDER}_${PATH_SUFFIX}
 # cleanup /tmp/${SUBFOLDER_TEST}/
 if [ "${KEEP_DATA}" = true ]; then

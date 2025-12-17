@@ -807,16 +807,20 @@ void test_slog_performance(void)
 // This translates to 755 (rwxr-xr-x)
 // #define SCRIPT_PERMISSIONS (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
-/*
-int make_executable(const char* filepath)
+
+int make_executable(const char *filepath)
 {
   struct stat st;
   if (stat(filepath, &st) == -1)
-  {
-    cr_log_warn("make_executable, stat fails for %s\n", filepath);
-    msg_warning("make_executable, stat fails for ", evt_tag_str("file", filepath));
-    return -1; //-- ERROR
-  }
+    {
+      cr_log_warn("make_executable, stat fails for %s\n", filepath);
+      msg_warning("make_executable, stat fails for ", evt_tag_str("file", filepath));
+      return -1; //-- ERROR
+    }
+  return 0; //-- only used to check if path is valid currently
+
+  // chmod is causing 'high severity security vulnerability' on GitHubs CI.
+  /*
   mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
   // mode_t new_mode = SCRIPT_PERMISSIONS;
   if (chmod(filepath, new_mode) == 0)
@@ -829,8 +833,9 @@ int make_executable(const char* filepath)
     msg_warning("make_executable, chmod fails for ", evt_tag_str("file", filepath));
     return -1; //-- ERROR
   }
+  */
 }
-*/
+
 
 void test_slog_cli_smoke_tests(void)
 {
@@ -864,7 +869,6 @@ void test_slog_cli_smoke_tests(void)
 
   cr_assert(COUNT_TEST_SCRIPTS <= COUNT_SCRIPTS, "Invalid config test_slog_cli_smoke_tests!");
 
-  /*
   //-- ensure scripts are executable ---
   if (NULL != dirname)
     {
@@ -872,7 +876,7 @@ void test_slog_cli_smoke_tests(void)
         {
           char *fullpath = g_build_filename(dirname, ShortScriptName[i], NULL);
           cr_log_info("fullpath: %s\n", fullpath);
-          int retexe = make_executable(fullpath);
+          int retexe = make_executable(fullpath); //-- only path check currently
           g_free(fullpath);
           cr_assert(0 == retexe, "Script not executeable or wrong path!");
         }
@@ -881,7 +885,6 @@ void test_slog_cli_smoke_tests(void)
     {
       cr_assert(NULL != dirname, "File path to tests scripts not found!");
     }
-  */
 
   //-- execute test scripts ---
   int retval = 42;
