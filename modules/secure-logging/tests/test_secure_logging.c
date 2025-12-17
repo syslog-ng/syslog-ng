@@ -784,14 +784,15 @@ void test_slog_performance(void)
 }
 
 
-#define RUN_CLI_SLOG_SMOKETEST 1
+#define RUN_CLI_SLOG_SMOKETEST 0
 
 /* Notes in regard RUN_CLI_SLOG_SMOKETEST
    *
    * - For the time being, RUN_CLI_SLOG_SMOKETEST is set to 0 to disable
    *   the test of cli tools in context of unit tests.
    *   Developers might set it to 1 manually here at least on GNU Linux systems.
-   *   When RUN_CLI_SLOG_SMOKETEST is set to 1, unit test will last longer.
+   *   When RUN_CLI_SLOG_SMOKETEST is set to 1, unit test will last longer,
+   *   approximately two minutes instead of some seconds.
    * - Currently the CI test do fail when set to 1. Reasons:
    *   -- chmod is used to make test scripts and helper scripts executable
    *      this causes in CI system a 'high severity security vulnerability'
