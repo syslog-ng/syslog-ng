@@ -1,18 +1,14 @@
-.TH slogkey 1 "03 September 2025" 4.9.0 "The slogkey manual page"
+.TH slogkey 1 "18 December 2025" 4.10.2 "The slogkey manual page"
 .SH NAME
 .PP
 slogkey \-\-\- Manages the cryptographic keys for use with the {{ site.product.short_name }} secure logging environment.
-.SH Synopsis
+.SH SYNOPSIS
 .PP
-.RS
-.nf
 slogkey [options] [arguments]
-.fi
-.RE
-.SH Description
+.SH DESCRIPTION
 .PP
 The \fB\fCslogkey\fR utility is used to manage cryptographic keys for use with the secure logging module of syslog\-ng OSE. Use this utility to create a master key, derive a host key to be used by a secure logging configuration and to display the current sequence counter of a key. The options determine the operating mode and are mutually exclusive.
-.SH Arguments
+.SH ARGUMENTS
 .PP
 The arguments depend on the operating mode.
 .RS
@@ -43,31 +39,25 @@ Call sequence: \fB\fCslogkey \-\-derive\-key <master key file> <host MAC address
 .IP \(bu 2
 Sequence counter display
 .RE
-.SH Options
-.RS
-.IP \(bu 2
+.SH OPTIONS
+.PP
 \fB\fC\-\-master\-key\fR or \fB\fC\-m\fR
+    Generates a mew master key. \fB\fC<filename>\fR is the name of the file storing the newly generated master key.
 .PP
-Generates a mew master key. \fB\fC<filename>\fR is the name of the file storing the newly generated master key.
-.IP \(bu 2
 \fB\fC\-\-derive\-key\fR or \fB\fC\-d\fR
+    Derive a host key using a previously generated master key.
 .PP
-Derive a host key using a previously generated master key.
-.IP \(bu 2
 \fB\fC\-\-counter\fR or \fB\fC\-c\fR
+    Display the current log sequence counter of a key.
 .PP
-Display the current log sequence counter of a key.
-.IP \(bu 2
 \fB\fC\-\-help\fR or \fB\fC\-h\fR
+    Display a help message.
+.SH FILES
 .PP
-Display a help message.
-.RE
-.SH Files
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/bin/slogkey
 .PP
-\fB\fC/usr/bin/slogkey\fR
-.PP
-\fB\fC/etc/syslog\-ng.conf\fR
-.SH Additional Information
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/etc/syslog\-ng.conf
+.SH SEE ALSO
 .RS
 .IP \(bu 2
 The syslog\-ng.conf manual page

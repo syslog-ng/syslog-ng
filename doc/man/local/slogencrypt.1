@@ -1,68 +1,56 @@
-.TH slogencrypt 1 "03 September 2025" 4.9.0 "The slogencrypt manual page"
+.TH slogencrypt 1 "18 December 2025" 4.10.2 "The slogencrypt manual page"
 .SH NAME
 .PP
 slogencrypt \-\-\- Encrypts existing plain text log files using the {{ site.product.short_name }} secure logging environment.
-.SH Synopsis
+.SH SYNOPSIS
 .PP
 .RS
 .nf
 slogencrypt [options] [arguments]
 .fi
 .RE
-.SH Description
+.SH DESCRIPTION
 .PP
 The \fB\fCslogencrypt\fR utility encrypts plain text log files using an existing secure logging environment. Using this utility, log files obtained from a previous installation of syslog\-ng OSE or another logging system can be transferred to a secure logging environment. The order of the log entries is preserved. Encrypting plain text log files using an existing secure logging environment, requires the current encryption key to be supplied in order to preserve consistency.
-.SS Example: a general call sequence
+.SS EXAMPLE: A GENERAL CALL SEQUENCE
 .PP
 .RS
 .nf
 slogencrypt \-k <key file> \-m <MAC file> <new key file> <new MAC file> <plain text log> <output file> [counter]
 .fi
 .RE
-.SH Arguments
-.RS
-.IP \(bu 2
+.SH ARGUMENTS
+.PP
 \fB\fC<new key file>\fR
+    The file that containa the new encryption key after successful encryption.
 .PP
-The file that containa the new encryption key after successful encryption.
-.IP \(bu 2
 \fB\fC<new MAC file>\fR
+    The file receiving the new message authentication code (MAC) of the secure encrypted destination after encryption. In case an existing file is supplied, new entries are appended.
 .PP
-The file receiving the new message authentication code (MAC) of the secure encrypted destination after encryption. In case an existing file is supplied, new entries are appended.
-.IP \(bu 2
 \fB\fC<input log file>\fR
+    The plain text log file that is encrypted using the secure logging environment.
 .PP
-The plain text log file that is encrypted using the secure logging environment.
-.IP \(bu 2
 \fB\fC<output log file>\fR
+    The file that contains the encrypted log entries from the supplied plain text log file after encryption.
 .PP
-The file that contains the encrypted log entries from the supplied plain text log file after encryption.
-.IP \(bu 2
 \fB\fCcounter\fR
+    The current log entry counter of the secure encrypted destination after encryption. This is required if the log entries to be encrypted are appended to an existing secure encrypted destination
+.SH OPTIONS
 .PP
-The current log entry counter of the secure encrypted destination after encryption. This is required if the log entries to be encrypted are appended to an existing secure encrypted destination
-.RE
-.SH Options
-.RS
-.IP \(bu 2
-\-\-key\-file or \-k
+\fB\fC\-\-key\-file\fR or \fB\fC\-k\fR
+    The current host key from the system where the encryption is performed.
 .PP
-The current host key from the system where the encryption is performed.
-.IP \(bu 2
-\-\-mac\-file or \-m
+\fB\fC\-\-mac\-file\fR or \fB\fC\-m\fR
+    The current MAC file from the system where the encryption is performed.
 .PP
-The current MAC file from the system where the encryption is performed.
-.IP \(bu 2
-\-\-help or \-h
+\fB\fC\-\-help\fR or \fB\fC\-h\fR
+    Display a help message.
+.SH FILES
 .PP
-Display a help message.
-.RE
-.SH Files
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/bin/slogencrypt
 .PP
-\fB\fC/usr/bin/slogencrypt\fR
-.PP
-\fB\fC/etc/syslog\-ng.conf\fR
-.SH Additional Information
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/etc/syslog\-ng.conf
+.SH SEE ALSO
 .RS
 .IP \(bu 2
 The syslog\-ng.conf manual page
