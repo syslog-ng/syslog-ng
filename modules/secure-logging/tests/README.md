@@ -113,11 +113,16 @@ COPY_TO_HOME_BACKUP (existing data is deleted or overwritten without asking).
 
 NOTE: In file test_secure_logging.c there is a preprocessor used:
 **RUN_CLI_SLOG_SMOKETEST**
-When this is available and set to 1, tests based on shell scripts are
-triggered.
+When this is available and set to 1, the CLI smoke tests based on shell scripts are
+triggered together with the Criterion unit tests on **make check**. 
+
 Later this preprocessor might be defined in a different place.
 Currently the preprocessor is set to 0 directly in the module
 test_secure_logging.c due to issues with the CI test system on github.
+
+C code that makes scripts executable has been commented out also, because
+gitub CI tests tools do raise a 'high severity security vulnerability'
+error regarding chmod.
 
 
 ## cli01_syslog.sh
@@ -176,7 +181,8 @@ base build has successfully finished.
 This script is called in test scripts.
 
 ### update_conf_path.sh
-For each test a syslog-ng.conf file is copied into the its folder.
-Each script has its own folder and therefore syslog-ng.conf, based on the template
-syslog-ng-test-udp-nc.conf, gets the corresponding path by updating its variable
-@define mypath "/tmp/test_slog/data"
+For each test a syslog-ng.conf file is copied into the test unique test folder inside /tmp/test_slog/.
+syslog-ng.conf, based on the template syslog-ng-test-udp-nc.conf, gets the corresponding unique path 
+by updating its variable @define mypath "/tmp/test_slog/data".
+The update of syslog-ng.conf is done by update_conf_path.sh
+

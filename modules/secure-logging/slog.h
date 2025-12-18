@@ -273,7 +273,7 @@ gboolean deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
 gboolean create_initial_mac0(unsigned char mainKey[KEY_LENGTH], unsigned char mac[CMAC_LENGTH]);
 
 // Get path of aggregated MAC file and provides full file name for mac0.dat
-gboolean get_path_mac0(char *pathAggMac, char *pathMac0, int sizePathMac0);
+gboolean get_path_mac0(const char *pathAggMac, char *pathMac0, size_t sizePathMac0);
 
 // Pseudo-random function implementation
 gboolean PRF(unsigned char *key, unsigned char *originalInput,

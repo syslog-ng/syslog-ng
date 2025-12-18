@@ -304,7 +304,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);
   cr_assert(ret == TRUE, "finalizeVerify failed");
 
-  for (int i=0; i<totalNumberOfMessages; i++)
+  for (int i=0; i < totalNumberOfMessages; i++)
     {
       GString *str = (GString *)g_ptr_array_index(output, i);
       char *plaintextMessage = (str->str) + CTR_LEN_SIMPLE + COLON + BLANK;
@@ -690,7 +690,7 @@ void test_slog_malicious_modifications(void)
   size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
 
   LogMessage **logs = g_new0(LogMessage *, num);
-  printf("Num: %lu\n", num);
+  g_print("Num: %lu\n", num);
   createLogMessages(num, logs);
 
   // Template output
@@ -796,10 +796,14 @@ void test_slog_performance(void)
    * - Currently the CI test do fail when set to 1. Reasons:
    *   -- chmod is used to make test scripts and helper scripts executable
    *      this causes in CI system a 'high severity security vulnerability'
+   *      (Fixed by commiting from Linux so scripts stay executable, and
+   *      commenting out call to chmod)
    *   -- Expected 'sed' is not available for CI macOS version, but used
    *      by update_conf_path.sh.
+   *      (Fixed by workaround and by providing solution for macOS nc in cli01_syslog.sh
+   *      and cli06_syslog.sh so that tests on macOS15 intel machine was running
+   *      fine)
    */
-
 
 #if defined(RUN_CLI_SLOG_SMOKETEST) && ((RUN_CLI_SLOG_SMOKETEST) == 1)
 
@@ -819,9 +823,9 @@ int make_executable(const char *filepath)
       return -1; //-- ERROR
     }
   return 0; //-- only used to check if path is valid currently
-
   // chmod is causing 'high severity security vulnerability' on GitHubs CI.
-  /*
+
+  /* Not needed when committing and pushing from Linux
   mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
   // mode_t new_mode = SCRIPT_PERMISSIONS;
   if (chmod(filepath, new_mode) == 0)

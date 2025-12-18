@@ -120,36 +120,56 @@ gboolean create_initial_mac0( unsigned char mainKey[KEY_LENGTH], unsigned char m
           return FALSE;
         }
       memcpy(mac, outputBigMac, CMAC_LENGTH);
-      msg_info("[SLOG] INFO: MAC0 has been created");
+      msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "MAC0 has been created"));
     }
   return TRUE;
 }
 
 
-// return TRUE on success, else FALSE
-gboolean get_path_mac0(char *pathAggMac, char *pathMac0, int sizePathMac0)
+
+/**
+ * Gets the path to mac0.dat based on the directory of pathAggMac.
+ * Returns TRUE on success, FALSE otherwise.
+ */
+gboolean get_path_mac0(const char *pathAggMac, char *pathMac0, size_t sizePathMac0)
 {
   gboolean retval = FALSE;
-  if ((NULL == pathAggMac) || (NULL == pathMac0))
+  if (pathAggMac == NULL || pathMac0 == NULL || sizePathMac0 == 0)
     {
-      msg_error("[SLOG] ERROR: Invalid path: pathAggMac or pathMac0");
-      return FALSE; //-- ERROR, never ever
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Invalid path: pathAggMac or pathMac0 or sizePathMac0"));
+      return retval;
     }
-  memset(pathMac0, 0, sizePathMac0);
   gchar *dirname = g_path_get_dirname(pathAggMac);
-  if (NULL != dirname)
+  //-- Check if dirname is valid and actually exists on the system
+  if (dirname != NULL && g_file_test(dirname, G_FILE_TEST_IS_DIR))
     {
-      if(g_file_test(dirname, G_FILE_TEST_IS_DIR))
+      //-- Build the full path using GLib (handles '/' automatically)
+      gchar *full_path = g_build_filename(dirname, "mac0.dat", NULL);
+      if (full_path != NULL)
         {
-          strncat(pathMac0, dirname, sizePathMac0 - strlen(pathMac0) - 1);
-          strncat(pathMac0, "/mac0.dat", sizePathMac0 - strlen(pathMac0) - 10);
-          pathMac0[sizePathMac0-1]='\0';
-          retval = TRUE;
+          //-- Safely copy to the output buffer
+          if (strlen(full_path) < sizePathMac0)
+            {
+              g_strlcpy(pathMac0, full_path, sizePathMac0);
+              retval = TRUE;
+            }
+          else
+            {
+              msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Destination buffer too small for path"));
+            }
+          g_free(full_path);
         }
     }
-  g_free (dirname);
+  else
+    {
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Reason", "Directory does not exist!"),
+                evt_tag_str("Path", dirname ? dirname : "NULL"));
+    }
+  g_free(dirname);
   return retval;
 }
+
 
 
 /*
@@ -891,7 +911,7 @@ gboolean readAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
   // If file does not exist there is nothing to do
   if(!g_file_test(filename, G_FILE_TEST_IS_REGULAR))
     {
-      msg_info("[SLOG] INFO: MAC does not yet exist and will be created");
+      msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "MAC does not yet exist and will be created"));
       close_file(f);
       return TRUE;
     }
@@ -922,20 +942,21 @@ gboolean readAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
 
   if(!cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, testOutput, &outlen, testOutput_capacity))
     {
-      msg_error("[SLOG] ERROR: Bad CMAC",
+      msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("File: ", __FILE__),
-                evt_tag_long("Line: ", __LINE__));
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_str("Reason", "Bad CMAC"));
       cmacOk = FALSE;
     }
 
   if (0 != memcmp(testOutput, &macdata[CMAC_LENGTH], CMAC_LENGTH))
     {
-      msg_warning("[SLOG] ERROR: MAC computation invalid");
+      msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "MAC computation invalid"));
       cmacOk = FALSE;
     }
   else
     {
-      msg_info("[SLOG] INFO: MAC successfully loaded");
+      msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "MAC successfully loaded"));
     }
 
   result = close_file(f);
@@ -1004,15 +1025,16 @@ gboolean readKey(unsigned char *destKey, guint64 *destCounter, gchar *keypath)
   if(!cmac((guchar *)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen,
            testOutputCapacity))
     {
-      msg_error("[SLOG] ERROR: Bad CMAC",
+      msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("File: ", __FILE__),
-                evt_tag_long("Line: ", __LINE__));
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_str("Reason", "Bad CMAC"));
       cmacOk = FALSE;
     }
 
   if (0 != memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH))
     {
-      msg_warning("[SLOG] ERROR: Host key corrupted. CMAC in key file not matching");
+      msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Host key corrupted. CMAC in key file not matching"));
       result = FALSE;
     }
 
@@ -1073,9 +1095,10 @@ gboolean writeKey(unsigned char *key, guint64 counter, gchar *keypath)
   if(!cmac((guchar *)key, &littleEndianCounter, sizeof(littleEndianCounter),
            (guchar *)outputmacdata, &outlen, outputmacdata_capacity))
     {
-      msg_error("[SLOG] ERROR: Bad CMAC",
+      msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("File: ", __FILE__),
-                evt_tag_long("Line: ", __LINE__));
+                evt_tag_long("Line: ", __LINE__),
+                evt_tag_str("Reason", "Bad CMAC"));
       cmacOk = FALSE;
     }
 

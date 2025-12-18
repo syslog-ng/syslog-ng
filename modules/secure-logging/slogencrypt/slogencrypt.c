@@ -112,8 +112,10 @@ int main(int argc, char *argv[])
   hostkey = options[index].arg;
   if (NULL == hostkey)
     {
-
       g_print("ERROR: Option --key-file or -k with a valid path to a Host key is missing!\n\n");
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Reason",
+                            "Option --key-file or -k with a valid path to a Host key is missing!"));
       (void) slog_usage(context, group, NULL);
       return 1; //-- ERROR
     }
@@ -122,7 +124,10 @@ int main(int argc, char *argv[])
   inputMAC = options[index].arg;
   if (NULL == inputMAC)
     {
-      msg_error("[SLOG] ERROR: Option --mac-file or -m does not provide a valid path to a MAC file");
+      g_print("ERROR: Option --mac-file or -m does not provide a valid path to a MAC file!\n\n");
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Reason",
+                            "Option --mac-file or -m does not provide a valid path to a MAC file!"));
       (void) slog_usage(context, group, NULL);
       return 1; //-- ERROR
     }
@@ -133,8 +138,10 @@ int main(int argc, char *argv[])
   if(newhostKey == NULL)
     {
       // Safe. Will not be reached due check of argc above
-      msg_error("[SLOG] ERROR: Path to new host key is missing");
+      g_print("ERROR: Path to new host key is missing!\n\n");
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to new host key is missing!"));
       (void) slog_usage(context, group, NULL);
+      g_assert_not_reached();
       return 1; //-- ERROR
     }
   index++;
@@ -144,7 +151,9 @@ int main(int argc, char *argv[])
     {
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to new MAC file is missing!\n\n");
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to new MAC file is missing!"));
       (void) slog_usage(context, group, NULL);
+      g_assert_not_reached();
       return 1; //-- ERROR
     }
   index++;
@@ -166,6 +175,7 @@ int main(int argc, char *argv[])
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to output log is missing!\n\n");
       (void) slog_usage(context, group, NULL);
+      g_assert_not_reached();
       return 1; //-- ERROR
     }
 
@@ -174,7 +184,9 @@ int main(int argc, char *argv[])
   gboolean ret = readKey(key, &counter, hostkey);
   if (!ret)
     {
-      msg_error("[SLOG] ERROR: Unable to read host key", evt_tag_str("file", hostkey));
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Reason", "Unable to read host key!"),
+                evt_tag_str("file", hostkey));
       return -1; //-- ERROR
     }
 
@@ -185,10 +197,12 @@ int main(int argc, char *argv[])
 
       if(result == EOF || bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
         {
-          msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", bufSize),
-                    evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("Reason", "Invalid buffer size."),
+                    evt_tag_int("Size", bufSize),
+                    evt_tag_int("Minimum buffer size", MIN_BUF_SIZE),
+                    evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
           g_option_context_free(context);
-          // bug ? return 0;
           return -1; //-- ERROR
         }
     }
@@ -197,7 +211,9 @@ int main(int argc, char *argv[])
   FILE *inputFile = fopen(inputlog, "r");
   if (inputFile == NULL)
     {
-      msg_error("[SLOG] ERROR: Unable to open input log file", evt_tag_str("file", inputlog));
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Reason", "Unable to open input log file!"),
+                evt_tag_str("file", inputlog));
       return -1; //-- ERROR
     }
 
@@ -205,7 +221,9 @@ int main(int argc, char *argv[])
   FILE *outputFile = fopen(outputlog, "w");
   if (outputFile == NULL)
     {
-      msg_error("[SLOG] ERROR: Unable to open output log file", evt_tag_str("file", outputlog));
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Reason", "Unable to open output log file!"),
+                evt_tag_str("file", outputlog));
       return -1; //-- ERROR
     }
 
@@ -213,24 +231,32 @@ int main(int argc, char *argv[])
   if(!g_file_test(inputMAC, G_FILE_TEST_IS_REGULAR))
     {
       //-- This is normal the first time, slogencrypt is called.
-      msg_info("[SLOG] INFO: MAC file, specified by parameter -m, was not found and is created now (initial MAC file).",
+      msg_info(SLOG_INFO_PREFIX,
+               evt_tag_str("Reason", "MAC file, specified by parameter -m, was not found and is created now (initial MAC file)."),
                evt_tag_str("file", inputMAC));
       create_initial_mac0(key, mac);
       if (writeAggregatedMAC(inputMAC, mac) == FALSE)
         {
-          msg_warning("[SLOG] WARNING: writeAggregatedMAC was not successful", evt_tag_str("file", inputMAC));
+          //-- ERROR: file was not written. Anyhow do not exit here.
+          msg_warning(SLOG_WARNING_PREFIX,
+                      evt_tag_str("Reason", "writeAggregatedMAC was not successful!"),
+                      evt_tag_str("file", inputMAC));
         }
       if(!g_file_test(inputMAC, G_FILE_TEST_IS_REGULAR))
         {
-          //-- ERROR: file was not written. Anyhow do not exit here.
-          msg_warning("[SLOG] WARNING: Initial MAC file was not written!", evt_tag_str("file", inputMAC));
+          //-- ERROR: file not found. Anyhow do not exit here.
+          msg_warning(SLOG_WARNING_PREFIX,
+                      evt_tag_str("Reason", "Initial MAC file was not written as expected!"),
+                      evt_tag_str("file", inputMAC));
         }
     }
 
   // Read MAC (if possible)
   if (readAggregatedMAC(inputMAC, mac)==0)
     {
-      msg_warning("[SLOG] ERROR: Unable to open input MAC file", evt_tag_str("file", inputMAC));
+      msg_warning(SLOG_WARNING_PREFIX,
+                  evt_tag_str("Reason", "Unable to open input MAC file!"),
+                  evt_tag_str("file", inputMAC));
       // This is an error but we can proceed anyhow. But later, when
       // slogverify is used, a dummy mac file must be provided for the first verification instead
       // and this will cause an verification error.
@@ -240,7 +266,7 @@ int main(int argc, char *argv[])
   char *line = NULL;
   gboolean outcome = TRUE;
 
-  msg_info("Importing data...");
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Importing data..."));
 
   // Parse data
   while(getline(&line, &readLen, inputFile) != -1)
@@ -276,7 +302,9 @@ int main(int argc, char *argv[])
                           outputmacdata_capacity);
       if(!outcome)
         {
-          msg_warning("[SLOG] ERROR: Unable to encrypt log entry", evt_tag_str("line", inputGString->str));
+          msg_warning(SLOG_WARNING_PREFIX,
+                      evt_tag_str("Reason", "Unable to encrypt log entry!"),
+                      evt_tag_str("line", inputGString->str));
           return -1; //-- ERROR;
         }
 
@@ -287,7 +315,7 @@ int main(int argc, char *argv[])
       outcome = evolveKey((unsigned char *)key);
       if(!outcome)
         {
-          msg_warning("[SLOG] ERROR: Unable to evolve key");
+          msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to evolve key!"));
           return -1; //-- ERROR
         }
 
@@ -303,7 +331,7 @@ int main(int argc, char *argv[])
   // Write whole log MAC
   if (!writeAggregatedMAC(outputMAC, mac))
     {
-      msg_error("Problem with output MAC file");
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Problem with output MAC file!"));
       return -1; //-- ERROR
     }
 
@@ -311,7 +339,9 @@ int main(int argc, char *argv[])
   ret = writeKey(key, counter, newhostKey);
   if (!ret)
     {
-      msg_error("[SLOG] ERROR: Unable to write new host key", evt_tag_str("file", outputlog));
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Reason", "Unable to write new host key"),
+                evt_tag_str("file", outputlog));
       return -1; //-- ERROR
     }
 
@@ -319,6 +349,5 @@ int main(int argc, char *argv[])
 
   msg_info("All data successfully imported.");
 
-  // bug ? return 1;
   return 0; //-- SUCCESS
 }

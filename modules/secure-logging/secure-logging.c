@@ -233,8 +233,9 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
           (void) readKey(state->key, &key_counter, state->keypath);
           if (key_counter > 0)
             {
-              msg_warning("[SLOG] ERROR: Number of log entries is greater than 0 but no MAC files provided!", evt_tag_long("Count",
-                          key_counter));
+              msg_warning(SLOG_WARNING_PREFIX,
+                          evt_tag_str("Reason", "Number of log entries is greater than 0 but no MAC files provided!"),
+                          evt_tag_long("Count", key_counter));
               is_good_start = FALSE;
             }
         }
@@ -245,7 +246,9 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       //-- write aggregated MAC and MAC0 file
       (void) writeAggregatedMAC(state->macpath, mac);
       (void) writeAggregatedMAC(pathMac0, mac);
-      msg_info("[SLOG] INFO: MAC0 and MAC have been created!", evt_tag_str("File", state->macpath));
+      msg_info(SLOG_INFO_PREFIX,
+               evt_tag_str("Reason", "MAC0 and MAC have been created!"),
+               evt_tag_str("File", state->macpath));
     }
   else
     {

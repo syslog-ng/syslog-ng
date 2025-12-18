@@ -25,21 +25,34 @@
 
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   start_syslog-ng.sh
-# Date:   2025-12-08
+# Date:   2025-12-18
 #
 # Helper to start syslog-ng
 # Note: A already running instance is stopped first.
 
-# set -x
+set -x
 
-VERSION="Version 1.0.6"
+VERSION="Version 1.1.0"
+
 # remove path and extension from $0
 s=$0
 SCRIPTNAME="$(
     b="${s##*/}"
     echo "${b%.*}"
 )"
-NOW=$(date +%Y-%m-%d_%H%M_%S)
+echo "SCRIPTNAME: ${SCRIPTNAME}"
+
+PID=$$
+echo "PID: ${PID}"
+
+RANDOM_ID=$(
+    /bin/dd if=/dev/urandom bs=1 count=4 2>/dev/null |
+        od -An -N4 -tx
+)
+CLEAN_ID=$(echo "${RANDOM_ID}" | tr -d ' ')
+
+NOW=$(date +%Y-%m-%d_%H%M%S)
+
 echo " "
 echo " "
 echo "***********************************************************"
@@ -72,9 +85,13 @@ BIN=${PREFIX}/bin
 SBIN=${PREFIX}/sbin
 ETC=${PREFIX}/etc
 VAR=${PREFIX}/var
-SUBFOLDER=slog
-SUBFOLDER_TEST="test"
-TEST=/tmp/${SUBFOLDER_TEST}/${SUBFOLDER}
+
+SUBFOLDER_TEST="test_slog"
+PATH_SUFFIX="${SCRIPTNAME}_${PID}_${CLEAN_ID}"
+SUBFOLDER="data"
+TEST=/tmp/${SUBFOLDER_TEST}/${SUBFOLDER}_${PATH_SUFFIX}
+echo "TEST: ${TEST}"
+
 MACADDRESS="01:23:45:67:89:AB"
 SERIALNUMBER="12345678"
 
@@ -228,9 +245,17 @@ fi
 
 check_missing "${TEST}/h0.key" "${TEST}/host.key" "${HOMESLOGTEST}/${SFNCONF}"
 
+# -- copy initial version of syslog-ng.conf into working folder
 cp -f "${HOMESLOGTEST}/${SFNCONF}" "${TEST}/syslog-ng.conf"
-
 check_missing "${TEST}/syslog-ng.conf"
+
+# -- syslog-ng.conf is based on a template, now the working path must be updated ---
+#
+cp -f "${HOMESLOGTEST}/${SFNCONF}" "${TEST}/syslog-ng.conf"
+check_missing "${TEST}/syslog-ng.conf" "${SCRIPT_DIR}/update_conf_path.sh"
+echo "Update syslog-ng.conf template path .."
+RETVALUC=$("${SCRIPT_DIR}/update_conf_path.sh" "${TEST}/syslog-ng.conf" "${PATH_SUFFIX}" "add")
+echo "RETVALUC: ${RETVALUC}"
 
 # simple quick check whether udp port is found in conf file
 if grep -q "${UDP_PORT}" "${TEST}/syslog-ng.conf"; then
