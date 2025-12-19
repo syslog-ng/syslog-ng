@@ -47,33 +47,34 @@ gboolean normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlo
   unsigned char key[KEY_LENGTH];
   guint64 counter;
 
-  msg_info("[SLOG] INFO: Reading key file", evt_tag_str("name", hostkey));
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Reading key file"), evt_tag_str("name", hostkey));
   gboolean success = readKey(key, &counter, hostkey);
   if (!success)
     {
-      msg_error("[SLOG] ERROR: Unable to read host key", evt_tag_str("file", hostkey));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to read host key"), evt_tag_str("file", hostkey));
       return FALSE; //-- ERROR
     }
 
   if (counter!=0UL)
     {
-      msg_error("[SLOG] ERROR: Initial key k0 is required for verification and decryption but the supplied key read has a counter > 0.",
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason",
+                                               "Initial key k0 is required for verification and decryption but the supplied key read has a counter > 0."),
                 evt_tag_long("Counter", counter));
       return FALSE; //-- ERROR
     }
 
-  msg_info("[SLOG] INFO: Reading MAC file", evt_tag_str("name", MACfile));
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Reading MAC file"), evt_tag_str("name", MACfile));
   FILE *bigMAC = fopen(MACfile, "r");
-  if(bigMAC == NULL)
+  if (bigMAC == NULL)
     {
-      msg_error("[SLOG] ERROR: Unable to read MAC", evt_tag_str("file", MACfile));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to read MAC"), evt_tag_str("file", MACfile));
       return FALSE; //-- ERROR
     }
 
   unsigned char MAC[CMAC_LENGTH]; //-- aggregated MAC
   if (!readAggregatedMAC(MACfile, MAC))
     {
-      msg_warning("[SLOG] WARNING: Unable to read MAC", evt_tag_str("file", MACfile));
+      msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to read MAC"), evt_tag_str("file", MACfile));
     }
 
   //-- initial MAC0 ---
@@ -84,45 +85,47 @@ gboolean normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlo
     {
       if (!readAggregatedMAC(pathMac0, MAC0))
         {
-          msg_warning("[SLOG] WARNING: Unable to read MAC0", evt_tag_str("file", pathMac0));
+          msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to read MAC0"), evt_tag_str("file", pathMac0));
         }
       else
         {
-          msg_info("[SLOG] INFO: Read MAC0", evt_tag_str("file", pathMac0));
+          msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Read MAC0"), evt_tag_str("file", pathMac0));
         }
     }
   else
     {
-      msg_warning("[SLOG] WARNING: Invalid pathMac0"); //-- fileVerify will fail later
+      msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Invalid pathMac0")); //-- fileVerify will fail later
     }
 
 
   FILE *input = fopen(inputlog, "r");
 
-  if(input == NULL)
+  if (input == NULL)
     {
-      msg_error("[SLOG] ERROR: Unable to open input log", evt_tag_str("file", inputlog));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to open input log"), evt_tag_str("file", inputlog));
       return FALSE; //-- ERROR
     }
 
   // Scan through file ones
   guint64 entries = 0;
-  while(!feof(input))
+  while (!feof(input))
     {
       char c = fgetc(input);
-      if(c == '\n')
+      if (c == '\n')
         {
           entries++;
         }
     }
   fclose(input);
 
-  msg_info("[SLOG] INFO: Number of lines in file", evt_tag_long("number", entries));
-  msg_info("[SLOG] INFO: Restoring and verifying log entries", evt_tag_int("buffer size", bufsize));
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Number of lines in file"), evt_tag_long("number", entries));
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Restoring and verifying log entries"), evt_tag_int("buffer size",
+           bufsize));
   gboolean result = fileVerify((unsigned char *)key, inputlog, outputlog, MAC, entries, bufsize, MAC0);
   if (!result)
     {
-      msg_error("[SLOG] ERROR: There is a problem with log verification. Please check log manually");
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason",
+                                               "There is a problem with log verification. Please check log manually"));
       return FALSE; //-- ERROR
 
     }
@@ -136,70 +139,72 @@ gboolean iterativeMode(char *prevKey, char *prevMAC, char *curMAC, char *inputlo
   unsigned char previousKey[KEY_LENGTH];
   guint64 previousKeyCounter = 0;
 
-  msg_info("[SLOG] INFO: Reading previous key file", evt_tag_str("name", prevKey));
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Reading previous key file"), evt_tag_str("name", prevKey));
   gboolean success = readKey(previousKey, &previousKeyCounter, prevKey);
   if (!success)
     {
-      msg_error("[SLOG] ERROR: Previous key could not be loaded.", evt_tag_str("file", prevKey));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Previous key could not be loaded."), evt_tag_str("file", prevKey));
       return FALSE; //-- ERROR
     }
 
-  msg_info("[SLOG] INFO: Reading previous MAC file", evt_tag_str("name", prevMAC));
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Reading previous MAC file"), evt_tag_str("name", prevMAC));
   FILE *previousBigMAC = fopen(prevMAC, "r");
-  if(previousBigMAC == NULL)
+  if (previousBigMAC == NULL)
     {
-      msg_error("[SLOG] ERROR: Unable to read previous MAC", evt_tag_str("file", prevMAC));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to read previous MAC"), evt_tag_str("file", prevMAC));
       return FALSE; //-- ERROR
     }
 
   unsigned char previousMAC[CMAC_LENGTH];
   if (!readAggregatedMAC(prevMAC, previousMAC))
     {
-      msg_warning("[SLOG] WARNING: Unable to read previous MAC", evt_tag_str("file", prevMAC));
+      msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to read previous MAC"), evt_tag_str("file", prevMAC));
     }
 
-  msg_info("[SLOG] INFO: Reading current MAC file", evt_tag_str("name", curMAC));
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Reading current MAC file"), evt_tag_str("name", curMAC));
   FILE *currentBigMAC = fopen(curMAC, "r");
-  if(currentBigMAC == NULL)
+  if (currentBigMAC == NULL)
     {
-      msg_error("[SLOG] ERROR: Unable to read current MAC", evt_tag_str("file", curMAC));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to read current MAC"), evt_tag_str("file", curMAC));
       return FALSE; //-- ERROR
     }
 
   unsigned char currentMAC[CMAC_LENGTH];
   if (!readAggregatedMAC(curMAC, currentMAC))
     {
-      msg_warning("[SLOG] WARNING: Unable to read current MAC", evt_tag_str("file", curMAC));
+      msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to read current MAC"), evt_tag_str("file", curMAC));
     }
 
   FILE *input = fopen(inputlog, "r");
-  if(input == NULL)
+  if (input == NULL)
     {
-      msg_error("[SLOG] ERROR: Unable to open input log", evt_tag_str("file", inputlog));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to open input log"), evt_tag_str("file", inputlog));
       return FALSE; //-- ERROR
     }
 
   // Scan through file ones
   guint64 entries = 0;
-  while(!feof(input))
+  while (!feof(input))
     {
       char c = fgetc(input);
-      if(c == '\n')
+      if (c == '\n')
         {
           entries++;
         }
     }
   fclose(input);
 
-  msg_info("[SLOG] INFO: Number of lines in file", evt_tag_long("number", entries));
-  msg_info("[SLOG] INFO: Restoring and verifying log entries", evt_tag_int("buffer size", bufSize));
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Number of lines in file"), evt_tag_long("number", entries));
+  msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Restoring and verifying log entries"), evt_tag_int("buffer size",
+           bufSize));
   gboolean result = iterativeFileVerify(previousMAC, (unsigned char *)previousKey, inputlog, currentMAC, outputlog,
                                         entries,
                                         bufsize, previousKeyCounter);
 
   if (!result)
     {
-      msg_error("[SLOG] ERROR: There is a problem with log verification. Please check log manually");
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason",
+                                               "There is a problem with log verification. Please check log manually"));
       return FALSE; //-- ERROR (note: fix bug, was 1)
 
     }
@@ -249,7 +254,7 @@ int main(int argc, char *argv[])
       return 1; //-- ERROR
     }
 
-  if(argc < 2 || argc > 4)
+  if (argc < 2 || argc > 4)
     {
       (void) slog_usage(context, group, NULL);
       return 1; //-- ERROR
@@ -273,7 +278,7 @@ int main(int argc, char *argv[])
   index = 1;
   inputLog = argv[index];
   index++;
-  if(!g_file_test(inputLog, G_FILE_TEST_IS_REGULAR))
+  if (!g_file_test(inputLog, G_FILE_TEST_IS_REGULAR))
     {
       GString *errorMsg = g_string_new(FILE_ERROR);
       g_string_append(errorMsg, inputLog);
@@ -283,7 +288,7 @@ int main(int argc, char *argv[])
 
   outputLog = argv[index];
   index++;
-  if(outputLog == NULL)
+  if (outputLog == NULL)
     {
       (void) slog_usage(context, group, NULL);
       return 1; //-- ERROR
@@ -294,10 +299,13 @@ int main(int argc, char *argv[])
     {
       bufSize = atoi(argv[index]);
 
-      if(bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
+      if (bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
         {
-          msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", bufSize),
-                    evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("Reason", "Invalid buffer size."),
+                    evt_tag_int("Size", bufSize),
+                    evt_tag_int("Minimum buffer size", MIN_BUF_SIZE),
+                    evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
           g_option_context_free(context);
           return 1; //-- ERROR
         }
@@ -308,7 +316,7 @@ int main(int argc, char *argv[])
     {
       if (prevHostKey == NULL || prevMacFile == NULL || curMacFile == NULL)
         {
-          printf("%s", g_option_context_get_help(context, TRUE, NULL));
+          g_print("%s", g_option_context_get_help(context, TRUE, NULL));
           g_option_context_free(context);
           return 1; //-- ERROR
         }
@@ -323,7 +331,7 @@ int main(int argc, char *argv[])
     {
       if (hostKey == NULL || curMacFile == NULL)
         {
-          printf("%s", g_option_context_get_help(context, TRUE, NULL));
+          g_print("%s", g_option_context_get_help(context, TRUE, NULL));
           g_option_context_free(context);
           return 1; //-- ERROR
         }

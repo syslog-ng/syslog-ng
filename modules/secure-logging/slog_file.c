@@ -34,7 +34,7 @@ SLogFile *create_file(const gchar *filename, const gchar *mode)
 {
   SLogFile *f = g_new0(SLogFile, 1);
 
-  if(f == NULL)
+  if (f == NULL)
     {
       return NULL;
     }
@@ -51,23 +51,23 @@ SLogFile *create_file(const gchar *filename, const gchar *mode)
 
 gboolean open_file(SLogFile *f)
 {
-  if(f == NULL || f->state != SLOG_FILE_READY)
+  if (f == NULL || f->state != SLOG_FILE_READY)
     {
       return FALSE;
     }
 
   gboolean result = TRUE;
   gboolean found = FALSE;
-  for(int i = 0; i < NUM_MODES; i++)
+  for (int i = 0; i < NUM_MODES; i++)
     {
-      if(strncmp(modes[i], f->mode, LEN_MODES) == 0)
+      if (strncmp(modes[i], f->mode, LEN_MODES) == 0)
         {
           found = TRUE;
           break;
         }
     }
 
-  if(!found)
+  if (!found)
     {
       g_set_error (&f->error,
                    SLOG_FILE_DOMAIN,          // Error domain
@@ -80,7 +80,7 @@ gboolean open_file(SLogFile *f)
   else
     {
       f->channel = g_io_channel_new_file(f->filename, f->mode, &f->error);
-      if(!f->channel)
+      if (!f->channel)
         {
           f->status = G_IO_STATUS_ERROR;
           f->state = SLOG_FILE_GENERAL_ERROR;
@@ -92,7 +92,7 @@ gboolean open_file(SLogFile *f)
     }
 
   // Assemble status message
-  if(f->status != G_IO_STATUS_NORMAL)
+  if (f->status != G_IO_STATUS_NORMAL)
     {
       switch (f->status)
         {
@@ -120,7 +120,7 @@ gboolean open_file(SLogFile *f)
       f->state = SLOG_FILE_OPEN;
     }
 
-  if(f->error != NULL)
+  if (f->error != NULL)
     {
       g_string_append_printf(f->message, " %s %s", f->error->message, f->filename);
       g_clear_error(&f->error);
@@ -133,7 +133,7 @@ gboolean open_file(SLogFile *f)
 gboolean write_to_file(SLogFile *f, const gchar *data, gsize len)
 {
   // File must be open
-  if(f == NULL || f->state != SLOG_FILE_OPEN)
+  if (f == NULL || f->state != SLOG_FILE_OPEN)
     {
       return FALSE;
     }
@@ -142,7 +142,7 @@ gboolean write_to_file(SLogFile *f, const gchar *data, gsize len)
 
   gboolean result = f->status == G_IO_STATUS_NORMAL;
 
-  if(chars_written != len)
+  if (chars_written != len)
     {
       g_string_assign(f->message, SLOG_ERROR_PREFIX);
       g_string_append_printf(f->message,
@@ -161,7 +161,7 @@ gboolean write_to_file(SLogFile *f, const gchar *data, gsize len)
 gboolean read_from_file(SLogFile *f, gchar *data, gsize len)
 {
   // File must be open
-  if(f == NULL || f->state != SLOG_FILE_OPEN)
+  if (f == NULL || f->state != SLOG_FILE_OPEN)
     {
       return FALSE;
     }
@@ -170,7 +170,7 @@ gboolean read_from_file(SLogFile *f, gchar *data, gsize len)
 
   gboolean result = f->status == G_IO_STATUS_NORMAL;
 
-  if(chars_read != len)
+  if (chars_read != len)
     {
       g_string_assign(f->message, SLOG_ERROR_PREFIX);
       g_string_append_printf(f->message,
@@ -189,7 +189,7 @@ gboolean read_from_file(SLogFile *f, gchar *data, gsize len)
 gboolean read_line_from_file(SLogFile *f, GString *line)
 {
   // File must be open
-  if(f == NULL || f->state != SLOG_FILE_OPEN)
+  if (f == NULL || f->state != SLOG_FILE_OPEN)
     {
       return FALSE;
     }
@@ -203,7 +203,7 @@ gboolean read_line_from_file(SLogFile *f, GString *line)
 
 gboolean close_channel(SLogFile *f)
 {
-  if(f == NULL || f->channel == NULL)
+  if (f == NULL || f->channel == NULL)
     {
       f->state = SLOG_FILE_GENERAL_ERROR;
       return FALSE;
@@ -215,7 +215,7 @@ gboolean close_channel(SLogFile *f)
 
   f->channel = NULL;
 
-  if(f->status != G_IO_STATUS_NORMAL)
+  if (f->status != G_IO_STATUS_NORMAL)
     {
       f->state = SLOG_FILE_SHUTDOWN_ERROR;
       return FALSE;
@@ -229,7 +229,7 @@ gboolean close_channel(SLogFile *f)
 
 gboolean close_file(SLogFile *f)
 {
-  if(f == NULL)
+  if (f == NULL)
     {
       return FALSE;
     }

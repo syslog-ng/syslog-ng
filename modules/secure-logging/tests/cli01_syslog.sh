@@ -24,7 +24,7 @@
 
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   cli01_syslog.sh
-# Date:   2025-12-17
+# Date:   2025-12-19
 #
 # Smoke Test of cli tools slogkey, syslog-ng, syslog-ng-cli, slogverify
 #
@@ -54,7 +54,7 @@
 
 set -x
 
-VERSION="Version 1.4.0"
+VERSION="Version 1.4.1"
 
 # remove path and extension from $0
 s=$0
@@ -513,6 +513,23 @@ else
     echo " "
 fi
 
+# -- wrong key, new with usage of macors like SLOG_ERROR_PREFIX etc ---
+#  1 [SLOG] INFO; Reason='Reading key file', name='/tmp/test_slog/data_cli01_syslog_451127_83cb566f/h1.key'
+#  2 [SLOG] ERROR; Reason='Initial key k0 is required for verification and decryption but the supplied key read has a counter > 0.', Counter='1'
+
+# -- wrong mac, new with usage of macros ---
+# [SLOG] INFO; Reason='Reading key file', name='/tmp/test_slog/data_cli01_syslog_452248_075303b2/h0.key'
+# [SLOG] INFO; Reason='Reading MAC file', name='/tmp/test_slog/data_cli01_syslog_452248_075303b2/mac0.dat'
+# [SLOG] INFO; Reason='MAC successfully loaded'
+# [SLOG] INFO; Reason='MAC successfully loaded'
+# [SLOG] INFO; Reason='Read MAC0', file='/tmp/test_slog/data_cli01_syslog_452248_075303b2/mac0.dat'
+# [SLOG] INFO; Reason='Number of lines in file', number='3'
+# [SLOG] INFO; Reason='Restoring and verifying log entries', buffer size='1000'
+# [SLOG] INFO; Reason='All entries recovered successfully'
+# [SLOG] WARNING; Reason='Aggregated MAC mismatch. Log might be incomplete'
+# [SLOG] ERROR; Reason='There is a problem with log verification. Please check log manually'
+
+# -- old variant, before usage of macros ---
 # [SLOG] ERROR: Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.; entry='2'
 # [SLOG] WARNING: Decryption not successful; entry='2'
 # [SLOG] WARNING: Unable to recover; entry='3'
@@ -524,7 +541,7 @@ if ! [ -f "${TEST}/slogverify-normal-mode-result.log" ]; then
     printf "ERROR: %s does not exist\n" "${TEST}/slogverify-normal-mode-result.log" >&2
     cnt_error=$((cnt_error + 1))
 else
-    if grep -q "ERROR: Log claims to be past entry from past archive" "${TEST}/slogverify-normal-mode-result.log"; then
+    if grep -q "Log claims to be past entry from past archive" "${TEST}/slogverify-normal-mode-result.log"; then
         cnt_error=$((cnt_error + 1))
     fi
     if grep -q "Decryption not successful" "${TEST}/slogverify-normal-mode-result.log"; then
@@ -536,7 +553,7 @@ else
     if grep -q "Aggregated MAC mismatch" "${TEST}/slogverify-normal-mode-result.log"; then
         cnt_error=$((cnt_error + 1))
     fi
-    if grep -q "ERROR: There is a problem with log verification. Please check log manually" "${TEST}/slogverify-normal-mode-result.log"; then
+    if grep -q "There is a problem with log verification. Please check log manually" "${TEST}/slogverify-normal-mode-result.log"; then
         cnt_error=$((cnt_error + 1))
     fi
 fi
@@ -595,17 +612,17 @@ while [ "${i}" -lt "${MAX_LOOP}" ]; do
     fi
     echo " "
 
-    # [SLOG] ERROR: Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.; entry='2'
-    # [SLOG] WARNING: Decryption not successful; entry='2'
-    # [SLOG] WARNING: Unable to recover; entry='3'
-    # [SLOG] WARNING: Aggregated MAC mismatch. Log might be incomplete;
-    # [SLOG] WARNING: Aggregated MAC mismatch. Log might be incomplete;
-    # [SLOG] ERROR: There is a problem with log verification. Please check log manually;
+    # Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.; entry='2'
+    # Decryption not successful; entry='2'
+    # Unable to recover; entry='3'
+    # Aggregated MAC mismatch. Log might be incomplete;
+    # Aggregated MAC mismatch. Log might be incomplete;
+    # There is a problem with log verification. Please check log manually;
     if ! [ -f "${TEST}/slogverify-iterative-mode-result${i_offset}.log" ]; then
         printf "ERROR: %s does not exist\n" "${TEST}/slogverify-iterative-mode-result${i_offset}.log" >&2
         cnt_error=$((cnt_error + 1))
     else
-        if grep -q "ERROR: Log claims to be past entry from past archive" "${TEST}/slogverify-iterative-mode-result${i_offset}.log"; then
+        if grep -q "Log claims to be past entry from past archive" "${TEST}/slogverify-iterative-mode-result${i_offset}.log"; then
             cnt_error=$((cnt_error + 1))
         fi
         if grep -q "Decryption not successful" "${TEST}/slogverify-iterative-mode-result${i_offset}.log"; then
@@ -617,7 +634,7 @@ while [ "${i}" -lt "${MAX_LOOP}" ]; do
         if grep -q "Aggregated MAC mismatch" "${TEST}/slogverify-iterative-mode-result${i_offset}.log"; then
             cnt_error=$((cnt_error + 1))
         fi
-        if grep -q "ERROR: There is a problem with log verification." "${TEST}/slogverify-iterative-mode-result${i_offset}.log"; then
+        if grep -q "There is a problem with log verification." "${TEST}/slogverify-iterative-mode-result${i_offset}.log"; then
             cnt_error=$((cnt_error + 1))
         fi
     fi

@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
   // argc in case of ordered arguments.
 
   // Note: When all data is provided correctly, argc is 5 or 6 after parsing
-  if(argc < 5 || argc > 6)
+  if (argc < 5 || argc > 6)
     {
       g_print("ERROR: Count of arguments is out of range!\n\n");
       (void) slog_usage(context, group, NULL);
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
   // Input and output file arguments
   index = 1;
   newhostKey = argv[index];
-  if(newhostKey == NULL)
+  if (newhostKey == NULL)
     {
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to new host key is missing!\n\n");
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
   index++;
 
   outputMAC = argv[index];
-  if(outputMAC == NULL)
+  if (outputMAC == NULL)
     {
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to new MAC file is missing!\n\n");
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 
   inputlog = argv[index];
   index++;
-  if(!g_file_test(inputlog, G_FILE_TEST_IS_REGULAR))
+  if (!g_file_test(inputlog, G_FILE_TEST_IS_REGULAR))
     {
       GString *errorMsg = g_string_new(FILE_ERROR);
       g_string_append(errorMsg, inputlog);
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 
   outputlog = argv[index];
   index++;
-  if(outputlog == NULL)
+  if (outputlog == NULL)
     {
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to output log is missing!\n\n");
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
     {
       int result = sscanf(argv[index], "%"G_GUINT64_FORMAT, &bufSize);
 
-      if(result == EOF || bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
+      if (result == EOF || bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
         {
           msg_error(SLOG_ERROR_PREFIX,
                     evt_tag_str("Reason", "Invalid buffer size."),
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
     }
 
   //-- initial MAC file ---
-  if(!g_file_test(inputMAC, G_FILE_TEST_IS_REGULAR))
+  if (!g_file_test(inputMAC, G_FILE_TEST_IS_REGULAR))
     {
       //-- This is normal the first time, slogencrypt is called.
       msg_info(SLOG_INFO_PREFIX,
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
                       evt_tag_str("Reason", "writeAggregatedMAC was not successful!"),
                       evt_tag_str("file", inputMAC));
         }
-      if(!g_file_test(inputMAC, G_FILE_TEST_IS_REGULAR))
+      if (!g_file_test(inputMAC, G_FILE_TEST_IS_REGULAR))
         {
           //-- ERROR: file not found. Anyhow do not exit here.
           msg_warning(SLOG_WARNING_PREFIX,
@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Importing data..."));
 
   // Parse data
-  while(getline(&line, &readLen, inputFile) != -1)
+  while (getline(&line, &readLen, inputFile) != -1)
     {
       char outputmacdata[CMAC_LENGTH];
       GString *result = g_string_new(NULL);
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
       outcome = sLogEntry(counter, inputGString, (unsigned char *)key, (unsigned char *)mac, result,
                           (unsigned char *)outputmacdata,
                           outputmacdata_capacity);
-      if(!outcome)
+      if (!outcome)
         {
           msg_warning(SLOG_WARNING_PREFIX,
                       evt_tag_str("Reason", "Unable to encrypt log entry!"),
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
       // Update keys, MAC, etc
       memcpy(mac, outputmacdata, CMAC_LENGTH);
       outcome = evolveKey((unsigned char *)key);
-      if(!outcome)
+      if (!outcome)
         {
           msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to evolve key!"));
           return -1; //-- ERROR

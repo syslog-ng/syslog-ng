@@ -31,6 +31,7 @@
 #define SLOG_INFO_PREFIX "[SLOG] INFO"
 #define SLOG_WARNING_PREFIX "[SLOG] WARNING"
 #define SLOG_ERROR_PREFIX "[SLOG] ERROR"
+
 #define SLOG_FILE_DOMAIN 100
 #define SLOG_FILE_READY 1000
 #define SLOG_FILE_OPEN 1001
@@ -42,7 +43,9 @@
 #define SLOG_FILE_INCOMPLETE_READ 2004
 #define SLOG_FILE_INCOMPLETE_WRITE 2005
 #define SLOG_FILE_SHUTDOWN_ERROR 2006
+
 #define SLOG_MEM_ALLOC_ERROR 3000
+
 #define SLOG_OPENSSL_LIBRARY_ERROR 4000
 
 /*
@@ -51,8 +54,8 @@ TODO clarify: CRITERION tests do call macro only ever in case of #OBJ == "f"! Mi
 */
 
 #define SLOG_SECT_START(OBJ) \
-  for(slog_sect_t sect_##OBJ = SLogSectInit(); SLogSectCondition(&sect_##OBJ); ) { \
-    if(setjmp(sect_##OBJ.env) == 0) {
+  for (slog_sect_t sect_##OBJ = SLogSectInit(); SLogSectCondition(&sect_##OBJ); ) { \
+    if (setjmp(sect_##OBJ.env) == 0) {
 
 #define SLOG_SECT_END(OBJ) \
       } else { \

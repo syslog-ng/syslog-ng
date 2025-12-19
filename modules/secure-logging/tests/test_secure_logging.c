@@ -144,12 +144,12 @@ LogTemplate *createTemplate(TestData *testData)
 // Create a collection of random log messages for testing purposes
 void createLogMessages(gint num, LogMessage **log)
 {
-  if(num <= 0)
+  if (num <= 0)
     {
       cr_log_error("Invalid argument passed to createLog. num = %d", num);
     }
 
-  for(int i = 0; i < num; i++)
+  for (int i = 0; i < num; i++)
     {
       log[i] = create_random_sample_message();
     }
@@ -367,7 +367,7 @@ void removeTemporaryFile(gchar *fileName, gboolean force)
 {
   // Remove file
   int ret = unlink(fileName);
-  if(!force && ret != 0)
+  if (!force && ret != 0)
     {
       cr_log_info("removeTemporaryFile %s: %s", strerror(errno), fileName);
     }
@@ -378,11 +378,11 @@ void removeTemporaryDirectory(gchar *dirName, gboolean force)
 {
   // Remove directory
   int ret = rmdir(dirName);
-  if(!force && ret != 0)
+  if (!force && ret != 0)
     {
       cr_log_info("removeTemporaryDirectory %s: %s", strerror(errno), dirName);
     }
-  if(g_file_test(dirName, G_FILE_TEST_IS_DIR) && (TRUE == force))
+  if (g_file_test(dirName, G_FILE_TEST_IS_DIR) && (TRUE == force))
     {
       //-- another way to remove a directory ---
       char szCmd[PATH_MAX];
@@ -390,7 +390,7 @@ void removeTemporaryDirectory(gchar *dirName, gboolean force)
       system(szCmd);
       g_snprintf(szCmd, sizeof(szCmd), "rm -rf %s", dirName);
       system(szCmd);
-      if(g_file_test(dirName, G_FILE_TEST_IS_DIR))
+      if (g_file_test(dirName, G_FILE_TEST_IS_DIR))
         {
           cr_log_info("Temporary directory was not deleted: %s", dirName);
         }
@@ -451,13 +451,13 @@ void corruptKey(TestData *testData)
   gchar data[buflen];
 
   // Overwrite the first 8 byte of the key with random values
-  for(int i = 0; i < buflen; i++)
+  for (int i = 0; i < buflen; i++)
     {
       data[i] = randomNumber(1, 128);
     }
 
   // Overwrite the first 8 byte of the key with random values
-  for(int i = 0; i < 8; i++)
+  for (int i = 0; i < 8; i++)
     {
       testData->hostKey[i] = randomNumber(1, 128);
     }
@@ -516,7 +516,7 @@ void test_slog_template_format(void)
 
   // $(slog -k keyfile)
   g_string_printf(templ, "$(slog -k %s)", testData->keyFile->str);
-  assert_template_failure(templ->str, "[SLOG] ERROR: Template parsing failed. Invalid number of arguments");
+  assert_template_failure(templ->str, SLOG_ERROR_PREFIX ": Template parsing failed. Invalid number of arguments");
 
   // $(slog -k keyfile -m)
   g_string_printf(templ, "$(slog -k %s -m)", testData->keyFile->str);
@@ -528,7 +528,7 @@ void test_slog_template_format(void)
 
   // $(slog -k keyfile -m macfile)
   g_string_printf(templ, "$(slog -k %s -m %s)", testData->keyFile->str, testData->macFile->str);
-  assert_template_failure(templ->str, "[SLOG] ERROR: Template parsing failed. Invalid number of arguments");
+  assert_template_failure(templ->str, SLOG_ERROR_PREFIX ": Template parsing failed. Invalid number of arguments");
 
   g_string_free(templ, TRUE);
 
@@ -570,7 +570,7 @@ void test_slog_verification_bulk(void)
   GString **output = g_new0(GString *, num);
 
   // Apply slog template to each message
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
     }
@@ -579,7 +579,7 @@ void test_slog_verification_bulk(void)
   verifyMessages(testData->hostKey, testData->macFile->str, output, logs, num);
 
   // Release message resources
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       log_msg_unref(logs[i]);
       g_string_free(output[i], TRUE);
@@ -612,7 +612,7 @@ void test_slog_corrupted_key(void)
   GString **output = g_new0(GString *, num);
 
   // Part 1: Apply slog template to each message
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
     }
@@ -621,7 +621,7 @@ void test_slog_corrupted_key(void)
   verifyMessages(testData->hostKey, testData->macFile->str, output, logs, num);
 
   // Release message resources
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       log_msg_unref(logs[i]);
       g_string_free(output[i], TRUE);
@@ -645,7 +645,7 @@ void test_slog_corrupted_key(void)
   output = g_new0(GString *, num);
 
   // Apply slog template to each message
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
 
@@ -697,7 +697,7 @@ void test_slog_malicious_modifications(void)
   GString **output = g_new0(GString *, num);
 
   // Apply slog template to each message
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
     }
@@ -730,7 +730,7 @@ void test_slog_malicious_modifications(void)
 
   for (gsize i=0; i<num; i++)
     {
-      if(1 == findInArray(i, entriesToModify, mods))
+      if (1 == findInArray(i, entriesToModify, mods))
         {
           cr_assert(1 == findInArray(i, brokenEntries, mods), "Modified entry %lu not detected.", i);
         }
@@ -741,7 +741,7 @@ void test_slog_malicious_modifications(void)
     }
 
   // Release message resources
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       log_msg_unref(logs[i]);
       g_string_free(output[i], TRUE);
@@ -786,6 +786,8 @@ void test_slog_performance(void)
 
 #define RUN_CLI_SLOG_SMOKETEST 0
 
+#define MAKE_SCRIPTS_EXECUTABLE 0
+
 /* Notes in regard RUN_CLI_SLOG_SMOKETEST
    *
    * - For the time being, RUN_CLI_SLOG_SMOKETEST is set to 0 to disable
@@ -805,15 +807,18 @@ void test_slog_performance(void)
    *      fine)
    */
 
+/* Notes in regard MAKE_SCRIPTS_EXECUTABLE
+ *
+ * Disabled by default because chmod causes in CI system
+ * a 'high severity security vulnerability'
+ * Normally, scripts for smoke tests are provided executable.
+ */
+
+
 #if defined(RUN_CLI_SLOG_SMOKETEST) && ((RUN_CLI_SLOG_SMOKETEST) == 1)
 
-// Define the required permission constant:
-// S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
-// This translates to 755 (rwxr-xr-x)
-// #define SCRIPT_PERMISSIONS (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
-
-int make_executable(const char *filepath)
+int check_smoketest_script(const char *filepath)
 {
   struct stat st;
   if (stat(filepath, &st) == -1)
@@ -822,23 +827,26 @@ int make_executable(const char *filepath)
       msg_warning("make_executable, stat fails for ", evt_tag_str("file", filepath));
       return -1; //-- ERROR
     }
-  return 0; //-- only used to check if path is valid currently
-  // chmod is causing 'high severity security vulnerability' on GitHubs CI.
 
-  /* Not needed when committing and pushing from Linux
+#if defined(MAKE_SCRIPTS_EXECUTABLE) && ((MAKE_SCRIPTS_EXECUTABLE) == 1)
   mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
-  // mode_t new_mode = SCRIPT_PERMISSIONS;
+  //-- Note: chmod is causing 'high severity security vulnerability' on GitHubs CI.
   if (chmod(filepath, new_mode) == 0)
-  {
-    return 0; //-- SUCCESS
-  }
+    {
+      return 0; //-- SUCCESS
+    }
   else
-  {
-    cr_log_info("make_executable, chmod fails for %s\n", filepath);
-    msg_warning("make_executable, chmod fails for ", evt_tag_str("file", filepath));
-    return -1; //-- ERROR
-  }
-  */
+    {
+      cr_log_info("make_executable, chmod fails for %s\n", filepath);
+      msg_warning("make_executable, chmod fails for ", evt_tag_str("file", filepath));
+      return -1; //-- ERROR
+    }
+#else
+
+  return 0; //-- SUCCESS
+
+#endif /* MAKE_SCRIPTS_EXECUTABLE */
+
 }
 
 
@@ -874,14 +882,14 @@ void test_slog_cli_smoke_tests(void)
 
   cr_assert(COUNT_TEST_SCRIPTS <= COUNT_SCRIPTS, "Invalid config test_slog_cli_smoke_tests!");
 
-  //-- ensure scripts are executable ---
+  //-- check scripts ---
   if (NULL != dirname)
     {
       for (guint i = 0; i < COUNT_SCRIPTS; i++)
         {
           char *fullpath = g_build_filename(dirname, ShortScriptName[i], NULL);
           cr_log_info("fullpath: %s\n", fullpath);
-          int retexe = make_executable(fullpath); //-- only path check currently
+          int retexe = check_smoketest_script(fullpath);
           g_free(fullpath);
           cr_assert(0 == retexe, "Script not executeable or wrong path!");
         }

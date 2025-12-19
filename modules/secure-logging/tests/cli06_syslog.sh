@@ -24,7 +24,7 @@
 
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   cli06_syslog.sh
-# Date:   2025-12-17
+# Date:   2025-12-19
 #
 # Smoke Test of cli tools slogkey, syslog-ng, syslog-ng-cli, slogverify
 # In this test syslog-ng is only stopped after all log entries have been
@@ -57,7 +57,7 @@
 
 set -x
 
-VERSION="Version 1.3.0"
+VERSION="Version 1.3.1"
 
 # remove path and extension from $0
 s=$0
@@ -467,18 +467,18 @@ else
     echo " "
 fi
 
-# [SLOG] ERROR: Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.; entry='2'
-# [SLOG] WARNING: Decryption not successful; entry='2'
-# [SLOG] WARNING: Unable to recover; entry='3'
-# [SLOG] WARNING: Aggregated MAC mismatch. Log might be incomplete;
-# [SLOG] WARNING: Aggregated MAC mismatch. Log might be incomplete;
-# [SLOG] ERROR: There is a problem with log verification. Please check log manually;
+# Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.; entry='2'
+# Decryption not successful; entry='2'
+# Unable to recover; entry='3'
+# Aggregated MAC mismatch. Log might be incomplete;
+# Aggregated MAC mismatch. Log might be incomplete;
+# There is a problem with log verification. Please check log manually;
 
 if ! [ -f "${TEST}/slogverify-normal-mode-result.log" ]; then
     printf "ERROR: %s does not exist\n" "${TEST}/slogverify-normal-mode-result.log" >&2
     cnt_error=$((cnt_error + 1))
 else
-    if grep -q "ERROR: Log claims to be past entry from past archive" "${TEST}/slogverify-normal-mode-result.log"; then
+    if grep -q "Log claims to be past entry from past archive" "${TEST}/slogverify-normal-mode-result.log"; then
         cnt_error=$((cnt_error + 1))
     fi
     if grep -q "Decryption not successful" "${TEST}/slogverify-normal-mode-result.log"; then
@@ -490,7 +490,7 @@ else
     if grep -q "Aggregated MAC mismatch" "${TEST}/slogverify-normal-mode-result.log"; then
         cnt_error=$((cnt_error + 1))
     fi
-    if grep -q "ERROR: There is a problem with log verification. Please check log manually" "${TEST}/slogverify-normal-mode-result.log"; then
+    if grep -q "There is a problem with log verification. Please check log manually" "${TEST}/slogverify-normal-mode-result.log"; then
         cnt_error=$((cnt_error + 1))
     fi
 fi

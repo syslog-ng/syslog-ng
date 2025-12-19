@@ -68,13 +68,14 @@ void SLogSectForward(char const *file, int line, int code, slog_error_handler_t 
   };
 
   // Abort on unhanded errors
-  if(SLogSectHead == NULL)
+  if (SLogSectHead == NULL)
     {
-      fprintf(stderr, "%s Unhandled error in file %s at line %d. Aborting.\n",
-              SLOG_ERROR_PREFIX,
-              file,
-              line
-             );
+      // fprintf(stderr, "%s Unhandled error in file %s at line %d. Aborting.\n",
+      //        SLOG_ERROR_PREFIX, file, line );
+      g_printerr("%s Unhandled error in file %s at line %d. Aborting.\n",
+                 SLOG_ERROR_PREFIX,
+                 file,
+                 line);
       abort();
     }
   SLogSectHead->state = SLOG_SECT_FORWARD;
