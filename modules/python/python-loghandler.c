@@ -109,9 +109,11 @@ exit:
 int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
   int ret = -1;
+
   PyObject *logging_module = NULL;
   PyObject *super = NULL;
   PyObject *init_function = NULL;
+  PyObject *py_level_value = NULL;
 
   logging_module = _py_do_import("logging");
   if (!logging_module)
@@ -135,11 +137,16 @@ int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds)
   else
     level_value = py_log_levels.info;
 
-  PyObject *init_ret = PyObject_CallFunction(init_function, "(l)", level_value);
+  py_level_value = PyLong_FromLong(level_value);
+  if (!py_level_value)
+    goto exit;
+
+  PyObject *init_ret = PyObject_CallOneArg(init_function, py_level_value);
   ret = init_ret ? 0 : -1;
   Py_DECREF(init_ret);
 
 exit:
+  Py_XDECREF(py_level_value);
   Py_XDECREF(init_function);
   Py_XDECREF(super);
   Py_XDECREF(logging_module);
