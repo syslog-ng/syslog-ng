@@ -205,7 +205,6 @@ static PyType_Slot py_handler_slots[] =
   {Py_tp_doc,     "Those messages can be captured by internal() source."},
   {Py_tp_new,     PyType_GenericNew},
   {Py_tp_init, (initproc)py_loghandler_init},
-  {Py_tp_dealloc,  (destructor)py_slng_generic_dealloc},
   {Py_tp_methods, py_handler_methods},
   {0, 0}
 };
@@ -213,7 +212,6 @@ static PyType_Slot py_handler_slots[] =
 static PyType_Spec py_handler_spec =
 {
   .name = "InternalHandler",
-  .basicsize = sizeof(PyObject),
   .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .slots = py_handler_slots,
 };
@@ -243,7 +241,10 @@ void py_loghandler_global_init(void)
       goto exit;
     }
 
-  PyObject *internal_handler = PyType_FromSpecWithBases(&py_handler_spec, bases);
+  PyType_Spec spec = py_handler_spec;
+  spec.basicsize = ((PyTypeObject *)handler)->tp_basicsize;
+
+  PyObject *internal_handler = PyType_FromSpecWithBases(&spec, bases);
   if (!internal_handler)
     goto exit;
 
