@@ -26,11 +26,14 @@
 --suffix=none
 
 # exclude folders && files
-# on Travis these submodules are not checked out when cheking the style
+# do not check submodules and third party code
 --ignore-exclude-errors
 --exclude="lib/ivykis"
---exclude="lib/compat/strcasestr.c"
---exclude="dbld"
+--exclude="modules/cloud-auth/jwt-cpp"
+--exclude="modules/grpc/protos/opentelemetry-proto"
+# TODO: inherited exclusions, check why these are excluded earlier
+# --exclude="lib/compat/strcasestr.c"
+# --exclude="dbld"
 
 # allow opening curly bracket in the same line as namespace e.g.: `namespace foobar {`
 --attach-namespaces
