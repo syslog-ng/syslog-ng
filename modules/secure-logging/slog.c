@@ -48,9 +48,9 @@
 #define SHORT_OPT_INDICATOR "-"
 
 // This initialization only works with GCC.
-static unsigned char KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] = IPAD };
-static unsigned char MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] = OPAD };
-static unsigned char GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] =  EPAD};
+static guchar KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = IPAD };
+static guchar MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = OPAD };
+static guchar GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] =  EPAD};
 
 /*
  * Create specific sub-keys for encryption and CMAC generation from key.
@@ -61,27 +61,27 @@ static unsigned char GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] =  EP
  *
  * Note: encKey and MACKey must have space to hold KEY_LENGTH many bytes.
  */
-gboolean deriveSubKeys(unsigned char *mainKey, unsigned char *encKey, unsigned char *MACKey)
+gboolean deriveSubKeys(guchar *mainKey, guchar *encKey, guchar *MACKey)
 {
   return deriveEncSubKey(mainKey, encKey) && deriveMACSubKey(mainKey, MACKey);
 }
 
-gboolean deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey)
+gboolean deriveEncSubKey(guchar *mainKey, guchar *encKey)
 {
   return PRF(mainKey, KEYPATTERN, sizeof(KEYPATTERN), encKey, KEY_LENGTH);
 }
 
-gboolean deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey)
+gboolean deriveMACSubKey(guchar *mainKey, guchar *MACKey)
 {
   return PRF(mainKey, MACPATTERN, sizeof(MACPATTERN), MACKey, KEY_LENGTH);
 }
 
 
 // return TRUE on success, else FALSE
-gboolean create_initial_mac0( unsigned char mainKey[KEY_LENGTH], unsigned char mac[CMAC_LENGTH])
+gboolean create_initial_mac0(guchar mainKey[KEY_LENGTH], guchar mac[CMAC_LENGTH])
 {
-  unsigned char encKey[KEY_LENGTH];
-  unsigned char MACKey[KEY_LENGTH];
+  guchar encKey[KEY_LENGTH];
+  guchar MACKey[KEY_LENGTH];
   memset(encKey, 0, G_N_ELEMENTS(encKey));
   memset(MACKey, 0, G_N_ELEMENTS(MACKey));
 
@@ -93,15 +93,15 @@ gboolean create_initial_mac0( unsigned char mainKey[KEY_LENGTH], unsigned char m
 
   // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
   // Binary data cannot be larger than its base64 encoding
-  unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
+  guchar bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
   gsize nb = G_N_ELEMENTS(bigBuf);
   memset(bigBuf, 0, nb);
 
   // This is where are ciphertext related data starts
-  unsigned char *ctBuf = &bigBuf[AES_BLOCKSIZE];
-  unsigned char *iv = ctBuf;
+  guchar *ctBuf = &bigBuf[AES_BLOCKSIZE];
+  guchar *iv = ctBuf;
 
-  unsigned char outputBigMac[CMAC_LENGTH];
+  guchar outputBigMac[CMAC_LENGTH];
   gsize outputBigMac_capacity = G_N_ELEMENTS(outputBigMac);
   memset(outputBigMac, 0, outputBigMac_capacity);
 
@@ -131,7 +131,7 @@ gboolean create_initial_mac0( unsigned char mainKey[KEY_LENGTH], unsigned char m
  * Gets the path to mac0.dat based on the directory of pathAggMac.
  * Returns TRUE on success, FALSE otherwise.
  */
-gboolean get_path_mac0(const char *pathAggMac, char *pathMac0, size_t sizePathMac0)
+gboolean get_path_mac0(const gchar *pathAggMac, gchar *pathMac0, size_t sizePathMac0)
 {
   gboolean retval = FALSE;
   if (pathAggMac == NULL || pathMac0 == NULL || sizePathMac0 == 0)
@@ -171,7 +171,6 @@ gboolean get_path_mac0(const char *pathAggMac, char *pathMac0, size_t sizePathMa
 }
 
 
-
 /*
  * AES256-GCM encryption
  *
@@ -190,9 +189,9 @@ gboolean get_path_mac0(const char *pathAggMac, char *pathMac0, size_t sizePathMa
  * Length of ciphertext (>0)
  * 0 on error
  */
-int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
-                unsigned char *key, unsigned char *iv,
-                unsigned char *ciphertext, unsigned char *tag)
+int sLogEncrypt(guchar *plaintext, int plaintext_len,
+                guchar *key, guchar *iv,
+                guchar *ciphertext, guchar *tag)
 {
   /*
    * This function is largely borrowed from
@@ -287,12 +286,12 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
  * -1 in case verification fails
  * 0 on error
  */
-int sLogDecrypt(unsigned char *ciphertext,
+int sLogDecrypt(guchar *ciphertext,
                 int ciphertext_len,
-                unsigned char *tag,
-                unsigned char *key,
-                unsigned char *iv,
-                unsigned char *plaintext)
+                guchar *tag,
+                guchar *key,
+                guchar *iv,
+                guchar *plaintext)
 {
   EVP_CIPHER_CTX *ctx;
   int len;
@@ -384,14 +383,14 @@ int sLogDecrypt(unsigned char *ciphertext,
 gboolean sLogEntry(
   guint64 numberOfLogEntries,
   GString *text,
-  unsigned char *mainKey,
-  unsigned char *inputBigMac,
+  guchar *mainKey,
+  guchar *inputBigMac,
   GString *output,
-  unsigned char *outputBigMac,
+  guchar *outputBigMac,
   gsize outputBigMac_capacity)
 {
-  unsigned char encKey[KEY_LENGTH];
-  unsigned char MACKey[KEY_LENGTH];
+  guchar encKey[KEY_LENGTH];
+  guchar MACKey[KEY_LENGTH];
 
   //-- according sub functions mainKey is also  most likely of length KEY_LENGTH
   if (!deriveSubKeys(mainKey, encKey, MACKey))
@@ -406,20 +405,20 @@ gboolean sLogEntry(
 
   // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
   // Binary data cannot be larger than its base64 encoding
-  unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
+  guchar bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
 
   // This is where are ciphertext related data starts
-  unsigned char *ctBuf = &bigBuf[AES_BLOCKSIZE];
-  unsigned char *iv = ctBuf;
-  unsigned char *tag = &bigBuf[AES_BLOCKSIZE+IV_LENGTH];
-  unsigned char *ciphertext = &bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
+  guchar *ctBuf = &bigBuf[AES_BLOCKSIZE];
+  guchar *iv = ctBuf;
+  guchar *tag = &bigBuf[AES_BLOCKSIZE+IV_LENGTH];
+  guchar *ciphertext = &bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
 
 // Generate random nonce
   if (RAND_bytes(iv, IV_LENGTH) == 1)
     {
       // Encrypt log data
       int ct_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, ciphertext, tag);
-      if (ct_length <= 0)
+      if(ct_length <= 0)
         {
           msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to correctly encrypt log message"));
           g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
@@ -476,7 +475,7 @@ gboolean sLogEntry(
  * Note: Caller must take care of memory management.
  *
  */
-gboolean deriveKey(unsigned char *dst, guint64 index, guint64 currentKey)
+gboolean deriveKey(guchar *dst, guint64 index, guint64 currentKey)
 {
   gboolean result = TRUE;
 
@@ -506,8 +505,8 @@ gboolean deriveKey(unsigned char *dst, guint64 index, guint64 currentKey)
  *   FALSE on error
  *
  */
-gboolean cmac(unsigned char *key, const void *input,
-              gsize length, unsigned char *out,
+gboolean cmac(guchar *key, const void *input,
+              gsize length, guchar *out,
               gsize *outlen, gsize out_capacity)
 {
   size_t output_len;
@@ -651,9 +650,9 @@ gboolean cmac(unsigned char *key, const void *input,
  * 1. Parameter: Pointer to key (input/output)
  *
  */
-gboolean evolveKey(unsigned char *key)
+gboolean evolveKey(guchar *key)
 {
-  unsigned char buf[KEY_LENGTH];
+  guchar buf[KEY_LENGTH];
   if (PRF(key, GAMMA, sizeof(GAMMA), buf, KEY_LENGTH))
     {
       memcpy(key, buf, KEY_LENGTH);
@@ -684,8 +683,8 @@ gboolean evolveKey(unsigned char *key)
  *  FALSE on error
  *
  */
-gboolean PRF(unsigned char *key, unsigned char *originalInput,
-             guint64 originalInputLength, unsigned char *output,
+gboolean PRF(guchar *key, guchar *originalInput,
+             guint64 originalInputLength, guchar *output,
              guint64 outputLength)
 {
   // First, extraction
@@ -794,23 +793,6 @@ gboolean generateMasterKey(guchar *masterkey)
  * memory.
  */
 
-
-/*
-In release version, there was a warning due to -Wstringop-overflow=
-because gcc could not check whether the destination buffer size was large enough.
-Why only the release version was affected by the warning is still unclear.
-
-gboolean deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *hostkey)
-{
-  gchar concatString[strlen(macAddr) + strlen(serial) + 1];
-  concatString[0] = 0;
-  strncat(concatString, macAddr, strlen(macAddr));
-  strncat(concatString, serial, strlen(serial));
-
-  return PRF(masterkey, (guchar *) concatString, strlen(concatString), hostkey, KEY_LENGTH);
-}
-*/
-
 gboolean deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *hostkey)
 {
   gchar concatString[strlen(macAddr) + strlen(serial) + 1];
@@ -828,7 +810,7 @@ gboolean deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar 
  * TRUE on success
  * FALSE on error
  */
-gboolean writeAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
+gboolean writeAggregatedMAC(gchar *filename, guchar *outputBuffer)
 {
   SLogFile *f = create_file(filename, "w+");
 
@@ -858,9 +840,9 @@ gboolean writeAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
   gchar outputmacdata[CMAC_LENGTH];
   gsize outlen;
   gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
-  unsigned char keyBuffer[KEY_LENGTH];
+  guchar keyBuffer[KEY_LENGTH];
   memset(keyBuffer, 0, KEY_LENGTH);
-  unsigned char zeroBuffer[CMAC_LENGTH];
+  guchar zeroBuffer[CMAC_LENGTH];
   memset(zeroBuffer, 0, CMAC_LENGTH);
   memcpy(keyBuffer, outputBuffer, MIN(CMAC_LENGTH, KEY_LENGTH));
 
@@ -895,7 +877,7 @@ gboolean writeAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
  * TRUE on success
  * FALSE on error
  */
-gboolean readAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
+gboolean readAggregatedMAC(gchar *filename, guchar *outputBuffer)
 {
   SLogFile *f = create_file(filename, "r");
 
@@ -931,13 +913,13 @@ gboolean readAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
     }
 
   gsize outlen = 0;
-  unsigned char keyBuffer[KEY_LENGTH];
+  guchar keyBuffer[KEY_LENGTH];
   memset(keyBuffer, 0, KEY_LENGTH);
-  unsigned char zeroBuffer[CMAC_LENGTH];
+  guchar zeroBuffer[CMAC_LENGTH];
   memset(zeroBuffer, 0, CMAC_LENGTH);
   memcpy(keyBuffer, macdata, MIN(CMAC_LENGTH, KEY_LENGTH));
 
-  unsigned char testOutput[CMAC_LENGTH];
+  guchar testOutput[CMAC_LENGTH];
   gsize testOutput_capacity = G_N_ELEMENTS(testOutput);
 
   if (!cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, testOutput, &outlen, testOutput_capacity))
@@ -979,7 +961,7 @@ gboolean readAggregatedMAC(gchar *filename, unsigned char *outputBuffer)
  * TRUE on success
  * FALSE on error
  */
-gboolean readKey(unsigned char *destKey, guint64 *destCounter, gchar *keypath)
+gboolean readKey(guchar *destKey, guint64 *destCounter, gchar *keypath)
 {
   SLogFile *f = create_file(keypath, "r");
 
@@ -1019,7 +1001,7 @@ gboolean readKey(unsigned char *destKey, guint64 *destCounter, gchar *keypath)
     }
 
   gsize outlen = 0;
-  unsigned char testOutput[CMAC_LENGTH];
+  guchar testOutput[CMAC_LENGTH];
   gsize testOutputCapacity = G_N_ELEMENTS(testOutput);
 
   if (!cmac((guchar *)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen,
@@ -1060,7 +1042,7 @@ gboolean readKey(unsigned char *destKey, guint64 *destCounter, gchar *keypath)
  * TRUE on success
  * FALSE on error
  */
-gboolean writeKey(unsigned char *key, guint64 counter, gchar *keypath)
+gboolean writeKey(guchar *key, guint64 counter, gchar *keypath)
 {
   SLogFile *f = create_file(keypath, "w+");
 
@@ -1132,12 +1114,12 @@ gboolean iterateBuffer(
   guint64 entriesInBuffer,
   GPtrArray *input,
   guint64 *nextLogEntry,
-  unsigned char *mainKey,
-  unsigned char *keyZero,
+  guchar *mainKey,
+  guchar *keyZero,
   guint keyNumber,
   GPtrArray *output,
   guint64 *numberOfLogEntries,
-  unsigned char *cmac_tag,
+  guchar *cmac_tag,
   gsize cmac_tag_capacity,
   GHashTable *tab)
 {
@@ -1217,8 +1199,8 @@ gboolean iterateBuffer(
           // Check whether something weird has happened during conversion
           if (outputLength > IV_LENGTH + AES_BLOCKSIZE)
             {
-              unsigned char pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
-              unsigned char encKey[KEY_LENGTH];
+              guchar pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
+              guchar encKey[KEY_LENGTH];
               deriveEncSubKey(mainKey, encKey);
               pt_length = sLogDecrypt(&binBuf[IV_LENGTH+AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE, &binBuf[IV_LENGTH],
                                       encKey, binBuf, pt);
@@ -1239,11 +1221,11 @@ gboolean iterateBuffer(
 
                   // Update BigHMAC
                   gsize outlen = 0;
-                  unsigned char MACKey[KEY_LENGTH];
+                  guchar MACKey[KEY_LENGTH];
                   deriveMACSubKey(mainKey, MACKey);
                   //-- now that an inital aggregated MAC exists, do the
                   //   same for first entry as for any other entries!
-                  unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length];
+                  guchar bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length];
                   memcpy(bigBuf, cmac_tag, AES_BLOCKSIZE);
                   memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length);
                   if (!cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen, cmac_tag_capacity))
@@ -1286,8 +1268,8 @@ gboolean iterateBuffer(
 gboolean finalizeVerify(
   guint64 startingEntry,
   guint64 entriesInFile,
-  unsigned char *aggMAC,
-  unsigned char *cmac_tag,
+  guchar *aggMAC,
+  guchar *cmac_tag,
   GHashTable *tab)
 {
   int ret = TRUE;
@@ -1336,7 +1318,7 @@ gboolean finalizeVerify(
 // Initialize log verification
 gboolean initVerify(
   guint64 entriesInFile,
-  unsigned char *mainKey,
+  guchar *mainKey,
   guint64 *nextLogEntry,
   guint64 *startingEntry,
   GPtrArray *input,
@@ -1405,10 +1387,10 @@ gboolean initVerify(
  * FALSE on error
  */
 gboolean iterativeFileVerify(
-  unsigned char *previousMAC,
-  unsigned char *mainKey,
+  guchar *previousMAC,
+  guchar *mainKey,
   char *inputFileName,
-  unsigned char *aggMAC,
+  guchar *aggMAC,
   char *outputFileName,
   guint64 entriesInFile,
   int chunkLength,
@@ -1421,7 +1403,7 @@ gboolean iterativeFileVerify(
       return FALSE;
     }
 
-  unsigned char keyZero[KEY_LENGTH];
+  guchar keyZero[KEY_LENGTH];
   memcpy(keyZero, mainKey, KEY_LENGTH);
   int startedWithZero = 0;
 
@@ -1487,7 +1469,7 @@ gboolean iterativeFileVerify(
       SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
     }
 
-  unsigned char cmac_tag[CMAC_LENGTH];
+  guchar cmac_tag[CMAC_LENGTH];
   gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
   memcpy(cmac_tag, previousMAC, CMAC_LENGTH);
 
@@ -1640,9 +1622,9 @@ gboolean iterativeFileVerify(
  * TRUE on success
  * FALSE on error
  */
-gboolean fileVerify(unsigned char *mainKey, char *inputFileName,
-                    char *outputFileName, unsigned char *aggMAC,
-                    guint64 entriesInFile, int chunkLength, unsigned char mac0[CMAC_LENGTH])
+gboolean fileVerify(guchar *mainKey, char *inputFileName,
+                    char *outputFileName, guchar *aggMAC,
+                    guint64 entriesInFile, int chunkLength, guchar mac0[CMAC_LENGTH])
 {
   gboolean volatile result = TRUE;
 
@@ -1665,7 +1647,7 @@ gboolean fileVerify(unsigned char *mainKey, char *inputFileName,
       return FALSE;
     }
 
-  unsigned char keyZero[KEY_LENGTH];
+  guchar keyZero[KEY_LENGTH];
   memcpy(keyZero, mainKey, KEY_LENGTH);
 
   GHashTable *tab = NULL;
@@ -1707,7 +1689,7 @@ gboolean fileVerify(unsigned char *mainKey, char *inputFileName,
 
   guint64 nextLogEntry = 0UL;
   guint64 startingEntry = 0UL;
-  unsigned char cmac_tag[CMAC_LENGTH];
+  guchar cmac_tag[CMAC_LENGTH];
   gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
   guint64 numberOfLogEntries = 0UL;
 

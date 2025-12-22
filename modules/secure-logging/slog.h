@@ -84,9 +84,9 @@ typedef struct
  * Length of ciphertext (>0)
  * 0 on error
  */
-int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
-                unsigned char *key, unsigned char *iv,
-                unsigned char *ciphertext, unsigned char *tag);
+int sLogEncrypt(guchar *plaintext, int plaintext_len,
+                guchar *key, guchar *iv,
+                guchar *ciphertext, guchar *tag);
 /*
  * Decrypt ciphertext and verify integrity
  *
@@ -103,9 +103,9 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
  * -1 in case verification fails
  * 0 on error
  */
-int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len,
-                unsigned char *tag, unsigned char *key,
-                unsigned char *iv, unsigned char *plaintext);
+int sLogDecrypt(guchar *ciphertext, int ciphertext_len,
+                guchar *tag, guchar *key,
+                guchar *iv, guchar *plaintext);
 
 /*
  * Compute AES256 CMAC of input
@@ -122,8 +122,8 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len,
  *
  * Note: Caller must take care of memory management.
  */
-gboolean cmac(unsigned char *key, const void *input,
-              gsize length, unsigned char *out,
+gboolean cmac(guchar *key, const void *input,
+              gsize length, guchar *out,
               gsize *outlen, gsize out_capacity);
 
 /*
@@ -136,7 +136,7 @@ gboolean cmac(unsigned char *key, const void *input,
  *
  * Note: Caller must take care of memory management.
  */
-gboolean deriveKey(unsigned char *dst, guint64 index, guint64 currentKey);
+gboolean deriveKey(guchar *dst, guint64 index, guint64 currentKey);
 
 /*
  * Create a new encrypted log entry
@@ -156,8 +156,8 @@ gboolean deriveKey(unsigned char *dst, guint64 index, guint64 currentKey);
  *   FALSE on error
  */
 gboolean sLogEntry(guint64 numberOfLogEntries, GString *text,
-                   unsigned char *key, unsigned char *inputBigMac,
-                   GString *output, unsigned char *outputBigMac,
+                   guchar *key, guchar *inputBigMac,
+                   GString *output, guchar *outputBigMac,
                    gsize outputBigMac_capacity);
 
 /*
@@ -197,8 +197,8 @@ gboolean deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar 
  * TRUE on success
  * FALSE on error
  */
-gboolean readAggregatedMAC(gchar *filename, unsigned char *outputBuffer);
-gboolean writeAggregatedMAC(gchar *filename, unsigned char *outputBuffer);
+gboolean readAggregatedMAC(gchar *filename, guchar *outputBuffer);
+gboolean writeAggregatedMAC(gchar *filename, guchar *outputBuffer);
 
 /*
  * Read key from file
@@ -207,7 +207,7 @@ gboolean writeAggregatedMAC(gchar *filename, unsigned char *outputBuffer);
  * TRUE on success
  * FALSE on error
  */
-gboolean readKey(unsigned char *destKey, guint64 *destCounter, gchar *keypath);
+gboolean readKey(guchar *destKey, guint64 *destCounter, gchar *keypath);
 
 /*
  * Write key to file
@@ -216,7 +216,7 @@ gboolean readKey(unsigned char *destKey, guint64 *destCounter, gchar *keypath);
  * TRUE on success
  * FALSE on error
  */
-gboolean writeKey(unsigned char *key, guint64 counter, gchar *keypath);
+gboolean writeKey(guchar *key, guint64 counter, gchar *keypath);
 
 /*
  * Verify the integrity of an existing log file
@@ -225,10 +225,10 @@ gboolean writeKey(unsigned char *key, guint64 counter, gchar *keypath);
  * TRUE on success
  * FALSE on error
  */
-gboolean fileVerify(unsigned char *key, char *inputFileName,
-                    char *outputFileName, unsigned char *bigMac,
+gboolean fileVerify(guchar *key, char *inputFileName,
+                    char *outputFileName, guchar *bigMac,
                     guint64 entriesInFile, int chunkLength,
-                    unsigned char mac0[CMAC_LENGTH]);
+                    guchar mac0[CMAC_LENGTH]);
 
 /*
  * Iteratively verify the integrity of a log archive
@@ -237,47 +237,47 @@ gboolean fileVerify(unsigned char *key, char *inputFileName,
  * TRUE on success
  * FALSE on error
  */
-gboolean iterativeFileVerify(unsigned char *previousMAC, unsigned char *previousKey,
-                             char *inputFileName, unsigned char *currentMAC,
+gboolean iterativeFileVerify(guchar *previousMAC, guchar *previousKey,
+                             char *inputFileName, guchar *currentMAC,
                              char *outputFileName, guint64 entriesInFile,
                              int chunkLength, guint64 keyNumber);
 
 // Set up log verification
-gboolean initVerify(guint64 entriesInFile, unsigned char *key,
+gboolean initVerify(guint64 entriesInFile, guchar *key,
                     guint64 *nextLogEntry, guint64 *startingEntry,
                     GPtrArray *input, GHashTable **tab);
 
 // Iterate through log entries contained in a buffer and verify them
 gboolean iterateBuffer(guint64 entriesInBuffer, GPtrArray *input,
-                       guint64 *nextLogEntry, unsigned char *key,
-                       unsigned char *keyZero, guint keyNumber,
+                       guint64 *nextLogEntry, guchar *key,
+                       guchar *keyZero, guint keyNumber,
                        GPtrArray *output, guint64 *numberOfLogEntries,
-                       unsigned char *cmac_tag, gsize cmac_tag_capacity, GHashTable *tab);
+                       guchar *cmac_tag, gsize cmac_tag_capacity, GHashTable *tab);
 
 // Finalize the verification
 gboolean finalizeVerify(guint64 startingEntry, guint64 entriesInFile,
-                        unsigned char *aggMac, unsigned char *cmac_tag,
+                        guchar *aggMac, guchar *cmac_tag,
                         GHashTable *tab);
 
 // Create a new key based on an existing key
-gboolean evolveKey(unsigned char *key);
+gboolean evolveKey(guchar *key);
 
 // Key derivation for encryption key
-gboolean deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey);
+gboolean deriveEncSubKey(guchar *mainKey, guchar *encKey);
 
 // Key derivation for HMAC
-gboolean deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
+gboolean deriveMACSubKey(guchar *mainKey, guchar *MACKey);
 
 // Create initial MAC mac0 before first encryption happens to provide this data
 // later for verification. Note: Does not write the file mac0.dat.
-gboolean create_initial_mac0(unsigned char mainKey[KEY_LENGTH], unsigned char mac[CMAC_LENGTH]);
+gboolean create_initial_mac0(guchar mainKey[KEY_LENGTH], guchar mac[CMAC_LENGTH]);
 
 // Get path of aggregated MAC file and provides full file name for mac0.dat
 gboolean get_path_mac0(const char *pathAggMac, char *pathMac0, size_t sizePathMac0);
 
 // Pseudo-random function implementation
-gboolean PRF(unsigned char *key, unsigned char *originalInput,
-             guint64 inputLength, unsigned char *output,
+gboolean PRF(guchar *key, guchar *originalInput,
+             guint64 inputLength, guchar *output,
              guint64 outputLength);
 
 // Print usage message and clean up

@@ -44,7 +44,7 @@ static int bufSize = DEF_BUF_SIZE;
 // Return TRUE on success, FALSE on error
 gboolean normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlog, int bufsize)
 {
-  unsigned char key[KEY_LENGTH];
+  guchar key[KEY_LENGTH];
   guint64 counter;
 
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Reading key file"), evt_tag_str("name", hostkey));
@@ -71,7 +71,7 @@ gboolean normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlo
       return FALSE; //-- ERROR
     }
 
-  unsigned char MAC[CMAC_LENGTH]; //-- aggregated MAC
+  guchar MAC[CMAC_LENGTH]; //-- aggregated MAC
   if (!readAggregatedMAC(MACfile, MAC))
     {
       msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to read MAC"), evt_tag_str("file", MACfile));
@@ -79,7 +79,7 @@ gboolean normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlo
 
   //-- initial MAC0 ---
   char pathMac0[PATH_MAX]; //-- full path of MAC0 file mac0.dat
-  unsigned char MAC0[CMAC_LENGTH]; //-- initial MAC
+  guchar MAC0[CMAC_LENGTH]; //-- initial MAC
   memset(MAC0, 0, CMAC_LENGTH);
   if (TRUE == get_path_mac0(MACfile, pathMac0, PATH_MAX))
     {
@@ -121,7 +121,7 @@ gboolean normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlo
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Number of lines in file"), evt_tag_long("number", entries));
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Restoring and verifying log entries"), evt_tag_int("buffer size",
            bufsize));
-  gboolean result = fileVerify((unsigned char *)key, inputlog, outputlog, MAC, entries, bufsize, MAC0);
+  gboolean result = fileVerify(key, inputlog, outputlog, MAC, entries, bufsize, MAC0);
   if (!result)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason",
@@ -136,7 +136,7 @@ gboolean normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlo
 // Return TRUE on success, FALSE on error
 gboolean iterativeMode(char *prevKey, char *prevMAC, char *curMAC, char *inputlog, char *outputlog, int bufsize)
 {
-  unsigned char previousKey[KEY_LENGTH];
+  guchar previousKey[KEY_LENGTH];
   guint64 previousKeyCounter = 0;
 
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Reading previous key file"), evt_tag_str("name", prevKey));
@@ -155,7 +155,7 @@ gboolean iterativeMode(char *prevKey, char *prevMAC, char *curMAC, char *inputlo
       return FALSE; //-- ERROR
     }
 
-  unsigned char previousMAC[CMAC_LENGTH];
+  guchar previousMAC[CMAC_LENGTH];
   if (!readAggregatedMAC(prevMAC, previousMAC))
     {
       msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to read previous MAC"), evt_tag_str("file", prevMAC));
@@ -169,7 +169,7 @@ gboolean iterativeMode(char *prevKey, char *prevMAC, char *curMAC, char *inputlo
       return FALSE; //-- ERROR
     }
 
-  unsigned char currentMAC[CMAC_LENGTH];
+  guchar currentMAC[CMAC_LENGTH];
   if (!readAggregatedMAC(curMAC, currentMAC))
     {
       msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to read current MAC"), evt_tag_str("file", curMAC));
@@ -197,7 +197,7 @@ gboolean iterativeMode(char *prevKey, char *prevMAC, char *curMAC, char *inputlo
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Number of lines in file"), evt_tag_long("number", entries));
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Restoring and verifying log entries"), evt_tag_int("buffer size",
            bufSize));
-  gboolean result = iterativeFileVerify(previousMAC, (unsigned char *)previousKey, inputlog, currentMAC, outputlog,
+  gboolean result = iterativeFileVerify(previousMAC, previousKey, inputlog, currentMAC, outputlog,
                                         entries,
                                         bufsize, previousKeyCounter);
 

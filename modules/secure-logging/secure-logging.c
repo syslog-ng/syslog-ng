@@ -205,8 +205,8 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   //  then!
 
   gboolean is_good_start = TRUE;
-  unsigned char key[KEY_LENGTH];
-  unsigned char mac[CMAC_LENGTH];
+  guchar key[KEY_LENGTH];
+  guchar mac[CMAC_LENGTH];
   char pathMac0[PATH_MAX]; //-- full path of MAC0 file mac0.dat
   memset(key, 0, KEY_LENGTH);
   memset(mac, 0, CMAC_LENGTH);
@@ -214,9 +214,9 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   if (FALSE == get_path_mac0(state->macpath, pathMac0, PATH_MAX))
     {
       //-- ERROR, never ever
-      msg_warning(SLOG_WARNING_PREFIX,
-                  evt_tag_str("Reason", "Failed to get path of MAC to create MAC0"),
-                  evt_tag_str("File", state->macpath));
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Reason", "Failed to get path of MAC to create MAC0"),
+                evt_tag_str("File", state->macpath));
     }
 
   if (!g_file_test(state->macpath, G_FILE_TEST_IS_REGULAR))
@@ -224,9 +224,9 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       if (g_file_test(pathMac0, G_FILE_TEST_IS_REGULAR))
         {
           //-- No MAC but there is a MAC0. Invalid state. Report a problem.
-          msg_warning(SLOG_WARNING_PREFIX,
-                      evt_tag_str("Reason", "MAC0 found without MAC"),
-                      evt_tag_str("File", pathMac0));
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("Reason", "MAC0 found without MAC"),
+                    evt_tag_str("File", pathMac0));
           is_good_start = FALSE;
         }
       else
@@ -236,9 +236,9 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
           (void) readKey(state->key, &key_counter, state->keypath);
           if (key_counter > 0)
             {
-              msg_warning(SLOG_WARNING_PREFIX,
-                          evt_tag_str("Reason", "Number of log entries is greater than 0 but no MAC files provided"),
-                          evt_tag_long("Count", key_counter));
+              msg_error(SLOG_ERROR_PREFIX,
+                        evt_tag_str("Reason", "Number of log entries is greater than 0 but no MAC files provided"),
+                        evt_tag_long("Count", key_counter));
               is_good_start = FALSE;
             }
         }
@@ -265,9 +265,9 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
           //   overwrite both MAC and MAC0 file
           (void) writeAggregatedMAC(state->macpath, mac);
           (void) writeAggregatedMAC(pathMac0, mac);
-          msg_warning(SLOG_WARNING_PREFIX,
-                      evt_tag_str("Reason", "Checksum of MAC is invalid! MAC0 and MAC have been re-created!"),
-                      evt_tag_str("File", pathMac0));
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("Reason", "Checksum of MAC is invalid! MAC0 and MAC have been re-created!"),
+                    evt_tag_str("File", pathMac0));
           is_good_start = FALSE;
         }
       else
@@ -278,9 +278,9 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
               //-- valid MAC file available
               //-- no MAC0 file available, use copy of valid MAC file
               (void) writeAggregatedMAC(pathMac0, state->aggMAC);
-              msg_warning(SLOG_WARNING_PREFIX,
-                          evt_tag_str("Reason", "No MAC0 found! Dummy MAC0 is provided!"),
-                          evt_tag_str("File", pathMac0));
+              msg_error(SLOG_ERROR_PREFIX,
+                        evt_tag_str("Reason", "No MAC0 found! Dummy MAC0 is provided!"),
+                        evt_tag_str("File", pathMac0));
               is_good_start = FALSE;
             }
           else
@@ -291,9 +291,9 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
                   //-- valid MAC file available
                   //-- invalid MAC0 file found, overwrite it, use copy of valid MAC file
                   (void) writeAggregatedMAC(pathMac0, state->aggMAC);
-                  msg_warning(SLOG_WARNING_PREFIX,
-                              evt_tag_str("Reason", "Checksum of MAC0 invalid! Dummy MAC0 is provided!"),
-                              evt_tag_str("File", pathMac0));
+                  msg_error(SLOG_ERROR_PREFIX,
+                            evt_tag_str("Reason", "Checksum of MAC0 invalid! Dummy MAC0 is provided!"),
+                            evt_tag_str("File", pathMac0));
                   is_good_start = FALSE;
                 }
             }
@@ -311,9 +311,9 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       if (!readAggregatedMAC(pathMac0, mac))
         {
           is_good_start = FALSE;
-          msg_warning(SLOG_WARNING_PREFIX,
-                      evt_tag_str("Reason", "Unable to read MAC0"),
-                      evt_tag_str("File", pathMac0));
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("Reason", "Unable to read MAC0"),
+                    evt_tag_str("File", pathMac0));
         }
     }
   else
@@ -328,14 +328,14 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       if (!readAggregatedMAC(state->macpath, state->aggMAC))
         {
           is_good_start = FALSE;
-          msg_warning(SLOG_WARNING_PREFIX,
-                      evt_tag_str("Reason", "Unable to read aggregated MAC"),
-                      evt_tag_str("File", state->macpath));
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("Reason", "Unable to read aggregated MAC"),
+                    evt_tag_str("File", state->macpath));
           if (state->numberOfLogEntries > 0)
             {
-              msg_warning(SLOG_WARNING_PREFIX,
-                          evt_tag_str("Reason", "Aggregated MAC not found or invalid"),
-                          evt_tag_str("File", state->macpath));
+              msg_error(SLOG_ERROR_PREFIX,
+                        evt_tag_str("Reason", "Aggregated MAC not found or invalid"),
+                        evt_tag_str("File", state->macpath));
             }
         }
     }
@@ -362,8 +362,8 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   if (!readKey(state->key, (guint64 *)&(state->numberOfLogEntries), state->keypath))
     {
       state->badKey = TRUE;
-      msg_warning(SLOG_WARNING_PREFIX,
-                  evt_tag_str("Reason", "Template parsing failed, key file not found or invalid. Reverting to clear text logging!"));
+      msg_error(SLOG_ERROR_PREFIX,
+                evt_tag_str("Reason", "Template parsing failed, key file not found or invalid. Reverting to clear text logging!"));
       return TRUE;
     }
 

@@ -33,12 +33,12 @@
 #include "compat/string.h"
 
 // Arguments and options
-static char *hostkey = NULL;
-static char *newhostKey = NULL;
-static char *inputMAC = NULL;
-static char *outputMAC = NULL;
-static char *inputlog = NULL;
-static char *outputlog = NULL;
+static char *hostkeypath = NULL;
+static char *newhostKeypath = NULL;
+static char *inputMACpath = NULL;
+static char *outputMACpath = NULL;
+static char *inputlogpath = NULL;
+static char *outputlogpath = NULL;
 static guint64 bufSize = DEF_BUF_SIZE;
 
 
@@ -100,8 +100,8 @@ int main(int argc, char *argv[])
   // Initialize internal messaging
   msg_init(TRUE);
 
-  unsigned char key[KEY_LENGTH];
-  unsigned char mac[CMAC_LENGTH];
+  guchar key[KEY_LENGTH];
+  guchar mac[CMAC_LENGTH];
   gsize nk = G_N_ELEMENTS(key);
   memset(key, 0, nk);
   gsize nm = G_N_ELEMENTS(mac);
@@ -109,8 +109,8 @@ int main(int argc, char *argv[])
 
   // Assign option arguments
   index = 0;
-  hostkey = options[index].arg;
-  if (NULL == hostkey)
+  hostkeypath = options[index].arg;
+  if (NULL == hostkeypath)
     {
       g_print("ERROR: Option --key-file or -k with a valid path to a Host key is missing!\n\n");
       msg_error(SLOG_ERROR_PREFIX,
@@ -121,8 +121,8 @@ int main(int argc, char *argv[])
     }
 
   index++;
-  inputMAC = options[index].arg;
-  if (NULL == inputMAC)
+  inputMACpath = options[index].arg;
+  if (NULL == inputMACpath)
     {
       g_print("ERROR: Option --mac-file or -m does not provide a valid path to a MAC file!\n\n");
       msg_error(SLOG_ERROR_PREFIX,
@@ -134,8 +134,8 @@ int main(int argc, char *argv[])
 
   // Input and output file arguments
   index = 1;
-  newhostKey = argv[index];
-  if (newhostKey == NULL)
+  newhostKeypath = argv[index];
+  if (newhostKeypath == NULL)
     {
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to new host key is missing!\n\n");
@@ -146,8 +146,8 @@ int main(int argc, char *argv[])
     }
   index++;
 
-  outputMAC = argv[index];
-  if (outputMAC == NULL)
+  outputMACpath = argv[index];
+  if (outputMACpath == NULL)
     {
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to new MAC file is missing!\n\n");
@@ -158,19 +158,19 @@ int main(int argc, char *argv[])
     }
   index++;
 
-  inputlog = argv[index];
+  inputlogpath = argv[index];
   index++;
-  if (!g_file_test(inputlog, G_FILE_TEST_IS_REGULAR))
+  if (!g_file_test(inputlogpath, G_FILE_TEST_IS_REGULAR))
     {
       GString *errorMsg = g_string_new(FILE_ERROR);
-      g_string_append(errorMsg, inputlog);
+      g_string_append(errorMsg, inputlogpath);
       (void) slog_usage(context, group, errorMsg);
       return 1; //-- ERROR
     }
 
-  outputlog = argv[index];
+  outputlogpath = argv[index];
   index++;
-  if (outputlog == NULL)
+  if (outputlogpath == NULL)
     {
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to output log is missing!\n\n");
@@ -181,12 +181,12 @@ int main(int argc, char *argv[])
 
   // Read key and counter
   guint64 counter;
-  gboolean ret = readKey(key, &counter, hostkey);
+  gboolean ret = readKey(key, &counter, hostkeypath);
   if (!ret)
     {
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason", "Unable to read host key!"),
-                evt_tag_str("file", hostkey));
+                evt_tag_str("file", hostkeypath));
       return -1; //-- ERROR
     }
 
@@ -208,55 +208,55 @@ int main(int argc, char *argv[])
     }
 
   // Open input file
-  FILE *inputFile = fopen(inputlog, "r");
+  FILE *inputFile = fopen(inputlogpath, "r");
   if (inputFile == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason", "Unable to open input log file!"),
-                evt_tag_str("file", inputlog));
+                evt_tag_str("file", inputlogpath));
       return -1; //-- ERROR
     }
 
   // Open output file
-  FILE *outputFile = fopen(outputlog, "w");
+  FILE *outputFile = fopen(outputlogpath,  "w");
   if (outputFile == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason", "Unable to open output log file!"),
-                evt_tag_str("file", outputlog));
+                evt_tag_str("file", outputlogpath));
       return -1; //-- ERROR
     }
 
   //-- initial MAC file ---
-  if (!g_file_test(inputMAC, G_FILE_TEST_IS_REGULAR))
+  if (!g_file_test(inputMACpath, G_FILE_TEST_IS_REGULAR))
     {
       //-- This is normal the first time, slogencrypt is called.
       msg_info(SLOG_INFO_PREFIX,
                evt_tag_str("Reason", "MAC file, specified by parameter -m, was not found and is created now (initial MAC file)."),
-               evt_tag_str("file", inputMAC));
+               evt_tag_str("file", inputMACpath));
       create_initial_mac0(key, mac);
-      if (writeAggregatedMAC(inputMAC, mac) == FALSE)
+      if (writeAggregatedMAC(inputMACpath, mac) == FALSE)
         {
           //-- ERROR: file was not written. Anyhow do not exit here.
           msg_warning(SLOG_WARNING_PREFIX,
                       evt_tag_str("Reason", "writeAggregatedMAC was not successful!"),
-                      evt_tag_str("file", inputMAC));
+                      evt_tag_str("file", inputMACpath));
         }
-      if (!g_file_test(inputMAC, G_FILE_TEST_IS_REGULAR))
+      if (!g_file_test(inputMACpath, G_FILE_TEST_IS_REGULAR))
         {
           //-- ERROR: file not found. Anyhow do not exit here.
           msg_warning(SLOG_WARNING_PREFIX,
                       evt_tag_str("Reason", "Initial MAC file was not written as expected!"),
-                      evt_tag_str("file", inputMAC));
+                      evt_tag_str("file", inputMACpath));
         }
     }
 
   // Read MAC (if possible)
-  if (readAggregatedMAC(inputMAC, mac)==0)
+  if (readAggregatedMAC(inputMACpath, mac)==0)
     {
       msg_warning(SLOG_WARNING_PREFIX,
                   evt_tag_str("Reason", "Unable to open input MAC file!"),
-                  evt_tag_str("file", inputMAC));
+                  evt_tag_str("file", inputMACpath));
       // This is an error but we can proceed anyhow. But later, when
       // slogverify is used, a dummy mac file must be provided for the first verification instead
       // and this will cause an verification error.
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
   // Parse data
   while (getline(&line, &readLen, inputFile) != -1)
     {
-      char outputmacdata[CMAC_LENGTH];
+      guchar outputmacdata[CMAC_LENGTH];
       GString *result = g_string_new(NULL);
       GString *inputGString = g_string_new(line);
 
@@ -297,8 +297,8 @@ int main(int argc, char *argv[])
 
       gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
 
-      outcome = sLogEntry(counter, inputGString, (unsigned char *)key, (unsigned char *)mac, result,
-                          (unsigned char *)outputmacdata,
+      outcome = sLogEntry(counter, inputGString, key, mac, result,
+                          outputmacdata,
                           outputmacdata_capacity);
       if (!outcome)
         {
@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
 
       // Update keys, MAC, etc
       memcpy(mac, outputmacdata, CMAC_LENGTH);
-      outcome = evolveKey((unsigned char *)key);
+      outcome = evolveKey(key);
       if (!outcome)
         {
           msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to evolve key!"));
@@ -329,19 +329,19 @@ int main(int argc, char *argv[])
     }
 
   // Write whole log MAC
-  if (!writeAggregatedMAC(outputMAC, mac))
+  if (!writeAggregatedMAC(outputMACpath, mac))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Problem with output MAC file!"));
       return -1; //-- ERROR
     }
 
   // Write key
-  ret = writeKey(key, counter, newhostKey);
+  ret = writeKey(key, counter, newhostKeypath);
   if (!ret)
     {
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason", "Unable to write new host key"),
-                evt_tag_str("file", outputlog));
+                evt_tag_str("file", outputlogpath));
       return -1; //-- ERROR
     }
 

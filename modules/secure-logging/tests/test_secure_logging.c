@@ -192,7 +192,7 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
 
   cr_assert(totalNumberOfMessages > 0, "Total number of message must be >0");
 
-  unsigned char keyZero[KEY_LENGTH];
+  guchar keyZero[KEY_LENGTH];
   memcpy(keyZero, hostkey, KEY_LENGTH);
 
   GHashTable *tab = NULL;
@@ -209,7 +209,7 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   cr_assert(ret == TRUE, "Unable to read aggregated MAC from file %s", macFileName);
 
   int problemsFound = 0;
-  unsigned char cmac_tag[CMAC_LENGTH];
+  guchar cmac_tag[CMAC_LENGTH];
   gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
 
   GPtrArray *tmpTemplate = g_ptr_array_new();
@@ -253,7 +253,7 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
 void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutput, LogMessage **original,
                     gsize totalNumberOfMessages)
 {
-  unsigned char keyZero[KEY_LENGTH];
+  guchar keyZero[KEY_LENGTH];
   memcpy(keyZero, hostkey, KEY_LENGTH);
 
   GHashTable *tab = NULL;
@@ -281,7 +281,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   gboolean ret = readAggregatedMAC(macFileName, mac);
   cr_assert(ret == TRUE, "Unable to read aggregated MAC from file %s", macFileName);
 
-  unsigned char cmac_tag[CMAC_LENGTH];
+  guchar cmac_tag[CMAC_LENGTH];
   gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
   ret = initVerify(totalNumberOfMessages, hostkey, &next, &start, template, &tab);
   cr_assert(ret == TRUE, "initVerify failed");
@@ -290,7 +290,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   char pathMac0[PATH_MAX]; //-- full path of MAC0 file mac0.dat
   ret = get_path_mac0(macFileName, pathMac0, PATH_MAX);
   cr_assert(ret == TRUE, "Unable to get path of mac0.dat");
-  unsigned char MAC0[CMAC_LENGTH]; //-- initial MAC
+  guchar MAC0[CMAC_LENGTH]; //-- initial MAC
   memset(MAC0, 0, CMAC_LENGTH);
   ret = readAggregatedMAC(pathMac0, MAC0);
   cr_assert(ret == TRUE, "Unable to read initial MAC from file %s", pathMac0);
@@ -712,7 +712,7 @@ void test_slog_malicious_modifications(void)
   for (int i = 0; i < mods; i++)
     {
       entriesToModify[i] = randomNumber(0, num-1);
-      printf("MODIFYING ENTRY %d\n", entriesToModify[i]);
+      g_print("MODIFYING ENTRY %d\n", entriesToModify[i]);
 
 
       // Overwrite with invalid string (invalid with high probability!)
@@ -789,23 +789,23 @@ void test_slog_performance(void)
 #define MAKE_SCRIPTS_EXECUTABLE 0
 
 /* Notes in regard RUN_CLI_SLOG_SMOKETEST
-   *
-   * - For the time being, RUN_CLI_SLOG_SMOKETEST is set to 0 to disable
-   *   the test of cli tools in context of unit tests.
-   *   Developers might set it to 1 manually here at least on GNU Linux systems.
-   *   When RUN_CLI_SLOG_SMOKETEST is set to 1, unit test will last longer,
-   *   approximately two minutes instead of some seconds.
-   * - Currently the CI test do fail when set to 1. Reasons:
-   *   -- chmod is used to make test scripts and helper scripts executable
-   *      this causes in CI system a 'high severity security vulnerability'
-   *      (Fixed by commiting from Linux so scripts stay executable, and
-   *      commenting out call to chmod)
-   *   -- Expected 'sed' is not available for CI macOS version, but used
-   *      by update_conf_path.sh.
-   *      (Fixed by workaround and by providing solution for macOS nc in cli01_syslog.sh
-   *      and cli06_syslog.sh so that tests on macOS15 intel machine was running
-   *      fine)
-   */
+ *
+ * - For the time being, RUN_CLI_SLOG_SMOKETEST is set to 0 to disable
+ *   the test of cli tools in context of unit tests.
+ *   Developers might set it to 1 manually here at least on GNU Linux systems.
+ *   When RUN_CLI_SLOG_SMOKETEST is set to 1, unit test will last longer,
+ *   approximately two minutes instead of some seconds.
+ * - Currently the CI test do fail when set to 1. Reasons:
+ *   -- chmod is used to make test scripts and helper scripts executable
+ *      this causes in CI system a 'high severity security vulnerability'
+ *      (Fixed by commiting from Linux so scripts stay executable, and
+ *      commenting out call to chmod)
+ *   -- Expected 'sed' is not available for CI macOS version, but used
+ *      by update_conf_path.sh.
+ *      (Fixed by workaround and by providing solution for macOS nc in cli01_syslog.sh
+ *      and cli06_syslog.sh so that tests on macOS15 intel machine was running
+ *      fine)
+ */
 
 /* Notes in regard MAKE_SCRIPTS_EXECUTABLE
  *

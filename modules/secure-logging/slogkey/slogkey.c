@@ -150,7 +150,7 @@ int main(int argc, char **argv)
   else if (counter)
     {
       // Display key counter
-      unsigned char key[KEY_LENGTH];
+      guchar key[KEY_LENGTH];
       char *keyfile = argv[index];
       guint64 counterValue;
       success = readKey(key, &counterValue, keyfile);
