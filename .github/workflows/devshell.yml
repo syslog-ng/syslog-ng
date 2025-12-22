@@ -307,8 +307,8 @@ jobs:
 
       - name: "Artifact: test-suite.log"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now
-        if: ${{ matrix.image.name == 'devshell' && always() && steps.make_check.outcome == 'failure' }}
+        # Handle failures only for devshell images now (exclude i386 reporting for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ matrix.image.arch_suffix != '-i386' && matrix.image.name == 'devshell' && always() && steps.make_check.outcome == 'failure' }}
         with:
           name: test-suite-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: ${{ github.workspace }}/build/test-suite.log
@@ -325,8 +325,8 @@ jobs:
 
       - name: "Artifact: light-reports"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now
-        if: ${{ matrix.image.name == 'devshell' && always() && steps.prepare-light-reports.outcome == 'success' }}
+        # Handle failures only for devshell images now (exclude i386 reporting for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ matrix.image.arch_suffix != '-i386' && matrix.image.name == 'devshell' && always() && steps.prepare-light-reports.outcome == 'success' }}
         with:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: /tmp/light-reports.tar.gz
@@ -341,8 +341,8 @@ jobs:
 
       - name: "Artifact: corefiles"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now
-        if: ${{ matrix.image.name == 'devshell' && failure() }}
+        # Handle failures only for devshell images now (exclude i386 for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ matrix.image.arch_suffix != '-i386' && matrix.image.name == 'devshell' && failure() }}
         with:
           name: corefiles-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: ${{ env.COREFILES_DIR }}
