@@ -33,6 +33,14 @@
 
 #include <criterion/criterion.h>
 
+/* On i386, the FPU uses different internal precision causing different rounding than x86_64.
+ * Use relaxed epsilon for float comparisons on 32-bit platforms. */
+#if G_MAXSIZE > 0xFFFFFFFF
+#define FLOAT_COMPARE_EPSILON std::numeric_limits<double>::epsilon()
+#else
+#define FLOAT_COMPARE_EPSILON 1e-10
+#endif
+
 using namespace syslogng::grpc::otel;
 using namespace opentelemetry::proto::resource::v1;
 using namespace opentelemetry::proto::common::v1;
@@ -66,7 +74,7 @@ _assert_log_msg_double_value(LogMessage *msg, const gchar *name, double expected
   double value = std::atof(str_value);
 
   cr_assert_eq(type, LM_VT_DOUBLE);
-  cr_assert_float_eq(value, expected_value, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(value, expected_value, FLOAT_COMPARE_EPSILON);
 }
 
 static void

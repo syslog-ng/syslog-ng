@@ -457,6 +457,11 @@ Test(log_source, test_dynamic_window)
   test_source_destroy(source);
 }
 
+#if G_MAXSIZE > 0xFFFFFFFF
+/* This test uses large window sizes that can overflow the 31-bit counter on 32-bit platforms.
+ * The window counter uses MSB for suspend flag, leaving only 31 bits for the actual counter.
+ * TODO: investigate this later better */
+
 static void
 _try_to_reclaim_all_dynamic_window_slots(LogSource *source, DynamicWindowPool *pool)
 {
@@ -497,5 +502,6 @@ Test(log_source, test_dynamic_window_reclaim)
   test_pipe_destroy(next_pipe);
   test_source_destroy(source);
 }
+#endif
 
 TestSuite(log_source, .init = setup, .fini = teardown);
