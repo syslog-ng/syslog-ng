@@ -14,7 +14,12 @@
 
 # max line lenght is 120 chars
 --max-code-length=120
---max-instatement-indent=60
+
+# maximum number of spaces allowed to indent a continuation line inside a statement
+# effectively limiting how far a long wrapped line could be pushed right.
+# This is dropped in v3.2
+# --max-instatement-indent=60
+--max-continuation-indent=60
 
 # pointer is aligned to the name of the variable
 --align-pointer=name
