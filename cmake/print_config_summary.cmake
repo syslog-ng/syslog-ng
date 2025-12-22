@@ -242,7 +242,7 @@ function(print_config_summary)
   message(NOTICE "syslog-ng Open Source Edition ${SYSLOG_NG_VERSION} configured")
 
   _print_separator("Environment")
-  list(APPEND _envInfo "^CMAKE_HOST_SYSTEM")
+  list(APPEND _envInfo "^CMAKE_SYSTEM_APPBUNDLE_PATH" "^CMAKE_SYSTEM_NAME" "^CMAKE_SYSTEM_VERSION" "^CMAKE_SYSTEM_PROCESSOR" "^CMAKE_SYSTEM_FRAMEWORK_PATH" "^CMAKE_SYSTEM_INCLUDE_PATH" "^CMAKE_SYSTEM_LIBRARY_PATH" "^CMAKE_SYSTEM_PREFIX_PATH")
   _print_options("${_variableNames}" "${_envInfo}")
 
   _print_separator("Compilers")
