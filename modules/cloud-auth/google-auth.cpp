@@ -372,7 +372,7 @@ _init(CloudAuthenticator *s)
       try
         {
           self->super.cpp = new UserManagedServiceAccountAuthenticator(self->user_managed_service_account_options.name,
-              self->user_managed_service_account_options.metadata_url);
+            self->user_managed_service_account_options.metadata_url);
         }
       catch (const std::runtime_error &e)
         {

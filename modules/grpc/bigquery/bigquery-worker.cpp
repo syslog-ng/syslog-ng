@@ -305,7 +305,7 @@ DestinationWorker::construct_write_stream()
 
   create_write_stream_request.set_parent(this->table);
   create_write_stream_request.mutable_write_stream()->set_type(
-    google::cloud::bigquery::storage::v1::WriteStream_Type_COMMITTED);
+                               google::cloud::bigquery::storage::v1::WriteStream_Type_COMMITTED);
 
   stub->CreateWriteStream(&ctx, create_write_stream_request, &wstream);
 

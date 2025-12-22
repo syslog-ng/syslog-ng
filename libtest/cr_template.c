@@ -151,7 +151,7 @@ compile_template_with_escaping(const gchar *template, gboolean escaping)
   log_template_set_escape(templ, escaping);
   success = log_template_compile(templ, template, &error);
   cr_assert(success, "template expected to compile cleanly,"
-            " but it didn't, template=%s, error=%s",
+                     " but it didn't, template=%s, error=%s",
             template, error ? error->message : "(none)");
   g_clear_error(&error);
 
@@ -326,7 +326,7 @@ perftest_template(gchar *template)
   if (!log_template_compile(templ, template, &error))
     {
       cr_assert(FALSE, "template expected to compile cleanly,"
-                " but it didn't, template=%s, error=%s",
+                       " but it didn't, template=%s, error=%s",
                 template, error ? error->message : "(none)");
       return;
     }

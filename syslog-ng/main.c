@@ -161,9 +161,9 @@ version(void)
       installer_version = g_strdup(SYSLOG_NG_VERSION);
     }
   printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION "\n"
-         "Config version: " VERSION_STR_LAST_SEMANTIC_CHANGE "\n"
-         "Installer-Version: %s\n"
-         "Revision: " SYSLOG_NG_SOURCE_REVISION "\n",
+                                "Config version: " VERSION_STR_LAST_SEMANTIC_CHANGE "\n"
+                                "Installer-Version: %s\n"
+                                "Revision: " SYSLOG_NG_SOURCE_REVISION "\n",
          installer_version);
 
 #if SYSLOG_NG_WITH_COMPILE_DATE

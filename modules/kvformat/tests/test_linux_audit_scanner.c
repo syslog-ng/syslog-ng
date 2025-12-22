@@ -89,7 +89,7 @@ teardown(void)
 
 
 Test(linux_audit_scanner, test_audit_style_hex_dump_is_not_decoded, .description = "not decoded as no characters to be"
-     "escaped, kernel only escapes stuff below 0x21, above 0x7e and the quote character")
+                                                                                   "escaped, kernel only escapes stuff below 0x21, above 0x7e and the quote character")
 {
   kv_scanner_input(&kv_scanner, "proctitle=41607E");
   assert_next_kv_is("proctitle", "41607E");

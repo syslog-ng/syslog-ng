@@ -523,7 +523,7 @@ plugin_discover_candidate_modules(PluginContext *context)
                         {
                           context->candidate_plugins = g_list_prepend(context->candidate_plugins,
                                                                       plugin_candidate_new(plugin->type, plugin->name,
-                                                                          module_name));
+                                                                        module_name));
                         }
                     }
                 }
@@ -633,9 +633,9 @@ plugin_list_modules(FILE *out, gboolean verbose)
                           gchar **lines;
 
                           fprintf(out, "Status: ok\n"
-                                  "Version: %s\n"
-                                  "Core-Revision: %s\n"
-                                  "Description:\n", module_info->version, module_info->core_revision);
+                                       "Version: %s\n"
+                                       "Core-Revision: %s\n"
+                                       "Description:\n", module_info->version, module_info->core_revision);
 
                           lines = g_strsplit(module_info->description, "\n", 0);
                           for (k = 0; lines[k]; k++)

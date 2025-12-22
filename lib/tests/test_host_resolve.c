@@ -160,10 +160,10 @@ Test(resolve_hostname, test_resolvable_ip_results_in_hostname)
 Test(resolve_hostname, test_unresolvable_ip_results_in_ip)
 {
   fprintf(stderr, "The testcase %s takes a lot of time, it is advisable to turn it\n"
-          "off for short iterations and reenable it at the end of the session.\n"
-          "The easiest way to disable it is to comment out its invocation that\n"
-          "looks like HOST_RESOLVE_TESTCASE(test_unresolvable_ip_results_in_ip);\n"
-          "But please, please, please don't commit the disabling of that testcase.\n",
+                  "off for short iterations and reenable it at the end of the session.\n"
+                  "The easiest way to disable it is to comment out its invocation that\n"
+                  "looks like HOST_RESOLVE_TESTCASE(test_unresolvable_ip_results_in_ip);\n"
+                  "But please, please, please don't commit the disabling of that testcase.\n",
           __FUNCTION__);
 
   host_resolve_options.use_dns = TRUE;

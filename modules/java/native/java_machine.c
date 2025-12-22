@@ -197,11 +197,11 @@ _setup_jvm_options_array(JavaVMSingleton *self, const gchar *jvm_options_str)
 
   jvm_options_array = _jvm_options_array_append(jvm_options_array,
                                                 g_strdup_printf("-Djava.class.path=%s",
-                                                    self->class_path->str));
+                                                  self->class_path->str));
 
   jvm_options_array = _jvm_options_array_append(jvm_options_array,
                                                 g_strdup_printf("-Djava.library.path=%s",
-                                                    resolved_configurable_paths.initial_module_path));
+                                                  resolved_configurable_paths.initial_module_path));
 
   jvm_options_array = _jvm_options_array_append(jvm_options_array,
                                                 g_strdup_printf("-Dlog4j.configurationFactory=org.syslog_ng.logging.CustomConfigurationFactory"));

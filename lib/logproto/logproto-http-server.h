@@ -46,7 +46,7 @@ typedef union _LogProtoHTTPServerOptionsStorage
 } LogProtoHTTPServerOptionsStorage;
 // _Static_assert() is a C11 feature, so we use a typedef trick to perform the static assertion
 typedef char static_assert_size_check_LogProtoHTTPServerOptions[
-   sizeof(LogProtoServerOptionsStorage) >= sizeof(LogProtoHTTPServerOptions) ? 1 : -1];
+  sizeof(LogProtoServerOptionsStorage) >= sizeof(LogProtoHTTPServerOptions) ? 1 : -1];
 
 typedef struct _LogProtoHTTPServer LogProtoHTTPServer;
 struct _LogProtoHTTPServer

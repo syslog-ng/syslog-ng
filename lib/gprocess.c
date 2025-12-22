@@ -371,7 +371,7 @@ g_process_check_cap_syslog(void)
       if (debug_flag)
         {
           fprintf (stderr, "The CAP_SYSLOG is not supported by libcap;"
-                   "Falling back to CAP_SYS_ADMIN!\n");
+                           "Falling back to CAP_SYS_ADMIN!\n");
         }
       return FALSE;
       break;
@@ -380,8 +380,8 @@ g_process_check_cap_syslog(void)
       if (debug_flag)
         {
           fprintf (stderr, "CAP_SYSLOG seems to be supported by libcap, but "
-                   "the kernel does not appear to recognize it. Falling back "
-                   "to CAP_SYS_ADMIN!\n");
+                           "the kernel does not appear to recognize it. Falling back "
+                           "to CAP_SYS_ADMIN!\n");
         }
       return FALSE;
       break;

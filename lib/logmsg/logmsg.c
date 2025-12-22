@@ -1854,10 +1854,10 @@ log_msg_refcache_start_producer(LogMessage *self)
 
   self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_REF_MASK) +
                                               LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref_and_abort_and_suspended) +
-                                                  LOGMSG_REFCACHE_BIAS));
+                                                LOGMSG_REFCACHE_BIAS));
   self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_ACK_MASK) +
                                               LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref_and_abort_and_suspended) +
-                                                  LOGMSG_REFCACHE_BIAS));
+                                                LOGMSG_REFCACHE_BIAS));
 
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;

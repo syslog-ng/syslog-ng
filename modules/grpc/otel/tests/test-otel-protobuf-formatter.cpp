@@ -734,9 +734,9 @@ Test(otel_protobuf_formatter, metric_exponential_histogram)
                                       ".otel.metric.data.exponential_histogram.data_points.0.negative.bucket_counts.1",
                                       "444", -1, LM_VT_INTEGER);
   log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.exponential_histogram.data_points.0.exemplars.0."
-                                      "filtered_attributes.a_0", "val_0", -1, LM_VT_STRING);
+                                           "filtered_attributes.a_0", "val_0", -1, LM_VT_STRING);
   log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.exponential_histogram.data_points.0.exemplars.0."
-                                      "time_unix_nano", "987", -1, LM_VT_INTEGER);
+                                           "time_unix_nano", "987", -1, LM_VT_INTEGER);
   log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.exponential_histogram.data_points.0.exemplars.0.value",
                                       "999", -1, LM_VT_INTEGER);
   log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.exponential_histogram.data_points.0.flags", "22", -1,

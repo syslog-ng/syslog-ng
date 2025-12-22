@@ -393,7 +393,7 @@ block_till_workers_exit(void)
         {
           /* timeout has passed. */
           fprintf(stderr, "Main thread timed out (15s) while waiting workers threads to exit. "
-                  "workers_running: %d. Continuing ...\n", main_loop_workers_running);
+                          "workers_running: %d. Continuing ...\n", main_loop_workers_running);
           break;
         }
     }

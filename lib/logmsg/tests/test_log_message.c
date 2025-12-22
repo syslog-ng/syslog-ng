@@ -783,7 +783,8 @@ typedef struct
   gssize nvtable_size_new;
   gssize msg_size_old;
   gssize msg_size_new;
-} sizes_t;
+}
+sizes_t; /* NOTE: this forced type of formatting is by a good chance is a bug in astyle */
 
 static sizes_t
 add_key_value(LogMessage *msg, gchar *key, gchar *value)
