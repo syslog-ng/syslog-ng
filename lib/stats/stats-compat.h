@@ -117,7 +117,7 @@ stats_byte_counter_add(StatsByteCounter *self, gsize add)
 
   self->counter_cache.value += add;
 
-  if (self->counter_cache.value > self->precision)
+  if (self->counter_cache.value > (gssize) self->precision)
     {
       stats_counter_add(self->counter, self->counter_cache.value / self->precision);
       self->counter_cache.value %= self->precision;

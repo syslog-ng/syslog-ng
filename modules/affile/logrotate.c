@@ -62,7 +62,7 @@ gchar *get_log_file_name(const gchar *filename, gsize rotation_suffix)
     }
   else
     {
-      return g_strdup_printf("%s.%ld", filename, rotation_suffix);
+      return g_strdup_printf("%s.%ld", filename, (long) rotation_suffix);
     }
 }
 

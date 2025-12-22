@@ -84,12 +84,12 @@ _stackdump_print_backtrace(void)
           if (dlinfo.dli_sname == NULL || dlinfo.dli_sname[0] == '\0')
             {
               ptrdiff_t addr_rel_to_base = (char *) bt[i] - (char *) linkmap->l_addr;
-              console_printf("[%d]: %s(+0x%lx) [%p]", i, dlinfo.dli_fname, (guint64) addr_rel_to_base, bt[i]);
+              console_printf("[%d]: %s(+0x%llx) [%p]", i, dlinfo.dli_fname, (unsigned long long) addr_rel_to_base, bt[i]);
             }
           else
             {
               ptrdiff_t addr_rel_to_sym = (char *) bt[i] - (char *) dlinfo.dli_saddr;
-              console_printf("[%d]: %s(%s+0x%lx) [%p]", i, dlinfo.dli_fname, dlinfo.dli_sname, addr_rel_to_sym, bt[i]);
+              console_printf("[%d]: %s(%s+0x%lx) [%p]", i, dlinfo.dli_fname, dlinfo.dli_sname, (long) addr_rel_to_sym, bt[i]);
             }
         }
     }
