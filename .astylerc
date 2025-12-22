@@ -12,6 +12,12 @@
 # add spaces around commas
 --pad-comma
 
+# add spaces around arithmetic, logical, and assignment operators
+--pad-oper
+
+# add space between keywords and '(' in control statements
+--pad-header
+
 # max line lenght is 120 chars
 --max-code-length=120
 
