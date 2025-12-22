@@ -72,6 +72,7 @@ print_help()
 
 run_checker()
 {
+    echo "Using `astyle --version`"
     setup_root_dir
     if [ "$action" = "check" ]; then
         echo "Checking C and C++ source files"

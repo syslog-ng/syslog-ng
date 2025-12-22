@@ -175,6 +175,20 @@ function install_bison_from_source {
     make && make install
 }
 
+function install_astyle_from_source {
+    ASTYLE_VERSION=3.6.13
+    HASH="83a207e9b4e96fbab1662a786c74434f7fe6881003ee5e5d66fcaf87c96a8672"
+
+    cd /tmp
+    download_target https://gitlab.com/saalen/astyle/-/archive/${ASTYLE_VERSION}/astyle-${ASTYLE_VERSION}.zip?ref_type=tags /tmp/astyle-${ASTYLE_VERSION}.zip astyle/${ASTYLE_VERSION}/astyle.zip "${HASH}"
+    unzip /tmp/astyle-${ASTYLE_VERSION}.zip
+    cd /tmp/astyle-${ASTYLE_VERSION}
+    mkdir build
+    cd build
+    cmake ../
+    make && make install
+}
+
 function filter_packages_by_platform {
     FILENAME=$1
     local IMAGE_PLATFORM_BASE=$(image_platform_base)
