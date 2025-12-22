@@ -196,7 +196,7 @@ _parse_v1_enterprise_oid(SnmpTrapdHeaderParser *self)
 static gboolean
 _parse_transport_info(SnmpTrapdHeaderParser *self)
 {
-  if(!scan_expect_char(self->input, (gint *) self->input_len, '['))
+  if (!scan_expect_char(self->input, (gint *) self->input_len, '['))
     return FALSE;
 
   _skip_spaces(self);
@@ -207,10 +207,10 @@ _parse_transport_info(SnmpTrapdHeaderParser *self)
   if (!transport_info_end)
     return FALSE;
 
-  while(*transport_info_end != ']')
+  while (*transport_info_end != ']')
     {
       --transport_info_end;
-      if(transport_info_end == transport_info_start)
+      if (transport_info_end == transport_info_start)
         return FALSE;
     }
 

@@ -164,7 +164,7 @@ cfg_load_forced_modules(GlobalConfig *self)
     return;
 
   int i;
-  for (i=0; i<sizeof(module_list)/sizeof(gchar *); ++i)
+  for (i = 0; i < sizeof(module_list) / sizeof(gchar *); ++i)
     {
       const gchar *name = module_list[i];
 
@@ -588,7 +588,7 @@ cfg_dump_processed_config(GString *preprocess_output, gchar *output_filename)
 {
   FILE *output_file;
 
-  if (strcmp(output_filename, "-")==0)
+  if (strcmp(output_filename, "-") == 0)
     {
       fprintf(stdout, "%s", preprocess_output->str);
       return;
@@ -663,7 +663,7 @@ cfg_format_id(GlobalConfig *self, GString *id)
 static void
 cfg_hash_config(GlobalConfig *self)
 {
-  compose_hash(EVP_sha256(), (GString *const *) &self->preprocess_config, 1, self->config_hash);
+  compose_hash(EVP_sha256(), (GString * const *) &self->preprocess_config, 1, self->config_hash);
 }
 
 gboolean

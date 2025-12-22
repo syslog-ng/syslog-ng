@@ -96,13 +96,13 @@ _print_and_clear_tls_session_error(TLSContext *self)
 void
 _write_line_to_keylog_file(const char *file_path, const char *line, FILE *keylog_file, GMutex *mutex)
 {
-  if(!keylog_file)
+  if (!keylog_file)
     return;
 
 
   g_mutex_lock(mutex);
   gint ret_val = fprintf(keylog_file, "%s\n", line);
-  if (ret_val != strlen(line)+1)
+  if (ret_val != strlen(line) +1)
     msg_error("Couldn't write to TLS keylogfile", evt_tag_errno("error", ret_val));
 
   fflush(keylog_file);
@@ -112,7 +112,7 @@ _write_line_to_keylog_file(const char *file_path, const char *line, FILE *keylog
 static void
 _dump_tls_keylog(const SSL *ssl, const char *line)
 {
-  if(!ssl)
+  if (!ssl)
     return;
 
   SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
@@ -127,7 +127,7 @@ _setup_keylog_file(TLSContext *self)
     return TRUE;
 
   self->keylog_file = fopen(self->keylog_file_path, "a");
-  if(!self->keylog_file)
+  if (!self->keylog_file)
     {
       msg_error("Error opening keylog-file",
                 evt_tag_str(EVT_TAG_FILENAME, self->keylog_file_path),
@@ -214,20 +214,20 @@ tls_context_setup_ssl_options(TLSContext *self)
   if (self->ssl_options != TSO_NONE)
     {
       glong ssl_options = 0;
-      if(self->ssl_options & TSO_NOSSLv2)
+      if (self->ssl_options & TSO_NOSSLv2)
         ssl_options |= SSL_OP_NO_SSLv2;
-      if(self->ssl_options & TSO_NOSSLv3)
+      if (self->ssl_options & TSO_NOSSLv3)
         ssl_options |= SSL_OP_NO_SSLv3;
-      if(self->ssl_options & TSO_NOTLSv1)
+      if (self->ssl_options & TSO_NOTLSv1)
         ssl_options |= SSL_OP_NO_TLSv1;
 #ifdef SSL_OP_NO_TLSv1_2
-      if(self->ssl_options & TSO_NOTLSv11)
+      if (self->ssl_options & TSO_NOTLSv11)
         ssl_options |= SSL_OP_NO_TLSv1_1;
-      if(self->ssl_options & TSO_NOTLSv12)
+      if (self->ssl_options & TSO_NOTLSv12)
         ssl_options |= SSL_OP_NO_TLSv1_2;
 #endif
 #ifdef SSL_OP_NO_TLSv1_3
-      if(self->ssl_options & TSO_NOTLSv13)
+      if (self->ssl_options & TSO_NOTLSv13)
         ssl_options |= SSL_OP_NO_TLSv1_3;
 #endif
 
@@ -282,7 +282,7 @@ tls_context_setup_dh(TLSContext *self)
   if (!self->dhparam_file)
     return openssl_ctx_setup_dh(self->ssl_ctx);
 
-  if(!_is_file_accessible(self, self->dhparam_file))
+  if (!_is_file_accessible(self, self->dhparam_file))
     return FALSE;
 
   if (!openssl_ctx_load_dh_from_file(self->ssl_ctx, self->dhparam_file))
@@ -721,7 +721,7 @@ tls_context_set_ssl_options_by_name(TLSContext *self, GList *options)
   self->ssl_options = TSO_NONE;
 
   GList *l;
-  for (l=options; l != NULL; l=l->next)
+  for (l = options; l != NULL; l = l->next)
     {
       if (strcasecmp(l->data, "no-sslv2") == 0 || strcasecmp(l->data, "no_sslv2") == 0)
         self->ssl_options |= TSO_NOSSLv2;
@@ -1017,7 +1017,7 @@ _tls_context_free(TLSContext *self)
   g_free(self->sni);
   g_free(self->keylog_file_path);
 
-  if(self->keylog_file)
+  if (self->keylog_file)
     fclose(self->keylog_file);
 
   g_free(self);

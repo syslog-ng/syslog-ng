@@ -475,7 +475,7 @@ static gint
 affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFFileDestWriter *self = (AFFileDestWriter *)s;
-  switch(notify_code)
+  switch (notify_code)
     {
     case NC_REOPEN_REQUIRED:
       affile_dw_reopen(self);

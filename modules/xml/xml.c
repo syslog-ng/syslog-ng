@@ -42,8 +42,8 @@ remove_trailing_dot(gchar *str)
 {
   if (!strlen(str))
     return;
-  if (str[strlen(str)-1] == '.')
-    str[strlen(str)-1] = 0;
+  if (str[strlen(str) -1] == '.')
+    str[strlen(str) -1] = 0;
 }
 
 static void

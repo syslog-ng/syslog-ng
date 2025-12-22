@@ -599,9 +599,9 @@ Test(kv_scanner, quotation_is_stored_in_the_was_quoted_value_member)
 
 Test(kv_scanner, spaces_around_value_separator_are_ignored)
 {
-  ScannerConfig config=
+  ScannerConfig config =
   {
-    .kv_separator=':',
+    .kv_separator = ':',
   };
   _IMPL_EXPECT_KV(config, "key1: \"value1\" key2 : value2 key3 :value3 ",
   {"key1", "value1"},
@@ -611,7 +611,7 @@ Test(kv_scanner, spaces_around_value_separator_are_ignored)
 
 Test(kv_scanner, value_separator_is_used_to_separate_key_from_value)
 {
-  ScannerConfig config=
+  ScannerConfig config =
   {
     .kv_separator = ':',
   };
@@ -646,7 +646,7 @@ Test(kv_scanner, invalid_value_encoding_is_copied_literally)
 
 Test(kv_scanner, separator_in_key)
 {
-  ScannerConfig config=
+  ScannerConfig config =
   {
     .kv_separator = '-',
   };

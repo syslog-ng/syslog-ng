@@ -154,7 +154,7 @@ _grow_store(PersistState *self, guint32 new_size)
 
   _wait_until_map_release(self);
 
-  if ((new_size & (pgsize-1)) != 0)
+  if ((new_size & (pgsize - 1)) != 0)
     {
       new_size = ((new_size / pgsize) + 1) * pgsize;
     }

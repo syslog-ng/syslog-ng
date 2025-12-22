@@ -267,7 +267,7 @@ Test(secretstorage, test_rlimit)
 
   gchar key_fmt[32];
   int i = 0;
-  int for_limit = locked_limit.rlim_cur/pagesize;
+  int for_limit = locked_limit.rlim_cur / pagesize;
   for (; i < for_limit; i++)
     {
       g_snprintf(key_fmt, sizeof(key_fmt), "key%03d", i);

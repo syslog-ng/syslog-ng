@@ -36,9 +36,9 @@ Test(nondumpableallocator, malloc_realloc_free)
   cr_assert_str_eq(buffer, test_string);
 
   const gsize pagesize = sysconf(_SC_PAGE_SIZE);
-  gpointer buffer_realloc = nondumpable_buffer_realloc(buffer, 2*pagesize);
+  gpointer buffer_realloc = nondumpable_buffer_realloc(buffer, 2 * pagesize);
   cr_assert_str_eq(buffer_realloc, test_string);
-  ((gchar *)buffer_realloc)[2*pagesize] = 'a';
+  ((gchar *)buffer_realloc)[2 * pagesize] = 'a';
 
   nondumpable_buffer_free(buffer_realloc);
 }

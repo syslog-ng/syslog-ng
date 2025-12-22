@@ -309,7 +309,7 @@ _deinit(LogPipe *s)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
 
-  if(!log_threaded_dest_driver_deinit_method(s))
+  if (!log_threaded_dest_driver_deinit_method(s))
     return FALSE;
 
   if (self->pool)

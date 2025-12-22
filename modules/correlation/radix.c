@@ -328,7 +328,7 @@ r_parser_email(gchar *str, gint *len, const gchar *param, gpointer state, RParse
   while (g_ascii_isalnum(str[*len]) || (strchr(email, str[*len])))
     (*len)++;
   /* last character of e-mail can not be a period */
-  if (str[*len-1] == '.')
+  if (str[*len - 1] == '.')
     return FALSE;
 
   if (str[*len] == '@' )
@@ -553,12 +553,12 @@ r_parser_ipv6(gchar *str, gint *len, const gchar *param, gpointer state, RParser
       (*len)++;
     }
 
-  if (G_UNLIKELY(*len > 0 && str[*len-1] == '.'))
+  if (G_UNLIKELY(*len > 0 && str[*len - 1] == '.'))
     {
       (*len)--;
       dots--;
     }
-  else if (G_UNLIKELY(*len > 1 && str[*len-1] == ':' && str[*len - 2] != ':'))
+  else if (G_UNLIKELY(*len > 1 && str[*len - 1] == ':' && str[*len - 2] != ':'))
     {
       (*len)--;
       colons--;

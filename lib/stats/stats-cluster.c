@@ -176,9 +176,9 @@ static inline void
 _legacy_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
             StatsCounterGroupInit counter_group_init)
 {
-  self->legacy.id = (id?id:"");
+  self->legacy.id = (id ? id : "");
   self->legacy.component = component;
-  self->legacy.instance = (instance?instance:"");
+  self->legacy.instance = (instance ? instance : "");
   self->legacy.set = 1;
   self->counter_group_init = counter_group_init;
 }
@@ -419,7 +419,7 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
 {
   g_assert(type < self->counter_group.capacity);
 
-  return !!((1<<type) & self->live_mask);
+  return !!((1 << type) & self->live_mask);
 }
 
 StatsCluster *
@@ -431,7 +431,7 @@ stats_cluster_new(const StatsClusterKey *key)
   self->use_count = 0;
   self->query_key = _stats_build_query_key(self);
   key->counter_group_init.init(&self->key.counter_group_init, &self->counter_group);
-  g_assert(self->counter_group.capacity <= sizeof(self->live_mask)*8);
+  g_assert(self->counter_group.capacity <= sizeof(self->live_mask) * 8);
   return self;
 }
 

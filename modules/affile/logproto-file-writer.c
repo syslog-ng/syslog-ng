@@ -258,7 +258,7 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptionsSt
 
   /* allocate the structure with the proper number of items at the end */
   LogProtoFileWriter *self = (LogProtoFileWriter *)g_malloc0(sizeof(LogProtoFileWriter) + sizeof(
-      struct iovec)*flush_lines);
+      struct iovec) * flush_lines);
 
   log_proto_client_init(&self->super, transport, options);
   self->buf_size = flush_lines;

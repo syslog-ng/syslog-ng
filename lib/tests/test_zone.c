@@ -104,8 +104,8 @@ assert_time_zone(TimezoneTestCase c)
       return;
     }
   test_time_zone(c.stamp_to_test, c.time_zone);
-  test_time_zone(c.stamp_to_test - 6*30*24*60*60, c.time_zone);
-  test_time_zone(c.stamp_to_test + 6*30*24*6, c.time_zone);
+  test_time_zone(c.stamp_to_test - 6 * 30 * 24 * 60 * 60, c.time_zone);
+  test_time_zone(c.stamp_to_test + 6 * 30 * 24 * 6, c.time_zone);
 }
 
 void
@@ -142,43 +142,43 @@ Test(zone, test_time_zone_offset)
     /* 2005-11-14 10:10:00 GMT, no DST */
     {"GMT", 1131959400, 0},
     /* 2005-04-03 01:30:00 ESD, DST disabled */
-    {"EST5EDT", 1112509800, -5*3600},
+    {"EST5EDT", 1112509800, -5 * 3600},
     /* 2005-04-03 01:59:59 ESD, DST disabled */
-    {"EST5EDT", 1112511599, -5*3600},
+    {"EST5EDT", 1112511599, -5 * 3600},
     /* 2005-04-03 03:00:00 EDT, DST enabled */
-    {"EST5EDT", 1112511600, -4*3600},
+    {"EST5EDT", 1112511600, -4 * 3600},
     /* 2005-04-03 03:00:01 EDT, DST enabled */
-    {"EST5EDT", 1112511601, -4*3600},
+    {"EST5EDT", 1112511601, -4 * 3600},
     /* 2005-10-30 01:59:59 EDT, DST enabled */
-    {"EST5EDT", 1130651999, -4*3600},
+    {"EST5EDT", 1130651999, -4 * 3600},
     /* 2005-10-30 01:00:00 EST, DST disabled */
-    {"EST5EDT", 1130652000, -5*3600},
+    {"EST5EDT", 1130652000, -5 * 3600},
     /* 2007-03-11 01:00:00 EST, DST disabled */
-    {"EST5EDT", 1173592800, -5*3600},
+    {"EST5EDT", 1173592800, -5 * 3600},
     /* 2007-03-11 01:59:59 EST, DST disabled */
-    {"EST5EDT", 1173596399, -5*3600},
+    {"EST5EDT", 1173596399, -5 * 3600},
     /* 2007-03-11 03:00:00 EST, DST enabled */
-    {"EST5EDT", 1173596400, -4*3600},
+    {"EST5EDT", 1173596400, -4 * 3600},
     /* 2007-11-04 01:59:59 EST, DST enabled */
-    {"EST5EDT", 1194155999, -4*3600},
+    {"EST5EDT", 1194155999, -4 * 3600},
     /* 2007-11-04 01:00:00 EST, DST disabled */
-    {"EST5EDT", 1194156000, -5*3600},
+    {"EST5EDT", 1194156000, -5 * 3600},
     /* Oct 31 01:59:59 2004 (EST) +1000 */
-    {"Australia/Victoria", 1099151999, 10*3600},
+    {"Australia/Victoria", 1099151999, 10 * 3600},
     /* Oct 31 03:00:00 2004 (EST) +1100 */
-    {"Australia/Victoria", 1099152000, 11*3600},
+    {"Australia/Victoria", 1099152000, 11 * 3600},
     /* Mar 27 02:59:59 2005 (EST) +1100 */
-    {"Australia/Victoria", 1111852799, 11*3600},
+    {"Australia/Victoria", 1111852799, 11 * 3600},
     /* Mar 27 02:00:00 2005 (EST) +1000 */
-    {"Australia/Victoria", 1111852800, 10*3600},
+    {"Australia/Victoria", 1111852800, 10 * 3600},
     /* Oct  2 01:59:59 2004 (NZT) +1200 */
-    {"NZ", 1128175199, 12*3600},
+    {"NZ", 1128175199, 12 * 3600},
     /* Oct  2 03:00:00 2004 (NZDT) +1300 */
-    {"NZ", 1128175200, 13*3600},
+    {"NZ", 1128175200, 13 * 3600},
     /* Mar 20 02:59:59 2005 (NZDT) +1300 */
-    {"NZ", 1111240799, 13*3600},
+    {"NZ", 1111240799, 13 * 3600},
     /* Mar 20 02:00:00 2005 (NZT) +1200 */
-    {"NZ", 1111240800, 12*3600},
+    {"NZ", 1111240800, 12 * 3600},
   };
   gint i, nr_of_cases;
 
@@ -200,12 +200,12 @@ Test(zone, test_time_zones)
     {1288486800, "Europe/Budapest"},
     {1288486860, "Europe/Budapest"},
     {1288486740, "Europe/Budapest"},
-    {1288486800-1800, "Europe/Budapest"},
-    {1288486800+1800, "Europe/Budapest"},
-    {1288486800-3600, "Europe/Budapest"},
-    {1288486800+3600, "Europe/Budapest"},
-    {1288486800-3601, "Europe/Budapest"},
-    {1288486800+3601, "Europe/Budapest"},
+    {1288486800 - 1800, "Europe/Budapest"},
+    {1288486800 + 1800, "Europe/Budapest"},
+    {1288486800 - 3600, "Europe/Budapest"},
+    {1288486800 + 3600, "Europe/Budapest"},
+    {1288486800 - 3601, "Europe/Budapest"},
+    {1288486800 + 3601, "Europe/Budapest"},
     {now, "Asia/Kuala_Lumpur"},
     {now, "CST6CDT"},
     {now, "US/Pacific"},

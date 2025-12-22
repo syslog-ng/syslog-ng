@@ -1225,7 +1225,7 @@ g_process_perform_supervise(void)
                       break;
 
                     case 0:
-                      switch(fork())
+                      switch (fork())
                         {
                         case -1:
                           console_printf("Could not fork for external notification; reason='%s'", strerror(errno));

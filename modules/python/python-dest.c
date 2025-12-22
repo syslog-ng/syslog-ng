@@ -508,7 +508,7 @@ python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
   if (!_py_construct_message(self, msg, &msg_object))
     goto exit;
 
-  result =_py_invoke_send(self, msg_object);
+  result = _py_invoke_send(self, msg_object);
   Py_DECREF(msg_object);
 
 exit:

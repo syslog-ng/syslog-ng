@@ -67,7 +67,7 @@ _add_data_point(StatsAggregator *s, gsize value)
   gsize sum = _get_sum(self) + value;
   gsize divisor = _get_count(self) + 1;
 
-  stats_counter_set(self->super.output_counter, sum/divisor);
+  stats_counter_set(self->super.output_counter, sum / divisor);
 
   _add_sum(self, value);
   _inc_count(self);

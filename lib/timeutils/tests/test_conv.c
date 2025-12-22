@@ -102,7 +102,7 @@ Test(conv, unix_time_set_from_a_specific_timezone_which_happens_at_the_spring_tr
   _wct_initialize_with_tz(&wct, "Mar 31 2019 02:11:00 EDT");
 
   /* pre normalized values, just as we parsed it from the input */
-  cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
+  cr_expect(wct.wct_gmtoff == -5 * 3600 + 3600);
   cr_expect(wct.wct_isdst == 1);
   cr_expect(wct.wct_hour == 2);
 
@@ -113,17 +113,17 @@ Test(conv, unix_time_set_from_a_specific_timezone_which_happens_at_the_spring_tr
    * convert_and_normalize_wall_clock_time_to_unix_time() tries to behave as if
    * they didn't happen.  */
 
-  cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
+  cr_expect(wct.wct_gmtoff == -5 * 3600 + 3600);
   cr_expect(wct.wct_hour == 2);
 
-  cr_expect(ut.ut_gmtoff == -5*3600 + 3600);
+  cr_expect(ut.ut_gmtoff == -5 * 3600 + 3600);
   cr_expect(ut.ut_sec == 1554012660);
 
   /* going back from UnixTime to WallClockTime, we should get the same
    * gmtoff and hour values */
 
   convert_unix_time_to_wall_clock_time(&ut, &wct);
-  cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
+  cr_expect(wct.wct_gmtoff == -5 * 3600 + 3600);
   cr_expect(wct.wct_hour == 2);
   cr_expect(wct.wct_min == 11);
 }
@@ -139,7 +139,7 @@ Test(conv, unix_time_set_from_a_specific_timezone_which_happens_at_the_autumn_tr
   _wct_initialize_with_tz(&wct, "Oct 27 2019 02:11:00 EDT");
 
   /* pre normalized values, just as we parsed it from the input */
-  cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
+  cr_expect(wct.wct_gmtoff == -5 * 3600 + 3600);
   cr_expect(wct.wct_isdst == 1);
   cr_expect(wct.wct_hour == 2);
 
@@ -150,17 +150,17 @@ Test(conv, unix_time_set_from_a_specific_timezone_which_happens_at_the_autumn_tr
    * convert_and_normalize_wall_clock_time_to_unix_time() tries to behave as if
    * they didn't happen.  */
 
-  cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
+  cr_expect(wct.wct_gmtoff == -5 * 3600 + 3600);
   cr_expect(wct.wct_hour == 2);
 
-  cr_expect(ut.ut_gmtoff == -5*3600 + 3600);
+  cr_expect(ut.ut_gmtoff == -5 * 3600 + 3600);
   cr_expect(ut.ut_sec == 1572156660);
 
   /* going back from UnixTime to WallClockTime, we should get the same
    * gmtoff and hour values */
 
   convert_unix_time_to_wall_clock_time(&ut, &wct);
-  cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
+  cr_expect(wct.wct_gmtoff == -5 * 3600 + 3600);
   cr_expect(wct.wct_hour == 2);
   cr_expect(wct.wct_min == 11);
 }
@@ -179,9 +179,9 @@ Test(conv, convert_wall_clock_time_to_unix_time_without_timezone_and_tz_hint_use
   cr_expect(ut.ut_sec == 1547917128);
 
   wct.wct_gmtoff = -1;
-  convert_wall_clock_time_to_unix_time_with_tz_hint(&wct, &ut, -5*3600);
+  convert_wall_clock_time_to_unix_time_with_tz_hint(&wct, &ut, -5 * 3600);
   cr_expect(wct.wct_gmtoff == -1);
-  cr_expect(ut.ut_gmtoff == -5*3600);
+  cr_expect(ut.ut_gmtoff == -5 * 3600);
   cr_expect(ut.ut_sec == 1547942328);
 }
 
@@ -215,7 +215,7 @@ Test(conv, set_from_unixtime_with_a_different_gmtoff_changes_hours_properly)
   /* Thu Dec 19 16:25:44 EST 2019 */
   ut.ut_sec = 1576790744;
   ut.ut_usec = 567000;
-  ut.ut_gmtoff = -5*3600;
+  ut.ut_gmtoff = -5 * 3600;
 
   convert_unix_time_to_wall_clock_time(&ut, &wct);
   cr_expect(wct.wct_year == 119);
@@ -226,7 +226,7 @@ Test(conv, set_from_unixtime_with_a_different_gmtoff_changes_hours_properly)
   cr_expect(wct.wct_min == 25);
   cr_expect(wct.wct_sec == 44);
   cr_expect(wct.wct_usec == 567000);
-  cr_expect(wct.wct_gmtoff == -5*3600);
+  cr_expect(wct.wct_gmtoff == -5 * 3600);
 }
 
 Test(conv, set_from_unixtime_without_timezone_information_assumes_local_timezone)
@@ -262,7 +262,7 @@ Test(conv, set_from_unixtime_with_tz_override_changes_the_timezone_to_the_overri
   ut.ut_gmtoff = 3600;
 
   /* +05:30 */
-  convert_unix_time_to_wall_clock_time_with_tz_override(&ut, &wct, 5*3600 + 1800);
+  convert_unix_time_to_wall_clock_time_with_tz_override(&ut, &wct, 5 * 3600 + 1800);
   cr_expect(wct.wct_year == 119);
   cr_expect(wct.wct_mon == 11);
   cr_expect(wct.wct_mday == 20);
@@ -271,7 +271,7 @@ Test(conv, set_from_unixtime_with_tz_override_changes_the_timezone_to_the_overri
   cr_expect(wct.wct_min == 55);
   cr_expect(wct.wct_sec == 44);
   cr_expect(wct.wct_usec == 567000);
-  cr_expect(wct.wct_gmtoff == 5*3600 + 1800);
+  cr_expect(wct.wct_gmtoff == 5 * 3600 + 1800);
 }
 
 

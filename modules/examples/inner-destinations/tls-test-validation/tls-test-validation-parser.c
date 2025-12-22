@@ -41,7 +41,7 @@ CfgParser tls_test_validation_parser =
 #endif
   .name = "tls_test_validation",
   .keywords = tls_test_validation_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer arg)) tls_test_validation_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer arg)) tls_test_validation_parse,
   .cleanup = (void (*)(gpointer)) log_driver_plugin_free
 };
 

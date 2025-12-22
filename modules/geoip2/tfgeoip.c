@@ -136,7 +136,7 @@ tf_geoip_maxminddb_call(LogTemplateFunction *self, gpointer s, const LogTemplate
     }
 
   MMDB_entry_data_s entry_data;
-  mmdb_error = MMDB_aget_value(&mmdb_result.entry, &entry_data, (const char *const* const)state->entry_path);
+  mmdb_error = MMDB_aget_value(&mmdb_result.entry, &entry_data, (const char *const * const)state->entry_path);
   if (mmdb_error != MMDB_SUCCESS)
     {
       goto error;

@@ -45,10 +45,10 @@ _stackdump_print_stack(gpointer stack_pointer)
     {
       gchar line[64] = {0};  /* plenty of room for 16 bytes in hex */
       for (gint j = 0; j < 8; j++)
-        g_snprintf(&line[j*3], sizeof(line) - j*3, "%02x ", (guint) *(p+j));
-      line[8*3] = ' ';
+        g_snprintf(&line[j * 3], sizeof(line) - j * 3, "%02x ", (guint) * (p + j));
+      line[8 * 3] = ' ';
       for (gint j = 8; j < 16; j++)
-        g_snprintf(&line[j*3 + 1], sizeof(line) - (j*3 + 1), "%02x ", (guint) *(p+j));
+        g_snprintf(&line[j * 3 + 1], sizeof(line) - (j * 3 + 1), "%02x ", (guint) * (p + j));
 
       console_printf("Stack %p: %s", p, line);
       p += 16;

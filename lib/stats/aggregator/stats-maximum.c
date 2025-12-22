@@ -44,7 +44,7 @@ _add_data_point(StatsAggregator *s, gsize value)
         break;
 
     }
-  while(!atomic_gssize_compare_and_exchange(&self->super.output_counter->value, current_max, value));
+  while (!atomic_gssize_compare_and_exchange(&self->super.output_counter->value, current_max, value));
 }
 
 static void

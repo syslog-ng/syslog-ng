@@ -408,5 +408,5 @@ const gchar *const *
 cached_get_system_tznames(void)
 {
   _validate_timeutils_cache();
-  return (const gchar *const *) &state.tzname;
+  return (const gchar * const *) &state.tzname;
 }

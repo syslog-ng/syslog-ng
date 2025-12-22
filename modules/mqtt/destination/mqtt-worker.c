@@ -59,7 +59,7 @@ _yield_mqtt(void *cookie)
 static LogThreadedResult
 _publish_result_evaluation (LogThreadedDestWorker *self, gint result)
 {
-  switch(result)
+  switch (result)
     {
     case MQTTCLIENT_SUCCESS:
       return LTR_SUCCESS;
@@ -100,7 +100,7 @@ _publish_result_evaluation (LogThreadedDestWorker *self, gint result)
 static LogThreadedResult
 _wait_result_evaluation(LogThreadedDestWorker *self, gint result)
 {
-  switch(result)
+  switch (result)
     {
     case MQTTCLIENT_SUCCESS:
       return LTR_SUCCESS;

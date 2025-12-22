@@ -85,12 +85,12 @@ _remove_comments(const GString *str)
   GString *prune = g_string_new("");
   gboolean is_inside_comment = FALSE;
 
-  for (gint i=0; i < str->len; ++i)
+  for (gint i = 0; i < str->len; ++i)
     {
       const gchar curr = str->str[i];
       const gboolean is_comment_start = '#' == curr;
       const gboolean is_comment_end = curr == '\n';
-      const gboolean does_comment_continue_next_line = is_comment_end && (i+1) < str->len && '#' == str->str[i+1];
+      const gboolean does_comment_continue_next_line = is_comment_end && (i + 1) < str->len && '#' == str->str[i + 1];
 
       if (is_comment_start || does_comment_continue_next_line)
         {

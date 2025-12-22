@@ -29,6 +29,6 @@ size_t
 strnlen(const char *s, size_t maxlen)
 {
   const char *p = memchr(s, 0, maxlen);
-  return p ? p-s : maxlen;
+  return p ? p - s : maxlen;
 }
 #endif

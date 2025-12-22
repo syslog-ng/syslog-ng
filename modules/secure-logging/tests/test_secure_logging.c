@@ -76,7 +76,7 @@ typedef struct _testData
 // Generate random number between low and high
 int randomNumber(int low, int high)
 {
-  return rand()%((high+1)-low)+low;
+  return rand() % ((high + 1) - low) + low;
 }
 
 // Generate a sample message with a fixed and a random part
@@ -88,7 +88,7 @@ LogMessage *create_random_sample_message(void)
 
   // Append a random string
   int num = randomNumber(10, 500);
-  for (int i = 0; i<num; i++)
+  for (int i = 0; i < num; i++)
     {
       // 65 to 90 are upper case letters
       g_string_append_c(msg_str, randomNumber(65, 90));
@@ -136,12 +136,12 @@ LogTemplate *createTemplate(TestData *testData)
 // Create a collection of random log messages for testing purposes
 void createLogMessages(gint num, LogMessage **log)
 {
-  if(num <= 0)
+  if (num <= 0)
     {
       cr_log_error("Invalid argument passed to createLog. num = %d", num);
     }
 
-  for(int i = 0; i < num; i++)
+  for (int i = 0; i < num; i++)
     {
       log[i] = create_random_sample_message();
     }
@@ -167,9 +167,9 @@ GString *applyTemplate(LogTemplate *templ, LogMessage *msg)
 // Find an integer in an array of integers
 int findInArray(int index, int *buffer, int size)
 {
-  for (int i = 0; i<size; i++)
+  for (int i = 0; i < size; i++)
     {
-      if (buffer[i]==index)
+      if (buffer[i] == index)
         {
           return 1;
         }
@@ -201,7 +201,7 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
   initVerify(totalNumberOfMessages, hostkey, &next, &start, templateOutput, &tab);
 
-  for (int i = 0; i<totalNumberOfMessages; i++)
+  for (int i = 0; i < totalNumberOfMessages; i++)
     {
       ret = iterateBuffer(1, &templateOutput[i], &next, hostkey, keyZero, 0, &outputBuffer[i], &numberOfLogEntries, cmac_tag,
                           cmac_tag_capacity, tab);
@@ -251,7 +251,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   cr_assert(ret == 1, "finalizeVerify failed");
 
 
-  for (int i=0; i<totalNumberOfMessages; i++)
+  for (int i = 0; i < totalNumberOfMessages; i++)
     {
       char *plaintextMessage = (outputBuffer[i]->str) + CTR_LEN_SIMPLE + COLON + BLANK;
       LogMessage *result = msg_format_parse(&test_parse_options, (const guchar *) plaintextMessage, strlen(plaintextMessage));
@@ -285,7 +285,7 @@ GString *createTemporaryDirectory(gchar *template)
   gchar buf[PATH_MAX];
 
   // Buffer for temporary path
-  g_strlcpy(buf, template, strlen(template)+1);
+  g_strlcpy(buf, template, strlen(template) +1);
 
   // Create random directory
   gchar *tmpDir = g_mkdtemp(buf);
@@ -312,7 +312,7 @@ void removeTemporaryFile(gchar *fileName, gboolean force)
 {
   // Remove file
   int ret = unlink(fileName);
-  if(!force && ret != 0)
+  if (!force && ret != 0)
     {
       cr_log_info("removeTemporaryFile %s: %s", strerror(errno), fileName);
     }
@@ -323,7 +323,7 @@ void removeTemporaryDirectory(gchar *dirName, gboolean force)
 {
   // Remove directory
   int ret = rmdir(dirName);
-  if(!force && ret != 0)
+  if (!force && ret != 0)
     {
       cr_log_info("removeTemporaryDirectory %s: %s", strerror(errno), dirName);
     }
@@ -381,13 +381,13 @@ void corruptKey(TestData *testData)
   gchar data[buflen];
 
   // Overwrite the first 8 byte of the key with random values
-  for(int i = 0; i < buflen; i++)
+  for (int i = 0; i < buflen; i++)
     {
       data[i] = randomNumber(1, 128);
     }
 
   // Overwrite the first 8 byte of the key with random values
-  for(int i = 0; i < 8; i++)
+  for (int i = 0; i < 8; i++)
     {
       testData->hostKey[i] = randomNumber(1, 128);
     }
@@ -496,7 +496,7 @@ void test_slog_verification_bulk(void)
   GString **output = g_new0(GString *, num);
 
   // Apply slog template to each message
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
     }
@@ -505,7 +505,7 @@ void test_slog_verification_bulk(void)
   verifyMessages(testData->hostKey, testData->macFile->str, output, logs, num);
 
   // Release message resources
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       log_msg_unref(logs[i]);
       g_string_free(output[i], TRUE);
@@ -537,7 +537,7 @@ void test_slog_corrupted_key(void)
   GString **output = g_new0(GString *, num);
 
   // Part 1: Apply slog template to each message
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
     }
@@ -546,7 +546,7 @@ void test_slog_corrupted_key(void)
   verifyMessages(testData->hostKey, testData->macFile->str, output, logs, num);
 
   // Release message resources
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       log_msg_unref(logs[i]);
       g_string_free(output[i], TRUE);
@@ -570,7 +570,7 @@ void test_slog_corrupted_key(void)
   output = g_new0(GString *, num);
 
   // Apply slog template to each message
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
 
@@ -621,35 +621,35 @@ void test_slog_malicious_modifications(void)
   GString **output = g_new0(GString *, num);
 
   // Apply slog template to each message
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
     }
 
-  int mods = randomNumber(1, num-1);
+  int mods = randomNumber(1, num - 1);
   int entriesToModify[mods];
 
   // We might modify the same entry twice
   for (int i = 0; i < mods; i++)
     {
-      entriesToModify[i] = randomNumber(0, num-1);
+      entriesToModify[i] = randomNumber(0, num - 1);
 
       // Overwrite with invalid string (invalid with high probability!)
       g_string_overwrite(output[entriesToModify[i]], randomNumber(COUNTER_LENGTH + COLON,
-                                                                  (output[entriesToModify[i]]->len)-1), "999999999999999999999999999999999999999999999999999999999999999");
+                                                                  (output[entriesToModify[i]]->len) -1), "999999999999999999999999999999999999999999999999999999999999999");
     }
 
   // Verify the previously created log
   int brokenEntries[mods];
-  for (int i=0; i<mods; i++)
+  for (int i = 0; i < mods; i++)
     {
       brokenEntries[i] = -1;
     }
   GString **ob = verifyMaliciousMessages(testData->hostKey, testData->macFile->str, output, num, brokenEntries);
 
-  for (int i=0; i<num; i++)
+  for (int i = 0; i < num; i++)
     {
-      if(1 == findInArray(i, entriesToModify, mods))
+      if (1 == findInArray(i, entriesToModify, mods))
         {
           cr_assert(1 == findInArray(i, brokenEntries, mods), "Modified entry %d not detected.", i);
         }
@@ -660,7 +660,7 @@ void test_slog_malicious_modifications(void)
     }
 
   // Release message resources
-  for(size_t i = 0; i < num; i++)
+  for (size_t i = 0; i < num; i++)
     {
       log_msg_unref(logs[i]);
       g_string_free(output[i], TRUE);

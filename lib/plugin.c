@@ -358,7 +358,7 @@ plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *ar
 {
   GModule *mod;
   static GModule *main_module_handle;
-  gboolean (*init_func)(PluginContext *context, CfgArgs *args);
+  gboolean (*init_func)(PluginContext * context, CfgArgs * args);
   gchar *module_init_func;
   gboolean result;
   ModuleInfo *module_info;

@@ -176,7 +176,7 @@ _should_drop_message(CSVParser *self)
 static gboolean
 _process_column_on_invalid_type_cast(CSVParser *self, LogMessageValueType *current_type)
 {
-  if(self->on_error & ON_ERROR_FALLBACK_TO_STRING)
+  if (self->on_error & ON_ERROR_FALLBACK_TO_STRING)
     {
       if (!(self->on_error & ON_ERROR_SILENT))
         {

@@ -36,7 +36,7 @@ struct _SerializeArchive
 {
   GError *error;
   guint16 len;
-  guint16 silent:1;
+  guint16 silent: 1;
 
   gboolean (*read_bytes)(SerializeArchive *archive, gchar *buf, gsize count, GError **error);
   gboolean (*write_bytes)(SerializeArchive *archive, const gchar *buf, gsize count, GError **error);

@@ -499,7 +499,7 @@ _is_number(const char *name)
       if (!g_ascii_isdigit(name[i]))
         break;
 
-      if (name[i+1] == '\0')
+      if (name[i + 1] == '\0')
         return true;
     }
 

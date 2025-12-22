@@ -76,7 +76,7 @@ struct _JournalReader
   struct iv_event schedule_wakeup;
   struct iv_task restart_task;
   MainLoopIOWorkerJob io_job;
-  guint watches_running:1, suspended:1;
+  guint watches_running: 1, suspended: 1;
   gint notify_code;
   gboolean immediate_check;
 

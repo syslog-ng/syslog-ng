@@ -77,8 +77,8 @@ _get_logmessages(const gchar *logs)
     {
       logline = g_strdup_printf("Jul 29 06:25:41 vav zorp/inter_http[27940]: %s", input_lines[i]);
       len = strlen(logline);
-      if (logline[len-1] == '\n')
-        logline[len-1] = 0;
+      if (logline[len - 1] == '\n')
+        logline[len - 1] = 0;
 
       msg = msg_format_parse(&parse_options, (const guchar *) logline, len);
       g_ptr_array_add(self->logmessages, msg);

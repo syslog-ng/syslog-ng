@@ -292,7 +292,7 @@ MOCK_FUNC(sd_journal_process)(sd_journal *s)
   g_assert(self->opened);
   guint8 data;
   gint res = 1;
-  while(res > 0)
+  while (res > 0)
     {
       res = read(self->fds[0], &data, 1);
       if (res < 0 && errno != EAGAIN)

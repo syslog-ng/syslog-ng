@@ -138,7 +138,7 @@ get_installer_version(gchar **inst_version)
           gchar *pos = strchr(line, '=');
           if (pos)
             {
-              *inst_version = g_strdup(pos+1);
+              *inst_version = g_strdup(pos + 1);
               result = TRUE;
               break;
             }
@@ -340,7 +340,7 @@ main(int argc, char *argv[])
   app_post_daemonized();
   app_config_changed();
 
-  if(startup_debug_flag)
+  if (startup_debug_flag)
     {
       debug_flag = FALSE;
       log_stderr = FALSE;

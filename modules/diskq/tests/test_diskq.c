@@ -428,11 +428,11 @@ assert_general_message_flow(LogQueue *q, gssize one_msg_size)
 
   feed_some_messages(q, 10);
   cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 10, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size*10, "memory_usage: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size * 10, "memory_usage: line: %d", __LINE__);
 
   send_some_messages(q, 5, TRUE);
   cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 5, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size*5, "memory_usage: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size * 5, "memory_usage: line: %d", __LINE__);
 }
 
 static LogQueue *
@@ -468,13 +468,13 @@ ParameterizedTestParameters(diskq, test_diskq_statistics)
   static diskq_tester_parameters_t test_cases[] =
   {
     // small enough to trigger overflow
-    { .disk_size = 10*1024, .reliable = TRUE, .overflow_expected = TRUE, .front_cache_size = 0, .filename = "file1.qf" },
+    { .disk_size = 10 * 1024, .reliable = TRUE, .overflow_expected = TRUE, .front_cache_size = 0, .filename = "file1.qf" },
 
     // no overflow
-    { .disk_size = 500*1024, .reliable = TRUE, .overflow_expected = FALSE, .front_cache_size = 0, .filename = "file2.qf" },
+    { .disk_size = 500 * 1024, .reliable = TRUE, .overflow_expected = FALSE, .front_cache_size = 0, .filename = "file2.qf" },
 
     // nonreliable version moves msgs from flow_control_window only if there is free space in front cache: front_cache_size must be 1
-    { .disk_size = 1*1024, .reliable = FALSE, .overflow_expected = TRUE, .front_cache_size = 1, .filename = "file3.qf" }
+    { .disk_size = 1 * 1024, .reliable = FALSE, .overflow_expected = TRUE, .front_cache_size = 1, .filename = "file3.qf" }
   };
 
   return cr_make_param_array(diskq_tester_parameters_t, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
@@ -519,7 +519,7 @@ ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_stati
 
   feed_some_messages(q, 1);
   cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 2, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size*2, "memory_usage: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size * 2, "memory_usage: line: %d", __LINE__);
 
   if (parameters->overflow_expected)
     assert_flow_control_window_length(parameters, q, 2);

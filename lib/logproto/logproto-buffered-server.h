@@ -75,15 +75,15 @@ struct _LogProtoBufferedServer
    * an encoding is specified and the last record in the input is
    * not complete.
    */
-  pos_tracking:1,
+  pos_tracking: 1,
 
-               /* specifies that the input is a stream of bytes, size of chunks
-                * read split the input randomly.  Non-stream based stuff is udp
-                * or fixed-size records read from a file.  */
-               stream_based:1,
+                /* specifies that the input is a stream of bytes, size of chunks
+                 * read split the input randomly.  Non-stream based stuff is udp
+                 * or fixed-size records read from a file.  */
+                stream_based: 1,
 
-               no_multi_read:1,
-               flush_partial_message:1;
+                no_multi_read: 1,
+                flush_partial_message: 1;
   gint fetch_state;
   GIOStatus io_status;
   LogProtoBufferedServerState *state1;

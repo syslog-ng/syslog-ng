@@ -46,9 +46,9 @@
 #define SHORT_OPT_INDICATOR "-"
 
 // This initialization only works with GCC.
-static unsigned char KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = IPAD };
-static unsigned char MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = OPAD };
-static unsigned char GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] =  EPAD};
+static unsigned char KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] = IPAD };
+static unsigned char MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] = OPAD };
+static unsigned char GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] =  EPAD};
 
 /*
  * Conditional msg_error output.
@@ -59,7 +59,7 @@ static unsigned char GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] =  EPAD
 void cond_msg_error(GError *myError, char *errorMsg)
 {
 
-  if (myError==NULL)
+  if (myError == NULL)
     {
       msg_error(errorMsg);
     }
@@ -130,23 +130,23 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
   int ciphertext_len;
 
   /* Create and initialise the context */
-  if(!(ctx = EVP_CIPHER_CTX_new()))
+  if (!(ctx = EVP_CIPHER_CTX_new()))
     {
       msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
       return 0;
     }
 
   /* Initialise the encryption operation. */
-  if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
+  if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
     {
       msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
       return 0;
     }
 
-  if (IV_LENGTH!=12)
+  if (IV_LENGTH != 12)
     {
       /* Set IV length if default 12 bytes (96 bits) is not appropriate */
-      if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
+      if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
         {
           msg_error("[SLOG] ERROR: Unable to set IV length");
           return 0;
@@ -154,7 +154,7 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
     }
 
   /* Initialise key and IV */
-  if(1 != EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv))
+  if (1 != EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv))
     {
       msg_error("[SLOG] ERROR: Unable to initialize encryption key and IV");
       return 0;
@@ -163,7 +163,7 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
   /* Provide the message to be encrypted, and obtain the encrypted output.
    * EVP_EncryptUpdate can be called multiple times if necessary
    */
-  if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
+  if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
     {
       msg_error("[SLOG] ERROR: Unable to encrypt data");
       return 0;
@@ -174,7 +174,7 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
   /* Finalise the encryption. Normally ciphertext bytes may be written at
    * this stage, but this does not occur in GCM mode
    */
-  if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
+  if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
     {
       msg_error("[SLOG] ERROR: Unable to complete encryption of data");
       return 0;
@@ -183,7 +183,7 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
   ciphertext_len += len;
 
   /* Get the tag */
-  if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, AES_BLOCKSIZE, tag))
+  if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, AES_BLOCKSIZE, tag))
     {
       msg_error("[SLOG] ERROR: Unable to acquire encryption tag");
       return 0;
@@ -221,23 +221,23 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
   int ret;
 
   /* Create and initialise the context */
-  if(!(ctx = EVP_CIPHER_CTX_new()))
+  if (!(ctx = EVP_CIPHER_CTX_new()))
     {
       msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
       return 0;
     }
 
   /* Initialise the decryption operation. */
-  if(!EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
+  if (!EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
     {
       msg_error("[SLOG] ERROR: Unable initiate decryption operation");
       return 0;
     }
 
-  if(IV_LENGTH!=12)
+  if (IV_LENGTH != 12)
     {
       /* Set IV length. Not necessary if this is 12 bytes (96 bits) */
-      if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
+      if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
         {
           msg_error("[SLOG] ERROR: Unable set IV length");
           return 0;
@@ -245,7 +245,7 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
     }
 
   /* Initialise key and IV */
-  if(!EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv))
+  if (!EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv))
     {
       msg_error("[SLOG] ERROR: Unable to initialize key and IV");
       return 0;
@@ -254,7 +254,7 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
   /* Provide the message to be decrypted, and obtain the plaintext output.
    * EVP_DecryptUpdate can be called multiple times if necessary
    */
-  if(!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+  if (!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
     {
       msg_error("Unable to decrypt");
       return 0;
@@ -263,7 +263,7 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
   plaintext_len = len;
 
   /* Set expected tag value. Works in OpenSSL 1.0.1d and later */
-  if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, AES_BLOCKSIZE, tag))
+  if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, AES_BLOCKSIZE, tag))
     {
       msg_error("[SLOG] ERROR: Unable set tag value");
       return 0;
@@ -276,7 +276,7 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
 
   /* Clean up */
   EVP_CIPHER_CTX_free(ctx);
-  if(ret > 0)
+  if (ret > 0)
     {
       /* Success */
       plaintext_len += len;
@@ -318,21 +318,21 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
 
   // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
   // Binary data cannot be larger than its base64 encoding
-  unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
+  unsigned char bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + slen];
 
   // This is where are ciphertext related data starts
   unsigned char *ctBuf = &bigBuf[AES_BLOCKSIZE];
   unsigned char *iv = ctBuf;
-  unsigned char *tag = &bigBuf[AES_BLOCKSIZE+IV_LENGTH];
-  unsigned char *ciphertext = &bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
+  unsigned char *tag = &bigBuf[AES_BLOCKSIZE + IV_LENGTH];
+  unsigned char *ciphertext = &bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE];
 
   // Generate random nonce
-  if (RAND_bytes(iv, IV_LENGTH)==1)
+  if (RAND_bytes(iv, IV_LENGTH) == 1)
     {
 
       // Encrypt log data
       int ct_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, ciphertext, tag);
-      if(ct_length <= 0)
+      if (ct_length <= 0)
         {
           msg_error("[SLOG] ERROR: Unable to correctly encrypt log message");
 
@@ -349,24 +349,26 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
 
 
       // Write IV, tag, and ciphertext at once
-      gchar *encodedCtBuf = convertToBase64(ctBuf, IV_LENGTH+AES_BLOCKSIZE+ct_length);
+      gchar *encodedCtBuf = convertToBase64(ctBuf, IV_LENGTH + AES_BLOCKSIZE + ct_length);
       g_string_append(output, encodedCtBuf);
       g_free(encodedCtBuf);
 
       // Compute aggregated MAC
       // Not the first aggregated MAC
-      if (numberOfLogEntries>0)
+      if (numberOfLogEntries > 0)
         {
           memcpy(bigBuf, inputBigMac, AES_BLOCKSIZE);
 
           gsize outlen;
-          cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen, outputBigMac_capacity);
+          cmac(MACKey, bigBuf, AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + ct_length, outputBigMac, &outlen,
+               outputBigMac_capacity);
         }
       else   // First aggregated MAC
         {
           gsize outlen = 0;
 
-          cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen, outputBigMac_capacity);
+          cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH + AES_BLOCKSIZE + ct_length, outputBigMac, &outlen,
+               outputBigMac_capacity);
         }
     }
   else
@@ -394,7 +396,7 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
  */
 void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey)
 {
-  for (guint64 i = currentKey; i<index; i++)
+  for (guint64 i = currentKey; i < index; i++)
     {
       evolveKey(dst);
     }
@@ -493,21 +495,21 @@ void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, 
   memcpy(input, originalInput, inputLength);
 
   // Make sure that temporary buffer can hold at least outputLength bytes, rounded up to a multiple of AES_BLOCKSIZE
-  unsigned char buf[outputLength+AES_BLOCKSIZE];
+  unsigned char buf[outputLength + AES_BLOCKSIZE];
   gsize buf_capacity = G_N_ELEMENTS(buf);
   // Prepare plaintext
-  for (int i=0; i<outputLength/AES_BLOCKSIZE; i++)
+  for (int i = 0; i < outputLength / AES_BLOCKSIZE; i++)
     {
       gsize outlen;
-      cmac(key, input, AES_BLOCKSIZE, buf + (i*AES_BLOCKSIZE), &outlen, buf_capacity - (i*AES_BLOCKSIZE));
-      input[inputLength-1]++;
+      cmac(key, input, AES_BLOCKSIZE, buf + (i * AES_BLOCKSIZE), &outlen, buf_capacity - (i * AES_BLOCKSIZE));
+      input[inputLength - 1]++;
     }
 
-  if (outputLength % AES_BLOCKSIZE!=0)
+  if (outputLength % AES_BLOCKSIZE != 0)
     {
-      int index = outputLength/AES_BLOCKSIZE;
+      int index = outputLength / AES_BLOCKSIZE;
       gsize outlen;
-      cmac(key, input, AES_BLOCKSIZE, buf + (index*AES_BLOCKSIZE), &outlen, buf_capacity - (index*AES_BLOCKSIZE));
+      cmac(key, input, AES_BLOCKSIZE, buf + (index * AES_BLOCKSIZE), &outlen, buf_capacity - (index * AES_BLOCKSIZE));
     }
 
   memcpy(output, buf, outputLength);
@@ -548,22 +550,22 @@ int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *host
 {
   EVP_MD_CTX *ctx;
 
-  if((ctx = EVP_MD_CTX_create()) == NULL)
+  if ((ctx = EVP_MD_CTX_create()) == NULL)
     return 0;
 
-  if(1 != EVP_DigestInit_ex(ctx, EVP_sha256(), NULL))
+  if (1 != EVP_DigestInit_ex(ctx, EVP_sha256(), NULL))
     return 0;
 
-  if(1 != EVP_DigestUpdate(ctx, masterkey, KEY_LENGTH))
+  if (1 != EVP_DigestUpdate(ctx, masterkey, KEY_LENGTH))
     return 0;
 
-  if(1 != EVP_DigestUpdate(ctx, macAddr, strlen(macAddr)))
+  if (1 != EVP_DigestUpdate(ctx, macAddr, strlen(macAddr)))
     return 0;
 
-  if(1 != EVP_DigestUpdate(ctx, serial, strlen(serial)))
+  if (1 != EVP_DigestUpdate(ctx, serial, strlen(serial)))
     return 0;
 
-  if(KEY_LENGTH != SHA256_DIGEST_LENGTH)
+  if (KEY_LENGTH != SHA256_DIGEST_LENGTH)
     {
       msg_error("[SLOG] ERROR: Error in updating digest");
       g_assert_not_reached();
@@ -572,7 +574,7 @@ int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *host
 
   guint digest_len = KEY_LENGTH;
 
-  if(1 != EVP_DigestFinal_ex(ctx, hostkey, &digest_len))
+  if (1 != EVP_DigestFinal_ex(ctx, hostkey, &digest_len))
     return 0;
 
   EVP_MD_CTX_destroy(ctx);
@@ -592,7 +594,7 @@ int writeBigMAC(gchar *filename, char *outputBuffer)
   GError *error = NULL;
 
   GIOChannel *macfile = g_io_channel_new_file(filename, "w+", &error);
-  if(!macfile)
+  if (!macfile)
     {
       msg_error("[SLOG] ERROR: Unable open MAC file",
                 evt_tag_str("base_dir", filename));
@@ -604,7 +606,7 @@ int writeBigMAC(gchar *filename, char *outputBuffer)
     }
 
   GIOStatus status = g_io_channel_set_encoding(macfile, NULL, &error);
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       msg_error("[SLOG] ERROR: Unable to set encoding for MAC data",
                 evt_tag_str("File", filename));
@@ -622,7 +624,7 @@ int writeBigMAC(gchar *filename, char *outputBuffer)
 
   gsize outlen = 0;
   status = g_io_channel_write_chars(macfile, outputBuffer, CMAC_LENGTH, &outlen, &error);
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       msg_error("[SLOG] ERROR: Unable to write big MAC data",
                 evt_tag_str("File", filename));
@@ -650,7 +652,7 @@ int writeBigMAC(gchar *filename, char *outputBuffer)
 
   status = g_io_channel_write_chars(macfile, outputmacdata, CMAC_LENGTH, &outlen, &error);
 
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       msg_error("[SLOG] ERROR: Unable to write aggregated MAC",
                 evt_tag_str("File", filename));
@@ -668,7 +670,7 @@ int writeBigMAC(gchar *filename, char *outputBuffer)
   status = g_io_channel_shutdown(macfile, TRUE, &error);
   g_io_channel_unref(macfile);
 
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       cond_msg_error(error, "[SLOG] ERROR: Cannot close aggregated MAC");
 
@@ -691,7 +693,7 @@ int readBigMAC(gchar *filename, char *outputBuffer)
 
   GIOChannel *macfile = g_io_channel_new_file(filename, "r", &myError);
 
-  if(!macfile)
+  if (!macfile)
     {
       // MAC file does not exist -> New MAC file will be created
       g_clear_error(&myError);
@@ -713,11 +715,11 @@ int readBigMAC(gchar *filename, char *outputBuffer)
       return 0;
     }
 
-  gchar macdata[2*CMAC_LENGTH];
+  gchar macdata[2 * CMAC_LENGTH];
   gsize mac_bytes_read = 0;
 
-  status = g_io_channel_read_chars(macfile, macdata, 2*CMAC_LENGTH, &mac_bytes_read, &myError);
-  if(status != G_IO_STATUS_NORMAL)
+  status = g_io_channel_read_chars(macfile, macdata, 2 * CMAC_LENGTH, &mac_bytes_read, &myError);
+  if (status != G_IO_STATUS_NORMAL)
     {
       cond_msg_error(myError, "[SLOG] ERROR: Cannot read MAC file");
 
@@ -734,7 +736,7 @@ int readBigMAC(gchar *filename, char *outputBuffer)
   status = g_io_channel_shutdown(macfile, TRUE, &myError);
   g_io_channel_unref(macfile);
 
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       msg_error("[SLOG] ERROR: Cannot close MAC file");
 
@@ -743,7 +745,7 @@ int readBigMAC(gchar *filename, char *outputBuffer)
       return 0;
     }
 
-  if (mac_bytes_read!=2*CMAC_LENGTH)
+  if (mac_bytes_read != 2 * CMAC_LENGTH)
     {
       msg_error("[SLOG] ERROR: $(slog) parsing failed, invalid size of MAC file");
       return 0;
@@ -799,7 +801,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
 
   GIOStatus status = g_io_channel_set_encoding(keyfile, NULL, &myError);
 
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       cond_msg_error(myError, "[SLOG] ERROR: Unable to set encoding for key file");
       g_clear_error(&myError);
@@ -838,7 +840,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
 
     }
 
-  if (key_bytes_read!=KEY_LENGTH+CMAC_LENGTH)
+  if (key_bytes_read != KEY_LENGTH + CMAC_LENGTH)
     {
       msg_error("[SLOG] ERROR: Invalid key file. Missing CMAC");
 
@@ -873,19 +875,19 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
 
   g_clear_error(&myError);
 
-  if (key_bytes_read!=sizeof(littleEndianCounter))
+  if (key_bytes_read != sizeof(littleEndianCounter))
     {
       msg_error("[SLOG] ERROR: $(slog) parsing failed, key file invalid while reading counter");
       return 0;
     }
 
-  gsize outlen=0;
+  gsize outlen = 0;
   unsigned char testOutput[CMAC_LENGTH];
   gsize testOutputCapacity = G_N_ELEMENTS(testOutput);
 
   cmac((guchar *)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen, testOutputCapacity);
 
-  if (0!=memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH))
+  if (0 != memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH))
     {
       msg_warning("[SLOG] ERROR: Host key corrupted. CMAC in key file not matching");
       return 0;
@@ -909,7 +911,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
   GError *error = NULL;
   GIOChannel *keyfile = g_io_channel_new_file(keypath, "w+", &error);
 
-  if(!keyfile)
+  if (!keyfile)
     {
       cond_msg_error(error, "[SLOG] ERROR: Cannot open key file");
 
@@ -919,7 +921,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
     }
 
   GIOStatus status = g_io_channel_set_encoding(keyfile, NULL, &error);
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       cond_msg_error(error, "[SLOG] ERROR: Unable to set encoding for key file");
 
@@ -936,7 +938,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
   gsize outlen = 0;
   // Write key
   status = g_io_channel_write_chars(keyfile, key, KEY_LENGTH, &outlen, &error);
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       cond_msg_error(error, "[SLOG] ERROR: Unable to write updated key");
 
@@ -958,7 +960,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
 
   // Write CMAC
   status = g_io_channel_write_chars(keyfile, outputmacdata, CMAC_LENGTH, &outlen, &error);
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       cond_msg_error(error, "[SLOG] ERROR: Unable to write key CMAC");
 
@@ -975,7 +977,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
   // Write counter
   status = g_io_channel_write_chars(keyfile, (gchar *) &littleEndianCounter, sizeof(littleEndianCounter), &outlen,
                                     &error);
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       cond_msg_error(error, "[SLOG] ERROR: Unable to write key counter");
 
@@ -1011,7 +1013,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
 {
 
   int ret = 1;
-  for (guint64 i=0; i<entriesInBuffer; i++)
+  for (guint64 i = 0; i < entriesInBuffer; i++)
     {
 
       output[i] = g_string_new(NULL);
@@ -1020,7 +1022,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
       if (len > (COUNTER_LENGTH + 1))
         {
           // Interpret the first COUNTER_LENGTH+1 characters
-          char ctrbuf[COUNTER_LENGTH+1];
+          char ctrbuf[COUNTER_LENGTH + 1];
           memcpy(ctrbuf, input[i]->str, COUNTER_LENGTH);
           ctrbuf[COUNTER_LENGTH] = 0;
 
@@ -1028,7 +1030,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
           guchar *tmp = convertToBin(ctrbuf, &outLen);
 
           guint64 logEntryOnDisk;
-          if (outLen!=sizeof(guint64))
+          if (outLen != sizeof(guint64))
             {
               msg_error("[SLOG] ERROR: Cannot derive integer value from counter field", evt_tag_long("Log entry number",
                         *nextLogEntry));
@@ -1041,23 +1043,23 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
               g_free(tmp);
             }
 
-          len = len - (COUNTER_LENGTH+1);
+          len = len - (COUNTER_LENGTH + 1);
 
           if (logEntryOnDisk != *nextLogEntry)
             {
               if (tab != NULL)
                 {
-                  char key[CTR_LEN_SIMPLE+1];
-                  snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, logEntryOnDisk);
-                  if(g_hash_table_contains(tab, key) == TRUE)
+                  char key[CTR_LEN_SIMPLE + 1];
+                  snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, logEntryOnDisk);
+                  if (g_hash_table_contains(tab, key) == TRUE)
                     {
                       msg_error("[SLOG] ERROR: Duplicate entry detected", evt_tag_long("entry", logEntryOnDisk));
                       ret = 0;
                     }
                 }
-              if (logEntryOnDisk<(*nextLogEntry))
+              if (logEntryOnDisk < (*nextLogEntry))
                 {
-                  if (logEntryOnDisk<keyNumber)
+                  if (logEntryOnDisk < keyNumber)
                     {
                       msg_error("[SLOG] ERROR: Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.",
                                 evt_tag_long("entry", logEntryOnDisk));
@@ -1074,7 +1076,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                       ret = 0;
                     }
                 }
-              if (logEntryOnDisk-(*nextLogEntry)>1000000)
+              if (logEntryOnDisk - (*nextLogEntry) > 1000000)
                 {
                   msg_info("[SLOG] INFO: Deriving key for distant future. This might take some time.",
                            evt_tag_long("next log entry should be", *nextLogEntry), evt_tag_long("key to derive to", logEntryOnDisk),
@@ -1086,7 +1088,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
 
           GString *line = input[i];
 
-          char *ct = &(line->str)[COUNTER_LENGTH+1];
+          char *ct = &(line->str)[COUNTER_LENGTH + 1];
           gsize outputLength;
 
           // binBuf = IV + TAG + CT
@@ -1094,25 +1096,26 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
           int pt_length = 0;
 
           // Check whether something weird has happened during conversion
-          if (outputLength>IV_LENGTH+AES_BLOCKSIZE)
+          if (outputLength > IV_LENGTH + AES_BLOCKSIZE)
             {
               unsigned char pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
 
               unsigned char encKey[KEY_LENGTH];
               deriveEncSubKey(mainKey, encKey);
 
-              pt_length = sLogDecrypt(&binBuf[IV_LENGTH+AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE, &binBuf[IV_LENGTH],
+              pt_length = sLogDecrypt(&binBuf[IV_LENGTH + AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE,
+                                      &binBuf[IV_LENGTH],
                                       encKey, binBuf, pt);
 
-              if (pt_length>0)
+              if (pt_length > 0)
                 {
                   // Include colon, whitespace, and \0
                   g_string_append_printf(output[i], "%0*"G_GINT64_MODIFIER"x: %.*s", CTR_LEN_SIMPLE, logEntryOnDisk, pt_length, pt);
 
                   if (tab != NULL)
                     {
-                      char *key = g_new0(char, CTR_LEN_SIMPLE+1);
-                      snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, logEntryOnDisk);
+                      char *key = g_new0(char, CTR_LEN_SIMPLE + 1);
+                      snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, logEntryOnDisk);
 
                       if (g_hash_table_insert(tab, key, (gpointer)logEntryOnDisk) == FALSE)
                         {
@@ -1130,25 +1133,25 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                       unsigned char MACKey[KEY_LENGTH];
                       deriveMACSubKey(mainKey, MACKey);
 
-                      cmac(MACKey, binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen, cmac_tag_capacity);
+                      cmac(MACKey, binBuf, IV_LENGTH + AES_BLOCKSIZE + pt_length, cmac_tag, &outlen, cmac_tag_capacity);
                     }
                   else
                     {
                       // numberOfEntries > 0
                       gsize outlen;
-                      unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length];
+                      unsigned char bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + pt_length];
                       memcpy(bigBuf, cmac_tag, AES_BLOCKSIZE);
-                      memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length);
+                      memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH + AES_BLOCKSIZE + pt_length);
 
                       unsigned char MACKey[KEY_LENGTH];
                       deriveMACSubKey(mainKey, MACKey);
 
-                      cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen, cmac_tag_capacity);
+                      cmac(MACKey, bigBuf, AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + pt_length, cmac_tag, &outlen, cmac_tag_capacity);
                     }
                 }
             }
 
-          if (pt_length<=0)
+          if (pt_length <= 0)
             {
               msg_warning("[SLOG] WARNING: Decryption not successful",
                           evt_tag_long("entry", logEntryOnDisk));
@@ -1187,10 +1190,10 @@ int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *
       if (tab != NULL)
         {
           // Hashtable key
-          char key[CTR_LEN_SIMPLE+1];
-          snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, i);
+          char key[CTR_LEN_SIMPLE + 1];
+          snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, i);
 
-          if(g_hash_table_contains(tab, key) == FALSE)
+          if (g_hash_table_contains(tab, key) == FALSE)
             {
               notRecovered++;
               msg_warning("[SLOG] WARNING: Unable to recover", evt_tag_long("entry", i));
@@ -1233,14 +1236,14 @@ int initVerify(guint64 entriesInFile, unsigned char *mainKey, guint64 *nextLogEn
       return 0;
     }
 
-  if (input[0]->len>(COUNTER_LENGTH+1))
+  if (input[0]->len > (COUNTER_LENGTH + 1))
     {
       gsize outLen;
-      char buf[COUNTER_LENGTH+1];
+      char buf[COUNTER_LENGTH + 1];
       memcpy(buf, input[0]->str, COUNTER_LENGTH);
       buf[COUNTER_LENGTH] = 0;
       guchar *tempInt = convertToBin(buf, &outLen);
-      if (outLen!=sizeof(guint64))
+      if (outLen != sizeof(guint64))
         {
           msg_warning("[SLOG] WARNING: Cannot derive integer value from first input line counter");
           (*startingEntry) = 0UL;
@@ -1253,7 +1256,7 @@ int initVerify(guint64 entriesInFile, unsigned char *mainKey, guint64 *nextLogEn
           g_free(tempInt);
         }
 
-      if((*startingEntry) > 0)
+      if ((*startingEntry) > 0)
         {
           msg_warning("[SLOG] WARNING: Log does not start with index 0",
                       evt_tag_long("index", (*startingEntry)));
@@ -1283,7 +1286,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
                         char *outputFileName, guint64 entriesInFile, int chunkLength, guint64 keyNumber)
 {
 
-  if(entriesInFile==0)
+  if (entriesInFile == 0)
     {
       msg_error("[SLOG] ERROR: Nothing to verify");
       return 0;
@@ -1293,7 +1296,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
   memcpy(keyZero, mainKey, KEY_LENGTH);
   int startedWithZero = 0;
 
-  if (keyNumber!=0)
+  if (keyNumber != 0)
     {
       msg_info("[SLOG] INFO: Verification using a key different from k0", evt_tag_long("key number", keyNumber));
     }
@@ -1316,7 +1319,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
     }
 
   GIOStatus status = g_io_channel_set_encoding(input, NULL, &myError);
-  if(status != G_IO_STATUS_NORMAL)
+  if (status != G_IO_STATUS_NORMAL)
     {
       cond_msg_error (myError, "[SLOG] ERROR: set encoding for input file");
 
@@ -1368,7 +1371,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
   GString **inputBuffer = g_new0(GString *, chunkLength);
   GString **outputBuffer = g_new0(GString *, chunkLength);
 
-  if ((outputBuffer==NULL)||(inputBuffer == NULL))
+  if ((outputBuffer == NULL) || (inputBuffer == NULL))
     {
       msg_error("[SLOG] ERROR: [iterativeFileVerify] cannot allocate memory");
 
@@ -1400,7 +1403,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
       numberOfLogEntries = 1;
     }
 
-  if (chunkLength>entriesInFile)
+  if (chunkLength > entriesInFile)
     {
       chunkLength = entriesInFile;
     }
@@ -1451,7 +1454,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
       // ...and write to file
       for (guint64 i = 0; i < chunkLength; i++)
         {
-          if (outputBuffer[i]->len!=0)
+          if (outputBuffer[i]->len != 0)
             {
               gsize size;
               //Add newline
@@ -1522,7 +1525,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
 
       for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
-          if (outputBuffer[i]->len!=0)
+          if (outputBuffer[i]->len != 0)
             {
 
               gsize size;
@@ -1558,7 +1561,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
         }
     }
 
-  if (startedWithZero==1)
+  if (startedWithZero == 1)
     {
       msg_info("[SLOG] INFO: We started with key key0. There might be a lot of warnings about missing log entries.");
     }
@@ -1600,7 +1603,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
   int ret = 1;
 
-  if(entriesInFile==0)
+  if (entriesInFile == 0)
     {
       msg_error("[SLOG] ERROR: Nothing to verify");
       return 0;
@@ -1673,7 +1676,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
   GString **inputBuffer = g_new0(GString *, chunkLength);
   GString **outputBuffer = g_new0(GString *, chunkLength);
 
-  if ((outputBuffer==NULL)||(inputBuffer == NULL))
+  if ((outputBuffer == NULL) || (inputBuffer == NULL))
     {
       msg_error("[SLOG] ERROR: [fileVerify] cannot allocate memory");
 
@@ -1696,7 +1699,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
   gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
   guint64 numberOfLogEntries = 0UL;
 
-  if (chunkLength>entriesInFile)
+  if (chunkLength > entriesInFile)
     {
       chunkLength = entriesInFile;
     }
@@ -1738,7 +1741,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
   // Write to file
   for (guint64 i = 0; i < chunkLength; i++)
     {
-      if (outputBuffer[i]->len!=0)
+      if (outputBuffer[i]->len != 0)
         {
           gsize size;
           //Add newline
@@ -1772,7 +1775,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
     }
 
   // Process file in chunks
-  for (int j = 0; j<(entriesInFile/chunkLength)-1; j++)
+  for (int j = 0; j < (entriesInFile / chunkLength) -1; j++)
     {
       for (guint64 i = 0; i < chunkLength; i++)
         {
@@ -1807,7 +1810,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
       // ...and write to file
       for (guint64 i = 0; i < chunkLength; i++)
         {
-          if (outputBuffer[i]->len!=0)
+          if (outputBuffer[i]->len != 0)
             {
               gsize size;
               //Add newline
@@ -1875,7 +1878,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
       for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
-          if (outputBuffer[i]->len!=0)
+          if (outputBuffer[i]->len != 0)
             {
 
               gsize size;
@@ -1930,7 +1933,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 // Print usage message and clean up
 int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg)
 {
-  if(errormsg != NULL)
+  if (errormsg != NULL)
     {
       g_print ("\nERROR: %s\n\n", errormsg->str);
       g_string_free(errormsg, TRUE);
@@ -1959,14 +1962,14 @@ gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer
 
   SLogOptions *opts = (SLogOptions *)data;
 
-  for(SLogOptions *option = opts; option != NULL && option->longname != NULL; option++)
+  for (SLogOptions *option = opts; option != NULL && option->longname != NULL; option++)
     {
       g_string_append(longOption, option->longname);
       g_string_append_c(shortOption, option->shortname);
 
-      if(g_string_equal(currentOption, longOption) || g_string_equal(currentOption, shortOption))
+      if (g_string_equal(currentOption, longOption) || g_string_equal(currentOption, shortOption))
         {
-          if(g_file_test(value, G_FILE_TEST_IS_REGULAR))
+          if (g_file_test(value, G_FILE_TEST_IS_REGULAR))
             {
               option->arg = currentValue->str;
               isValid = TRUE;

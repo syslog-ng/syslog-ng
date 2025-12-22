@@ -48,7 +48,7 @@ tls_get_x509_digest(X509 *x, GString *hash_string)
 
   g_string_append(hash_string, "SHA1:");
   for (j = 0; j < (int) n; j++)
-    g_string_append_printf(hash_string, "%02X%c", md[j], (j + 1 == (int) n) ?'\0' : ':');
+    g_string_append_printf(hash_string, "%02X%c", md[j], (j + 1 == (int) n) ? '\0' : ':');
 
   return TRUE;
 }
@@ -540,11 +540,11 @@ void
 tls_session_info_callback(const SSL *ssl, int where, int ret)
 {
   TLSSession *self = (TLSSession *)SSL_get_app_data(ssl);
-  if (!self->peer_info.found && where == (SSL_ST_ACCEPT|SSL_CB_LOOP))
+  if (!self->peer_info.found && where == (SSL_ST_ACCEPT | SSL_CB_LOOP))
     {
       X509 *cert = SSL_get_peer_certificate(ssl);
 
-      if(cert)
+      if (cert)
         {
           self->peer_info.found = 1; /* mark this found so we don't keep checking on every callback */
           X509_NAME *name = X509_get_subject_name(cert);

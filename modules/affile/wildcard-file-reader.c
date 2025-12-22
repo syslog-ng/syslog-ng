@@ -105,7 +105,7 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   WildcardFileReader *self = (WildcardFileReader *)s;
   gint result = NR_OK;
-  switch(notify_code)
+  switch (notify_code)
     {
     case NC_FILE_DELETED:
       _set_deleted(self);

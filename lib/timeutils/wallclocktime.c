@@ -156,7 +156,7 @@ wall_clock_time_iso_week_number(WallClockTime *wct)
   if (week_number == 0)
     {
       gint last_dec31 = _get_dec31_day_of_week(wct);
-      if (last_dec31 == 4 || (last_dec31 == 5 && isleap(wct->wct_year-1)))
+      if (last_dec31 == 4 || (last_dec31 == 5 && isleap(wct->wct_year - 1)))
         return 53;
       return 52;
     }
@@ -695,7 +695,7 @@ recurse:
               if (ep != NULL)
                 {
                   wct->tm.tm_isdst = i;
-                  wct->wct_gmtoff = -cached_get_system_tzofs() + wct->tm.tm_isdst*3600;
+                  wct->wct_gmtoff = -cached_get_system_tzofs() + wct->tm.tm_isdst * 3600;
                   wct->wct_zone = __UNCONST(system_tznames[i]);
                   bp = ep;
                   continue;
@@ -708,11 +708,11 @@ recurse:
                   /* Argh! No 'J'! */
                   if (*bp >= 'A' && *bp <= 'I')
                     wct->wct_gmtoff =
-                      (('A' - 1) - (int)*bp) * 3600;
+                      (('A' - 1) - (int) * bp) * 3600;
                   else if (*bp >= 'L' && *bp <= 'M')
-                    wct->wct_gmtoff = ('A' - (int)*bp) * 3600;
+                    wct->wct_gmtoff = ('A' - (int) * bp) * 3600;
                   else if (*bp >= 'N' && *bp <= 'Y')
-                    wct->wct_gmtoff = ((int)*bp - 'M') * 3600;
+                    wct->wct_gmtoff = ((int) * bp - 'M') * 3600;
                   wct->wct_zone = utc; /* XXX */
                   bp++;
                   continue;
@@ -1090,7 +1090,7 @@ __strftime_fmt_1(WallClockTime *wct, char (*s)[100], size_t *l, int f, int pad)
       val = wct->wct_year + 1900LL;
       if (wct->wct_yday < 3 && wall_clock_time_iso_week_number(wct) != 1) val--;
       else if (wct->wct_yday > 360 && wall_clock_time_iso_week_number(wct) == 1) val++;
-      if (f=='g') val %= 100;
+      if (f == 'g') val %= 100;
       else width = 4;
       goto number;
     case 'H':
@@ -1102,11 +1102,11 @@ __strftime_fmt_1(WallClockTime *wct, char (*s)[100], size_t *l, int f, int pad)
       else if (val > 12) val -= 12;
       goto number;
     case 'j':
-      val = wct->wct_yday+1;
+      val = wct->wct_yday + 1;
       width = 3;
       goto number;
     case 'm':
-      val = wct->wct_mon+1;
+      val = wct->wct_mon + 1;
       goto number;
     case 'M':
       val = wct->wct_min;
@@ -1147,7 +1147,7 @@ __strftime_fmt_1(WallClockTime *wct, char (*s)[100], size_t *l, int f, int pad)
       val = (wct->wct_yday + 7U - wct->wct_wday) / 7;
       goto number;
     case 'W':
-      val = (wct->wct_yday + 7U - (wct->wct_wday+6U)%7) / 7;
+      val = (wct->wct_yday + 7U - (wct->wct_wday + 6U) % 7) / 7;
       goto number;
     case 'V':
       val = wall_clock_time_iso_week_number(wct);
@@ -1182,7 +1182,7 @@ __strftime_fmt_1(WallClockTime *wct, char (*s)[100], size_t *l, int f, int pad)
           return "";
         }
       *l = snprintf(*s, sizeof *s, "%+.4ld",
-                    wct->wct_gmtoff/3600*100 + wct->wct_gmtoff%3600/60);
+                    wct->wct_gmtoff / 3600 * 100 + wct->wct_gmtoff % 3600 / 60);
       return *s;
     case 'Z':
       if (wct->wct_gmtoff == -1)
@@ -1192,7 +1192,7 @@ __strftime_fmt_1(WallClockTime *wct, char (*s)[100], size_t *l, int f, int pad)
         }
       *l = snprintf(*s, sizeof *s, "%c%02ld:%02ld",
                     wct->wct_gmtoff < 0 ? '-' : '+',
-                    (wct->wct_gmtoff > 0 ? wct->wct_gmtoff : -wct->wct_gmtoff)/3600, wct->wct_gmtoff%3600/60);
+                    (wct->wct_gmtoff > 0 ? wct->wct_gmtoff : -wct->wct_gmtoff) / 3600, wct->wct_gmtoff % 3600 / 60);
       return *s;
     case '%':
       *l = 1;
@@ -1235,7 +1235,7 @@ wall_clock_time_strftime(WallClockTime *wct, char *s, size_t n, const char *f)
   const char *t;
   int pad, plus;
   long width;
-  for (l=0; l<n; f++)
+  for (l = 0; l < n; f++)
     {
       if (!*f)
         {
@@ -1254,11 +1254,11 @@ wall_clock_time_strftime(WallClockTime *wct, char *s, size_t n, const char *f)
       width = (int) strtoul(f, &p, 10);
       if (*p == 'C' || *p == 'F' || *p == 'G' || *p == 'Y')
         {
-          if (!width && p!=f) width = 1;
+          if (!width && p != f) width = 1;
         }
       else if (*p == 'f')
         {
-          if (!width && p!=f)
+          if (!width && p != f)
             width = -6;
           else if (width > 0)
             width = -width;
@@ -1276,17 +1276,17 @@ wall_clock_time_strftime(WallClockTime *wct, char *s, size_t n, const char *f)
           /* Trim off any sign and leading zeros, then
            * count remaining digits to determine behavior
            * for the + flag. */
-          if (*t=='+' || *t=='-') t++, k--;
-          for (; *t=='0' && t[1]-'0'<10U; t++, k--);
+          if (*t == '+' || *t == '-') t++, k--;
+          for (; *t == '0' && t[1] - '0' < 10U; t++, k--);
           if (width < k) width = k;
           size_t d;
-          for (d=0; t[d]-'0'<10U; d++);
+          for (d = 0; t[d] - '0' < 10U; d++);
           if (wct->wct_year < -1900)
             {
               s[l++] = '-';
               width--;
             }
-          else if (plus && d+(width-k) >= (*p=='C'?3:5))
+          else if (plus && d + (width - k) >= (*p == 'C' ? 3 : 5))
             {
               s[l++] = '+';
               width--;
@@ -1299,13 +1299,13 @@ wall_clock_time_strftime(WallClockTime *wct, char *s, size_t n, const char *f)
           if (k > -width)
             k = -width;
         }
-      if (k > n-l) k = n-l;
-      memcpy(s+l, t, k);
+      if (k > n - l) k = n - l;
+      memcpy(s + l, t, k);
       l += k;
     }
   if (n)
     {
-      if (l==n) l=n-1;
+      if (l == n) l = n - 1;
       s[l] = 0;
     }
   return 0;

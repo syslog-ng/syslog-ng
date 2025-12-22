@@ -181,7 +181,7 @@ struct _CfgLexer
   GString *token_pretext;
   GString *token_text;
   GlobalConfig *cfg;
-  guint first_non_pragma_seen:1, ignore_pragma:1;
+  guint first_non_pragma_seen: 1, ignore_pragma: 1;
 };
 
 /* pattern buffer */

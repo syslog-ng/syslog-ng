@@ -108,7 +108,7 @@ assert_log_message_name_values_with_options(TestParserOptions *options, const gc
   LogParser *parser = create_parser(options);
   LogMessage *msg = parse_str_into_log_message(parser, input);
 
-  for (int i=0; i < number_of_expected; i++)
+  for (int i = 0; i < number_of_expected; i++)
     assert_log_message_value_by_name(msg, expected[i].name, expected[i].value);
 
   log_msg_unref(msg);

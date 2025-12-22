@@ -277,7 +277,7 @@ dqtool_info(int argc, char *argv[])
 static gboolean
 _is_read_writable(const gchar *path)
 {
-  return access(path, R_OK|W_OK) == F_OK;
+  return access(path, R_OK | W_OK) == F_OK;
 }
 
 static gboolean
@@ -695,7 +695,7 @@ dqtool_mode(int *argc, char **argv[])
       if ((*argv)[i][0] != '-')
         {
           mode = (*argv)[i];
-          memmove(&(*argv)[i], &(*argv)[i+1], ((*argc) - i) * sizeof(gchar *));
+          memmove(&(*argv)[i], &(*argv)[i + 1], ((*argc) - i) * sizeof(gchar *));
           (*argc)--;
           return mode;
         }

@@ -1250,7 +1250,7 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
 
   serialized = g_string_sized_new(4096);
   sa = serialize_string_archive_new(serialized);
-  for (gint i = 0; i < g_queue_get_length(q); i+=2)
+  for (gint i = 0; i < g_queue_get_length(q); i += 2)
     {
       /* NOTE: we might have some flow-controlled events on front_cache, when
        * saving them to disk, we ack them, they are restored as
@@ -1258,7 +1258,7 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
        * disk anyway. */
 
       msg = g_queue_peek_nth(q, i);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_peek_nth(q, i+1), &path_options);
+      POINTER_TO_LOG_PATH_OPTIONS(g_queue_peek_nth(q, i + 1), &path_options);
       log_msg_serialize(msg, sa, 0);
 
       if (string_reached_memory_limit(serialized))
@@ -1321,7 +1321,7 @@ _save_state(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_cont
 
   self->hdr->front_cache_pos = front_cache_pos;
   self->hdr->backlog_pos = backlog_pos;
-  self->hdr->flow_control_window_pos= flow_control_window_pos;
+  self->hdr->flow_control_window_pos = flow_control_window_pos;
 
   if (!self->options->reliable)
     msg_info("Disk-buffer state saved",

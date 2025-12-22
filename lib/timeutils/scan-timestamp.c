@@ -374,12 +374,12 @@ __has_iso_timezone(const guchar *src, gint length)
 {
   return (length >= 6) &&
          (*src == '+' || *src == '-') &&
-         isdigit(*(src+1)) &&
-         isdigit(*(src+2)) &&
-         *(src+3) == ':' &&
-         isdigit(*(src+4)) &&
-         isdigit(*(src+5)) &&
-         (length < 7 || !isdigit(*(src+6)));
+         isdigit(*(src + 1)) &&
+         isdigit(*(src + 2)) &&
+         *(src + 3) == ':' &&
+         isdigit(*(src + 4)) &&
+         isdigit(*(src + 5)) &&
+         (length < 7 || !isdigit(*(src + 6)));
 }
 
 static guint32

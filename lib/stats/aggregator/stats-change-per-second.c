@@ -93,7 +93,7 @@ _untrack_input_counter(StatsAggregatorCPS *self)
 static void
 _register_CPS(CPSLogic *self, StatsClusterKey *sc_key, gint level, gint type)
 {
-  if(!self->output_counter)
+  if (!self->output_counter)
     stats_register_counter(level, sc_key, type, &self->output_counter);
 }
 
@@ -237,7 +237,7 @@ _calc_average(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
             evt_tag_printf("name", "%s_%s", self->super.key.legacy.id, logic->name),
             evt_tag_long("sum", sum),
             evt_tag_long("divisor", divisor),
-            evt_tag_long("cps", (sum/divisor)),
+            evt_tag_long("cps", (sum / divisor)),
             evt_tag_long("delta_time_since_start", elapsed_time));
 }
 

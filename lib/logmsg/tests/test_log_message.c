@@ -816,11 +816,11 @@ test_with_sdata(LogMessage *msg, guint32 old_msg_size)
       g_snprintf(key, sizeof(key), ".SDATA.%02d", i);
       sizes = add_key_value(msg, key, value);
 
-      single_sdata_kv_size = NV_ENTRY_DIRECT_HDR + NV_TABLE_BOUND(strlen(key)+1 + strlen(value)+1);
+      single_sdata_kv_size = NV_ENTRY_DIRECT_HDR + NV_TABLE_BOUND(strlen(key) + 1 + strlen(value) + 1);
 
       /* i+1 is stored, but the sdata array size is calculated when adding the i-th */
       sdata_payload_array_size = STRICT_ROUND_TO_NEXT_EIGHT(i) * sizeof(msg->sdata[0]);
-      cr_assert_eq(old_msg_size + (i+1) * single_sdata_kv_size + sdata_payload_array_size, sizes.msg_size_new);
+      cr_assert_eq(old_msg_size + (i + 1) * single_sdata_kv_size + sdata_payload_array_size, sizes.msg_size_new);
     }
 }
 
@@ -847,13 +847,13 @@ Test(log_message, test_message_size)
 
   char *tag_name = strdup("00tagname");
   // (*8 to convert to bits) + no need plus 1 bcause we already added one tag: test_tag_storage
-  for (int i = 0; i < GLIB_SIZEOF_LONG*8; i++)
+  for (int i = 0; i < GLIB_SIZEOF_LONG * 8; i++)
     {
       sprintf(tag_name, "%dtagname", i);
       log_msg_set_tag_by_name(msg, tag_name);
     }
   free(tag_name);
-  cr_assert_eq(msg_size + 2*GLIB_SIZEOF_LONG, log_msg_get_size(msg));
+  cr_assert_eq(msg_size + 2 * GLIB_SIZEOF_LONG, log_msg_get_size(msg));
 
 
   DEFUN_KEY_VALUE(big, 'A', 'B', LARGE_LENGTH);
@@ -867,7 +867,7 @@ Test(log_message, test_message_size)
   log_msg_unref(msg);
 }
 
-Test(log_message, when_get_indirect_value_with_null_value_len_abort_instead_of_sigsegv, .signal=SIGABRT)
+Test(log_message, when_get_indirect_value_with_null_value_len_abort_instead_of_sigsegv, .signal = SIGABRT)
 {
   LogMessageTestParams *params = log_message_test_params_new();
 

@@ -187,7 +187,7 @@ before_last_dot(GString *str)
   gchar *pos = strrchr(s, '.');
   if (!pos)
     return 0;
-  return (pos-s);
+  return (pos - s);
 }
 
 static void

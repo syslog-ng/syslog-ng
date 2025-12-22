@@ -86,7 +86,7 @@ tf_simple_func_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvo
   TFSimpleFunc simple_func = (TFSimpleFunc) self->arg;
   TFSimpleFuncState *state = (TFSimpleFuncState *) s;
 
-  simple_func(args->messages[args->num_messages-1], state->argc, (GString **) args->argv, result, type);
+  simple_func(args->messages[args->num_messages - 1], state->argc, (GString **) args->argv, result, type);
 }
 
 void

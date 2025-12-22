@@ -101,7 +101,7 @@ Test(generic_number, test_set_nan_becomes_a_nan)
   cr_assert(gn_is_nan(&gn));
 }
 
-Test(generic_number, test_nan_operation_is_zero_triggers_an_abort, .signal=SIGABRT)
+Test(generic_number, test_nan_operation_is_zero_triggers_an_abort, .signal = SIGABRT)
 {
   GenericNumber gn;
   gn_set_nan(&gn);
@@ -110,7 +110,7 @@ Test(generic_number, test_nan_operation_is_zero_triggers_an_abort, .signal=SIGAB
   cr_assert(FALSE, "Should not be reached");
 }
 
-Test(generic_number, test_nan_operation_compare_triggers_an_abort, .signal=SIGABRT)
+Test(generic_number, test_nan_operation_compare_triggers_an_abort, .signal = SIGABRT)
 {
   GenericNumber gn1, gn2;
   gn_set_nan(&gn1);
