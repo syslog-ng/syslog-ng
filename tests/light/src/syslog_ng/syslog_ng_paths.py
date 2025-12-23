@@ -40,7 +40,10 @@ class SyslogNgPaths(object):
             raise ValueError("Missing --installdir start parameter")
 
         self.__syslog_ng_paths = {
-            "dirs": {"install_dir": Path(install_dir)},
+            "dirs": {
+                "install_dir": Path(install_dir),
+                "python_source_dir": Path(install_dir) / "lib/syslog-ng/python",
+            },
             "file_paths": {
                 "config_path": Path("syslog_ng_{}.conf".format(instance_name)),
                 "persist_path": Path("syslog_ng_{}.persist".format(instance_name)),
@@ -64,6 +67,9 @@ class SyslogNgPaths(object):
 
     def get_install_dir(self):
         return self.__syslog_ng_paths["dirs"]["install_dir"]
+
+    def get_python_source_dir(self):
+        return self.__syslog_ng_paths["dirs"]["python_source_dir"]
 
     def get_config_path(self):
         return self.__syslog_ng_paths["file_paths"]["config_path"]
