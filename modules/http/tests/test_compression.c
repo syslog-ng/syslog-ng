@@ -113,8 +113,6 @@ Test(compression, compressor_gzip_compression)
   g_string_free(result, TRUE);
 }
 
-// FIXME: zlib-flate is missing on 32 bit test image, hence no deflate-test
-#if !defined(i386) && !defined(__i386__) && !defined(__i386) && !defined(_M_IX86)
 Test(compression, compressor_deflate_compression)
 {
   compressor = deflate_compressor_new();
@@ -125,7 +123,6 @@ Test(compression, compressor_deflate_compression)
   compressor_free(compressor);
   g_string_free(result, TRUE);
 }
-#endif
 
 #endif
 
