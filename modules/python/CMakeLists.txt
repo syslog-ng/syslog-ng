@@ -47,8 +47,6 @@ set(PYTHON_SOURCES
   python-integerpointer.c
   python-logger.h
   python-logger.c
-  python-loghandler.h
-  python-loghandler.c
   python-source.h
   python-source.c
   python-fetcher.h

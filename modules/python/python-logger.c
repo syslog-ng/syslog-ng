@@ -91,11 +91,7 @@ py_msg_trace(PyObject *obj, PyObject *args)
   Py_RETURN_NONE;
 }
 
-int py_logger_init(PyObject *self, PyObject *args, PyObject *kwds)
-{
-  msg_warning("WARNING: " VERSION_4_0 " deprecates usage of Logger class. Use default python logging facilities instead");
-  return 0;
-}
+
 
 static PyMethodDef py_logger_methods[] =
 {
@@ -118,7 +114,6 @@ PyTypeObject py_logger_type =
   .tp_methods = py_logger_methods,
   .tp_name = "Logger",
   .tp_new = PyType_GenericNew,
-  .tp_init = (initproc) py_logger_init,
   0
 };
 

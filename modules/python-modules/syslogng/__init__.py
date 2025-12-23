@@ -27,7 +27,7 @@ from .source import LogSource, LogFetcher, InstantAckTracker, ConsecutiveAckTrac
 from .parser import LogParser
 from .template import LogTemplate, LogTemplateOptions, LogTemplateException, LTZ_SEND, LTZ_LOCAL
 from .message import LogMessage
-from .logger import InternalHandler, TRACE, Logger
+from .logger import Logger
 from .persist import Persist
 from .confgen import register_config_generator
 from .reloc import get_installation_path_for

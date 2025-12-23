@@ -24,31 +24,49 @@
 
 import logging
 
-
-class InternalLogger(logging.Logger):
-    def trace(self, msg, *args, **kwargs):
-        if self.isEnabledFor(TRACE):
-            self._log(TRACE, msg, args, **kwargs)
-
-
 try:
-    from _syslogng import InternalHandler, TRACE, Logger
+    from _syslogng import Logger
 
+    FAKE_LOGGER = False
 except ImportError:
     import warnings
     warnings.warn("You have imported the syslogng package outside of syslog-ng, "
                   "thus some of the functionality is not available. "
                   "Defining fake classes for those exported by the underlying syslog-ng code")
 
-    InternalHandler = logging.NullHandler
-    TRACE = logging.DEBUG // 2
-    Logger = InternalLogger
+    FAKE_LOGGER = True
+
+    def Logger():
+        return logging.getLogger()
+    logging.basicConfig()
 
 
-if InternalHandler is not logging.NullHandler:
-    logging.setLoggerClass(InternalLogger)
+class SyslogNGInternalLogHandler(logging.Handler):
+    syslogng_logger = Logger()
+
+    def emit(self, record):
+
+        msg = self.format(record)
+        if record.levelno >= logging.ERROR:
+            self.syslogng_logger.error(msg)
+        elif record.levelno >= logging.WARNING:
+            self.syslogng_logger.warning(msg)
+        elif record.levelno >= logging.INFO:
+            self.syslogng_logger.info(msg)
+        elif record.levelno >= logging.DEBUG:
+            self.syslogng_logger.debug(msg)
+        else:
+            self.syslogng_logger.trace(msg)
+
+
+def setup_logging():
     logger = logging.getLogger()
-    handler = InternalHandler()
-    logger.setLevel(handler.level)
-    handler.setFormatter(logging.Formatter('python-%(name)s: %(message)s'))
-    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    sh = SyslogNGInternalLogHandler()
+    formatter = logging.Formatter('python-%(name)s: %(message)s')
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
+
+
+if not FAKE_LOGGER:
+    setup_logging()

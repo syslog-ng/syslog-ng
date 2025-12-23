@@ -58,8 +58,6 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-integerpointer.h    \
 	modules/python/python-logger.c    \
 	modules/python/python-logger.h    \
-	modules/python/python-loghandler.c    \
-	modules/python/python-loghandler.h    \
 	modules/python/python-global-code-loader.h\
 	modules/python/python-global-code-loader.c\
 	modules/python/python-debugger.h	  \
