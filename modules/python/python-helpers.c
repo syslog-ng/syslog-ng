@@ -369,10 +369,20 @@ _py_invoke_method_by_name(PyObject *instance, const gchar *method_name, PyObject
 void
 _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class, const gchar *module)
 {
+  _py_invoke_void_method_by_name_with_options(instance, method_name, NULL, class, module);
+}
+
+void
+_py_invoke_void_method_by_name_with_options(PyObject *instance, const gchar *method_name,
+                                            const PythonOptions *options, const gchar *class, const gchar *module)
+{
   PyObject *method = _py_get_optional_method(instance, class, method_name, module);
   if (method)
     {
-      _py_invoke_void_function(method, NULL, class, module);
+      PyObject *py_options_dict = options ? python_options_create_py_dict(options) : NULL;
+      _py_invoke_void_function(method, py_options_dict, class, module);
+
+      Py_XDECREF(py_options_dict);
       Py_DECREF(method);
     }
 }
