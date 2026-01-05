@@ -127,7 +127,7 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   gsize log_msg_len;
   LogMessage *log_msg = _prepare_message(self, msg, &log_msg_len);
 
-  gboolean result =_send_message(self, log_msg, log_msg_len, msg);
+  gboolean result = _send_message(self, log_msg, log_msg_len, msg);
 
   if (G_UNLIKELY(FALSE == result))
     log_msg_unref(log_msg);

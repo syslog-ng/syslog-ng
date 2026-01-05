@@ -410,7 +410,7 @@ void
 kafka_log_state_changed(KafkaSourceDriver *self, KafkaConnectedState state, rd_kafka_resp_err_t err, const char *reason)
 {
   const char *state_str;
-  switch(state)
+  switch (state)
     {
     case KFS_CONNECTED:
       state_str = "CONNECTED";
@@ -461,7 +461,7 @@ kafka_update_state(KafkaSourceDriver *self, gboolean lock)
   else
     {
       /* Though, the error can be RD_KAFKA_RESP_ERR__TIMED_OUT as well, treat it as not connected too on startup */
-      if(state == KFS_UNKNOWN)
+      if (state == KFS_UNKNOWN)
         {
           state = KFS_DISCONNECTED;
           kafka_opaque_state_set(&self->opaque, state);
@@ -528,12 +528,12 @@ _kafka_error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
     {
       kafka_sd_wakeup_kafka_queues(self);
 
-      if(old_state != KFS_DISCONNECTED)
+      if (old_state != KFS_DISCONNECTED)
         kafka_log_state_changed(self, KFS_DISCONNECTED, (rd_kafka_resp_err_t) err, reason);
 
       if (kafka_opaque_state_get_last_error(&self->opaque) != err)
         {
-          if(old_state != KFS_CONNECTED)
+          if (old_state != KFS_CONNECTED)
             {
               /* Logging further errors ony on trace level, unfortunately house keeping the last error only
                * is not enought to filter out the repetititons which would be the real goal here
@@ -1192,7 +1192,7 @@ kafka_sd_wait_for_queue_processors_to_sleep(KafkaSourceDriver *self, const gdoub
                   evt_tag_str("group_id", self->group_id),
                   evt_tag_str("driver", self->super.super.super.id));
 
-  while (FALSE == kafka_sd_all_workers_sleeping(self)&& FALSE == kafka_sd_all_workers_exited(self))
+  while (FALSE == kafka_sd_all_workers_sleeping(self) && FALSE == kafka_sd_all_workers_exited(self))
     {
       if (poll_kafka)
         kafka_update_state(self, TRUE);
@@ -1600,7 +1600,7 @@ _setup_kafka_client(KafkaSourceDriver *self)
   g_assert(self->kafka);
   gboolean result = TRUE;
 
-  switch(self->strategy)
+  switch (self->strategy)
     {
     case KSCS_ASSIGN:
       result = _setup_method_assigned_consumer(self);
