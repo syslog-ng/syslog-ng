@@ -19,7 +19,6 @@ modules_afsnmp_libafsnmp_la_SOURCES	=	\
 
 modules_afsnmp_libafsnmp_la_CPPFLAGS	=	\
 	$(AM_CPPFLAGS)					\
-	$(NETSNMP_CFLAGS)	\
 	-I$(top_srcdir)/modules/afsnmp		\
 	-I$(top_builddir)/modules/afsnmp
 
