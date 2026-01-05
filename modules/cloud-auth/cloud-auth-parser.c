@@ -30,30 +30,35 @@ int cloud_auth_parse(CfgLexer *lexer, LogDriverPlugin **instance, gpointer arg);
 static CfgLexerKeyword cloud_auth_keywords[] =
 {
   { "cloud_auth",               KW_CLOUD_AUTH },
-  { "gcp",                      KW_GCP },
-  { "service_account",          KW_SERVICE_ACCOUNT },
-  { "key",                      KW_KEY },
-  { "audience",                 KW_AUDIENCE },
-  { "token_validity_duration",  KW_TOKEN_VALIDITY_DURATION },
-  { "user_managed_service_account",  KW_USER_MANAGED_SERVICE_ACCOUNT },
-  { "name",                          KW_NAME },
-  { "metadata_url",                  KW_METADATA_URL },
+
+  { "gcp",                          KW_GCP },
+  { "service_account",              KW_SERVICE_ACCOUNT },
+  {   "audience",                   KW_AUDIENCE },
+  {   "key",                        KW_KEY },
+  {   "scope",                      KW_SCOPE },
+  {   "token_validity_duration",    KW_TOKEN_VALIDITY_DURATION },
+  { "user_managed_service_account", KW_USER_MANAGED_SERVICE_ACCOUNT },
+  {   "metadata_url",               KW_METADATA_URL },
+  {   "name",                       KW_NAME },
+
   { "azure",                         KW_AZURE },
-  { "monitor",                       KW_MONITOR },
-  { "tenant_id",                     KW_TENANT_ID },
   { "app_id",                        KW_APP_ID },
   { "app_secret",                    KW_APP_SECRET },
-  { "scope",                         KW_SCOPE },
-  { "client_id",                     KW_CLIENT_ID },
-  { "client_secret",                 KW_CLIENT_SECRET },
-  { "token_url",                     KW_TOKEN_URL },
-  { "resource",                      KW_RESOURCE },
-  { "authorization_details",         KW_AUTHORIZATION_DETAILS },
-  { "refresh_offset",                KW_REFRESH_OFFSET },
+  { "monitor",                       KW_MONITOR },
+  { "tenant_id",                     KW_TENANT_ID },
+
   { "oauth2",                        KW_OAUTH2 },
   { "auth_method",                   KW_AUTH_METHOD },
-  { "basic",                         KW_BASIC },
-  { "post_body",                     KW_POST_BODY },
+  {   "basic",                       KW_BASIC },
+  {   "post_body",                   KW_POST_BODY },
+  { "authorization_details",         KW_AUTHORIZATION_DETAILS },
+  { "client_id",                     KW_CLIENT_ID },
+  { "client_secret",                 KW_CLIENT_SECRET },
+  { "refresh_offset",                KW_REFRESH_OFFSET },
+  { "resource",                      KW_RESOURCE },
+  // scope is reused from GCP
+  { "token_url",                     KW_TOKEN_URL },
+
   { NULL }
 };
 

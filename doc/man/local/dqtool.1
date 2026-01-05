@@ -1,11 +1,11 @@
-.TH dqtool 1 "03 September 2025" 4.9.0 "The dqtool tool manual page"
+.TH dqtool 1 "18 December 2025" 4.10.2 "The dqtool tool manual page"
 .SH NAME
 .PP
 dqtool \-\-\- Display the contents of a disk\-buffer file created with {{ site.product.short_name }}.
-.SH Synopsis
+.SH SYNOPSIS
 .PP
 dqtool [command] [options]
-.SH Description
+.SH DESCRIPTION
 .PP
 \fBNOTE:\fP The dqtool application is distributed with the syslog\-ng OSE
 system logging application, and is usually part of the syslog\-ng OSE
@@ -16,7 +16,7 @@ This manual page is only an abstract.
 .PP
 The dqtool application is a utility that can be used to display and
 format the messages stored in a disk\-buffer file.
-.SH The cat command
+.SH THE CAT COMMAND
 .PP
 .RS
 .nf
@@ -32,45 +32,40 @@ particular log messages, for example, \fBdqtool cat /var/log/messages.lgs
 |grep 192.168.1.1\fP\&.
 .PP
 The cat command has the following options:
-.RS
-.IP \(bu 2
-\-\-debug or \-d
 .PP
-Print diagnostic and debugging messages to stderr.
-.IP \(bu 2
-\-\-help or \-h
+\fB\fC\-\-debug\fR or \fB\fC\-d\fR
+    Print diagnostic and debugging messages to stderr.
 .PP
-Display a brief help message.
-.IP \(bu 2
-\-\-template=<template> or \-t
+\fB\fC\-\-help\fR or \fB\fC\-h\fR
+    Display a brief help message.
 .PP
-Format the messages using the specified template.
-.IP \(bu 2
-\-\-verbose or \-v
+\fB\fC\-\-template=<template>\fR or \fB\fC\-t\fR
+    Format the messages using the specified template.
 .PP
-Print verbose messages to stderr.
-.IP \(bu 2
-\-\-version or \-V
+\fB\fC\-\-verbose\fR or \fB\fC\-v\fR
+    Print verbose messages to stderr.
 .PP
-Display version information.
-.RE
-.SS Example: The cat command
+\fB\fC\-\-version\fR or \fB\fC\-V\fR
+    Display version information.
+.SS EXAMPLE:
 .PP
 .RS
 .nf
-\&./dqtool cat ../var/syslog\-ng\-00000.qf
+dqtool cat ../var/syslog\-ng\-00000.qf
 .fi
 .RE
 .PP
 The output looks like:
+```config
 .PP
 .RS
 Disk\-buffer state loaded;
 filename='../var/syslog\-ng\-00000.qf', qout\fIlength='65', qbacklog\fPlength='0', qoverflow\fIlength='9205', qdisk\fPlength='0'
 Mar  3 10:52:05 tristram localprg[1234]: seq: 0000011630, runid: 1267609923, stamp: 2010\-03\-03T10:52:05 PADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADD
 Mar  3 10:52:05 tristram localprg[1234]: seq: 0000011631, runid: 1267609923, stamp: 2010\-03\-03T10:52:05 PADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADD
+```
 .RE
-.SH The relocate command
+.SH THE RELOCATE COMMAND
 .PP
 .RS
 .nf
@@ -83,31 +78,26 @@ disk\-queue) files. Note that this option modifies the persist file. Stop
 syslog\-ng OSE before using this command.
 .PP
 The relocate command has the following options:
-.RS
-.IP \(bu 2
-\-\-all or \-a
 .PP
-Relocate every disk\-buffer file that is listed in the syslog\-ng OSE
-persist file.
-.IP \(bu 2
-\-\-new_path or \-n
+\fB\fC\-\-all\fR or \fB\fC\-a\fR
+    Relocate every disk\-buffer file that is listed in the syslog\-ng OSE
+    persist file.
 .PP
-The directory where you want to move the disk\-bufffer files. For
-example: /var/disk\-buffers
-.IP \(bu 2
-\-\-persist or \-p
+\fB\fC\-\-new_path\fR or \fB\fC\-n\fR
+    The directory where you want to move the disk\-bufffer files. For
+    example: /var/disk\-buffers
 .PP
-The path to the syslog\-ng OSE persist file. The relocate command
-automatically updates the entries of the disk\-buffer files in the
-persist file.
-.RE
-.SS Examples
+\fB\fC\-\-persist\fR or \fB\fC\-p\fR
+    The path to the syslog\-ng OSE persist file. The relocate command
+    automatically updates the entries of the disk\-buffer files in the
+    persist file.
+.SS EXAMPLES:
 .PP
 Relocate a single queue file:
 .PP
 .RS
 .nf
-bin/dqtool relocate \-\-new_path /tmp/dq \-\-persist var/syslog\-ng.persist /tmp/syslog\-ng\-00000.rqf
+dqtool relocate \-\-new_path /tmp/dq \-\-persist var/syslog\-ng.persist /tmp/syslog\-ng\-00000.rqf
 .fi
 .RE
 .PP
@@ -115,7 +105,7 @@ Relocate multiple queue files:
 .PP
 .RS
 .nf
-bin/dqtool relocate \-\-new_path /tmp/dq \-\-persist var/syslog\-ng.persist /tmp/syslog\-ng\-00000.rqf /tmp/syslog\-ng\-00001.rqf
+dqtool relocate \-\-new_path /tmp/dq \-\-persist var/syslog\-ng.persist /tmp/syslog\-ng\-00000.rqf /tmp/syslog\-ng\-00001.rqf
 .fi
 .RE
 .PP
@@ -123,12 +113,12 @@ Relocate every queue file:
 .PP
 .RS
 .nf
-bin/dqtool relocate \-\-new_path /tmp/dq \-\-persist var/syslog\-ng.persist \-\-all
+dqtool relocate \-\-new_path /tmp/dq \-\-persist var/syslog\-ng.persist \-\-all
 .fi
 .RE
-.SH Files
+.SH FILES
 .PP
-dqtool
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/bin/dqtool
 .PP
 \fBNOTE:\fP
 If you experience any problems or need help with syslog\-ng OSE, see the \fIsyslog\-ng OSE Administration Guide\fP[1], or visit the \fIsyslog\-ng OSE mailing list\fP[2].

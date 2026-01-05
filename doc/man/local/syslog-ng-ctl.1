@@ -1,11 +1,11 @@
-.TH syslog\-ng\-ctl 1 "03 September 2025" 4.9.0 "The syslog\-ng OSE control tool manual page"
+.TH syslog\-ng\-ctl 1 "18 December 2025" 4.10.2 "The syslog\-ng OSE control tool manual page"
 .SH NAME
 .PP
 syslog\-ng\-ctl \-\-\- Display message statistics and enable verbose, debug and trace modes in {{ site.product.short_name }}
-.SH Synopsis
+.SH SYNOPSIS
 .PP
 syslog\-ng\-ctl [command] [options]
-.SH Description
+.SH DESCRIPTION
 .PP
 \fBNOTE:\fP The syslog\-ng\-ctl application is distributed with the syslog\-ng OSE
 system logging application, and is usually part of the syslog\-ng OSE
@@ -27,7 +27,7 @@ display the currently running configuration of syslog\-ng OSE
 .IP \(bu 2
 reload the configuration of syslog\-ng OSE.
 .RE
-.SH Enabling troubleshooting messages
+.SH ENABLE TROUBLESHOOTING MESSAGES
 .PP
 command [options]
 .PP
@@ -68,7 +68,7 @@ Print debug messages. If syslog\-ng OSE was started with the
 specified, syslog\-ng OSE will log such messages to its internal
 source.
 .RE
-.SS Example
+.SS EXAMPLE
 .PP
 .RS
 .nf
@@ -78,8 +78,8 @@ syslog\-ng\-ctl verbose \-\-set=on
 .SH syslog\-ng\-ctl query
 .PP
 The syslog\-ng OSE application stores various data, metrics, and
-statistics in a hash table. Every property has a name and a value. For
-example:
+statistics in a hash table. Every property has a name and a value.
+For example:
 .PP
 .RS
 .nf
@@ -103,7 +103,7 @@ Select all dropped value from every stats node: *\&.stats.dropped
 .PP
 The nodes and properties available in the tree depend on your syslog\-ng OSE configuration (that is, the sources, destinations, and other objects
 you have configured), and also on your stats\-level() settings.
-.SH The list command
+.SH THE LIST COMMAND
 .PP
 syslog\-ng\-ctl query list
 .PP
@@ -164,7 +164,7 @@ The syslog\-ng\-ctl query list command has the following options:
 Use \-\-reset to set the selected counters to 0 after executing the
 query.
 .RE
-.SH Displaying metrics and statistics
+.SH DISPLAYING METRICS AND STATISTICS
 .PP
 syslog\-ng\-ctl query get [options]
 .PP
@@ -179,63 +179,57 @@ destination.d_elastic.stats.processed=0
 .RE
 .PP
 The syslog\-ng\-ctl query get command has the following options:
+.PP
+\fB\fC\-\-sum\fR
+    Add up the result of each matching node and return only a single
+    number. For example, the syslog\-ng\-ctl query get \fB\fC\-\-sum "destination*.dropped"\fR command displays the number of messages
+    dropped by the syslog\-ng OSE instance.
+.PP
+\fB\fC\-\-reset\fR
+    Use \fB\fC\-\-reset\fR to set the selected counters to \fB\fC0\fR after executing the
+    query.
+.SH THE STATS COMMAND
+.PP
 .RS
-.IP \(bu 2
-\-\-sum
-.PP
-Add up the result of each matching node and return only a single
-number.
-.PP
-For example, the syslog\-ng\-ctl query get \-\-sum
-\[rs]"destination*\&.dropped\[rs]" command displays the number of messages
-dropped by the syslog\-ng OSE instance.
-.IP \(bu 2
-\-\-reset
-.PP
-Use \-\-reset to set the selected counters to 0 after executing the
-query.
-.RE
-.SH The stats command
-.PP
+.nf
 stats [options]
+.fi
+.RE
 .PP
 Use the stats command to display statistics about the processed
 messages. For details about the displayed statistics,
 see The syslog\-ng OSE Administration Guide.
 The stats command has the following options:
+.PP
+\fB\fC\-\-control=<socket>\fR or \fB\fC\-c\fR
+    Specify the socket to use to access syslog\-ng PE. Only needed when
+    using a non\-standard socket.
+.PP
+\fB\fC\-\-reset=<socket>\fR or \fB\fC\-r\fR
+    Reset all statistics to zero, except for the queued counters. (The
+    queued counters show the number of messages in the message queue of
+    the destination driver, waiting to be sent to the destination.)
+.PP
+\fB\fC\-\-remove\-orphans\fR
+    Safely removes all counters that are not referenced by any syslog\-ng
+    stat producer objects.
+.PP
 .RS
-.IP \(bu 2
-\-\-control=<socket> or \-c
-.PP
-Specify the socket to use to access syslog\-ng PE. Only needed when
-using a non\-standard socket.
-.IP \(bu 2
-\-\-reset=<socket> or \-r
-.PP
-Reset all statistics to zero, except for the queued counters. (The
-queued counters show the number of messages in the message queue of
-the destination driver, waiting to be sent to the destination.)
-.IP \(bu 2
-\-\-remove\-orphans
-.PP
-Safely removes all counters that are not referenced by any syslog\-ng
-stat producer objects.
-.PP
+.nf
 The flag can be used to prune dynamic and static counters manually.
 This is useful, for example, when a templated file destination
 produces a lot of stats:
-.PP
-.RS
-dst.file;#anon\-destination0#0;/tmp/2021\-08\-16.log;o;processed;253592
-dst.file;#anon\-destination0#0;/tmp/2021\-08\-17.log;o;processed;156
-dst.file;#anon\-destination0#0;/tmp/2021\-08\-18.log;a;processed;961
-.RE
-.PP
-\fBNOTE:\fP The stats(lifetime()) can be used to do the same
+
+>dst.file;#anon\-destination0#0;/tmp/2021\-08\-16.log;o;processed;253592
+>dst.file;#anon\-destination0#0;/tmp/2021\-08\-17.log;o;processed;156
+>dst.file;#anon\-destination0#0;/tmp/2021\-08\-18.log;a;processed;961
+
+**NOTE:** The stats(lifetime()) can be used to do the same
 automatically and periodically, but currently stats(lifetime())
 removes only dynamic counters that have a timestamp field set.
+.fi
 .RE
-.SS Example \- stats
+.SS EXAMPLE: STATS
 .PP
 .RS
 .nf
@@ -274,7 +268,7 @@ destination;df\fPkern;;a;processed;70
 center;;queued;a;processed;0
 destination;df\fIfacility\fPdot_err;;a;processed;0
 .RE
-.SH Handling password\-protected private keys
+.SH HANDLING PASSWORD\-PROTECTED PRIVATE KEYS
 .PP
 syslog\-ng\-ctl credentials [options]
 .PP
@@ -284,7 +278,7 @@ syslog() drivers. You can also provide the passphrase for
 password\-protected private keys using the syslog\-ng\-ctl credentials add
 command. For details on using password\-protected keys, see
 The syslog\-ng OSE Administrator Guide.
-.SH Displaying the status of private keys
+.SH DISPLAYING THE STATUS OF PRIVATE KEYS
 .PP
 syslog\-ng\-ctl credentials status [options]
 .PP
@@ -316,14 +310,16 @@ The following log message also notifies you of PENDING passphrases:
 .RS
 Waiting for password; keyfile='private.key'
 .RE
-.RS
-.IP \(bu 2
-\-\-control=<socket> or \-c
 .PP
+\fB\fC\-\-control=<socket>\fR or \fB\fC\-c\fR
+.PP
+.RS
+.nf
 Specify the socket to use to access syslog\-ng OSE. Only needed when
 using a non\-standard socket.
+.fi
 .RE
-.SH Opening password\-protected private keys
+.SH OPENING PASSWORD\-PROTECTED PRIVATE KEYS
 .PP
 syslog\-ng\-ctl credentials add [options]
 .PP
@@ -354,24 +350,19 @@ example:
 echo "<passphrase\-of\-the\-key>" | syslog\-ng\-ctl credentials add \-\-id=<path\-to\-the\-key>
 .fi
 .RE
-.RS
-.IP \(bu 2
-\-\-control=<socket> or \-c
 .PP
-Specify the socket to use to access syslog\-ng PE. Only needed when
-using a non\-standard socket.
-.IP \(bu 2
-\-\-id=<path\-to\-the\-key> or \-i
+\fB\fC\-\-control=<socket>\fR or \fB\fC\-c\fR
+    Specify the socket to use to access syslog\-ng PE. Only needed when
+    using a non\-standard socket.
 .PP
-The path to the password\-protected private key file. This is the
-same path that you use in the key\-file() option of the syslog\-ng OSE
-configuration file.
-.IP \(bu 2
-\-\-secret=<passphrase\-of\-the\-key> or \-s
+\fB\fC\-\-id=<path\-to\-the\-key>\fR or \fB\fC\-i\fR
+    The path to the password\-protected private key file. This is the
+    same path that you use in the key\-file() option of the syslog\-ng OSE
+    configuration file.
 .PP
-The password or passphrase of the private key.
-.RE
-.SH Displaying the configuration
+\fB\fC\-\-secret=<passphrase\-of\-the\-key>\fR or \fB\fC\-s\fR
+    The password or passphrase of the private key.
+.SH DISPLAYING THE CONFIGURATION
 .PP
 syslog\-ng\-ctl config [options]
 .PP
@@ -380,7 +371,7 @@ syslog\-ng OSE is currently running. Note by default, only the content of
 the main configuration file are displayed, included files are not
 resolved. To resolve included files and display the entire
 configuration, use the syslog\-ng\-ctl config \-\-preprocessed command.
-.SH Reloading the configuration
+.SH RELOADING thE CONFIGURATION
 .PP
 syslog\-ng\-ctl reload [options]
 .PP
@@ -390,9 +381,9 @@ The syslog\-ng\-ctl reload works like a SIGHUP.
 .PP
 The syslog\-ng\-ctl reload command returns 0 if the operation was
 successful, 1 otherwise.
-.SH Files
+.SH FILES
 .PP
-/opt/syslog\-ng/sbin/syslog\-ng\-ctl
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/sbin/syslog\-ng\-ctl
 .PP
 \fBNOTE:\fP
 If you experience any problems or need help with syslog\-ng OSE, see the \fIsyslog\-ng OSE Administration Guide\fP[1], or visit the \fIsyslog\-ng OSE mailing list\fP[2].

@@ -1,11 +1,11 @@
-.TH syslog\-ng\-debun 1 "03 September 2025" 4.9.0 "The syslog\-ng\-debun manual page"
+.TH syslog\-ng\-debun 1 "18 December 2025" 4.10.2 "The syslog\-ng\-debun manual page"
 .SH NAME
 .PP
 syslog\-ng\-debun \-\-\- syslog\-ng DEBUg buNdle generator
-.SH Synopsis
+.SH SYNOPSIS
 .PP
 syslog\-ng\-debun [options]
-.SH Description
+.SH DESCRIPTION
 .PP
 \fBNOTE:\fP The syslog\-ng\-debun application is distributed with the syslog\-ng OSE
 system logging application, and is usually part of the syslog\-ng OSE
@@ -17,99 +17,81 @@ This manual page is only an abstract.
 The syslog\-ng\-debun tool collects and saves information about your
 syslog\-ng OSE installation, making troubleshooting easier, especially if
 you ask help about your syslog\-ng OSE related problem.
-.SH General Options
+.SH GENERAL OPTIONS
+.PP
+\fB\fC\-r\fR
+    Run syslog\-ng\-debun. Using this option is required to actually
+    execute the data collection with syslog\-ng\-debun. It is needed to
+    prevent accidentally running syslog\-ng\-debun.
+.PP
+\fB\fC\-h\fR
+    Display the help page.
+.PP
+\fB\fC\-l\fR
+    Do not collect privacy\-sensitive data, for example, process tree,
+    fstab, and so on. If you use with \-d, then the following parameters
+    will be used for debug mode:\-Fev
+.PP
+\fB\fC\-R <directory>\fR
+    The directory where syslog\-ng PE is installed instead of
+    /opt/syslog\-ng.
+.PP
+\fB\fC\-W <directory>\fR
+    Set the working directory, where the debug bundle will be saved.
+    Default value: /tmp. The name of the created file is
+    syslog.debun.${host}.${date}.${3\-random\-characters\-or\-pid}.tgz
+.SH DEBUG MODE OPTIONS
+.PP
+\fB\fC\-d\fR
+    Start syslog\-ng OSE in debug mode, using the \-Fedv \-\-enable\-core
+    options.
+.PP
 .RS
-.IP \(bu 2
-\-r
-.PP
-Run syslog\-ng\-debun. Using this option is required to actually
-execute the data collection with syslog\-ng\-debun. It is needed to
-prevent accidentally running syslog\-ng\-debun.
-.IP \(bu 2
-\-h
-.PP
-Display the help page.
-.IP \(bu 2
-\-l
-.PP
-Do not collect privacy\-sensitive data, for example, process tree,
-fstab, and so on. If you use with \-d, then the following parameters
-will be used for debug mode:\-Fev
-.IP \(bu 2
-\-R <directory>
-.PP
-The directory where syslog\-ng PE is installed instead of
-/opt/syslog\-ng.
-.IP \(bu 2
-\-W <directory>
-.PP
-Set the working directory, where the debug bundle will be saved.
-Default value: /tmp. The name of the created file is
-syslog.debun.${host}.${date}.${3\-random\-characters\-or\-pid}.tgz
-.RE
-.SH Debug mode options
-.RS
-.IP \(bu 2
-\-d
-.PP
-Start syslog\-ng OSE in debug mode, using the \-Fedv \-\-enable\-core
-options.
-.PP
-[](/assets/images/caution.png) \fBCAUTION:\fP
+.nf
+![](/assets/images/caution.png) **CAUTION:**
 Using this option under high message load may increase disk I/O
 during the debug, and the resulting debug bundle can be huge. To exit debug
 mode, press Enter.
-.IP \(bu 2
-\-D <options>
-.PP
-Start syslog\-ng OSE in debug mode, using the specified command\-line
-options. To exit debug mode, press Enter.
-.IP \(bu 2
-\-t <seconds>
-.PP
-Run syslog\-ng OSE in noninteractive debug mode for <seconds>, and
-automatically exit debug mode after the specified number of seconds.
-.IP \(bu 2
-\-w <seconds>
-.PP
-Wait <seconds> seconds before starting debug mode.
+.fi
 .RE
-.SH System call tracing
-.RS
-.IP \(bu 2
-\-s
 .PP
-Enable syscall tracing (strace \-f or truss \-f). Note that using \-s
-itself does not enable debug mode, only traces the system calls of
-an already running syslog\-ng OSE process. To trace system calls in
-debug mode, use both the \-s and \-d options.
-.RE
-.SH Packet capture options
+\fB\fC\-D <options>\fR
+    Start syslog\-ng OSE in debug mode, using the specified command\-line
+    options. To exit debug mode, press Enter.
+.PP
+\fB\fC\-t <seconds>\fR
+    Run syslog\-ng OSE in noninteractive debug mode for <seconds>, and
+    automatically exit debug mode after the specified number of seconds.
+.PP
+\fB\fC\-w <seconds>\fR
+    Wait <seconds> seconds before starting debug mode.
+.SH SYSTEM CALL TRACING
+.PP
+\fB\fC\-s\fR
+    Enable syscall tracing (strace \-f or truss \-f). Note that using \fB\fC\-s\fR
+    itself does not enable debug mode, only traces the system calls of
+    an already running syslog\-ng OSE process. To trace system calls in
+    debug mode, use both the \fB\fC\-s\fR and \fB\fC\-d\fR options.
+.SH PACKET CAPTURE OPTIONS
 .PP
 Capturing packets requires a packet capture tool on the host. The
 syslog\-ng\-debun tool attempts to use tcpdump on most platforms, except for
 Solaris, where it uses snoop.
-.RS
-.IP \(bu 2
-\-i <interface>
 .PP
-Capture packets only on the specified interface, for example, eth0.
-.IP \(bu 2
-\-p
+\fB\fC\-i <interface>\fR
+    Capture packets only on the specified interface, for example, eth0.
 .PP
-Capture incoming packets using the following filter: port 514 or
-port 601 or port 53
-.IP \(bu 2
-\-P <options>
+\fB\fC\-p\fR
+    Capture incoming packets using the following filter: port 514 or
+    port 601 or port 53
 .PP
-Capture incoming packets using the specified filter.
-.IP \(bu 2
-\-t <seconds>
+\fB\fC\-P <options>\fR
+    Capture incoming packets using the specified filter.
 .PP
-Run syslog\-ng OSE in noninteractive debug mode for <seconds>, and
-automatically exit debug mode after the specified number of seconds.
-.RE
-.SS Examples
+\fB\fC\-t <seconds>\fR
+    Run syslog\-ng OSE in noninteractive debug mode for <seconds>, and
+    automatically exit debug mode after the specified number of seconds.
+.SS EXAMPLES:
 .PP
 .RS
 .nf
@@ -215,9 +197,9 @@ Start syslog\-ng OSE
 .IP \(bu 2
 Stop packet capturing
 .RE
-.SH Files
+.SH FILES
 .PP
-/opt/syslog\-ng/bin/loggen
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/bin/loggen
 .PP
 \fBNOTE:\fP
 If you experience any problems or need help with syslog\-ng OSE, see the \fIsyslog\-ng OSE Administration Guide\fP[1], or visit the \fIsyslog\-ng OSE mailing list\fP[2].

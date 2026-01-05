@@ -1,4 +1,4 @@
-.TH syslog\-ng 8 "03 September 2025" 4.9.0 "The syslog\-ng OSE manual page"
+.TH syslog\-ng 8 "18 December 2025" 4.10.2 "The syslog\-ng OSE manual page"
 .SH NAME
 .PP
 syslog\-ng \- syslog\-ng system logger application
@@ -31,7 +31,7 @@ For example:
 .PP
 .RS
 .nf
-    /opt/syslog\-ng/sbin/syslog\-ng \-Fv \-\-caps cap_sys_admin,cap_chown,cap_dac_override,cap_net_bind_service,cap_fowner=pi
+    /Users/hofi/Develop/Balabit/syslog-ng/build/install/sbin/syslog\-ng \-Fv \-\-caps cap_sys_admin,cap_chown,cap_dac_override,cap_net_bind_service,cap_fowner=pi
 .fi
 .RE
 .PP
@@ -39,7 +39,7 @@ For example:
 .PP
 .RS
 .nf
-    /opt/syslog\-ng/sbin/syslog\-ng \-Fv \-\-caps CAP_SYS_ADMIN,CAP_CHOWN,CAP_DAC_OVERRIDE,CAP_NET_BIND_SERVICE,CAP_FOWNER=pi
+    /Users/hofi/Develop/Balabit/syslog-ng/build/install/sbin/syslog\-ng \-Fv \-\-caps CAP_SYS_ADMIN,CAP_CHOWN,CAP_DAC_OVERRIDE,CAP_NET_BIND_SERVICE,CAP_FOWNER=pi
 .fi
 .RE
 .PP
@@ -78,7 +78,7 @@ For details on the capability flags, see the following man pages: \fB\fCcap_from
 \fBNOTE:\fP This does not override the global ulimit setting of the host.
 .PP
 \fB\fC\-\-foreground\fR or \fB\fC\-F\fR
-    Do not daemonize, run in the foreground. When running in the foreground, syslog\-ng OSE starts from the current directory (\fI${CWD}\fP) so it can create core files (normally, syslog\-ng OSE starts from \fI${PREFIX}/var\fP).
+    Do not daemonize, run in the foreground. When running in the foreground, syslog\-ng OSE starts from the current directory (\fI${CWD}\fP) so it can create core files (normally, syslog\-ng OSE starts from \fI/Users/hofi/Develop/Balabit/syslog-ng/build/install/var\fP).
 .PP
 \fB\fC\-\-group <group>\fR or \fB\fC\-g <group>\fR
     Switch to the specified group after initializing the configuration file.
@@ -133,9 +133,9 @@ For details on the capability flags, see the following man pages: \fB\fCcap_from
 \fBNOTE:\fP Certain operations in syslog\-ng OSE can use threads that are not limited by this option. This setting has effect only when syslog\-ng OSE is running in multithreaded mode. Available only in syslog\-ng OSE 4.0 and later.
 .SH FILES
 .PP
-/opt/syslog\-ng/
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/
 .PP
-/opt/syslog\-ng/etc/syslog\-ng.conf
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/etc/syslog\-ng.conf
 .SH SEE ALSO
 .PP
 \fB\fCsyslog\-ng.conf\fR(5)
