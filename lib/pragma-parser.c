@@ -52,7 +52,7 @@ process_version_string(gchar *value)
         return 0;
       if (end == p)
         {
-          minor = strtol(p+1, &end, 10);
+          minor = strtol(p + 1, &end, 10);
           if (minor < 0)
             return 0;
           if (*end == '\0')

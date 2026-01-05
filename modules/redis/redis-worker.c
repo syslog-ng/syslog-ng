@@ -35,25 +35,25 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
 {
   RedisDestWorker *self = (RedisDestWorker *) s;
 
-  if(s->batch_size == 0)
+  if (s->batch_size == 0)
     {
       return LTR_SUCCESS;
     }
 
-  if(mode == LTF_FLUSH_EXPEDITE)
+  if (mode == LTF_FLUSH_EXPEDITE)
     {
       return LTR_RETRY;
     }
 
-  if(self->c == NULL || self->c->err)
+  if (self->c == NULL || self->c->err)
     {
       return LTR_ERROR;
     }
 
   redisReply *reply;
-  for(gint i = s->batch_size; i > 0; i--)
+  for (gint i = s->batch_size; i > 0; i--)
     {
-      if(redisGetReply(self->c, (void **)&reply) != REDIS_OK)
+      if (redisGetReply(self->c, (void **)&reply) != REDIS_OK)
         {
           return LTR_ERROR;
         }
@@ -92,7 +92,7 @@ _fill_argv_from_template_list(RedisDestWorker *self, LogMessage *msg)
   RedisDriver *owner = (RedisDriver *) self->super.owner;
   for (gint i = 1; i < self->argc; i++)
     {
-      LogTemplate *redis_command = g_list_nth_data(owner->arguments, i-1);
+      LogTemplate *redis_command = g_list_nth_data(owner->arguments, i - 1);
       _fill_template(self, msg, redis_command, &self->argv[i], &self->argvlen[i]);
     }
 }
@@ -127,7 +127,7 @@ redis_worker_insert_batch(LogThreadedDestWorker *s, LogMessage *msg)
 
   int retval = redisAppendCommandArgv(self->c, self->argc, (const gchar **)self->argv, self->argvlen);
 
-  if(self->c == NULL || self->c->err || retval != REDIS_OK)
+  if (self->c == NULL || self->c->err || retval != REDIS_OK)
     {
       msg_error("REDIS server error, suspending",
                 evt_tag_str("driver", owner->super.super.super.id),
@@ -366,7 +366,7 @@ LogThreadedDestWorker *redis_worker_new(LogThreadedDestDriver *o, gint worker_in
   self->super.connect = redis_worker_connect;
   self->super.disconnect = redis_worker_disconnect;
   self->super.insert = o->batch_lines > 0 ? redis_worker_insert_batch : redis_worker_insert;
-  if(o->batch_lines > 0)
+  if (o->batch_lines > 0)
     self->super.flush = _flush;
 
   return &self->super;

@@ -257,7 +257,7 @@ dns_cache_check_hosts(DNSCache *self, glong t)
 
               len = strlen(buf);
               if (buf[len - 1] == '\n')
-                buf[len-1] = 0;
+                buf[len - 1] = 0;
 
               p = strtok_r(buf, " \t", &strtok_saveptr);
               if (!p)

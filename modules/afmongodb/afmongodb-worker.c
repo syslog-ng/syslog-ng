@@ -250,7 +250,7 @@ _vp_obj_end(const gchar *name,
   bson_t *root;
 
   if (prev_data)
-    root = (bson_t *)*prev_data;
+    root = (bson_t *) * prev_data;
   else
     root = self->bson;
 
@@ -275,7 +275,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
   gboolean fallback = owner->template_options.on_error & ON_ERROR_FALLBACK_TO_STRING;
 
   if (prefix_data)
-    o = (bson_t *)*prefix_data;
+    o = (bson_t *) * prefix_data;
   else
     o = self->bson;
 

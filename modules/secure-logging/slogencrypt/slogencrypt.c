@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
       return slog_usage(context, group, errorMsg);
     }
 
-  if(argc < 5 || argc > 6)
+  if (argc < 5 || argc > 6)
     {
       return slog_usage(context, group, NULL);
     }
@@ -94,21 +94,21 @@ int main(int argc, char *argv[])
   index = 1;
   newhostKey = argv[index];
   index++;
-  if(newhostKey == NULL)
+  if (newhostKey == NULL)
     {
       return slog_usage(context, group, NULL);
     }
 
   outputMAC = argv[index];
   index++;
-  if(outputMAC == NULL)
+  if (outputMAC == NULL)
     {
       return slog_usage(context, group, NULL);
     }
 
   inputlog = argv[index];
   index++;
-  if(!g_file_test(inputlog, G_FILE_TEST_IS_REGULAR))
+  if (!g_file_test(inputlog, G_FILE_TEST_IS_REGULAR))
     {
       GString *errorMsg = g_string_new(FILE_ERROR);
       g_string_append(errorMsg, inputlog);
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 
   outputlog = argv[index];
   index++;
-  if(outputlog == NULL)
+  if (outputlog == NULL)
     {
       return slog_usage(context, group, NULL);
     }
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
   // Read key and counter
   guint64 counter;
   int ret = readKey(key, &counter, hostkey);
-  if (ret!=1)
+  if (ret != 1)
     {
       msg_error("[SLOG] ERROR: Unable to read host key", evt_tag_str("file", hostkey));
       return -1;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     {
       sscanf(argv[index], "%"G_GUINT64_FORMAT, &bufSize);
 
-      if(bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
+      if (bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
         {
           msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", bufSize),
                     evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     }
 
   // Read MAC (if possible)
-  if (readBigMAC(inputMAC, mac)==0)
+  if (readBigMAC(inputMAC, mac) == 0)
     {
       msg_warning("[SLOG] ERROR: Unable to open input MAC file", evt_tag_str("file", inputMAC));
     }
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
   msg_info("Importing data...");
 
   // Parse data
-  while(getline(&line, &readLen, inputFile)!=-1)
+  while (getline(&line, &readLen, inputFile) != -1)
     {
       char outputmacdata[CMAC_LENGTH];
 
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
       GString *inputGString = g_string_new(line);
 
       // Remove trailing '\n' from string
-      g_string_truncate(inputGString, (inputGString->len)-1);
+      g_string_truncate(inputGString, (inputGString->len) -1);
 
       gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
       sLogEntry(counter, inputGString, (unsigned char *)key, (unsigned char *)mac, result, (unsigned char *)outputmacdata,
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 
 
   // Write whole log MAC
-  if (writeBigMAC(outputMAC, mac)==0)
+  if (writeBigMAC(outputMAC, mac) == 0)
     {
       msg_error("Problem with output MAC file");
       return -1;
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
 
   // Write key
   ret = writeKey(key, counter, newhostKey);
-  if (ret!=1)
+  if (ret != 1)
     {
       msg_error("[SLOG] ERROR: Unable to write new host key", evt_tag_str("file", outputlog));
       return -1;

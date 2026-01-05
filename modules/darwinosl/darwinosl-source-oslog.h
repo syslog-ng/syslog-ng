@@ -37,8 +37,8 @@
 
 - (OSLogStore *) openStore;
 - (OSLogEnumerator *) openEnumeratorWithDate:(NSDate *)startDate
-  filterString:(NSString *)filterString
-  options:(OSLogEnumeratorOptions)options;
+filterString:(NSString *)filterString
+options:(OSLogEnumeratorOptions)options;
 - (void) closeAll;
 - (OSLogEntry *) fetchNextEntry;
 - (NSString *) stringFromDarwinOSLogEntry:(OSLogEntry *)nextLogEntry;

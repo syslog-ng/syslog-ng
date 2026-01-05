@@ -43,9 +43,9 @@ print_struct_json_style(gpointer data, gpointer user_data)
 
   fprintf(stdout, "\n%s = { \"value\": \"", name);
   gchar *block_data = (gchar *) block;
-  for (gsize i=0; i<size; i++)
+  for (gsize i = 0; i < size; i++)
     {
-      fprintf(stdout, "%.2X ", block_data[i]&0xff);
+      fprintf(stdout, "%.2X ", block_data[i] & 0xff);
     }
   fprintf(stdout, "\" }\n");
 

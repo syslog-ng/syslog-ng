@@ -119,14 +119,14 @@ test_search_matches(RNode *root, const gchar *key, const gchar *search_pattern[]
     {
       cr_assert(ret, "not found while expected: '%s' => none %s\n", key, search_pattern[0]);
 
-      for (int i=0; search_pattern[i]; i+=2)
+      for (int i = 0; search_pattern[i]; i += 2)
         {
-          cr_assert_lt(i/2, matches->len, "not enough matches: %d => expecting %d", i, matches->len);
+          cr_assert_lt(i / 2, matches->len, "not enough matches: %d => expecting %d", i, matches->len);
 
           const gchar *expected_name = search_pattern[i];
-          const gchar *expected_value = search_pattern[i+1];
+          const gchar *expected_value = search_pattern[i + 1];
 
-          match = &g_array_index(matches, RParserMatch, (i/2)+1);
+          match = &g_array_index(matches, RParserMatch, (i / 2) +1);
           match_name = log_msg_get_value_name(match->handle, NULL);
 
           cr_expect_str_eq(match_name, expected_name,
@@ -338,107 +338,107 @@ ParameterizedTestParameters(dbparser, test_radix_search_matches)
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
+      .key = "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
       .expected_pattern = {"ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
+      .key = "abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
       .expected_pattern = {"ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key =":: huhuhu",
+      .key = ":: huhuhu",
       .expected_pattern = {"ip", "::", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="0:0:0:0:0:0:13.1.68.3 huhuhu",
+      .key = "0:0:0:0:0:0:13.1.68.3 huhuhu",
       .expected_pattern = {"ip", "0:0:0:0:0:0:13.1.68.3", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="::202.1.68.3 huhuhu",
+      .key = "::202.1.68.3 huhuhu",
       .expected_pattern = {"ip", "::202.1.68.3", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="2001:0DB8:0:CD30:: huhuhu",
+      .key = "2001:0DB8:0:CD30:: huhuhu",
       .expected_pattern = {"ip", "2001:0DB8:0:CD30::", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
+      .key = "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
       .expected_pattern = {"ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
+      .key = "abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
       .expected_pattern = {"ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="::.huhuhu",
+      .key = "::.huhuhu",
       .expected_pattern = {"ip", "::", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="0:0:0:0:0:0:13.1.68.3.huhuhu",
+      .key = "0:0:0:0:0:0:13.1.68.3.huhuhu",
       .expected_pattern = {"ip", "0:0:0:0:0:0:13.1.68.3", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="::202.1.68.3.huhuhu",
+      .key = "::202.1.68.3.huhuhu",
       .expected_pattern = {"ip", "::202.1.68.3", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="2001:0DB8:0:CD30::.huhuhu",
+      .key = "2001:0DB8:0:CD30::.huhuhu",
       .expected_pattern = {"ip", "2001:0DB8:0:CD30::", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="1:2:3:4:5:6:7:8.huhuhu",
+      .key = "1:2:3:4:5:6:7:8.huhuhu",
       .expected_pattern = {"ip", "1:2:3:4:5:6:7:8", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="1:2:3:4:5:6:7:8 huhuhu",
+      .key = "1:2:3:4:5:6:7:8 huhuhu",
       .expected_pattern = {"ip", "1:2:3:4:5:6:7:8", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="1:2:3:4:5:6:7:8:huhuhu",
+      .key = "1:2:3:4:5:6:7:8:huhuhu",
       .expected_pattern = {"ip", "1:2:3:4:5:6:7:8", NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="1:2:3:4:5:6:7 huhu",
+      .key = "1:2:3:4:5:6:7 huhu",
       .expected_pattern = {NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="1:2:3:4:5:6:7.huhu",
+      .key = "1:2:3:4:5:6:7.huhu",
       .expected_pattern = {NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="1:2:3:4:5:6:7:huhu",
+      .key = "1:2:3:4:5:6:7:huhu",
       .expected_pattern = {NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="1:2:3:4:5:6:77777:8 huhu",
+      .key = "1:2:3:4:5:6:77777:8 huhu",
       .expected_pattern = {NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="1:2:3:4:5:6:1.2.333.4 huhu",
+      .key = "1:2:3:4:5:6:1.2.333.4 huhu",
       .expected_pattern = {NULL}
     },
     {
       .node_to_insert = {"@IPvANY:ip@", NULL},
-      .key ="v12345",
+      .key = "v12345",
       .expected_pattern = {NULL}
     },
     /* test_ipv4_matches */
@@ -1103,7 +1103,7 @@ ParameterizedTest(RadixTestParam *param, dbparser, test_radix_search_matches, .i
 {
   RNode *root = r_new_node("", NULL);
 
-  for (int i=0; param->node_to_insert[i]; i++)
+  for (int i = 0; param->node_to_insert[i]; i++)
     insert_node(root, param->node_to_insert[i]);
 
   test_search_matches(root, param->key, param->expected_pattern);

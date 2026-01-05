@@ -58,8 +58,8 @@ msg_format_inject_parse_error(MsgFormatOptions *options, LogMessage *msg, const 
   log_msg_set_value(msg, LM_V_HOST, hname, -1);
 
   if (problem_position > 0)
-    g_string_printf(buf, "Error processing log message: %.*s>@<%.*s", (gint) problem_position-1,
-                    data, (gint) (length-problem_position+1), data+problem_position-1);
+    g_string_printf(buf, "Error processing log message: %.*s>@<%.*s", (gint) problem_position - 1,
+                    data, (gint) (length - problem_position + 1), data + problem_position - 1);
   else
     g_string_printf(buf, "Error processing log message: %.*s", (gint) length, data);
 

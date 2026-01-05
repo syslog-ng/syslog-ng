@@ -315,7 +315,7 @@ tf_indent_multi_line(LogMessage *msg, gint argc, GString *argv[], GString *text,
   /* look up the \n-s and insert a \t after them */
   p = text->str;
   new_line = memchr(p, '\n', text->len);
-  while(new_line)
+  while (new_line)
     {
       if (*(gchar *)(new_line + 1) != '\t')
         {

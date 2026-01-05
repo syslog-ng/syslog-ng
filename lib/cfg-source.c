@@ -176,7 +176,7 @@ _extract_source_from_file_location(GString *result, const gchar *filename, const
   gchar *line = g_malloc(buflen);
 
   if (yylloc->first_column < 1 || yylloc->last_column < 1 ||
-      yylloc->first_column > buflen-1 || yylloc->last_column > buflen-1)
+      yylloc->first_column > buflen - 1 || yylloc->last_column > buflen - 1)
     return FALSE;
 
   f = fopen(filename, "r");
@@ -187,9 +187,9 @@ _extract_source_from_file_location(GString *result, const gchar *filename, const
     {
       lineno++;
       gint linelen = strlen(line);
-      if (line[linelen-1] == '\n')
+      if (line[linelen - 1] == '\n')
         {
-          line[linelen-1] = 0;
+          line[linelen - 1] = 0;
           linelen--;
         }
 
@@ -200,9 +200,9 @@ _extract_source_from_file_location(GString *result, const gchar *filename, const
       else if (lineno == yylloc->first_line)
         {
           if (yylloc->first_line == yylloc->last_line)
-            g_string_append_len(result, &line[MIN(linelen, yylloc->first_column-1)], yylloc->last_column - yylloc->first_column);
+            g_string_append_len(result, &line[MIN(linelen, yylloc->first_column - 1)], yylloc->last_column - yylloc->first_column);
           else
-            g_string_append(result, &line[MIN(linelen, yylloc->first_column-1)]);
+            g_string_append(result, &line[MIN(linelen, yylloc->first_column - 1)]);
         }
       else if (lineno < yylloc->last_line)
         {

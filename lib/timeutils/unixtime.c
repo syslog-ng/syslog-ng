@@ -51,9 +51,9 @@ static glong
 _div_round(glong n, glong d)
 {
   if ((n < 0) ^ (d < 0))
-    return ((n - d/2)/d);
+    return ((n - d / 2) / d);
   else
-    return ((n + d/2)/d);
+    return ((n + d / 2) / d);
 }
 
 static gboolean
@@ -98,26 +98,26 @@ _is_gmtoff_valid(long gmtoff)
   long valid_non_even_hour_gmtofs[] =
   {
     -34200,
-      -16200,
-      -12600,
-      -9000,
-      12600,
-      16200,
-      19800,
-      20700,
-      23400,
-      30600,
-      31500,
-      34200,
-      35100,
-      37800,
-      41400,
-      45900,
-      49500,
-    };
+    -16200,
+    -12600,
+    -9000,
+    12600,
+    16200,
+    19800,
+    20700,
+    23400,
+    30600,
+    31500,
+    34200,
+    35100,
+    37800,
+    41400,
+    45900,
+    49500,
+  };
 
   /* too far off */
-  if (gmtoff < -12*3600 || gmtoff > 14 * 3600)
+  if (gmtoff < -12 * 3600 || gmtoff > 14 * 3600)
     return FALSE;
 
   /* even hours accepted */
@@ -146,7 +146,7 @@ _guess_recv_timezone_offset_based_on_time_difference(UnixTime *self)
   if (labs(diff_in_sec) >= 24 * 3600)
     return -1;
 
-  glong diff_rounded_to_quarters = _div_round(diff_in_sec, 3600/4) * 3600/4;
+  glong diff_rounded_to_quarters = _div_round(diff_in_sec, 3600 / 4) * 3600 / 4;
 
   if (labs(now.tv_sec - self->ut_sec - diff_rounded_to_quarters) <= 30)
     {

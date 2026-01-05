@@ -69,7 +69,7 @@ CfgParser cloud_auth_parser =
 #endif
   .name = "cloud_auth",
   .keywords = cloud_auth_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer arg)) cloud_auth_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer arg)) cloud_auth_parse,
   .cleanup = (void (*)(gpointer)) log_driver_plugin_free,
 
 };

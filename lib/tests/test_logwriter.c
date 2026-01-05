@@ -161,7 +161,7 @@ _assert_logwriter_output(LogWriterTestCase c)
   TimeZoneInfo *tzinfo = time_zone_info_new(NULL);
 
   log_writer_options_defaults(&opt);
-  opt.template_options.time_zone_info[LTZ_SEND]=tzinfo;
+  opt.template_options.time_zone_info[LTZ_SEND] = tzinfo;
   log_writer_options_init(&opt, configuration, LWO_NO_MULTI_LINE | LWO_NO_STATS);
   if (c.truncate_size > 0)
     opt.truncate_size = c.truncate_size;

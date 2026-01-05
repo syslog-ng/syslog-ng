@@ -380,7 +380,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
 
   if (i >= 0)
     {
-      memmove(&self->sdata[i+1], &self->sdata[i], (self->num_sdata - i) * sizeof(self->sdata[0]));
+      memmove(&self->sdata[i + 1], &self->sdata[i], (self->num_sdata - i) * sizeof(self->sdata[0]));
       self->sdata[i] = handle;
     }
   else
@@ -625,7 +625,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
         }
       guint32 new_size = self->payload->size;
       self->allocated_bytes += (new_size - old_size);
-      stats_counter_add(count_allocated_bytes, new_size-old_size);
+      stats_counter_add(count_allocated_bytes, new_size - old_size);
       stats_counter_inc(count_payload_reallocs);
     }
 
@@ -677,7 +677,7 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
         }
       guint32 new_size = self->payload->size;
       self->allocated_bytes += (new_size - old_size);
-      stats_counter_add(count_allocated_bytes, new_size-old_size);
+      stats_counter_add(count_allocated_bytes, new_size - old_size);
       stats_counter_inc(count_payload_reallocs);
     }
 
@@ -1191,7 +1191,7 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
         }
       /* if message hasn't sequenceId and the cur_elem is the meta block Append the sequenceId for the result
          if seq_num isn't 0 */
-      if (!has_seq_num && seq_num!=0 && strncmp(sdata_elem, "meta.", 5) == 0)
+      if (!has_seq_num && seq_num != 0 && strncmp(sdata_elem, "meta.", 5) == 0)
         {
           GString *sequence_id = scratch_buffers_alloc();
           format_uint64_padded(sequence_id, 0, 0, 10, seq_num);
@@ -1221,7 +1221,7 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
     There was no meta block and if sequenceId must be added (seq_num!=0)
     create the whole meta block with sequenceId
   */
-  if (!has_seq_num && seq_num!=0)
+  if (!has_seq_num && seq_num != 0)
     {
       GString *sequence_id = scratch_buffers_alloc();
       format_uint64_padded(sequence_id, 0, 0, 10, seq_num);
@@ -1359,7 +1359,7 @@ log_msg_clear(LogMessage *self)
   g_assert(!log_msg_is_write_protected(self));
 
   self->generation++;
-  if(log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
+  if (log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     nv_table_unref(self->payload);
   self->payload = nv_table_new(LM_V_MAX, 16, 256);
 
@@ -1854,10 +1854,10 @@ log_msg_refcache_start_producer(LogMessage *self)
 
   self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_REF_MASK) +
                                               LOGMSG_REFCACHE_REF_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_REF(self->ack_and_ref_and_abort_and_suspended) +
-                                                  LOGMSG_REFCACHE_BIAS));
+                                                LOGMSG_REFCACHE_BIAS));
   self->ack_and_ref_and_abort_and_suspended = (self->ack_and_ref_and_abort_and_suspended & ~LOGMSG_REFCACHE_ACK_MASK) +
                                               LOGMSG_REFCACHE_ACK_TO_VALUE((LOGMSG_REFCACHE_VALUE_TO_ACK(self->ack_and_ref_and_abort_and_suspended) +
-                                                  LOGMSG_REFCACHE_BIAS));
+                                                LOGMSG_REFCACHE_BIAS));
 
   logmsg_cached_refs = -LOGMSG_REFCACHE_BIAS;
   logmsg_cached_acks = -LOGMSG_REFCACHE_BIAS;

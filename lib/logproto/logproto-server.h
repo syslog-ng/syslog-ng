@@ -70,7 +70,7 @@ union _LogProtoServerOptionsStorage
 };
 // _Static_assert() is a C11 feature, so we use a typedef trick to perform the static assertion
 typedef char static_assert_size_check_LogProtoServerOptions[
-   LOG_PROTO_SERVER_OPTIONS_SIZE >= sizeof(LogProtoServerOptions) ? 1 : -1];
+  LOG_PROTO_SERVER_OPTIONS_SIZE >= sizeof(LogProtoServerOptions) ? 1 : -1];
 
 gboolean log_proto_server_options_set_encoding(LogProtoServerOptionsStorage *s, const gchar *encoding);
 void log_proto_server_options_set_ack_tracker_factory(LogProtoServerOptionsStorage *s, AckTrackerFactory *factory);

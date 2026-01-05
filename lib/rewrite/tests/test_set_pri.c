@@ -85,7 +85,7 @@ Test(set_pri, numeric)
   cr_assert(_msg_pri_equals(msg, 137));
 
   _perform_set_pri(_create_template("1023"), msg);
-  cr_assert(_msg_pri_equals(msg, 127*8+7));
+  cr_assert(_msg_pri_equals(msg, 127 * 8 + 7));
 
   _perform_set_pri(_create_template(" 123"), msg);
   cr_assert(_msg_pri_equals(msg, 123));

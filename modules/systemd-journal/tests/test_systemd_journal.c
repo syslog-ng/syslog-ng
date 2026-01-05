@@ -304,7 +304,7 @@ _test_default_facility_init(TestCase *self, TestSource *src, JournalReader *read
 {
   MockEntry *entry = __create_dummy_entry("test default facility");
   gint facility = GPOINTER_TO_INT(self->user_data);
-  if(options->default_pri == 0xFFFF)
+  if (options->default_pri == 0xFFFF)
     options->default_pri = LOG_NOTICE;
   options->default_pri = (options->default_pri & 7) | facility;
   mock_journal_add_entry(entry);

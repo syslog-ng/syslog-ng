@@ -187,7 +187,7 @@ _curl_debug_function(CURL *handle, curl_infotype type,
                      void *userp)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
-  g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
+  g_assert(type < sizeof(curl_infotype_to_text) / sizeof(curl_infotype_to_text[0]));
   const gchar *text = curl_infotype_to_text[type];
   GString *decompressed_error_data = _decompress_response_data(self, text, data, size);
   gchar *sanitized = _sanitize_curl_debug_message(decompressed_error_data ? decompressed_error_data->str : data,

@@ -34,7 +34,7 @@ typedef struct _TestBookmark
 static TestBookmark *
 _ack_record_extract_bookmark(ConsecutiveAckRecord *self)
 {
-  return (TestBookmark *)&(self->super.bookmark.container);
+  return (TestBookmark *) & (self->super.bookmark.container);
 }
 
 static void

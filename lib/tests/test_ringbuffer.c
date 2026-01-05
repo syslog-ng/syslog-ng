@@ -90,9 +90,9 @@ assert_test_data_idx_range_in(RingBuffer *rb, int start, int end)
   TestData *td;
   int i;
 
-  cr_assert_eq(ring_buffer_count(rb), end-start + 1,
+  cr_assert_eq(ring_buffer_count(rb), end - start + 1,
                "invalid ringbuffer size; actual:%d, expected: %d",
-               ring_buffer_count(rb), end-start+1);
+               ring_buffer_count(rb), end - start + 1);
 
   for (i = start; i <= end; i++)
     {
@@ -174,7 +174,7 @@ Test(ringbuffer, test_pop_all_pushed_element_in_correct_order)
 
   while ((td = ring_buffer_pop(&rb)))
     {
-      cr_assert_eq((cnt+start_from), td->idx, "wrong order; %d != %d", td->idx, cnt);
+      cr_assert_eq((cnt + start_from), td->idx, "wrong order; %d != %d", td->idx, cnt);
       ++cnt;
     }
 

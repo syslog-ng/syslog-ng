@@ -137,7 +137,7 @@ struct _StatsClusterKey
     /* syslog-ng component/driver/subsystem that registered this cluster */
     guint16 component;
     const gchar *instance;
-    guint set:1;
+    guint set: 1;
   } legacy;
   StatsCounterGroupInit counter_group_init;
 };
@@ -157,7 +157,7 @@ typedef struct _StatsCluster
   StatsCounterGroup counter_group;
   guint16 use_count;
   guint16 live_mask;
-  guint16 dynamic:1;
+  guint16 dynamic: 1;
   gchar *query_key;
 } StatsCluster;
 

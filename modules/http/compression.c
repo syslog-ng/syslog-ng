@@ -54,7 +54,7 @@ compressor_compress(Compressor *self, GString *compressed, const GString *messag
 void
 compressor_free(Compressor *self)
 {
-  if(self != NULL)
+  if (self != NULL)
     {
       self->free_fn(self);
       g_free(self);
@@ -179,14 +179,14 @@ _z_stream_init(z_stream *compress_stream, GString *compressed,
   _allocate_compression_output_buffer(compressed, compress_stream->avail_in);
 
   //Check buffer overrun
-  if(compress_stream->avail_in != message->len)
+  if (compress_stream->avail_in != message->len)
     {
       return _COMPRESSION_ERR_BUFFER;
     }
   compress_stream->next_out = (guchar *)compressed->str;
   compress_stream->avail_out = compressed->len;
   compress_stream->total_out = compress_stream->avail_out;
-  if(compress_stream->avail_out != compressed->len)
+  if (compress_stream->avail_out != compressed->len)
     {
       return _COMPRESSION_ERR_BUFFER;
     }
@@ -201,7 +201,7 @@ _deflate_type_compression_method( GString *destination,
   err = deflateInit2(compress_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, wbits, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
   if (err != Z_OK && err != Z_STREAM_END) return _error_code_swap_zlib(err);
   err = Z_OK;
-  while(TRUE)
+  while (TRUE)
     {
       err = deflate(compress_stream, Z_FINISH);
       if (err != Z_OK && err != Z_STREAM_END)

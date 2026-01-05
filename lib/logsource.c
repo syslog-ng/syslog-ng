@@ -594,11 +594,11 @@ _invoke_mangle_callbacks(LogPipe *s, LogMessage *msg, const LogPathOptions *path
   LogSource *self = (LogSource *) s;
   GList *next_item = g_list_first(self->options->source_queue_callbacks);
 
-  while(next_item)
+  while (next_item)
     {
-      if(next_item->data)
+      if (next_item->data)
         {
-          if(!((mangle_callback) (next_item->data))(log_pipe_get_config(s), msg, self))
+          if (!((mangle_callback) (next_item->data))(log_pipe_get_config(s), msg, self))
             {
               log_msg_drop(msg, path_options, AT_PROCESSED);
               return FALSE;

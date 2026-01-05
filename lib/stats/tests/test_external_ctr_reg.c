@@ -84,28 +84,28 @@ Test(stats_external_counter, external_ctr_is_read_only_for_stats_set)
   cr_expect_eq(stats_counter_get(stats_ctr), 11);
 };
 
-Test(stats_external_counter, external_ctr_is_read_only_for_stats_inc, .signal=SIGABRT)
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_inc, .signal = SIGABRT)
 {
   atomic_gssize test_ctr;
   StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);
   stats_counter_inc(stats_ctr);
 };
 
-Test(stats_external_counter, external_ctr_is_read_only_for_stats_dec, .signal=SIGABRT)
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_dec, .signal = SIGABRT)
 {
   atomic_gssize test_ctr;
   StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);
   stats_counter_dec(stats_ctr);
 };
 
-Test(stats_external_counter, external_ctr_is_read_only_for_stats_add, .signal=SIGABRT)
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_add, .signal = SIGABRT)
 {
   atomic_gssize test_ctr;
   StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);
   stats_counter_add(stats_ctr, 1);
 };
 
-Test(stats_external_counter, external_ctr_is_read_only_for_stats_sub, .signal=SIGABRT)
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_sub, .signal = SIGABRT)
 {
   atomic_gssize test_ctr;
   StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);

@@ -411,7 +411,7 @@ _fetch_until_newline(LogTransportHAProxy *self)
     }
 
   msg_error("PROXY proto header with invalid header length",
-            evt_tag_int("max_parsable_length", sizeof(self->proxy_header_buff)-1),
+            evt_tag_int("max_parsable_length", sizeof(self->proxy_header_buff) -1),
             evt_tag_int("max_length_by_spec", PROXY_PROTO_HDR_MAX_LEN_RFC),
             evt_tag_long("length", self->proxy_header_buff_len),
             evt_tag_str("header", (const gchar *)self->proxy_header_buff));

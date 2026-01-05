@@ -272,7 +272,7 @@ _drain_responses(KafkaDestWorker *self)
   if (count != 0)
     {
       msg_trace("kafka: destination side rd_kafka_poll() processed some responses",
-                kafka_dd_is_topic_name_a_template(owner) ? evt_tag_str("template", owner->topic_name->template_str):
+                kafka_dd_is_topic_name_a_template(owner) ? evt_tag_str("template", owner->topic_name->template_str) :
                 evt_tag_str("topic", owner->topic_name->template_str),
                 evt_tag_str("fallback_topic", owner->fallback_topic_name),
                 evt_tag_int("count", count),

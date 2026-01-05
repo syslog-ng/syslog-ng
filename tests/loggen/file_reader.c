@@ -75,7 +75,7 @@ int init_file_reader(int nr_threads)
     }
   else
     {
-      for (int i=0; i < nr_threads; i++)
+      for (int i = 0; i < nr_threads; i++)
         {
           source[i] = fopen(read_file_name, "r");
           if (!source[i])
@@ -95,7 +95,7 @@ void close_file_reader(int nr_threads)
   if (!source)
     return;
 
-  for (int i=0; i < nr_threads; i++)
+  for (int i = 0; i < nr_threads; i++)
     {
       if (source[i])
         fclose(source[i]);
@@ -243,7 +243,7 @@ parse_line_rfc3164(const char *line, SyslogMsgElements *elements)
 
   /* pri + time stamp */
   safe_copy_n_string(elements->pri, line, pri_end - line, PARS_BUF_PRI_SIZE, "pri");
-  safe_copy_n_string(elements->time_stamp, pri_end+1, RFC3164_TIMESTAMP_SIZE, PARS_BUF_TIME_STAMP_SIZE, "timestamp");
+  safe_copy_n_string(elements->time_stamp, pri_end + 1, RFC3164_TIMESTAMP_SIZE, PARS_BUF_TIME_STAMP_SIZE, "timestamp");
   gchar *timestamp_end = pri_end + 1 + RFC3164_TIMESTAMP_SIZE;
 
   /* host name */
@@ -339,7 +339,7 @@ calc_linelen(const char *buf, int buflen)
   for (int i = buflen - 1; i >= 0; i--)
     {
       if (buf[i] != 0)
-        return i+1;
+        return i + 1;
     }
   return 0;
 }

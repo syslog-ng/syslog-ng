@@ -77,16 +77,16 @@ ParameterizedTestParameters(regexp_parser, test_regexp_parser)
 {
   static RegexpParserTestParam parser_params[] =
   {
-    {.msg = "foo", .pattern = "(?<key>foo)", .prefix="", .flags = 0, .expected_result = TRUE, .name = "key", .value = "foo"},
-    {.msg = "foo", .pattern = "(?<key>fo*)", .prefix="", .flags = 0, .expected_result = TRUE, .name = "key", .value = "foo"},
-    {.msg = "foo", .pattern = "(?<key>fo*)", .prefix=".reg.", .flags = 0, .expected_result = TRUE, .name = ".reg.key", .value = "foo"},
-    {.msg = "foo", .pattern = "(?<key>fo*)", .prefix=".reg.", .flags = 0, .expected_result = TRUE, .name = "key", .value = ""},
-    {.msg = "foo", .pattern = "(?<key>foo)|(?<key>bar)", .prefix=".reg.", .expected_result = TRUE, .flags = LMF_DUPNAMES, .name = ".reg.key", .value = "foo"},
-    {.msg = "abc", .pattern = "Abc", .prefix="", .flags = 0, .expected_result = FALSE, .name = NULL, .value = NULL},
-    {.msg = "abc", .pattern = "(?<key>Abc)", .prefix="", .flags = LMF_ICASE, .expected_result = TRUE, .name = "key", .value = "abc"},
+    {.msg = "foo", .pattern = "(?<key>foo)", .prefix = "", .flags = 0, .expected_result = TRUE, .name = "key", .value = "foo"},
+    {.msg = "foo", .pattern = "(?<key>fo*)", .prefix = "", .flags = 0, .expected_result = TRUE, .name = "key", .value = "foo"},
+    {.msg = "foo", .pattern = "(?<key>fo*)", .prefix = ".reg.", .flags = 0, .expected_result = TRUE, .name = ".reg.key", .value = "foo"},
+    {.msg = "foo", .pattern = "(?<key>fo*)", .prefix = ".reg.", .flags = 0, .expected_result = TRUE, .name = "key", .value = ""},
+    {.msg = "foo", .pattern = "(?<key>foo)|(?<key>bar)", .prefix = ".reg.", .expected_result = TRUE, .flags = LMF_DUPNAMES, .name = ".reg.key", .value = "foo"},
+    {.msg = "abc", .pattern = "Abc", .prefix = "", .flags = 0, .expected_result = FALSE, .name = NULL, .value = NULL},
+    {.msg = "abc", .pattern = "(?<key>Abc)", .prefix = "", .flags = LMF_ICASE, .expected_result = TRUE, .name = "key", .value = "abc"},
 
     /* store into a builtin value */
-    {.msg = "abcdef", .pattern = "(?<PID>abc)", .prefix="", .flags = 0, .expected_result = TRUE, .name = "PID", .value = "abc"},
+    {.msg = "abcdef", .pattern = "(?<PID>abc)", .prefix = "", .flags = 0, .expected_result = TRUE, .name = "PID", .value = "abc"},
   };
   return cr_make_param_array(RegexpParserTestParam, parser_params, G_N_ELEMENTS(parser_params));
 }

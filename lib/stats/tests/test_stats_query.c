@@ -242,7 +242,7 @@ Test(cluster_query_key, test_global_key)
 {
   const gchar *expected_key = "dst.file.d_file.instance";
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION|SCS_FILE, "d_file", "instance" );
+  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION | SCS_FILE, "d_file", "instance" );
   StatsCluster *sc = stats_cluster_new(&sc_key);
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",

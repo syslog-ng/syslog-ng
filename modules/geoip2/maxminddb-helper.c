@@ -200,7 +200,7 @@ _print_preferred_string_for_lang(LogMessage *msg, MMDB_entry_data_s *entry_data,
                   entry_data->data_size,
                   entry_data->utf8_string);
   _geoip_log_msg_add_value(msg, path, value);
-  g_array_remove_index(path, path->len-1);
+  g_array_remove_index(path, path->len - 1);
 }
 
 static MMDB_entry_data_list_s *
@@ -257,7 +257,7 @@ static void
 _index_array_in_path(GArray *path, guint32 _index, GString *indexer)
 {
   g_string_printf(indexer, "%d", _index);
-  ((gchar **)path->data)[path->len-1] = indexer->str;
+  ((gchar **)path->data)[path->len - 1] = indexer->str;
 }
 
 MMDB_entry_data_list_s *
@@ -286,7 +286,7 @@ dump_geodata_into_msg_map(LogMessage *msg, MMDB_entry_data_list_s *entry_data_li
       if (MMDB_SUCCESS != *status)
         return NULL;
 
-      g_array_remove_index(path, path->len-1);
+      g_array_remove_index(path, path->len - 1);
     }
 
   return entry_data_list;
@@ -310,7 +310,7 @@ dump_geodata_into_msg_array(LogMessage *msg, MMDB_entry_data_list_s *entry_data_
       if (MMDB_SUCCESS != *status)
         return NULL;
     }
-  g_array_remove_index(path, path->len-1);
+  g_array_remove_index(path, path->len - 1);
 
   return entry_data_list;
 }

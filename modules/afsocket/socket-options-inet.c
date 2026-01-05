@@ -238,7 +238,7 @@ socket_options_inet_setup_peer_socket(SocketOptions *s, gint fd, GSockAddr *addr
 {
   SocketOptionsInet *self = (SocketOptionsInet *) s;
 
-  if(!socket_options_setup_peer_socket_method(s, fd, addr))
+  if (!socket_options_setup_peer_socket_method(s, fd, addr))
     return FALSE;
   socket_options_inet_setup_tcp_keepalive_timers(self, fd);
   return TRUE;

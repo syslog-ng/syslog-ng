@@ -18,3 +18,5 @@ RUN /dbld/builddeps enable_dbgsyms
 RUN /dbld/builddeps install_perf
 
 RUN /dbld/builddeps install_apt_packages
+
+RUN /dbld/builddeps install_astyle_from_source

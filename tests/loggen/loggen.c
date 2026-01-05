@@ -149,7 +149,7 @@ generate_message(char *buffer, int buffer_size, ThreadData *thread_context, unsi
   raw_message_length += str_len;
 
   if (thread_stat_count && csv)
-    thread_stat_count[thread_context->index]+=1;
+    thread_stat_count[thread_context->index] += 1;
 
   g_mutex_unlock(&message_counter_lock);
 
@@ -159,7 +159,7 @@ generate_message(char *buffer, int buffer_size, ThreadData *thread_context, unsi
 static
 gboolean is_plugin_already_loaded(GPtrArray *plugin_array, const gchar *name)
 {
-  for (int i=0; i < plugin_array->len; i++)
+  for (int i = 0; i < plugin_array->len; i++)
     {
       PluginInfo *loaded_plugin = g_ptr_array_index(plugin_array, i);
       if (!loaded_plugin)
@@ -238,7 +238,7 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
   while ((fname = g_dir_read_name(dir)))
     {
       PluginInfo *plugin = load_plugin_info_with_fname(plugin_path, fname);
-      if(!plugin)
+      if (!plugin)
         continue;
 
       if (is_plugin_already_loaded(plugin_array, plugin->name))
@@ -280,7 +280,7 @@ stop_plugins(GPtrArray *plugin_array)
   if (!plugin_array)
     return;
 
-  for (int i=0; i < plugin_array->len; i++)
+  for (int i = 0; i < plugin_array->len; i++)
     {
       PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
@@ -301,7 +301,7 @@ init_logline_generator(GPtrArray *plugin_array)
     return;
 
   gboolean require_framing = FALSE;
-  for (int i=0; i < plugin_array->len; i++)
+  for (int i = 0; i < plugin_array->len; i++)
     {
       PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
@@ -340,7 +340,7 @@ init_csv_statistics(void)
     {
       /* print CSV header and initial line about time zero */
       printf("ThreadId;Time;Rate;Count\n");
-      for (int j=0; j < global_plugin_option.active_connections; j++)
+      for (int j = 0; j < global_plugin_option.active_connections; j++)
         {
           fprintf(stderr, "%d;%lu.%06lu;%.2lf;%lu\n", j, (long) 0, (long) 0, (double) 0, (long)0);
         }
@@ -358,7 +358,7 @@ start_plugins(GPtrArray *plugin_array)
 
   /* check plugins to see how many is activated by command line parameters */
   int number_of_active_plugins = 0;
-  for (int i=0; i < plugin_array->len; i++)
+  for (int i = 0; i < plugin_array->len; i++)
     {
       PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
@@ -375,7 +375,7 @@ start_plugins(GPtrArray *plugin_array)
       return 0;
     }
 
-  for (int i=0; i < plugin_array->len; i++)
+  for (int i = 0; i < plugin_array->len; i++)
     {
       PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
@@ -434,10 +434,10 @@ print_statistic(struct timeval *start_time)
       time_val_diff_in_timeval(&diff_tv, &now, start_time);
       guint64 diff_usec = time_val_diff_in_usec(&now, &last_ts_format);
 
-      for (int j=0; j < global_plugin_option.active_connections; j++)
+      for (int j = 0; j < global_plugin_option.active_connections; j++)
         {
           g_mutex_lock(&message_counter_lock);
-          double msg_count_diff = ((double) (thread_stat_count[j]-thread_stat_count_last[j]) * USEC_PER_SEC) / diff_usec;
+          double msg_count_diff = ((double) (thread_stat_count[j] - thread_stat_count_last[j]) * USEC_PER_SEC) / diff_usec;
           thread_stat_count_last[j] = thread_stat_count[j];
           count = thread_stat_count[j];
           g_mutex_unlock(&message_counter_lock);
@@ -462,7 +462,7 @@ void wait_all_plugin_to_finish(GPtrArray *plugin_array)
   struct timeval start_time;
   gettimeofday(&start_time, NULL);
 
-  for (int i=0; i < plugin_array->len; i++)
+  for (int i = 0; i < plugin_array->len; i++)
     {
       PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
@@ -470,7 +470,7 @@ void wait_all_plugin_to_finish(GPtrArray *plugin_array)
 
       while (plugin->get_thread_count() > 0)
         {
-          g_usleep(500*1000);
+          g_usleep(500 * 1000);
           print_statistic(&start_time);
         }
     }
@@ -484,11 +484,11 @@ void wait_all_plugin_to_finish(GPtrArray *plugin_array)
   if (total_runtime_sec > 0 && count > 0)
     fprintf(stderr,
             "average rate = %.2lf msg/sec, count=%ld, time=%g, (average) msg size=%"G_GINT64_FORMAT", bandwidth=%.2f kB/sec\n",
-            (double)count/total_runtime_sec,
+            (double)count / total_runtime_sec,
             count,
             total_runtime_sec,
-            (gint64)raw_message_length/count,
-            (double)raw_message_length/(total_runtime_sec*1024) );
+            (gint64)raw_message_length / count,
+            (double)raw_message_length / (total_runtime_sec * 1024) );
   else
     fprintf(stderr, "Total runtime = %g, count = %ld\n", total_runtime_sec, count);
 }
@@ -502,7 +502,7 @@ signal_callback_handler(int signum)
 static void
 rate_change_handler(int signum)
 {
-  switch(signum)
+  switch (signum)
     {
     case SIGUSR1:
       global_plugin_option.rate *= 2;
@@ -510,7 +510,7 @@ rate_change_handler(int signum)
     case SIGUSR2:
     {
       int proposed_new_rate = global_plugin_option.rate / 2;
-      global_plugin_option.rate = proposed_new_rate > 0 ? proposed_new_rate: 1;
+      global_plugin_option.rate = proposed_new_rate > 0 ? proposed_new_rate : 1;
       break;
     }
     default:
@@ -562,12 +562,12 @@ main(int argc, char *argv[])
   /* debug option defined by --debug command line option */
   set_debug_level(debug);
 
-  if (argc>=3)
+  if (argc >= 3)
     {
       global_plugin_option.target = g_strdup(argv[1]);
       global_plugin_option.port = g_strdup(argv[2]);
     }
-  else if (argc>=2)
+  else if (argc >= 2)
     {
       global_plugin_option.target = g_strdup(argv[1]);
       global_plugin_option.port = NULL;

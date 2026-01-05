@@ -114,7 +114,7 @@ z_mem_trace_init(gchar *tracefile)
 
       for (i = 0; i < MEMTRACE_HEAP_SIZE; i++)
         {
-          mem_trace_heap[i].next = i+1;
+          mem_trace_heap[i].next = i + 1;
         }
       mem_trace_heap[MEMTRACE_HEAP_SIZE - 1].next = -1;
       mem_trace_free_list = 0;
@@ -151,7 +151,7 @@ z_mem_trace_bt(gpointer backtrace[])
 {
   /* NOTE: this is i386 specific */
   gpointer x;
-  gpointer *ebp = &x+1;
+  gpointer *ebp = &x + 1;
   gint i = 0;
 
   while ((ebp > &x) && *ebp && i < MEMTRACE_BACKTRACE_LEN - 1)
@@ -514,7 +514,7 @@ z_realloc(void *user_ptr, size_t size, gpointer backtrace[])
       /* this ptr was allocated on the temp heap, move it to real heap */
 
       z_mem_trace_printf("reallocing space on the temp heap, moving..., ptr=%p, temp_heap=%p, diff=%d, old_size=%d\n",
-                         raw_ptr, temp_heap, (char *) raw_ptr-temp_heap, old_size);
+                         raw_ptr, temp_heap, (char *) raw_ptr - temp_heap, old_size);
       new_ptr = old_malloc(size + mem_trace_canaries * MEMTRACE_CANARY_OVERHEAD);
       if (new_ptr)
         {

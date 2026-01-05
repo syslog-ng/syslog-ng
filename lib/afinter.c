@@ -102,7 +102,7 @@ struct _AFInterSource
   struct iv_event exit;
   struct iv_timer mark_timer;
   struct iv_task restart_task;
-  guint watches_running:1, free_to_send:1;
+  guint watches_running: 1, free_to_send: 1;
 };
 
 static void afinter_source_update_watches(AFInterSource *self);
