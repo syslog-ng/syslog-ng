@@ -90,6 +90,7 @@ struct _TLSContext
   gchar *ecdh_curve_list;
   gchar *sni;
   gboolean ocsp_stapling_verify;
+  gboolean extended_key_usage_verify;
   gboolean allow_compress;
 
   SSL_CTX *ssl_ctx;
@@ -136,6 +137,7 @@ void tls_context_set_ecdh_curve_list(TLSContext *self, const gchar *ecdh_curve_l
 void tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file);
 void tls_context_set_sni(TLSContext *self, const gchar *sni);
 void tls_context_set_ocsp_stapling_verify(TLSContext *self, gboolean ocsp_stapling_verify);
+void tls_context_set_extended_key_usage_verify(TLSContext *self, gboolean extended_key_usage_verify);
 const gchar *tls_context_get_key_file(TLSContext *self);
 EVTTAG *tls_context_format_tls_error_tag(TLSContext *self);
 EVTTAG *tls_context_format_location_tag(TLSContext *self);
