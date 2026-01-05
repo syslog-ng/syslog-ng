@@ -39,7 +39,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <syslog.h>
+#include "compat/syslog.h"
 
 EVTCONTEXT *syslog_context;
 EVTSYSLOGOPTS syslog_opts;

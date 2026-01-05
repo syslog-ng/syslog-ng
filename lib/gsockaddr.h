@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2010 Balabit
  * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,9 +30,11 @@
 #include "atomic.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <compat/socket.h>
 #include <compat/un.h>
-#include <netinet/in.h>
+#ifndef _WIN32
+#include <netinet/in.h>   /* POSIX only; Windows gets this via compat/socket.h */
+#endif
 
 /* sockaddr public interface */
 

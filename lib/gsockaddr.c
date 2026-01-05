@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,18 +27,14 @@
 #include "gsocket.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <errno.h>
-#include <netinet/in.h>
-#include <sys/un.h>
-#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netdb.h>
 
+#include "compat/socket.h"
+#include "compat/un.h"
 
 /* general GSockAddr functions */
 
@@ -220,7 +217,11 @@ g_sockaddr_inet_bind_prepare(int sock, GSockAddr *addr)
 {
   int tmp = 1;
 
+#ifdef _WIN32
+  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&tmp, sizeof(tmp));
+#else
   setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp));
+#endif
   return G_IO_STATUS_NORMAL;
 }
 
@@ -624,9 +625,11 @@ g_sockaddr_unix_bind_prepare(int sock, GSockAddr *addr)
   if (unix_addr->saun.sun_path[0] == 0)
     return G_IO_STATUS_NORMAL;
 
+#ifndef _WIN32
   if (stat(unix_addr->saun.sun_path, &st) == -1 ||
       !S_ISSOCK(st.st_mode))
     return G_IO_STATUS_NORMAL;
+#endif
 
   unlink(unix_addr->saun.sun_path);
   return G_IO_STATUS_NORMAL;

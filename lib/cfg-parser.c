@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2017 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +30,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include "str-utils.h"
+
+/* put near the top, after includes */
+#if defined(_WIN32) && defined(ERROR)
+#undef ERROR
+#endif
 
 extern int main_debug;
 

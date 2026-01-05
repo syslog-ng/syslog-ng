@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +26,8 @@
 /* NOTE: this file is included directly into hostname.c so the set of
  * includes here only add system dependent headers and not the full set
  */
+#ifndef _WIN32
+
 #include <netdb.h>
 
 static struct hostent *
@@ -72,3 +75,5 @@ get_local_fqdn_hostname_from_dns(void)
 
   return NULL;
 }
+
+#endif

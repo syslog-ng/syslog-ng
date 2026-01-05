@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2012 Balabit
  * Copyright (c) 2012 Balazs Scheidler <bazsi@balabit.hu>
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,10 +29,19 @@
 #include "cfg.h"
 #include "gprocess.h"
 
-#include <unistd.h>
 #include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
+
+#ifndef _WIN32
+#include <unistd.h>
+#else
+#include <windows.h>
+#include <io.h>
+#include <direct.h>
+typedef int uid_t;      /* stubs for API parity */
+typedef int gid_t;
+#endif
 
 #define DONTCHANGE -2
 
@@ -181,63 +191,86 @@ file_perm_options_inherit_dont_change(FilePermOptions *self)
 gboolean
 file_perm_options_apply_file(const FilePermOptions *self, const gchar *path)
 {
-#ifndef _MSC_VER
   gboolean result = TRUE;
-
+#ifdef _WIN32
+  /* chown/lchown unsupported -> ignore uid/gid */
+  if (self->file_perm >= 0 && chmod(path, (mode_t) self->file_perm) < 0)
+    result = FALSE;
+#elif defined(_MSC_VER)
   if (self->file_uid >= 0 && chown(path, (uid_t) self->file_uid, -1) < 0)
     result = FALSE;
   if (self->file_gid >= 0 && chown(path, -1, (gid_t) self->file_gid) < 0)
     result = FALSE;
   if (self->file_perm >= 0 && chmod(path, (mode_t) self->file_perm) < 0)
     result = FALSE;
-  return result;
 #endif
+  return result;
 }
 
 gboolean
 file_perm_options_apply_symlink(const FilePermOptions *self, const gchar *path)
 {
-#ifndef _MSC_VER
+  gboolean result = TRUE;
+#ifdef _WIN32
+  /* no fchown/fchmod; treat as success */
+  return result;
+#elif defined(_MSC_VER)
   gboolean result = TRUE;
 
   if (self->file_uid >= 0 && lchown(path, (uid_t) self->file_uid, -1) < 0)
     result = FALSE;
   if (self->file_gid >= 0 && lchown(path, -1, (gid_t) self->file_gid) < 0)
     result = FALSE;
-  return result;
 #endif
+  return result;
 }
 
 gboolean
 file_perm_options_apply_dir(const FilePermOptions *self, const gchar *path)
 {
-#ifndef _MSC_VER
   gboolean result = TRUE;
-
+#ifdef _WIN32
+  /* chown ignored; chmod applied if requested */
+  if (self->dir_perm >= 0 && chmod(path, (mode_t) self->dir_perm) < 0)
+    result = FALSE;
+#elif defined(_MSC_VER)
   if (self->dir_uid >= 0 && chown(path, (uid_t) self->dir_uid, -1) < 0)
     result = FALSE;
   if (self->dir_gid >= 0 && chown(path, -1, (gid_t) self->dir_gid) < 0)
     result = FALSE;
   if (self->dir_perm >= 0 && chmod(path, (mode_t) self->dir_perm) < 0)
     result = FALSE;
-  return result;
 #endif
+  return result;
 }
 
 gboolean
 file_perm_options_apply_fd(const FilePermOptions *self, gint fd)
 {
-#ifndef _MSC_VER
   gboolean result = TRUE;
-
+#ifdef _WIN32
+  /* no fchown/fchmod; treat as success */
+  return result;
+#elif defined(_MSC_VER)
   if (self->file_uid >= 0 && fchown(fd, (uid_t) self->file_uid, -1) < 0)
     result = FALSE;
   if (self->file_gid >= 0 && fchown(fd, -1, (gid_t) self->file_gid) < 0)
     result = FALSE;
   if (self->file_perm >= 0 && fchmod(fd, (mode_t) self->file_perm) < 0)
     result = FALSE;
-
+#endif
   return result;
+}
+
+static gboolean
+_make_dir_with_mode(const gchar *path, mode_t mode)
+{
+#ifndef _WIN32
+  return mkdir(path, mode) == 0 || errno == EEXIST;
+#else
+  (void)mode;
+  int rc = _mkdir(path);
+  return rc == 0 || errno == EEXIST;
 #endif
 }
 
@@ -295,7 +328,7 @@ file_perm_options_create_containing_directory(const FilePermOptions *self, const
         }
       else if (errno == ENOENT)
         {
-          if (mkdir(_path, self->dir_perm < 0 ? 0700 : (mode_t) self->dir_perm) == -1)
+          if (!_make_dir_with_mode(_path, self->dir_perm < 0 ? 0700 : (mode_t) self->dir_perm))
             {
               result = FALSE;
               goto finish;

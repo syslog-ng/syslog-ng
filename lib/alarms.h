@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2010 Balabit
  * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +27,7 @@
 #define ALARMS_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "compat/alarm.h"
 
 void alarm_set(int timeout);
 void alarm_cancel(void);

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +36,7 @@
 #include "plugin-types.h"
 
 #include <string.h>
-#include <glob.h>
+#include "compat/glob.h"
 #include <sys/stat.h>
 
 /* include header for generated lexer */

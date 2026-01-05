@@ -16,6 +16,11 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 project(syslog-ng C)
 
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # normalize once → POSIX form for file/grep/sed
+    set(WIN_BUILD)
+endif()
+
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
 set(CMAKE_POSITION_INDEPENDENT_CODE 1)
 
@@ -91,6 +96,31 @@ find_package(Resolv REQUIRED)
 find_package(WRAP)
 external_or_find_package(JSONC REQUIRED)
 include(find_python_and_build_venv)
+
+# Windows: ensure we have a Python launcher for custom commands
+if (WIN32)
+  # Prefer what the module found
+  set(PYTHON_LAUNCHER ${PYTHON_EXECUTABLE})
+  # Fallbacks
+  if (NOT PYTHON_LAUNCHER)
+    find_program(PY3_EXE NAMES python3)
+    if (PY3_EXE)
+      set(PYTHON_LAUNCHER ${PY3_EXE})
+    else()
+      find_program(PY_WIN_LAUNCHER NAMES py)
+      if (PY_WIN_LAUNCHER)
+        # 'py -3' as a list (so add_custom_command gets two args)
+        set(PYTHON_LAUNCHER ${PY_WIN_LAUNCHER} -3)
+      endif()
+    endif()
+  endif()
+
+  if (NOT PYTHON_LAUNCHER)
+    message(FATAL_ERROR "Python not found. Install python3 or the 'py' launcher.")
+  endif()
+  message(STATUS "Using Python launcher: ${PYTHON_LAUNCHER}")
+endif()
+
 include(find_ivykis)
 pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
 

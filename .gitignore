@@ -56,3 +56,4 @@ aclocal.m4-e
 modules/java-modules/.gradle
 stm32-tools
 modules/java-modules/reports/problems
+/.vscode

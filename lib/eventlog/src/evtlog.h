@@ -1,6 +1,7 @@
 /*
  * Event Logging API
  * Copyright (c) 2003 BalaBit IT Ltd.
+ * Copyright (c) 2025 One Identity
  * All rights reserved.
  * Author: Balazs Scheidler
  *
@@ -40,14 +41,9 @@
 #ifndef __EVTLOG_H_INCLUDED
 #define __EVTLOG_H_INCLUDED
 
-#ifndef _MSC_VER
-# include <syslog.h>
-#endif
+#include "compat/syslog.h"
+#include "compat/socket.h"
 #include <stdarg.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <glib.h>
 
 #include "evtmaps.h"
@@ -145,9 +141,10 @@ EVTTAG *evt_tag_int(const char *tag, int value);
 EVTTAG *evt_tag_long(const char *tag, long long value);
 EVTTAG *evt_tag_errno(const char *tag, int err);
 EVTTAG *evt_tag_printf(const char *tag, const char *format, ...) G_GNUC_PRINTF(2, 3);
+#ifndef _WIN32
 EVTTAG *evt_tag_inaddr(const char *tag, const struct in_addr *addr);
 EVTTAG *evt_tag_inaddr6(const char *tag, const struct in6_addr *addr);
-
+#endif
 /**
  * evt_format:
  * @e: event record

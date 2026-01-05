@@ -6,6 +6,7 @@ add_library(eventlog SHARED
   src/evtstr.c
   src/evtsyslog.c
   src/evttags.c
+  src/compat/syslog.c
 )
 
 target_include_directories(eventlog
@@ -18,6 +19,11 @@ target_link_libraries(eventlog
   PRIVATE
     GLib::GLib
 )
+
+if (WIN32)
+  target_compile_definitions(eventlog PRIVATE _WIN32_WINNT=0x0600)
+  target_link_libraries(eventlog PRIVATE ws2_32) # sockets on Windows
+endif()
 
 install(TARGETS eventlog DESTINATION lib)
 

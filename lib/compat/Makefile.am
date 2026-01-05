@@ -23,7 +23,18 @@ compatinclude_HEADERS		= 	\
 	lib/compat/cpp-start.h	\
 	lib/compat/cpp-end.h	\
 	lib/compat/curl.h	\
-	lib/compat/inttypes.h
+	lib/compat/inttypes.h	\
+	lib/compat/gprocess-compat.h	\
+	lib/compat/uio.h	\
+	lib/compat/syslog.h	\
+	lib/compat/alarm.h	\
+	lib/compat/glob.h	\
+	lib/compat/ivykis_fd.h	\
+	lib/compat/ivykis_signal.h	\
+	lib/compat/realpath.h	\
+	lib/compat/mmap.h	\
+	lib/compat/pagesize.h
+
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\
@@ -39,6 +50,9 @@ compat_sources			= 	\
 	lib/compat/openssl_support.c	\
 	lib/compat/getent-sun.c		\
 	lib/compat/getent-openbsd.c	\
-	lib/compat/getent-generic.c
+	lib/compat/getent-generic.c	\
+	lib/compat/glob-win.c	\
+    lib/compat/ivykis_fd_windows.c	\
+	lib/compat/mmap_win.c
 
 include lib/compat/tests/Makefile.am

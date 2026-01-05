@@ -1,6 +1,7 @@
 /*
  * Event Logging API
  * Copyright (c) 2003 BalaBit IT Ltd.
+ * Copyright (c) 2025 One Identity
  * All rights reserved.
  * Author: Balazs Scheidler
  *
@@ -42,8 +43,8 @@
  */
 #include "evt_internals.h"
 
+#include "compat/syslog.h"
 #include <stdlib.h>
-#include <syslog.h>
 #include <string.h>
 
 /* local method implementation */

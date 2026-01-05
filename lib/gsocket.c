@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2010 Balabit
  * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +26,7 @@
 #include "gsocket.h"
 
 #include <errno.h>
-#include <arpa/inet.h>
+#include "compat/socket.h"
 
 /**
  * g_inet_ntoa:

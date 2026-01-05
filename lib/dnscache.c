@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,9 +29,7 @@
 #include "tls-support.h"
 
 #include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include "compat/socket.h"
 #include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>

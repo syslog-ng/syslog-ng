@@ -51,6 +51,7 @@
 #include <iv.h>
 #include <iv_event.h>
 #include <iv_work.h>
+#include "compat/ivykis_fd.h"
 
 typedef enum
 {
@@ -108,7 +109,7 @@ struct _LogWriter
 
   gchar *stats_id;
 
-  struct iv_fd fd_watch;
+  compat_iv_fd fd_watch;
   struct iv_timer suspend_timer;
   struct iv_task immed_io_task;
   struct iv_event queue_filled;
@@ -363,16 +364,16 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
   if (self->pollable_state > 0)
     {
       if (cond & G_IO_IN)
-        iv_fd_set_handler_in(&self->fd_watch, log_writer_io_handle_in);
+        compat_iv_fd_set_handler_in(&self->fd_watch, log_writer_io_handle_in);
       else
-        iv_fd_set_handler_in(&self->fd_watch, NULL);
+        compat_iv_fd_set_handler_in(&self->fd_watch, NULL);
 
       if (cond & G_IO_OUT)
-        iv_fd_set_handler_out(&self->fd_watch, log_writer_io_handle_out);
+        compat_iv_fd_set_handler_out(&self->fd_watch, log_writer_io_handle_out);
       else
-        iv_fd_set_handler_out(&self->fd_watch, NULL);
+        compat_iv_fd_set_handler_out(&self->fd_watch, NULL);
 
-      iv_fd_set_handler_err(&self->fd_watch, log_writer_io_error);
+      compat_iv_fd_set_handler_err(&self->fd_watch, log_writer_io_error);
     }
   else
     {
@@ -536,10 +537,10 @@ log_writer_start_watches(LogWriter *self)
       if (is_file_regular(self->fd_watch.fd))
         self->pollable_state = 0;
       else
-        self->pollable_state = !iv_fd_register_try(&self->fd_watch);
+        self->pollable_state = !compat_iv_fd_register_try(&self->fd_watch);
     }
   else if (self->pollable_state > 0)
-    iv_fd_register(&self->fd_watch);
+    compat_iv_fd_register(&self->fd_watch);
 
   log_writer_update_watches(self);
   self->watches_running = TRUE;
@@ -553,8 +554,8 @@ log_writer_stop_watches(LogWriter *self)
       if (iv_timer_registered(&self->reopen_timer))
         iv_timer_unregister(&self->reopen_timer);
 
-      if (iv_fd_registered(&self->fd_watch))
-        iv_fd_unregister(&self->fd_watch);
+      if (compat_iv_fd_registered(&self->fd_watch))
+        compat_iv_fd_unregister(&self->fd_watch);
       if (iv_task_registered(&self->immed_io_task))
         iv_task_unregister(&self->immed_io_task);
 
@@ -1451,7 +1452,7 @@ log_writer_idle_timeout(void *cookie)
 static void
 log_writer_init_watches(LogWriter *self)
 {
-  IV_FD_INIT(&self->fd_watch);
+  COMPAT_IV_FD_INIT(&self->fd_watch);
   self->fd_watch.cookie = self;
 
   IV_TASK_INIT(&self->immed_io_task);
@@ -1679,6 +1680,9 @@ log_writer_deinit(LogPipe *s)
   ml_batched_timer_unregister(&self->mark_timer);
 
   _unregister_counters(self);
+
+  /* free compat iv watcher impl (no-op on POSIX if you like) */
+  compat_iv_fd_deinit(&self->fd_watch);
 
   return TRUE;
 }

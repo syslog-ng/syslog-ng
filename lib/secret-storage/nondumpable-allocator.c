@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018 Balabit
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,12 +22,10 @@
  *
  */
 
-#include <sys/mman.h>
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
-#include <stdio.h>
+#include "compat/secure-mem.h"
 
 /* For compatibility with e.g. older macOS. */
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
@@ -74,53 +73,32 @@ typedef struct
   guint8 user_data[];
 } Allocation;
 
-static gboolean
-_exclude_memory_from_core_dump(gpointer area, gsize len)
-{
-#if defined(MADV_DONTDUMP)
-  if (madvise(area, len, MADV_DONTDUMP) < 0)
-    {
-
-      if (errno == EINVAL)
-        {
-          logger_debug("secret storage: MADV_DONTDUMP not supported",
-                       "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
-          return TRUE;
-        }
-
-      logger_fatal("secret storage: cannot madvise buffer", "errno: %d\n", errno);
-      return FALSE;
-    }
-#endif
-  return TRUE;
-}
-
 static gpointer
-_mmap(gsize len)
+_alloc_locked(gsize len)
 {
-  gpointer area = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
-  if (area == MAP_FAILED)
+  gpointer area = secure_mem_mmap_anon_rw(len);
+  if (!area)
     {
       logger_fatal("secret storage: cannot mmap buffer",
                    "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
-      return MAP_FAILED;
+      return NULL;
     }
 
-  if (!_exclude_memory_from_core_dump(area, len))
-    goto err_munmap;
+  if (!secure_mem_exclude_from_core_dump(area, len))
+    goto err_unmap;
 
-  if (mlock(area, len) < 0)
+  if (secure_mem_mlock(area, len) < 0)
     {
       gchar *hint = (errno == ENOMEM) ? ". Maybe RLIMIT_MEMLOCK is too small?" : "";
-      logger_fatal("secret storage: cannot lock buffer", "len: %"G_GSIZE_FORMAT", errno: %d%s\n", len, errno, hint);
-
-      goto err_munmap;
+      logger_fatal("secret storage: cannot lock buffer",
+                   "len: %"G_GSIZE_FORMAT", errno: %d%s\n", len, errno, hint);
+      goto err_unmap;
     }
 
   return area;
-err_munmap:
-  munmap(area, len);
-  return MAP_FAILED;
+err_unmap:
+  secure_mem_munmap(area, len);
+  return NULL;
 }
 
 static gsize
@@ -133,11 +111,11 @@ gpointer
 nondumpable_buffer_alloc(gsize len)
 {
   gsize minimum_size = len + ALLOCATION_HEADER_SIZE;
-  gsize pagesize = sysconf(_SC_PAGE_SIZE);
+  gsize pagesize = secure_mem_get_page_size();
   gsize alloc_size = round_to_nearest(minimum_size, pagesize);
 
-  Allocation *buffer = _mmap(alloc_size);
-  if (buffer == MAP_FAILED)
+  Allocation *buffer = _alloc_locked(alloc_size);
+  if (!buffer)
     return NULL;
 
   buffer->alloc_size = alloc_size;
@@ -148,10 +126,7 @@ nondumpable_buffer_alloc(gsize len)
 void
 nondumpable_mem_zero(gpointer s, gsize len)
 {
-  volatile guchar *p = s;
-
-  for (gsize i = 0; i < len; ++i)
-    p[i] = 0;
+  secure_mem_zero(s, len);
 }
 
 void
@@ -159,7 +134,7 @@ nondumpable_buffer_free(gpointer buffer)
 {
   Allocation *allocation = BUFFER_TO_ALLOCATION(buffer);
   nondumpable_mem_zero(allocation->user_data, allocation->data_len);
-  munmap(allocation, allocation->alloc_size);
+  secure_mem_munmap(allocation, allocation->alloc_size);
 }
 
 gpointer

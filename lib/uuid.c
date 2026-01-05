@@ -2,6 +2,7 @@
  * Copyright (c) 2010-2012 Balabit
  * Copyright (c) 2010-2012 Balázs Scheidler
  * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +26,7 @@
 #include "uuid.h"
 
 #include <openssl/rand.h>
-#include <arpa/inet.h>
+#include "compat/socket.h"
 
 void
 uuid_gen_random(gchar *buf, gsize buflen)

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,7 +21,7 @@
  * COPYING for details.
  *
  */
-#ifndef COMPAT_PIO_H_INCLUCED
+#ifndef COMPAT_PIO_H_INCLUDED
 #define COMPAT_PIO_H_INCLUDED 1
 
 #include "compat.h"

@@ -1,9 +1,14 @@
 set(SECRET_STORAGE_SOURCES
   secret-storage.c
-  nondumpable-allocator.c)
+  nondumpable-allocator.c
+  compat/secure-mem-posix.c
+  compat/secure-mem-windows.c)
 set(SECRET_STORAGE_HEADERS
   secret-storage.h
-  nondumpable-allocator.h)
+  nondumpable-allocator.h
+  compat/secure-mem.h
+  compat/secure-mem-posix.h
+  compat/secure-mem-windows.h)
 
 add_library(secret-storage SHARED ${SECRET_STORAGE_SOURCES})
 

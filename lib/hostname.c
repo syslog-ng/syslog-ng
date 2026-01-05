@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2015 Balabit
  * Copyright (c) 1998-2015 Balázs Scheidler
+ * Copyright (c) 2025 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,8 +29,7 @@
 #include "messages.h"
 #include "dnscache.h"
 
-#include <unistd.h>
-#include <arpa/inet.h>
+#include "compat/socket.h"
 #include <string.h>
 
 static gchar local_hostname_fqdn[256];
@@ -63,7 +63,11 @@ extract_domain_from_fqdn(const gchar *hostname)
   return NULL;
 }
 
+#ifndef _WIN32
 #include "hostname-unix.c"
+#else
+#include "hostname-windows.c"
+#endif
 
 static void
 validate_hostname_cache(void)
