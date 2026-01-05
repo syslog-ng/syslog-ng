@@ -243,7 +243,7 @@ __check_value_len(NVHandle handle, const gchar *name,
                   LogMessageValueType type, gpointer user_data)
 {
   TestCase *self = user_data;
-  gchar *error_message = g_strdup_printf("Bad value size; name: %s, value: %s len: %ld", name, value, value_len);
+  gchar *error_message = g_strdup_printf("Bad value size; name: %s, value: %s len: %ld", name, value, (long) value_len);
   if (strcmp(name, "HOST_FROM") != 0 && strcmp(name, "TRANSPORT") != 0)
     {
       cr_assert_leq(value_len, GPOINTER_TO_INT(self->user_data), "%s", error_message);

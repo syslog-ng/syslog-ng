@@ -1,4 +1,5 @@
-FROM debian:trixie
+ARG CONTAINER_ARCH=amd64
+FROM --platform=linux/$CONTAINER_ARCH debian:trixie
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
 

@@ -3,9 +3,9 @@ name: CI @ devshell
 on:
   pull_request:
   push:
-    branches: [ "develop", "master" ]
+    branches: ["develop", "master"]
   schedule:
-    - cron: '00 21 * * *'
+    - cron: "00 21 * * *"
   workflow_dispatch:
     inputs:
       use_all:
@@ -30,7 +30,7 @@ jobs:
       matrix:
         build-tool: [autotools, cmake]
         cc: [gcc, clang]
-        platform: [ ubuntu-24.04-arm, ubuntu-latest]
+        platform: [ubuntu-24.04-arm, ubuntu-latest]
         image:
           # We test building in dbld docker images only that have no binary packages, or docker installations
           # OS varians that have binary packages or docker installations will be built by the 'Nghtly release'
@@ -68,22 +68,22 @@ jobs:
           # ---------------------------------------------------------------------------------------------------
           - name: almalinux-8
             # grpc/protobuf is presented, but configure cannot find protobuf
-            configure_flags: '--disable-sql --disable-grpc --disable-ebpf --with-python=3.9'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_GRPC=OFF -DENABLE_EBPF=OFF -DPYTHON_VERSION=3.9'
+            configure_flags: "--disable-sql --disable-grpc --disable-ebpf --with-python=3.9"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_GRPC=OFF -DENABLE_EBPF=OFF -DPYTHON_VERSION=3.9"
           - name: almalinux-9
             # grpc is presented, but does not compile
-            configure_flags: '--disable-sql --disable-grpc'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_GRPC=OFF'
+            configure_flags: "--disable-sql --disable-grpc"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_GRPC=OFF"
           - name: almalinux-10
-            configure_flags: '--disable-sql --disable-mqtt'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF'
+            configure_flags: "--disable-sql --disable-mqtt"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_MQTT=OFF"
           - name: centos-stream9
             # grpc is presented, but does not compile
-            configure_flags: '--disable-sql --disable-mqtt --disable-grpc'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF -DENABLE_GRPC=OFF'
+            configure_flags: "--disable-sql --disable-mqtt --disable-grpc"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_MQTT=OFF -DENABLE_GRPC=OFF"
           - name: centos-stream10
-            configure_flags: '--disable-sql --disable-mqtt'
-            cmake_configure_flags: '-DENABLE_SQL=OFF -DENABLE_MQTT=OFF'
+            configure_flags: "--disable-sql --disable-mqtt"
+            cmake_configure_flags: "-DENABLE_SQL=OFF -DENABLE_MQTT=OFF"
           - name: fedora-latest
           - name: fedora-rawhide
           # TODO: We still need to implement install_rpm_build_deps for opensuse
@@ -91,28 +91,28 @@ jobs:
           - name: rocky-9
           - name: ubuntu-focal
             # too old ebpf
-            configure_flags: '--disable-ebpf'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+            configure_flags: "--disable-ebpf"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF"
           # --------------------------------------------------------------------
           - name: debian-bullseye
             # too old ebpf
-            configure_flags: '--disable-ebpf'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+            configure_flags: "--disable-ebpf"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF"
           - name: debian-bookworm
           - name: debian-testing
           - name: debian-sid
           - name: ubuntu-jammy
             # too old ebpf
-            configure_flags: '--disable-ebpf'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+            configure_flags: "--disable-ebpf"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF"
           - name: ubuntu-noble
             # no bpftool ?!?
-            configure_flags: '--disable-ebpf'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF'
+            configure_flags: "--disable-ebpf"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF"
           - name: ubuntu-plucky
           - name: rhel-8
-            configure_flags: '--disable-ebpf --with-python=3.9'
-            cmake_configure_flags: '-DENABLE_EBPF=OFF -DPYTHON_VERSION=3.9'
+            configure_flags: "--disable-ebpf --with-python=3.9"
+            cmake_configure_flags: "-DENABLE_EBPF=OFF -DPYTHON_VERSION=3.9"
           - name: rhel-9
           - name: rhel-10
           # --------------------------------------------------------------------
@@ -120,7 +120,7 @@ jobs:
           # --------------------------------------------------------------------
           - name: devshell
             # Now only for devsell we support -Werror, all other none-packaged targets are just best efforts
-            cflags: '-Werror'
+            cflags: "-Werror"
           # --------------------------------------------------------------------
         exclude:
           - platform: ubuntu-24.04-arm
@@ -142,25 +142,25 @@ jobs:
           - platform: ubuntu-24.04-arm
             image:
               name: devshell
-              arch_suffix: '-arm64'
+              arch_suffix: "-arm64"
             build-tool: autotools
             cc: gcc
           - platform: ubuntu-24.04-arm
             image:
               name: devshell
-              arch_suffix: '-arm64'
+              arch_suffix: "-arm64"
             build-tool: autotools
             cc: clang
           - platform: ubuntu-24.04-arm
             image:
               name: devshell
-              arch_suffix: '-arm64'
+              arch_suffix: "-arm64"
             build-tool: cmake
             cc: gcc
           - platform: ubuntu-24.04-arm
             image:
               name: devshell
-              arch_suffix: '-arm64'
+              arch_suffix: "-arm64"
             build-tool: cmake
             cc: clang
           # Currently testing i386 in devshell only
@@ -168,18 +168,31 @@ jobs:
           - platform: ubuntu-latest
             image:
               name: devshell
-              arch_suffix: '-i386'
+              arch_suffix: "-i386"
             build-tool: cmake
             cc: gcc
 
     steps:
-      - name: Checkout syslog-ng source
-        if: ${{ matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true' }}
-        uses: actions/checkout@v4
-
       - name: Setup Git safedir
         if: ${{ matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true' }}
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Checkout syslog-ng source
+        if: ${{ matrix.image.arch_suffix != '-i386' && (matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true') }}
+        uses: actions/checkout@v4
+
+      - name: Checkout syslog-ng source (i386 - manual git)
+        if: ${{ matrix.image.arch_suffix == '-i386' && (matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true') }}
+        run: |
+          git init
+          git remote add origin https://github.com/${{ github.repository }}
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --depth=1 origin +${{ github.sha }}:refs/remotes/pull/${{ github.event.pull_request.number }}/merge
+            git checkout refs/remotes/pull/${{ github.event.pull_request.number }}/merge
+          else
+            git fetch --depth=1 origin ${{ github.ref }}
+            git checkout FETCH_HEAD
+          fi
 
       - name: Setup environment
         if: ${{ matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true' }}
@@ -294,8 +307,8 @@ jobs:
 
       - name: "Artifact: test-suite.log"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now
-        if: ${{ matrix.image.name == 'devshell' && always() && steps.make_check.outcome == 'failure' }}
+        # Handle failures only for devshell images now (exclude i386 reporting for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ matrix.image.arch_suffix != '-i386' && matrix.image.name == 'devshell' && always() && steps.make_check.outcome == 'failure' }}
         with:
           name: test-suite-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: ${{ github.workspace }}/build/test-suite.log
@@ -312,8 +325,8 @@ jobs:
 
       - name: "Artifact: light-reports"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now
-        if: ${{ matrix.image.name == 'devshell' && always() && steps.prepare-light-reports.outcome == 'success' }}
+        # Handle failures only for devshell images now (exclude i386 reporting for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ matrix.image.arch_suffix != '-i386' && matrix.image.name == 'devshell' && always() && steps.prepare-light-reports.outcome == 'success' }}
         with:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: /tmp/light-reports.tar.gz
@@ -328,8 +341,8 @@ jobs:
 
       - name: "Artifact: corefiles"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now
-        if: ${{ matrix.image.name == 'devshell' && failure() }}
+        # Handle failures only for devshell images now (exclude i386 for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ matrix.image.arch_suffix != '-i386' && matrix.image.name == 'devshell' && failure() }}
         with:
           name: corefiles-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: ${{ env.COREFILES_DIR }}
