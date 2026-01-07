@@ -359,7 +359,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   //------------
 
   // Read key
-  if (!readKey(state->key, (guint64 *)&(state->numberOfLogEntries), state->keypath))
+  if (!readKey(state->key, (guint64 *) & (state->numberOfLogEntries), state->keypath))
     {
       state->badKey = TRUE;
       msg_error(SLOG_ERROR_PREFIX,
@@ -392,7 +392,7 @@ tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
   guchar outputmacdata[CMAC_LENGTH];
 
   // Empty string received? Parsing error?
-  if (args->argv[0]->len==0)
+  if (args->argv[0]->len == 0)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "String of length 0 received"));
       GString *errorString = g_string_new(SLOG_ERROR_PREFIX ": String of length 0 received");

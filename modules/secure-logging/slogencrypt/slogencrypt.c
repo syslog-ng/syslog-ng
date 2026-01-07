@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
     }
 
   // Read MAC (if possible)
-  if (readAggregatedMAC(inputMACpath, mac)==0)
+  if (readAggregatedMAC(inputMACpath, mac) == 0)
     {
       msg_warning(SLOG_WARNING_PREFIX,
                   evt_tag_str("Reason", "Unable to open input MAC file!"),
@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
 #endif /* IS_LIMIT_LOGSTR, see slog.h */
 
       // Remove trailing '\n' from string
-      g_string_truncate(inputGString, (inputGString->len)-1);
+      g_string_truncate(inputGString, (inputGString->len) - 1);
 
       gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
 

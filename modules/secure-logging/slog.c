@@ -48,9 +48,9 @@
 #define SHORT_OPT_INDICATOR "-"
 
 // This initialization only works with GCC.
-static guchar KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = IPAD };
-static guchar MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = OPAD };
-static guchar GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] =  EPAD};
+static guchar KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] = IPAD };
+static guchar MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] = OPAD };
+static guchar GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] =  EPAD};
 
 /*
  * Create specific sub-keys for encryption and CMAC generation from key.
@@ -93,7 +93,7 @@ gboolean create_initial_mac0(guchar mainKey[KEY_LENGTH], guchar mac[CMAC_LENGTH]
 
   // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
   // Binary data cannot be larger than its base64 encoding
-  guchar bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
+  guchar bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE];
   gsize nb = G_N_ELEMENTS(bigBuf);
   memset(bigBuf, 0, nb);
 
@@ -108,7 +108,7 @@ gboolean create_initial_mac0(guchar mainKey[KEY_LENGTH], guchar mac[CMAC_LENGTH]
   // Generate random nonce
   if (RAND_bytes(iv, IV_LENGTH) == 1)
     {
-      if (!cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE, outputBigMac, &outlen,
+      if (!cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH + AES_BLOCKSIZE, outputBigMac, &outlen,
                 outputBigMac_capacity))
         {
           msg_error(SLOG_ERROR_PREFIX,
@@ -218,7 +218,7 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
       return 0;
     }
 
-  if (IV_LENGTH!=12)
+  if (IV_LENGTH != 12)
     {
       /* Set IV length if default 12 bytes (96 bits) is not appropriate */
       if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
@@ -312,7 +312,7 @@ int sLogDecrypt(guchar *ciphertext,
       return 0;
     }
 
-  if (IV_LENGTH!=12)
+  if (IV_LENGTH != 12)
     {
       /* Set IV length. Not necessary if this is 12 bytes (96 bits) */
       if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
@@ -405,20 +405,20 @@ gboolean sLogEntry(
 
   // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
   // Binary data cannot be larger than its base64 encoding
-  guchar bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
+  guchar bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + slen];
 
   // This is where are ciphertext related data starts
   guchar *ctBuf = &bigBuf[AES_BLOCKSIZE];
   guchar *iv = ctBuf;
-  guchar *tag = &bigBuf[AES_BLOCKSIZE+IV_LENGTH];
-  guchar *ciphertext = &bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
+  guchar *tag = &bigBuf[AES_BLOCKSIZE + IV_LENGTH];
+  guchar *ciphertext = &bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE];
 
 // Generate random nonce
   if (RAND_bytes(iv, IV_LENGTH) == 1)
     {
       // Encrypt log data
       int ct_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, ciphertext, tag);
-      if(ct_length <= 0)
+      if (ct_length <= 0)
         {
           msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to correctly encrypt log message"));
           g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
@@ -432,7 +432,7 @@ gboolean sLogEntry(
       g_free(counterString);
 
       // Write IV, tag, and ciphertext at once
-      gchar *encodedCtBuf = g_base64_encode(ctBuf, IV_LENGTH+AES_BLOCKSIZE + ct_length);
+      gchar *encodedCtBuf = g_base64_encode(ctBuf, IV_LENGTH + AES_BLOCKSIZE + ct_length);
       g_string_append(output, encodedCtBuf);
       g_free(encodedCtBuf);
 
@@ -441,7 +441,7 @@ gboolean sLogEntry(
       //-- The initial MAC file has been created, so there is no need
       //   anymore to check whether this is the very first encryption.
       memcpy(bigBuf, inputBigMac, AES_BLOCKSIZE);
-      if (!cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen,
+      if (!cmac(MACKey, bigBuf, AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + ct_length, outputBigMac, &outlen,
                 outputBigMac_capacity))
         {
           msg_error(SLOG_ERROR_PREFIX,
@@ -479,7 +479,7 @@ gboolean deriveKey(guchar *dst, guint64 index, guint64 currentKey)
 {
   gboolean result = TRUE;
 
-  for (guint64 i = currentKey; i<index; i++)
+  for (guint64 i = currentKey; i < index; i++)
     {
       result = evolveKey(dst);
     }
@@ -888,7 +888,7 @@ gboolean readAggregatedMAC(gchar *filename, guchar *outputBuffer)
 
   gboolean volatile result = TRUE;
   gboolean volatile cmacOk = TRUE;
-  gchar macdata[2*CMAC_LENGTH];
+  gchar macdata[2 * CMAC_LENGTH];
 
   // If file does not exist there is nothing to do
   if (!g_file_test(filename, G_FILE_TEST_IS_REGULAR))
@@ -906,7 +906,7 @@ gboolean readAggregatedMAC(gchar *filename, guchar *outputBuffer)
       SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
 
-  result = read_from_file(f, macdata, 2*CMAC_LENGTH);
+  result = read_from_file(f, macdata, 2 * CMAC_LENGTH);
   if (!result)
     {
       SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
@@ -1141,7 +1141,7 @@ gboolean iterateBuffer(
             }
 
           // Subtract counter from log entry
-          len = len - (COUNTER_LENGTH+1);
+          len = len - (COUNTER_LENGTH + 1);
 
           if (logEntryOnDisk != *nextLogEntry)
             {
@@ -1189,7 +1189,7 @@ gboolean iterateBuffer(
           GString *line = (GString *)g_ptr_array_index(input, i);
           GString *out = (GString *)g_ptr_array_index(output, i);
 
-          char *ct = &(line->str)[COUNTER_LENGTH+1];
+          char *ct = &(line->str)[COUNTER_LENGTH + 1];
           gsize outputLength;
 
           // binBuf = IV + TAG + CT
@@ -1202,7 +1202,8 @@ gboolean iterateBuffer(
               guchar pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
               guchar encKey[KEY_LENGTH];
               deriveEncSubKey(mainKey, encKey);
-              pt_length = sLogDecrypt(&binBuf[IV_LENGTH+AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE, &binBuf[IV_LENGTH],
+              pt_length = sLogDecrypt(&binBuf[IV_LENGTH + AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE,
+                                      &binBuf[IV_LENGTH],
                                       encKey, binBuf, pt);
 
               if (pt_length > 0)
@@ -1225,10 +1226,10 @@ gboolean iterateBuffer(
                   deriveMACSubKey(mainKey, MACKey);
                   //-- now that an inital aggregated MAC exists, do the
                   //   same for first entry as for any other entries!
-                  guchar bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length];
+                  guchar bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + pt_length];
                   memcpy(bigBuf, cmac_tag, AES_BLOCKSIZE);
-                  memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length);
-                  if (!cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen, cmac_tag_capacity))
+                  memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH + AES_BLOCKSIZE + pt_length);
+                  if (!cmac(MACKey, bigBuf, AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + pt_length, cmac_tag, &outlen, cmac_tag_capacity))
                     {
                       msg_error(SLOG_ERROR_PREFIX,
                                 evt_tag_str("Reason", "Bad CMAC"),
@@ -1239,7 +1240,7 @@ gboolean iterateBuffer(
                 }
             }
 
-          if (pt_length<=0)
+          if (pt_length <= 0)
             {
               msg_warning(SLOG_WARNING_PREFIX,
                           evt_tag_str("Reason", "Decryption not successful"),
@@ -1281,8 +1282,8 @@ gboolean finalizeVerify(
       if (tab != NULL)
         {
           // Hashtable key
-          char key[CTR_LEN_SIMPLE+1];
-          snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, i);
+          char key[CTR_LEN_SIMPLE + 1];
+          snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, i);
           if (!g_hash_table_contains(tab, key))
             {
               notRecovered++;
@@ -1339,10 +1340,10 @@ gboolean initVerify(
 
   GString *str = (GString *)g_ptr_array_index(input, 0);
 
-  if (str->len>(COUNTER_LENGTH+1))
+  if (str->len > (COUNTER_LENGTH + 1))
     {
       gsize outLen;
-      char buf[COUNTER_LENGTH+1];
+      char buf[COUNTER_LENGTH + 1];
       memcpy(buf, str->str, COUNTER_LENGTH);
       buf[COUNTER_LENGTH] = 0;
       guchar *tempInt = g_base64_decode(buf, &outLen);
@@ -1628,7 +1629,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
 {
   gboolean volatile result = TRUE;
 
-  if (entriesInFile==0)
+  if (entriesInFile == 0)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Nothing to verify"));
       return 0;
@@ -1695,7 +1696,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
 
   memcpy(cmac_tag, mac0, CMAC_LENGTH); //-- here the initial MAC file content is needed now
 
-  if (chunkLength>entriesInFile)
+  if (chunkLength > entriesInFile)
     {
       chunkLength = entriesInFile;
     }
@@ -1733,7 +1734,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
   for (guint64 i = 0; i < chunkLength; i++)
     {
       GString *str = (GString *)g_ptr_array_index(outputBuffer, i);
-      if (str->len!=0)
+      if (str->len != 0)
         {
           // Add newline
           g_string_append(str, "\n");
@@ -1749,7 +1750,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
     }
 
   // Process file in chunks
-  for (int j = 0; j<(entriesInFile/chunkLength)-1; j++)
+  for (int j = 0; j < (entriesInFile / chunkLength) - 1; j++)
     {
       for (guint64 i = 0; i < chunkLength; i++)
         {
@@ -1780,7 +1781,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
         {
           GString *str = (GString *)g_ptr_array_index(inputBuffer, i);
 
-          if (str->len!=0)
+          if (str->len != 0)
             {
               // Add newline
               g_string_append(str, "\n");
@@ -1827,7 +1828,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
           GString *str = (GString *)g_ptr_array_index(outputBuffer, i);
-          if (str->len!=0)
+          if (str->len != 0)
             {
               // Add newline
               g_string_append(str, "\n");
@@ -2009,7 +2010,7 @@ gboolean validFileNameArgCheckDirOnly(const gchar *option_name, const gchar *val
 // Error handler for file errors
 void handleFileError(const char *file, int line, int code, void *object)
 {
-  SLogFile *f =(SLogFile *)object;
+  SLogFile *f = (SLogFile *)object;
   msg_error(SLOG_ERROR_PREFIX,
             evt_tag_str("File ", file),
             evt_tag_long("Line ", line),
@@ -2031,7 +2032,7 @@ void handleFileError(const char *file, int line, int code, void *object)
 // Error handler for memory errors
 void handleGPtrArrayMemoryError(const char *file, int line, int code, void *object)
 {
-  GPtrArray *pa =(GPtrArray *)object;
+  GPtrArray *pa = (GPtrArray *)object;
   const gchar *msg1 = "Premature memory release of GPtrArray";
   const gchar *msg2 = "GPtrArray address is NULL";
   const gchar *msg;
@@ -2057,7 +2058,7 @@ void handleGPtrArrayMemoryError(const char *file, int line, int code, void *obje
 gboolean getCounter(GString *entry, guint64 *logEntryOnDisk)
 {
   // Interpret the first COUNTER_LENGTH+1 characters
-  char ctrbuf[COUNTER_LENGTH+1];
+  char ctrbuf[COUNTER_LENGTH + 1];
   memcpy(ctrbuf, entry->str, COUNTER_LENGTH);
   ctrbuf[COUNTER_LENGTH] = 0;
 
@@ -2096,8 +2097,8 @@ gboolean tableContainsKey(GHashTable *table, guint64 key)
     }
 
   // Convert to string
-  char keystr[CTR_LEN_SIMPLE+1];
-  snprintf(keystr, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, key);
+  char keystr[CTR_LEN_SIMPLE + 1];
+  snprintf(keystr, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, key);
 
   return g_hash_table_contains(table, keystr);
 }
@@ -2117,8 +2118,8 @@ gboolean addValueToTable(GHashTable *table, guint64 value)
     }
 
   // Create new key to string and use value as key
-  char *key = g_new0(char, CTR_LEN_SIMPLE+1);
-  snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, value);
+  char *key = g_new0(char, CTR_LEN_SIMPLE + 1);
+  snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, value);
 
   return g_hash_table_insert(table, key, (gpointer)value);
 }

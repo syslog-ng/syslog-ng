@@ -55,7 +55,7 @@ gboolean normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlo
       return FALSE; //-- ERROR
     }
 
-  if (counter!=0UL)
+  if (counter != 0UL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason",
                                                "Initial key k0 is required for verification and decryption but the supplied key read has a counter > 0."),

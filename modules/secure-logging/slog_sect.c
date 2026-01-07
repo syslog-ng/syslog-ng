@@ -38,7 +38,7 @@ slog_sect_t SLogSectInit(void)
 
 gboolean SLogSectCondition(slog_sect_t *sect)
 {
-  switch(sect->state)
+  switch (sect->state)
     {
     case SLOG_SECT_INIT:
       sect->parent = SLogSectHead;

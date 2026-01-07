@@ -84,7 +84,7 @@ typedef struct _testData
 // Generate random number between low and high
 int randomNumber(int low, int high)
 {
-  return rand()%((high+1)-low)+low;
+  return rand() % ((high + 1) - low) + low;
 }
 
 // Generate a sample message with a fixed and a random part
@@ -96,7 +96,7 @@ LogMessage *create_random_sample_message(void)
 
   // Append a random string
   int num = randomNumber(10, 500);
-  for (int i = 0; i<num; i++)
+  for (int i = 0; i < num; i++)
     {
       // 65 to 90 are upper case letters
       g_string_append_c(msg_str, randomNumber(65, 90));
@@ -175,9 +175,9 @@ GString *applyTemplate(LogTemplate *templ, LogMessage *msg)
 // Find an integer in an array of integers
 int findInArray(int index, int *buffer, int size)
 {
-  for (int i = 0; i<size; i++)
+  for (int i = 0; i < size; i++)
     {
-      if (buffer[i]==index)
+      if (buffer[i] == index)
         {
           return 1;
         }
@@ -221,7 +221,7 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   GPtrArray *template = g_ptr_array_new();
   GPtrArray *output = g_ptr_array_new_with_free_func((GDestroyNotify)g_string_free);
 
-  for (int i = 0; i<totalNumberOfMessages; i++)
+  for (int i = 0; i < totalNumberOfMessages; i++)
     {
 
       g_ptr_array_add(template, templateOutput[i]);
@@ -304,7 +304,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);
   cr_assert(ret == TRUE, "finalizeVerify failed");
 
-  for (int i=0; i < totalNumberOfMessages; i++)
+  for (int i = 0; i < totalNumberOfMessages; i++)
     {
       GString *str = (GString *)g_ptr_array_index(output, i);
       char *plaintextMessage = (str->str) + CTR_LEN_SIMPLE + COLON + BLANK;
@@ -340,7 +340,7 @@ GString *createTemporaryDirectory(gchar *template)
   gchar buf[PATH_MAX];
 
   // Buffer for temporary path
-  g_strlcpy(buf, template, strlen(template)+1);
+  g_strlcpy(buf, template, strlen(template) + 1);
 
   // Create random directory
   gchar *tmpDir = g_mkdtemp(buf);
@@ -703,7 +703,7 @@ void test_slog_malicious_modifications(void)
     }
 
 
-  int mods = randomNumber(1, num-1);
+  int mods = randomNumber(1, num - 1);
   int entriesToModify[mods];
 
   mods = 1;
@@ -711,24 +711,24 @@ void test_slog_malicious_modifications(void)
   // We might modify the same entry twice
   for (int i = 0; i < mods; i++)
     {
-      entriesToModify[i] = randomNumber(0, num-1);
+      entriesToModify[i] = randomNumber(0, num - 1);
       g_print("MODIFYING ENTRY %d\n", entriesToModify[i]);
 
 
       // Overwrite with invalid string (invalid with high probability!)
       g_string_overwrite(output[entriesToModify[i]], randomNumber(COUNTER_LENGTH + COLON,
-                                                                  (output[entriesToModify[i]]->len)-1), "999999999999999999999999999999999999999999999999999999999999999");
+                                                                  (output[entriesToModify[i]]->len) - 1), "999999999999999999999999999999999999999999999999999999999999999");
     }
 
   // Verify the previously created log
   int brokenEntries[mods];
-  for (int i=0; i<mods; i++)
+  for (int i = 0; i < mods; i++)
     {
       brokenEntries[i] = -1;
     }
   GString **ob = verifyMaliciousMessages(testData->hostKey, testData->macFile->str, output, num, brokenEntries);
 
-  for (gsize i=0; i<num; i++)
+  for (gsize i = 0; i < num; i++)
     {
       if (1 == findInArray(i, entriesToModify, mods))
         {
