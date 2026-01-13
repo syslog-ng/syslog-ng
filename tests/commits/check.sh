@@ -23,6 +23,9 @@
 
 commit_range=origin/master..HEAD
 
+root=$(dirname $0)
+commit_check_whitelist=$root/commit_check_whitelist.txt
+
 if [ $# -gt 0 ]; then
   commit_range=$1
 fi
@@ -35,12 +38,16 @@ fi
 
     subject=$(git show -s --format='%s' $commit)
 
-    if ! echo "$subject" | egrep -q '^Revert |^([a-zA-Z0-9/(){}$,._-]{1,}\s*){1,}:'; then
-      commit_has_valid_subject=0
-    fi
+    if [ -f "$commit_check_whitelist" ] && grep -q "^$commit$" $commit_check_whitelist; then
+      :
+    else
+      if ! echo "$subject" | egrep -q '^Revert |^([a-zA-Z0-9/(){}$,._-]{1,}\s*){1,}:'; then
+        commit_has_valid_subject=0
+      fi
 
-    if ! git show -s --format='%(trailers)' $commit | grep -q 'Signed-off-by:'; then
-      commit_has_signed_off_by=0
+      if ! git show -s --format='%(trailers)' $commit | grep -q 'Signed-off-by:'; then
+        commit_has_signed_off_by=0
+      fi
     fi
 
     if [ $commit_has_valid_subject = 1 -a \
