@@ -289,22 +289,26 @@ _get_effective_file_follow_mode(FileReader *self, gint fd)
   FollowMethod file_follow_mode = FM_UNKNOWN;
 
   if (_is_poll_options(self->options))
-    {
-      file_follow_mode = FM_POLL;
-      msg_debug("File follow-mode is syslog-ng poll", evt_tag_int("follow_freq", self->options->follow_freq));
-    }
+    file_follow_mode = FM_POLL;
   else if (fd >= 0)
     {
       if (_is_inotify_options(self->options, self->monitor_can_notify_file_changes))
-        {
-          file_follow_mode = FM_INOTIFY;
-          msg_debug("File follow-mode is inotify from directory-monitor");
-        }
+        file_follow_mode = FM_INOTIFY;
       else if (_is_system_poll_options(self->options, _iv_can_poll_fd(fd)))
-        {
-          file_follow_mode = FM_SYSTEM_POLL;
-          msg_debug("File follow-mode is system (ivykis) poll", evt_tag_str("poll_method", iv_poll_method_name()));
-        }
+        file_follow_mode = FM_SYSTEM_POLL;
+    }
+
+  switch (file_follow_mode)
+    {
+    case FM_POLL:
+      msg_debug("File follow-mode is syslog-ng poll", evt_tag_int("follow_freq", self->options->follow_freq));
+      break;
+    case FM_SYSTEM_POLL:
+      msg_debug("File follow-mode is system (ivykis) poll", evt_tag_str("poll_method", iv_poll_method_name()));
+      break;
+    case FM_INOTIFY:
+      msg_debug("File follow-mode is inotify from directory-monitor");
+      break;
     }
   return file_follow_mode;
 }
