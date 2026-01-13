@@ -284,11 +284,27 @@ _is_system_poll_options(FileReaderOptions *options, gboolean can_poll_fd)
 }
 
 static FollowMethod
+_get_effective_auto_file_follow_mode(FileReader *self, gint fd)
+{
+  if (_can_use_inotify(self->monitor_can_notify_file_changes))
+    return FM_INOTIFY;
+  else if (_iv_can_poll_fd(fd))
+    return FM_SYSTEM_POLL;
+  else
+    return FM_POLL;
+}
+
+static FollowMethod
 _get_effective_file_follow_mode(FileReader *self, gint fd)
 {
   FollowMethod file_follow_mode = FM_UNKNOWN;
 
-  if (_is_poll_options(self->options))
+  if (self->options->follow_method == FM_AUTO)
+    {
+      msg_debug("Initial file follow-mode is auto, determining the best method available");
+      file_follow_mode = _get_effective_auto_file_follow_mode(self, fd);
+    }
+  else if (_is_poll_options(self->options))
     file_follow_mode = FM_POLL;
   else if (fd >= 0)
     {
@@ -308,6 +324,8 @@ _get_effective_file_follow_mode(FileReader *self, gint fd)
       break;
     case FM_INOTIFY:
       msg_debug("File follow-mode is inotify from directory-monitor");
+      break;
+    default:
       break;
     }
   return file_follow_mode;
