@@ -233,7 +233,7 @@ _reader_check_watches(PollEvents *poll_events, gpointer user_data)
 }
 
 gboolean
-iv_can_poll_fd(gint fd)
+_iv_can_poll_fd(gint fd)
 {
   struct iv_fd check_fd;
   IV_FD_INIT(&check_fd);
@@ -246,13 +246,15 @@ iv_can_poll_fd(gint fd)
   return pollable;
 }
 
-static gboolean is_poll_options(FileReaderOptions *options)
+static gboolean
+_is_poll_options(FileReaderOptions *options)
 {
   return (options->follow_method == FM_LEGACY && options->follow_freq > 0) ||
          options->follow_method == FM_POLL;
 }
 
-static gboolean is_inotify_options(FileReaderOptions *options, gboolean monitor_can_notify_file_changes)
+static gboolean
+_is_inotify_options(FileReaderOptions *options, gboolean monitor_can_notify_file_changes)
 {
 #if SYSLOG_NG_HAVE_INOTIFY
   return (options->follow_method == FM_LEGACY && monitor_can_notify_file_changes &&
@@ -265,7 +267,8 @@ static gboolean is_inotify_options(FileReaderOptions *options, gboolean monitor_
 #endif
 }
 
-static gboolean is_system_poll_options(FileReaderOptions *options, gboolean can_poll_fd)
+static gboolean
+_is_system_poll_options(FileReaderOptions *options, gboolean can_poll_fd)
 {
   return (options->follow_method == FM_LEGACY && can_poll_fd) ||
          (options->follow_method == FM_SYSTEM_POLL && can_poll_fd);
@@ -276,19 +279,19 @@ _get_effective_file_follow_mode(FileReader *self, gint fd)
 {
   FollowMethod file_follow_mode = FM_UNKNOWN;
 
-  if (is_poll_options(self->options))
+  if (_is_poll_options(self->options))
     {
       file_follow_mode = FM_POLL;
       msg_debug("File follow-mode is syslog-ng poll", evt_tag_int("follow_freq", self->options->follow_freq));
     }
   else if (fd >= 0)
     {
-      if (is_inotify_options(self->options, self->monitor_can_notify_file_changes))
+      if (_is_inotify_options(self->options, self->monitor_can_notify_file_changes))
         {
           file_follow_mode = FM_INOTIFY;
           msg_debug("File follow-mode is inotify from directory-monitor");
         }
-      else if (is_system_poll_options(self->options, iv_can_poll_fd(fd)))
+      else if (_is_system_poll_options(self->options, _iv_can_poll_fd(fd)))
         {
           file_follow_mode = FM_SYSTEM_POLL;
           msg_debug("File follow-mode is system (ivykis) poll", evt_tag_str("poll_method", iv_poll_method_name()));
