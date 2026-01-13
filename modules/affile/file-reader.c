@@ -254,13 +254,22 @@ _is_poll_options(FileReaderOptions *options)
 }
 
 static gboolean
+_can_use_inotify(gboolean monitor_can_notify_file_changes)
+{
+#if SYSLOG_NG_HAVE_INOTIFY
+  return monitor_can_notify_file_changes &&
+         (getenv("IV_SELECT_POLL_METHOD") == NULL || getenv("IV_SELECT_POLL_METHOD")[0] == 0) &&
+         (getenv("IV_EXCLUDE_POLL_METHOD") == NULL || getenv("IV_EXCLUDE_POLL_METHOD")[0] == 0);
+#else
+  return FALSE;
+#endif
+}
+
+static gboolean
 _is_inotify_options(FileReaderOptions *options, gboolean monitor_can_notify_file_changes)
 {
 #if SYSLOG_NG_HAVE_INOTIFY
-  return (options->follow_method == FM_LEGACY && monitor_can_notify_file_changes &&
-          (getenv("IV_SELECT_POLL_METHOD") == NULL || getenv("IV_SELECT_POLL_METHOD")[0] == 0) &&
-          (getenv("IV_EXCLUDE_POLL_METHOD") == NULL || getenv("IV_EXCLUDE_POLL_METHOD")[0] == 0)
-         ) ||
+  return (options->follow_method == FM_LEGACY && _can_use_inotify(monitor_can_notify_file_changes)) ||
          options->follow_method == FM_INOTIFY;
 #else
   return FALSE;
