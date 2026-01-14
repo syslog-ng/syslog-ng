@@ -32,7 +32,7 @@ dnl BINARY_BRANCH      - the value is added to all source/binary packages
 dnl SOURCE_REVISION    - Revision of the source-tree, will added to the version string
 dnl
 
-AC_INIT([syslog-ng],[m4_esyscmd_s(scripts/version.sh)])
+AC_INIT([syslog-ng], m4_esyscmd_s([scripts/version.sh]))
 AC_CONFIG_SRCDIR([syslog-ng/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -504,24 +504,24 @@ AC_ARG_ENABLE(smtp,
     , enable_smtp="auto")
 
 AC_ARG_WITH(libesmtp,
-             AS_HELP_STRING([--with-libesmtp=DIR],[use libesmtp library from (prefix) directory DIR]),,)
+    AS_HELP_STRING([--with-libesmtp=DIR], [use libesmtp library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(mqtt,
     AS_HELP_STRING([--disable-mqtt], [Disable MQTT support (default: auto)]),
     , enable_mqtt="auto")
 
 AC_ARG_WITH(libpaho-mqtt,
-             AS_HELP_STRING([--with-libpaho-mqtt=DIR],[use libpaho-mqtt library from (prefix) directory DIR]),,)
+    AS_HELP_STRING([--with-libpaho-mqtt=DIR], [use libpaho-mqtt library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(grpc,
     AS_HELP_STRING([--enable-grpc], [Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, Pub/Sub, ClickHouse) (requires C++17) (default: auto)]),
     , enable_grpc="auto")
 
 AC_ARG_WITH(protoc,
-            AS_HELP_STRING([--with-protoc=PATH],[use protoc binary at PATH]),,)
+    AS_HELP_STRING([--with-protoc=PATH], [use protoc binary at PATH]))
 
 AC_ARG_WITH(protoc_gen_grpc_cpp_plugin,
-            AS_HELP_STRING([--with-protoc-gen-grpc-cpp-plugin=PATH],[use protoc-gen-grpc-cpp plugin at PATH]),,)
+    AS_HELP_STRING([--with-protoc-gen-grpc-cpp-plugin=PATH], [use protoc-gen-grpc-cpp plugin at PATH]))
 
 AC_ARG_ENABLE(cloud_auth,
     AS_HELP_STRING([--enable-cloud-auth], [Enable cloud authentication methods (GCP) (default: auto)]),
@@ -536,14 +536,14 @@ AC_ARG_ENABLE(http,
     , enable_http="auto")
 
 AC_ARG_WITH(libcurl,
-             AS_HELP_STRING([--with-libcurl=DIR],[use libcurl library from (prefix) directory DIR]),,)
+    AS_HELP_STRING([--with-libcurl=DIR], [use libcurl library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(redis,
     AS_HELP_STRING([--disable-redis], [Disable REDIS support (default: auto)]),
     , enable_redis="auto")
 
 AC_ARG_WITH(libhiredis,
-             AS_HELP_STRING([--with-libhiredis=DIR],[use libhiredis library from (prefix) directory DIR]),,)
+    AS_HELP_STRING([--with-libhiredis=DIR], [use libhiredis library from (prefix) directory DIR]))
 
 AC_ARG_ENABLE(systemd,
     AS_HELP_STRING([--enable-systemd], [Enable systemd support (default: auto)]),
@@ -596,8 +596,9 @@ AC_ARG_WITH(manpages,
     AS_HELP_STRING([--with-manpages=[local|remote]], [Use the local or remote manpages for installation, if remote set, it will download the latest manpages from the online documentation https://syslog-ng.github.io/admin-guide/190_The_syslog-ng_manual_pages/README (default: local)]),
     , with_manpages="local")
 
-AC_ARG_ENABLE(manpages, AS_HELP_STRING([ --enable-manpages],[ Enable generation of manpages (default: no)]), , [enable_manpages="no"; XSL_STYLESHEET=""])
-AC_ARG_ENABLE(manpages-install, AS_HELP_STRING([ --enable-manpages-install],[ Enable installation of manpages (default: auto)]), , [enable_manpages_install="auto"])
+AC_ARG_ENABLE(manpages,
+    AS_HELP_STRING([--enable-manpages], [Enable generation of manpages (default: no)]),
+    , enable_manpages="no")
 
 AC_ARG_ENABLE(manpages-install,
     AS_HELP_STRING([--enable-manpages-install], [Enable installation of manpages (default: auto)]),
@@ -694,10 +695,7 @@ dnl Checks for programs.
 #       -------------------------------
 #
 AC_PROG_CC
-m4_warn([obsolete],
-[AC_PROG_CC_C99 is obsolete; use AC_PROG_CC
-])dnl
-AC_REQUIRE(AC_PROG_CC)
+AC_PROG_CC_C99
 AM_PROG_CC_C_O
 if test "x$ac_cv_prog_cc_c99" = "xno"; then
 	AC_MSG_ERROR([C99 standard compliant C compiler required. Try GCC 3.x or later.])
@@ -1032,28 +1030,7 @@ dnl ***************************************************************************
 dnl Miscellanneous headers
 dnl ***************************************************************************
 
-m4_warn([obsolete],
-[The preprocessor macro 'STDC_HEADERS' is obsolete.
-  Except in unusual embedded environments, you can safely include all
-  C89 headers unconditionally.])dnl
-# Autoupdate added the next two lines to ensure that your configure
-# script's behavior did not change.  They are probably safe to remove.
-AC_CHECK_INCLUDES_DEFAULT
-AC_PROG_EGREP
-
-AC_CHECK_HEADER(dmalloc.h)
-AC_CHECK_HEADER(dlfcn.h)
-AC_CHECK_HEADERS(strings.h	\
-	getopt.h		\
-	stropts.h		\
-	sys/strlog.h		\
-	door.h			\
-	sys/capability.h	\
-	sys/prctl.h		\
-	linux/sock_diag.h	\
-	utmp.h			\
-	utmpx.h)
-AC_CHECK_HEADERS(tcpd.h)
+AC_HEADER_STDC
 
 CHECK_HEADERS_AND_DEFINE([
     dmalloc.h
@@ -1242,20 +1219,23 @@ fi
 
 AC_CACHE_CHECK(for modern utmp,
                blb_cv_c_modern_utmp,
-[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+[AC_TRY_COMPILE([
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
 #else
 #include <utmp.h>
 #endif
-]], [[
+],
+[
 #ifdef HAVE_UTMPX_H
 struct utmpx ut;
 #else
 struct utmp ut;
 #endif
   return sizeof(ut.ut_type) & sizeof(ut.ut_user);
-]])],[blb_cv_c_modern_utmp=yes],[blb_cv_c_modern_utmp=no])])
+],
+blb_cv_c_modern_utmp=yes,
+blb_cv_c_modern_utmp=no)])
 
 if test "x$blb_cv_c_modern_utmp" = "xyes"; then
 	AC_DEFINE(HAVE_MODERN_UTMP, 1, [have modern utmp/utmpx format])
@@ -1368,7 +1348,8 @@ AC_CACHE_CHECK(for TCP wrapper library,
 for libwrap in "-lwrap" "/usr/local/lib/libwrap.a"; do
         LIBS="$LIBS_SAVE $libwrap"
 
-        [AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[
+        [AC_TRY_LINK(,
+        [
 }
 
 int allow_severity;
@@ -1378,8 +1359,10 @@ extern int hosts_access(void);
 int foo(void)
 {
         hosts_access();
-]])],[blb_cv_c_lwrap=$libwrap
-        break],[blb_cv_c_lwrap=""])
+],
+        [blb_cv_c_lwrap=$libwrap
+        break],
+        blb_cv_c_lwrap="")
 done
 
 ])
@@ -1469,19 +1452,22 @@ else
 fi
 
 AC_CACHE_CHECK(sanity checking Glib headers,
-               blb_cv_glib_sane,
-[AC_RUN_IFELSE([AC_LANG_SOURCE([[
-#include <glib.h>
+blb_cv_glib_sane,
+[AC_TRY_RUN([
+    #include <glib.h>
 
-int main()
-{
-  if (sizeof(long) != GLIB_SIZEOF_LONG)
-    return 1;
-  return 0;
-}
-]])],[blb_cv_glib_sane=yes],[blb_cv_glib_sane=no],[blb_cv_glib_sane=yes])])
-CPPFLAGS=$old_CPPFLAGS
-LDFLAGS=$old_LDFLAGS
+    int main()
+    {
+    if (sizeof(long) != GLIB_SIZEOF_LONG)
+        return 1;
+    return 0;
+    }
+],
+blb_cv_glib_sane=yes,
+blb_cv_glib_sane=no,
+blb_cv_glib_sane=yes)])
+
+SAFE_C_CHECK_END
 
 if test "x$blb_cv_glib_sane" = "xno"; then
 	AC_MSG_ERROR([Glib headers inconsistent with current compiler setting. You might be using 32 bit Glib with a 64 bit compiler, check PKG_CONFIG_PATH])
@@ -2334,18 +2320,18 @@ dnl ***************************************************************************
 
 if test "x$enable_java" = "xauto" || test "x$enable_java" = "xyes"; then
     if test "x$enable_java" = "xauto"; then
-      AX_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION],[enable_java=yes],[enable_java=no])
+      AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [enable_java=no])
     else
-      AX_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION],[enable_java=yes],[AC_MSG_ERROR([Java not found])])
+      AC_CHECK_JAVA_VERSION([$JAVA_MIN_VERSION], [enable_java=yes], [AC_MSG_ERROR([Java not found])])
     fi
 fi
 
 if test "x$enable_java" = "xyes"; then
     if test "x$enable_java_modules" = "xauto" || test "x$enable_java_modules" = "xyes"; then
         if test "x$enable_java_modules" = "xauto"; then
-          AX_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION],[enable_java_modules=yes],[enable_java_modules=no])
+          AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java_modules=yes], [enable_java_modules=no])
         else
-          AX_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION],[enable_java_modules=yes],[AC_MSG_ERROR([Gradle not found])])
+          AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java_modules=yes], [AC_MSG_ERROR([Gradle not found])])
         fi
     fi
 else
@@ -2579,7 +2565,6 @@ fi
 dnl ***************************************************************************
 dnl check if we have timezone variable in <time.h>
 dnl ***************************************************************************
-AX_VAR_TIMEZONE_EXTERNALS
 
 AC_VAR_TIMEZONE_EXTERNALS
 if test "x$ac_cv_func_timezone" = "xyes"; then
@@ -2899,14 +2884,13 @@ AC_SUBST(LIBSYSTEMD_JOURNAL_LIBS)
 AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
 AX_VALGRIND_CHECK
 
-AC_CONFIG_FILES([dist.conf
+AC_OUTPUT(dist.conf
           Makefile
 	  syslog-ng.pc
           libtest/syslog-ng-test.pc
 	  scripts/update-patterndb
 	  scripts/syslog-ng-update-virtualenv
-          ])
-AC_OUTPUT
+          )
 
 # Function to print a line with colorized value and optional warning
 # Arguments: 1 = label, 2 = value, 3 = optional warning string
