@@ -30,6 +30,8 @@
 // File access modes
 static const char modes[NUM_MODES][LEN_MODES] = { "r", "r+", "w", "w+", "a", "a+" };
 
+static gboolean close_channel(SLogFile *f);
+
 SLogFile *create_file(const gchar *filename, const gchar *mode)
 {
   SLogFile *f = g_new0(SLogFile, 1);

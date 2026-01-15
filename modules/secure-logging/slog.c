@@ -52,6 +52,25 @@ static guchar KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] = IPAD 
 static guchar MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] = OPAD };
 static guchar GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE - 1) ] =  EPAD};
 
+
+// Retrieve counter from encrypted log entry
+static gboolean getCounter(GString *entry, guint64 *logEntryOnDisk);
+
+// Check whether value is contained in table
+static gboolean tableContainsKey(GHashTable *table, guint64 value);
+
+// Add new value to table
+static gboolean addValueToTable(GHashTable *table, guint64 value);
+
+// Get a single line from a log file
+static GString *getLogEntry(SLogFile *f);
+
+// Put a single line into a log file
+static gboolean putLogEntry(SLogFile *f, GString *line);
+
+// Clean up routine for GPtrArray
+static void SLogStringFree(gpointer *arg);
+
 /*
  * Create specific sub-keys for encryption and CMAC generation from key.
  *
@@ -866,6 +885,7 @@ gboolean writeAggregatedMAC(gchar *filename, guchar *outputBuffer)
       SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
     }
   SLOG_SECT_END(f)
+  g_free(f);
 
   return result && cmacOk;
 }
@@ -950,6 +970,7 @@ gboolean readAggregatedMAC(gchar *filename, guchar *outputBuffer)
   memcpy(outputBuffer, macdata, CMAC_LENGTH);
 
   SLOG_SECT_END(f)
+  g_free(f);
 
   return result && cmacOk;
 }
@@ -1031,7 +1052,8 @@ gboolean readKey(guchar *destKey, guint64 *destCounter, gchar *keypath)
 
   memcpy(destKey, keydata, KEY_LENGTH);
   *destCounter = GUINT64_FROM_LE(littleEndianCounter);
-
+  g_free(f);
+  
   return result && cmacOk;
 }
 
@@ -1105,6 +1127,7 @@ gboolean writeKey(guchar *key, guint64 counter, gchar *keypath)
     }
 
   SLOG_SECT_END(f)
+  g_free(f);
 
   return result && cmacOk;
 }
@@ -1607,11 +1630,12 @@ gboolean iterativeFileVerify(
   // Release memory resources
   g_ptr_array_free(outputBuffer, TRUE);
   g_ptr_array_free(inputBuffer, TRUE);
-
   SLOG_SECT_END(outf)
   SLOG_SECT_END(inf)
   SLOG_SECT_END(outputBuffer)
   SLOG_SECT_END(inputBuffer)
+  g_free(outf);
+  g_free(inf);
 
   return result;
 }
@@ -1634,6 +1658,8 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Nothing to verify"));
       return 0;
     }
+
+
 
   SLogFile *inf = create_file(inputFileName, "r");
   if (inf == NULL)
@@ -1861,6 +1887,8 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
   SLOG_SECT_END(inf)
   SLOG_SECT_END(outputBuffer)
   SLOG_SECT_END(inputBuffer)
+  g_free(outf);
+  g_free(inf);
 
   return result;
 }

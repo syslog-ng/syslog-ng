@@ -305,25 +305,8 @@ gboolean validFileNameArgCheckDirOnly(const gchar *option_name, const gchar *val
 void handleFileError(const char *file, int line, int code, void *object);
 void handleGPtrArrayMemoryError(const char *file, int line, int code, void *object);
 
+
 /** Miscellaneous helper functions */
-
-// Retrieve counter from encrypted log entry
-gboolean getCounter(GString *entry, guint64 *logEntryOnDisk);
-
-// Check whether value is contained in table
-gboolean tableContainsKey(GHashTable *table, guint64 value);
-
-// Add new value to table
-gboolean addValueToTable(GHashTable *table, guint64 value);
-
-// Get a single line from a log file
-GString *getLogEntry(SLogFile *f);
-
-// Put a single line into a log file
-gboolean putLogEntry(SLogFile *f, GString *line);
-
-// Clean up routine for GPtrArray
-void SLogStringFree(gpointer *arg);
 
 // Limit length of an utf-8 log line, in a way, that no invalid character / symbol is created.
 void truncate_utf8_gstring(GString *gslog, gsize max_octet_len);

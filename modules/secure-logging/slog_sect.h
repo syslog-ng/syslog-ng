@@ -48,10 +48,6 @@
 
 #define SLOG_OPENSSL_LIBRARY_ERROR 4000
 
-/*
-TODO Test SLOG_SECT_START(OBJ) and SLOG_SECT_END(OBJ). Just builds without warning now. There are no tests available!
-TODO clarify: CRITERION tests do call macro only ever in case of #OBJ == "f"! Missing tests?
-*/
 
 #define SLOG_SECT_START(OBJ) \
   for (slog_sect_t sect_##OBJ = SLogSectInit(); SLogSectCondition(&sect_##OBJ); ) { \

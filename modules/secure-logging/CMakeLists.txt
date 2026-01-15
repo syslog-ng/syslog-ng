@@ -1,9 +1,11 @@
 set(SECURE_LOGGING_SOURCES
+  slog_sect.h
   slog_sect.c
+  slog_file.h
   slog_file.c
-  slog.c
   slog.h
-  )
+  slog.c
+)
 
 add_library(syslog-ng-secure-logging STATIC ${SECURE_LOGGING_SOURCES})
 target_include_directories(syslog-ng-secure-logging INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

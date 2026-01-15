@@ -61,7 +61,6 @@ gboolean open_file(SLogFile *f);
 gboolean write_to_file(SLogFile *f, const gchar *data, gsize len);
 gboolean read_from_file(SLogFile *f, gchar *data, gsize len);
 gboolean read_line_from_file(SLogFile *f, GString *line);
-gboolean close_channel(SLogFile *f);
 gboolean close_file(SLogFile *f);
 
 #endif
