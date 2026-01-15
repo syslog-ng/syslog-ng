@@ -32,7 +32,11 @@
 FollowMethod
 file_monitor_factory_follow_method_from_string(const gchar *method)
 {
-  if (strcmp(method, "legacy") == 0)
+  if (strcmp(method, "auto") == 0)
+    {
+      return FM_AUTO;
+    }
+  else if (strcmp(method, "legacy") == 0)
     {
       return FM_LEGACY;
     }

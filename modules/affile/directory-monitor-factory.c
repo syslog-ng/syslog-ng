@@ -23,6 +23,15 @@
 #include "directory-monitor-factory.h"
 #include "directory-monitor-poll.h"
 
+/* NOTE: If both kqueue and inotify are present, like on FreeBSD, where the inotify wrapper started to be distributed,
+ *       we prioritize kqueue in the support detection in the cmake/autotools configure files, as inotify is just
+ *       a wrapper around kqueue if both are available.
+ *       Thus at this point only one of the
+ *            - SYSLOG_NG_HAVE_INOTIFY or SYSLOG_NG_HAVE_KQUEUE will be defined
+ *            - directory-monitor-inotify.h or directory-monitor-kqueue.h will be included
+ *            - directory-monitor-inotify.c or directory-monitor-kqueue.c will be built and linked
+ */
+
 #if SYSLOG_NG_HAVE_INOTIFY
 #include "directory-monitor-inotify.h"
 #elif SYSLOG_NG_HAVE_KQUEUE

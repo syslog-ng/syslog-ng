@@ -233,7 +233,7 @@ _reader_check_watches(PollEvents *poll_events, gpointer user_data)
 }
 
 gboolean
-iv_can_poll_fd(gint fd)
+_iv_can_poll_fd(gint fd)
 {
   struct iv_fd check_fd;
   IV_FD_INIT(&check_fd);
@@ -246,29 +246,52 @@ iv_can_poll_fd(gint fd)
   return pollable;
 }
 
-static gboolean is_poll_options(FileReaderOptions *options)
+static gboolean
+_is_poll_options(FileReaderOptions *options)
 {
   return (options->follow_method == FM_LEGACY && options->follow_freq > 0) ||
          options->follow_method == FM_POLL;
 }
 
-static gboolean is_inotify_options(FileReaderOptions *options, gboolean monitor_can_notify_file_changes)
+static gboolean
+_can_use_inotify(gboolean monitor_can_notify_file_changes)
 {
 #if SYSLOG_NG_HAVE_INOTIFY
-  return (options->follow_method == FM_LEGACY && monitor_can_notify_file_changes &&
-          (getenv("IV_SELECT_POLL_METHOD") == NULL || getenv("IV_SELECT_POLL_METHOD")[0] == 0) &&
-          (getenv("IV_EXCLUDE_POLL_METHOD") == NULL || getenv("IV_EXCLUDE_POLL_METHOD")[0] == 0)
-         ) ||
+  return monitor_can_notify_file_changes &&
+         (getenv("IV_SELECT_POLL_METHOD") == NULL || getenv("IV_SELECT_POLL_METHOD")[0] == 0) &&
+         (getenv("IV_EXCLUDE_POLL_METHOD") == NULL || getenv("IV_EXCLUDE_POLL_METHOD")[0] == 0);
+#else
+  return FALSE;
+#endif
+}
+
+static gboolean
+_is_inotify_options(FileReaderOptions *options, gboolean monitor_can_notify_file_changes)
+{
+#if SYSLOG_NG_HAVE_INOTIFY
+  return (options->follow_method == FM_LEGACY && _can_use_inotify(monitor_can_notify_file_changes)) ||
          options->follow_method == FM_INOTIFY;
 #else
   return FALSE;
 #endif
 }
 
-static gboolean is_system_poll_options(FileReaderOptions *options, gboolean can_poll_fd)
+static gboolean
+_is_system_poll_options(FileReaderOptions *options, gboolean can_poll_fd)
 {
   return (options->follow_method == FM_LEGACY && can_poll_fd) ||
          (options->follow_method == FM_SYSTEM_POLL && can_poll_fd);
+}
+
+static FollowMethod
+_get_effective_auto_file_follow_mode(FileReader *self, gint fd)
+{
+  if (_can_use_inotify(self->monitor_can_notify_file_changes))
+    return FM_INOTIFY;
+  else if (_iv_can_poll_fd(fd))
+    return FM_SYSTEM_POLL;
+  else
+    return FM_POLL;
 }
 
 static FollowMethod
@@ -276,23 +299,34 @@ _get_effective_file_follow_mode(FileReader *self, gint fd)
 {
   FollowMethod file_follow_mode = FM_UNKNOWN;
 
-  if (is_poll_options(self->options))
+  if (self->options->follow_method == FM_AUTO)
     {
-      file_follow_mode = FM_POLL;
-      msg_debug("File follow-mode is syslog-ng poll", evt_tag_int("follow_freq", self->options->follow_freq));
+      msg_debug("Initial file follow-mode is auto, determining the best method available");
+      file_follow_mode = _get_effective_auto_file_follow_mode(self, fd);
     }
+  else if (_is_poll_options(self->options))
+    file_follow_mode = FM_POLL;
   else if (fd >= 0)
     {
-      if (is_inotify_options(self->options, self->monitor_can_notify_file_changes))
-        {
-          file_follow_mode = FM_INOTIFY;
-          msg_debug("File follow-mode is inotify from directory-monitor");
-        }
-      else if (is_system_poll_options(self->options, iv_can_poll_fd(fd)))
-        {
-          file_follow_mode = FM_SYSTEM_POLL;
-          msg_debug("File follow-mode is system (ivykis) poll", evt_tag_str("poll_method", iv_poll_method_name()));
-        }
+      if (_is_inotify_options(self->options, self->monitor_can_notify_file_changes))
+        file_follow_mode = FM_INOTIFY;
+      else if (_is_system_poll_options(self->options, _iv_can_poll_fd(fd)))
+        file_follow_mode = FM_SYSTEM_POLL;
+    }
+
+  switch (file_follow_mode)
+    {
+    case FM_POLL:
+      msg_debug("File follow-mode is syslog-ng poll", evt_tag_int("follow_freq", self->options->follow_freq));
+      break;
+    case FM_SYSTEM_POLL:
+      msg_debug("File follow-mode is system (ivykis) poll", evt_tag_str("poll_method", iv_poll_method_name()));
+      break;
+    case FM_INOTIFY:
+      msg_debug("File follow-mode is inotify from directory-monitor");
+      break;
+    default:
+      break;
     }
   return file_follow_mode;
 }

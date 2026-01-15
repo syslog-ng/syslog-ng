@@ -32,6 +32,7 @@ typedef enum
   FM_POLL,
   FM_SYSTEM_POLL,
   FM_INOTIFY,
+  FM_AUTO,
   FM_UNKNOWN
 } FollowMethod;
 
