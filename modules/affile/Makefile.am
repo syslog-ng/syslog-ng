@@ -53,8 +53,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/logrotate.h \
 	modules/affile/logrotate.c
 
-# Use only one of them if both are present, like on FreeBSD, where the inotify wrapper started to be distributed.
-# Prioritize kqueue, as inotify is just a wrapper around it if both are present.
+# Use only one of them if both are present, such as on FreeBSD, where the inotify wrapper has started to be distributed.
+# Prioritize kqueue, as inotify is just a wrapper around it when both are available.
 if HAVE_KQUEUE
 modules_affile_libaffile_la_SOURCES += \
 	modules/affile/directory-monitor-kqueue.h \
