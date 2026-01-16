@@ -191,10 +191,26 @@ log_transport_tls_send_shutdown(LogTransportTLS *self)
   return shutdown_rc;
 }
 
+static inline gboolean
+log_transport_tls_aux_data_add_peer_info(LogTransportTLS *self, LogTransportAuxData *aux)
+{
+  /* if we have found the peer has a certificate */
+  if (self->tls_session->peer_info.found)
+    {
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_cn", self->tls_session->peer_info.cn);
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o);
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou);
+      return TRUE;
+    }
+  else
+    return FALSE;
+}
+
 static gssize
 log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportTLS *self = (LogTransportTLS *) s;
+  gboolean peer_info_added = FALSE;
   gint ssl_error;
   gint rc;
 
@@ -205,13 +221,8 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
 
   if (aux)
     {
-      /* if we have found the peer has a certificate */
-      if (self->tls_session->peer_info.found)
-        {
-          log_transport_aux_data_add_nv_pair(aux, ".tls.x509_cn", self->tls_session->peer_info.cn);
-          log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o);
-          log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou);
-        }
+      peer_info_added = log_transport_tls_aux_data_add_peer_info(self, aux);
+
       if (self->tls_session->peer_info.fingerprint[0])
         log_transport_aux_data_add_nv_pair(aux, ".tls.x509_fp", self->tls_session->peer_info.fingerprint);
 
@@ -225,7 +236,13 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
     {
       rc = SSL_read(self->tls_session->ssl, buf, buflen);
 
-      if (rc <= 0)
+      if (rc > 0)
+        {
+          /* tls_session_info_callback can make peer info available only after the first SSL_read is successfully finished */
+          if (G_UNLIKELY(aux && FALSE == peer_info_added))
+            peer_info_added = log_transport_tls_aux_data_add_peer_info(self, aux);
+        }
+      else
         {
           ssl_error = SSL_get_error(self->tls_session->ssl, rc);
           switch (ssl_error)
