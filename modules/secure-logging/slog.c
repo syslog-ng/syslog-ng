@@ -558,6 +558,8 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
                 evt_tag_str("Reason: ", "EVP_MAC_CTX_new() returned NULL")
                );
+
+      EVP_MAC_free(mac);
       return FALSE;
     }
 
@@ -569,6 +571,8 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "EVP_MAC_init() returned 0")
                );
+      EVP_MAC_CTX_free(ctx);
+      EVP_MAC_free(mac);
       return FALSE;
     }
 
@@ -580,6 +584,8 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "EVP_MAC_update() returned 0")
                );
+      EVP_MAC_CTX_free(ctx);
+      EVP_MAC_free(mac);
       return FALSE;
     }
 
@@ -591,6 +597,8 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "EVP_MAC_final() returned 0")
                );
+      EVP_MAC_CTX_free(ctx);
+      EVP_MAC_free(mac);
       return FALSE;
     }
 
@@ -617,6 +625,7 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "CMAC_Init() returned 0")
                );
+      CMAC_CTX_free(ctx);
       return FALSE;
     }
 
@@ -628,6 +637,7 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "CMAC_Update() returned 0")
                );
+      CMAC_CTX_free(ctx);
       return FALSE;
     }
 
@@ -639,6 +649,7 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "CMAC_Final() returned 0")
                );
+      CMAC_CTX_free(ctx);
       return FALSE;
     }
   CMAC_CTX_free(ctx);
@@ -754,6 +765,7 @@ gboolean PRF(guchar *key, guchar *originalInput,
                     evt_tag_str("Reason", "Bad CMAC"),
                     evt_tag_str("File: ", __FILE__),
                     evt_tag_long("Line: ", __LINE__));
+          g_free(input);
           return FALSE;
         }
 
@@ -775,6 +787,7 @@ gboolean PRF(guchar *key, guchar *originalInput,
                     evt_tag_str("Reason", "Bad CMAC"),
                     evt_tag_str("File: ", __FILE__),
                     evt_tag_long("Line: ", __LINE__));
+          g_free(input);
           return FALSE;
         }
 
