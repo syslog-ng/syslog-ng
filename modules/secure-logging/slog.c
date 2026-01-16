@@ -1066,7 +1066,7 @@ gboolean readKey(guchar *destKey, guint64 *destCounter, gchar *keypath)
   memcpy(destKey, keydata, KEY_LENGTH);
   *destCounter = GUINT64_FROM_LE(littleEndianCounter);
   g_free(f);
-  
+
   return result && cmacOk;
 }
 
