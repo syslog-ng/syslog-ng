@@ -7,7 +7,7 @@ google-auth==2.41.1
 idna==3.7
 kubernetes>=31.0.0  # we would need  >= 34.1.0 (to sync with PE), but highest available on kira - ubuntu focal
 oauthlib==3.3.1
-pyasn1==0.6.1
+pyasn1==0.6.2
 pyasn1-modules==0.4.2
 python-dateutil==2.9.0.post0
 PyYAML==6.0.3
