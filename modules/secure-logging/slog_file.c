@@ -205,7 +205,11 @@ gboolean read_line_from_file(SLogFile *f, GString *line)
 
 gboolean close_channel(SLogFile *f)
 {
-  if (f == NULL || f->channel == NULL)
+  if (NULL == f)
+    {
+      return FALSE;
+    }
+  if (NULL == f->channel)
     {
       f->state = SLOG_FILE_GENERAL_ERROR;
       return FALSE;
