@@ -22,11 +22,11 @@
  *
  */
 
+#include <glib.h>
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <glib.h>
 
 #include <openssl/cmac.h>
 #include <openssl/rand.h>
@@ -1347,7 +1347,7 @@ gboolean finalizeVerify(
       msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Aggregated MAC matches. Log contains all expected log messages."));
     }
 
-  g_hash_table_unref(tab);
+  g_hash_table_destroy(tab);
 
   return ret;
 }
@@ -1367,7 +1367,8 @@ gboolean initVerify(
     }
 
   // Create hash table
-  *tab = g_hash_table_new(g_str_hash, g_str_equal);
+  *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+
   if (*tab == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot create hash table"));
@@ -2070,6 +2071,7 @@ void handleFileError(const char *file, int line, int code, void *object)
     }
 }
 
+
 // Error handler for memory errors
 void handleGPtrArrayMemoryError(const char *file, int line, int code, void *object)
 {
@@ -2095,33 +2097,37 @@ void handleGPtrArrayMemoryError(const char *file, int line, int code, void *obje
            );
 }
 
+
 // Retrieve counter from encrypted log entry
 gboolean getCounter(GString *entry, guint64 *logEntryOnDisk)
 {
-  // Interpret the first COUNTER_LENGTH+1 characters
-  char ctrbuf[COUNTER_LENGTH + 1];
-  memcpy(ctrbuf, entry->str, COUNTER_LENGTH);
-  ctrbuf[COUNTER_LENGTH] = 0;
-
-  gsize outLen;
-  guchar *ctr = g_base64_decode((const char *)ctrbuf, &outLen);
+  if (!entry || !logEntryOnDisk || entry->len < COUNTER_LENGTH)
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot derive integer value - not enough data"));
+      return FALSE;
+    }
+  //-- Make a NUL‑terminated copy of the base64 chunk
+  char *b64 = g_strndup(entry->str, COUNTER_LENGTH);
+  gsize out_len;
+  guchar *decoded = g_base64_decode(b64, &out_len);
+  g_free(b64);
   gboolean ret;
 
-  if (outLen != sizeof(guint64))
+  if (!decoded || out_len != sizeof(guint64))
     {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot derive integer value from counter field"),
-                evt_tag_str("Log entry number", (const char *)ctr));
-      ret = FALSE;
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot derive integer value from counter field"));
+      ret = FALSE; //-- bad base64 or wrong length
     }
   else
     {
-      memcpy(logEntryOnDisk, ctr, sizeof(guint64));
+      memcpy(logEntryOnDisk, decoded, sizeof(guint64));
       ret = TRUE;
     }
 
-  g_free(ctr);
+  g_free(decoded);
   return ret;
 }
+
 
 // Check whether value is contained in table
 gboolean tableContainsKey(GHashTable *table, guint64 key)
@@ -2158,11 +2164,14 @@ gboolean addValueToTable(GHashTable *table, guint64 value)
       return FALSE;
     }
 
-  // Create new key to string and use value as key
-  char *key = g_new0(char, CTR_LEN_SIMPLE + 1);
-  snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, value);
+  //-- Create new key to string and use value as key
+  char *key = g_strdup_printf("%" G_GUINT64_FORMAT, value);
 
-  return g_hash_table_insert(table, key, (gpointer)value);
+  //-- Create new value
+  guint64 *p_value = g_new(guint64, 1);
+  *p_value = value;
+
+  return g_hash_table_insert(table, key, p_value);
 }
 
 // Get a single line from a log file
@@ -2183,7 +2192,6 @@ GString *getLogEntry(SLogFile *f)
 
   return line;
 }
-
 
 // Put a single line into a log file
 gboolean putLogEntry(SLogFile *f, GString *line)
