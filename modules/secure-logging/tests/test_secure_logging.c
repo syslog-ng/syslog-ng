@@ -239,7 +239,7 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
 
     }
 
-  ret = finalizeVerify(start, totalNumberOfMessages, mac, cmac_tag, tab);
+  ret = finalizeVerify(start, totalNumberOfMessages, mac, cmac_tag, &tab);
 
   cr_assert(ret == FALSE, "Aggregated MAC is correct.");
 
@@ -301,7 +301,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
                       &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
   cr_assert(ret == TRUE, "iterateBuffer failed");
 
-  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);
+  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, &tab);
   cr_assert(ret == TRUE, "finalizeVerify failed");
 
   for (int i = 0; i < totalNumberOfMessages; i++)
@@ -805,6 +805,9 @@ void test_slog_performance(void)
  *      (Fixed by workaround and by providing solution for macOS nc in cli01_syslog.sh
  *      and cli06_syslog.sh so that tests on macOS15 intel machine was running
  *      fine)
+ *   -- Some CI machines are macOS 15 intel machines. There, netcat (nc) works
+ *      differently and caused a test freeze (10 minutes).
+ *      (Fixed by workaround for netcat - but this slow down all tests a bit)
  */
 
 /* Notes in regard MAKE_SCRIPTS_EXECUTABLE

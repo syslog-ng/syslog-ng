@@ -257,7 +257,7 @@ gboolean iterateBuffer(guint64 entriesInBuffer, GPtrArray *input,
 // Finalize the verification
 gboolean finalizeVerify(guint64 startingEntry, guint64 entriesInFile,
                         guchar *aggMac, guchar *cmac_tag,
-                        GHashTable *tab);
+                        GHashTable **tab);
 
 // Create a new key based on an existing key
 gboolean evolveKey(guchar *key);

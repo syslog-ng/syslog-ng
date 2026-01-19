@@ -183,7 +183,7 @@ gboolean get_path_mac0(const gchar *pathAggMac, gchar *pathMac0, size_t sizePath
     {
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason", "Directory does not exist!"),
-                evt_tag_str("Path", dirname ? dirname : "NULL"));
+                evt_tag_str("Path", dirname)); //-- dirname NULL is handled
     }
   g_free(dirname);
   return retval;
@@ -1307,20 +1307,28 @@ gboolean finalizeVerify(
   guint64 entriesInFile,
   guchar *aggMAC,
   guchar *cmac_tag,
-  GHashTable *tab)
+  GHashTable **tab)
 {
+  if (tab == NULL || *tab == NULL)
+    {
+      msg_warning(SLOG_WARNING_PREFIX,
+                  evt_tag_str("Reason",
+                              "finalizeVerify: hash table already destroyed or not provided"));
+      return FALSE;
+    }
+
   int ret = TRUE;
 
   // Check which entries are missing
   guint64 notRecovered = 0;
   for (guint64 i = startingEntry; i < startingEntry + entriesInFile; i++)
     {
-      if (tab != NULL)
+      if (*tab != NULL)
         {
           // Hashtable key
           char key[CTR_LEN_SIMPLE + 1];
           snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, i);
-          if (!g_hash_table_contains(tab, key))
+          if (!g_hash_table_contains(*tab, key))
             {
               notRecovered++;
               msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to recover"), evt_tag_long("entry", i));
@@ -1329,7 +1337,7 @@ gboolean finalizeVerify(
         }
     }
 
-  if ((notRecovered == 0) && (tab != NULL))
+  if ((notRecovered == 0) && (*tab != NULL))
     {
       msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "All entries recovered successfully"));
     }
@@ -1347,7 +1355,8 @@ gboolean finalizeVerify(
       msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Aggregated MAC matches. Log contains all expected log messages."));
     }
 
-  g_hash_table_destroy(tab);
+  g_hash_table_destroy(*tab);
+  *tab = NULL;
 
   return ret;
 }
@@ -1632,7 +1641,7 @@ gboolean iterativeFileVerify(
       msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason",
                                              "We started with key key0. There might be a lot of warnings about missing log entries."));
     }
-  if (!finalizeVerify(startingEntry, entriesInFile, aggMAC, cmac_tag, tab))
+  if (!finalizeVerify(startingEntry, entriesInFile, aggMAC, cmac_tag, &tab))
     {
       result = FALSE;
     }
@@ -1761,7 +1770,15 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
 
   if (!initVerify(entriesInFile, mainKey, &nextLogEntry, &startingEntry, inputBuffer, &tab))
     {
+      if (tab != NULL)
+        {
+          g_hash_table_destroy(tab);
+          tab = NULL;
+        }
+      //-- TODO cleanup handler instead of goto
       result = FALSE;
+      g_print ("\nERROR: Function initVerify fails!\n");
+      goto CLEANUP_FILEVERIFY;
     }
 
   if (!iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
@@ -1884,10 +1901,13 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
             }
         }
     }
-  if (!finalizeVerify(startingEntry, entriesInFile, aggMAC, cmac_tag, tab))
+  if (!finalizeVerify(startingEntry, entriesInFile, aggMAC, cmac_tag, &tab))
     {
       result = FALSE;
     }
+
+
+CLEANUP_FILEVERIFY:
 
   // Release memory
   //
@@ -2022,6 +2042,8 @@ gboolean validFileNameArgCheckDirOnly(const gchar *option_name, const gchar *val
                   option->arg = currentValue->str;
                   isValid = TRUE;
                   g_print("directory exits: %s\n", dirname);
+                  g_free (dirname);
+                  dirname = NULL;
                   break;
                 }
             }
