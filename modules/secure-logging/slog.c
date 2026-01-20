@@ -1323,21 +1323,18 @@ gboolean finalizeVerify(
   guint64 notRecovered = 0;
   for (guint64 i = startingEntry; i < startingEntry + entriesInFile; i++)
     {
-      if (*tab != NULL)
+      // Hashtable key
+      char key[CTR_LEN_SIMPLE + 1];
+      snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, i);
+      if (!g_hash_table_contains(*tab, key))
         {
-          // Hashtable key
-          char key[CTR_LEN_SIMPLE + 1];
-          snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, i);
-          if (!g_hash_table_contains(*tab, key))
-            {
-              notRecovered++;
-              msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to recover"), evt_tag_long("entry", i));
-              ret = FALSE;
-            }
+          notRecovered++;
+          msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to recover"), evt_tag_long("entry", i));
+          ret = FALSE;
         }
     }
 
-  if ((notRecovered == 0) && (*tab != NULL))
+  if (notRecovered == 0)
     {
       msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "All entries recovered successfully"));
     }
@@ -2128,7 +2125,7 @@ gboolean getCounter(GString *entry, guint64 *logEntryOnDisk)
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot derive integer value - not enough data"));
       return FALSE;
     }
-  //-- Make a NUL‑terminated copy of the base64 chunk
+  //-- Make a NUL-terminated copy of the base64 chunk
   char *b64 = g_strndup(entry->str, COUNTER_LENGTH);
   gsize out_len;
   guchar *decoded = g_base64_decode(b64, &out_len);
