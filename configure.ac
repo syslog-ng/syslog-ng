@@ -625,6 +625,10 @@ AC_ARG_ENABLE([colored-log],
     [enable_colored_log=yes],
     [enable_colored_log=no])
 
+AC_ARG_ENABLE(tests,
+    AS_HELP_STRING([--enable-tests], [Enable unit tests (default: auto)]),
+    , enable_tests="auto")
+
 dnl Determine default based on OS
 osname=`uname -s 2>/dev/null` || osname=unknown
 case "$osname" in
@@ -877,6 +881,28 @@ TEST_NO_INSTALL_FLAG="-no-install"
 AC_SUBST(TEST_NO_INSTALL_FLAG)
 
 AC_SYS_LARGEFILE
+
+dnl ***************************************************************************
+dnl Criterion headers/libraries
+dnl ***************************************************************************
+
+if test "x$enable_tests" != "xno"; then
+
+    PKG_CHECK_MODULES(CRITERION, criterion >= $CRITERION_MIN_VERSION,
+    [with_criterion="system"],
+    [if test "x$enable_tests" = "xyes"; then
+        AC_MSG_ERROR([Criterion >= $CRITERION_MIN_VERSION is required when --enable-tests=yes is specified])
+     else
+        AC_MSG_WARN([pkg-config was not able to find Criterion >= $CRITERION_MIN_VERSION])
+     fi
+     with_criterion="no"])
+
+    if test "$with_criterion" != "no"; then
+        enable_tests=yes
+    else
+        enable_tests=no
+    fi
+fi
 
 AC_DEFINE(HAVE_BROKEN_PREAD, 0, [define if your platform has a broken pread/pwrite (e.g. HP-UX)])
 case "$ostype" in
@@ -1642,20 +1668,6 @@ if test "$enable_afsnmp" = "yes"; then
 else
   NETSNMP_CFLAGS=
   NETSNMP_LIBS=
-fi
-
-dnl ***************************************************************************
-dnl Criterion headers/libraries
-dnl ***************************************************************************
-
-PKG_CHECK_MODULES(CRITERION, criterion >= $CRITERION_MIN_VERSION,
-  [with_criterion="system"],
-  [AC_MSG_WARN([pkg-config was not able to find Criterion >= $CRITERION_MIN_VERSION]); with_criterion="no"])
-
-if test "$with_criterion" != "no"; then
-   enable_tests=yes
-else
-  enable_tests=no
 fi
 
 dnl ***************************************************************************
