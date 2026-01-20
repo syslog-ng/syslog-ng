@@ -134,7 +134,16 @@ function install_criterion_from_source() {
     make install
     ldconfig
     rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
+}
 
+function install_criterion() {
+    CRITERION_VERSION=2.4.3
+    HASH="f1b3dd5186783dcdd63433c1facd3b4d6af5244a151057370b53bdda80f16121"
+
+    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-${CRITERION_VERSION}-linux-x86_64.tar.xz" /tmp/criterion.tar.xz criterion/${CRITERION_VERSION}/criterion.tar.xz "${HASH}"
+    tar -C /usr --strip-components=1 -xvf /tmp/criterion.tar.xz
+    ldconfig
+    rm -rf /tmp/criterion.tar.xz
 }
 
 function set_jvm_paths() {
