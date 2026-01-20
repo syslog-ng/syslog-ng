@@ -130,7 +130,7 @@ function install_criterion_from_source() {
     cd /tmp/
     tar xvf /tmp/criterion.tar.bz2
     cd /tmp/criterion-v${CRITERION_VERSION}
-    cmake -DCMAKE_INSTALL_PREFIX=/usr .
+    cmake -Wno-dev -DCMAKE_INSTALL_PREFIX=/usr .
     make install
     ldconfig
     rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
