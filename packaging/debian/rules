@@ -91,6 +91,12 @@ ifneq (,${DH_VERBOSE})
 SILENT_MODE	       = --disable-silent-rules
 endif
 
+ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH),arm64)
+ifeq ($(filter notestsonarm,$(DEB_BUILD_PROFILES)),)
+TEST_OPTS += --disable-tests
+endif
+endif
+
 ##
 #* Overrides for dh_auto*
 ##
@@ -144,6 +150,7 @@ override_dh_auto_configure:
 		\
 		SOURCE_REVISION="$${SOURCE_REVISION}" \
 		${SYSTEMD_CONFIGURE_OPTS} \
+		${TEST_OPTS} \
 		${EXTRA_CONFIGURE_OPTS}
 
 # The pkg-config .pc file is installed into ${libdir}/pkgconfig, but
