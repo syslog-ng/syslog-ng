@@ -493,6 +493,8 @@ gboolean sLogEntry(
  *
  * Note: Caller must take care of memory management.
  *
+ * Returns TRUE on success when all evolveKey calls are successful
+ *         FALSE when one call of evolveKey fails
  */
 gboolean deriveKey(guchar *dst, guint64 index, guint64 currentKey)
 {
@@ -500,7 +502,11 @@ gboolean deriveKey(guchar *dst, guint64 index, guint64 currentKey)
 
   for (guint64 i = currentKey; i < index; i++)
     {
-      result = evolveKey(dst);
+      if (FALSE == evolveKey(dst) )
+        {
+          //--  called PRF function provides logging
+          result = FALSE; //-- do not return yet
+        }
     }
   return result;
 }
@@ -1179,8 +1185,10 @@ gboolean iterateBuffer(
           // Subtract counter from log entry
           len = len - (COUNTER_LENGTH + 1);
 
-          if (logEntryOnDisk != *nextLogEntry)
+          if (logEntryOnDisk != *nextLogEntry) //-- not equal
             {
+              //-- This branch is not the normal expected case
+
               if (tableContainsKey(tab, logEntryOnDisk))
                 {
                   msg_error(SLOG_ERROR_PREFIX,
@@ -1188,7 +1196,8 @@ gboolean iterateBuffer(
                             evt_tag_long("entry", logEntryOnDisk));
                   result = FALSE;
                 }
-              if (logEntryOnDisk < (*nextLogEntry))
+
+              if (logEntryOnDisk < (*nextLogEntry)) //-- Case 1 less
                 {
                   if (logEntryOnDisk < keyNumber)
                     {
@@ -1205,22 +1214,29 @@ gboolean iterateBuffer(
                                 evt_tag_long("entry", logEntryOnDisk));
                       // Rewind key to k0
                       memcpy(mainKey, keyZero, KEY_LENGTH);
-                      deriveKey(mainKey, logEntryOnDisk, keyNumber);
+                      (void) deriveKey(mainKey, logEntryOnDisk, keyNumber);
                       *nextLogEntry = logEntryOnDisk;
                       result = FALSE;
                     }
                 }
-              if (logEntryOnDisk - (*nextLogEntry) > 1000000)
+
+              else  //-- Case 2 greater
                 {
-                  msg_info(SLOG_INFO_PREFIX,
-                           evt_tag_str("Reason", "Deriving key for distant future. This might take some time."),
-                           evt_tag_long("next log entry should be", *nextLogEntry),
-                           evt_tag_long("key to derive to", logEntryOnDisk),
-                           evt_tag_long("number of log entries", *numberOfLogEntries));
+                  if (logEntryOnDisk - (*nextLogEntry) > 1000000)
+                    {
+                      //-- info for user because this might take some time
+                      msg_info(SLOG_INFO_PREFIX,
+                               evt_tag_str("Reason", "Deriving key for distant future. This might take some time."),
+                               evt_tag_long("next log entry should be", *nextLogEntry),
+                               evt_tag_long("key to derive to", logEntryOnDisk),
+                               evt_tag_long("number of log entries", *numberOfLogEntries));
+                    }
+
+                  (void) deriveKey(mainKey, logEntryOnDisk, *nextLogEntry);
+                  *nextLogEntry = logEntryOnDisk;
                 }
-              deriveKey(mainKey, logEntryOnDisk, *nextLogEntry);
-              *nextLogEntry = logEntryOnDisk;
-            }
+
+            } //-- not equal
 
           GString *line = (GString *)g_ptr_array_index(input, i);
           GString *out = (GString *)g_ptr_array_index(output, i);
@@ -2140,6 +2156,7 @@ gboolean getCounter(GString *entry, guint64 *logEntryOnDisk)
   else
     {
       memcpy(logEntryOnDisk, decoded, sizeof(guint64));
+      //-- TODO investigate if this runs on a BigEndian machine also
       ret = TRUE;
     }
 
