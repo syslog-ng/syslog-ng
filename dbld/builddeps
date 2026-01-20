@@ -122,7 +122,7 @@ function download_target()
     fi
 }
 
-function install_criterion() {
+function install_criterion_from_source() {
     CRITERION_VERSION=2.3.3
     HASH="8c85e1fcdb9a39b82bee50394bedfe74a0c839ffff129ddfc6fb73b11adafa29"
 
