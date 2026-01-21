@@ -542,7 +542,13 @@ _proccess_proxy_header(LogTransportHAProxy *self)
   Status status = _fetch_into_proxy_buffer(self);
 
   self->proxy_header_processed = (status == STATUS_SUCCESS);
-  if (status != STATUS_SUCCESS)
+  if (status == STATUS_EOF)
+    {
+      msg_error("Incomplete PROXY protocol header",
+                evt_tag_mem("header", self->proxy_header_buff, self->proxy_header_buff_len));
+      return STATUS_ERROR;
+    }
+  else if (status != STATUS_SUCCESS)
     return status;
 
   gboolean parsable = _parse_proxy_header(self);
@@ -556,6 +562,26 @@ _proccess_proxy_header(LogTransportHAProxy *self)
   if (parsable)
     {
       msg_trace("PROXY protocol header parsed successfully");
+
+      /* NOTE: v1: If the announced transport protocol is "UNKNOWN", then the receiver knows that
+       *       the sender speaks the correct PROXY protocol with the appropriate version, and
+       *       SHOULD accept the connection and use the real connection's parameters as if
+       *       there were no PROXY protocol header on the wire. However, senders SHOULD not
+       *       use the "UNKNOWN" protocol when they are the initiators of outgoing connections
+       *       because some receivers may reject them.
+       *       v2: the connection was established on purpose by the proxy
+       *       without being relayed. The connection endpoints are the sender and the
+       *       receiver. Such connections exist when the proxy sends health-checks to the
+       *       server. The receiver must accept this connection as valid and must use the
+       *       real connection endpoints and discard the protocol block including the
+       *       family which is ignored.
+       *
+       *       So, we treat UNKNOWN as a valid case, but do not set any addresses, and return EOF
+       *       instead of ERROR to indicate that no further data is expected/processed.
+       */
+      if (self->info.unknown)
+        return STATUS_EOF;
+
       _save_addresses(self);
 
       return STATUS_SUCCESS;
@@ -575,9 +601,13 @@ _haproxy_read(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *
   if (!self->proxy_header_processed)
     {
       Status status = _proccess_proxy_header(self);
-      if (status != STATUS_SUCCESS)
+      /* Treat health checks as valid, no further data part expected/processed,
+       * do not signal error, just drop them with EOF */
+      if (status == STATUS_EOF)
+        return 0;
+      else if (status != STATUS_SUCCESS)
         {
-          if (status == STATUS_ERROR || status == STATUS_EOF)
+          if (status == STATUS_ERROR)
             errno = EINVAL;
           else if (status == STATUS_AGAIN)
             errno = EAGAIN;
