@@ -21,7 +21,8 @@ RUN /dbld/builddeps update_packages
 RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_debian_build_deps
-
+# debian testing does not have criterion in its repo because of continuous regression issues
+# also it has build issues with the latest versions, so we install from binary
 RUN /dbld/builddeps install_criterion
 
 VOLUME /source

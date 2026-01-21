@@ -31,12 +31,15 @@
 #         commandline-options line is needed
 #
 
-# - on Debian we don't build java and use Python3 _after_ buster
-# - libcriterion-dev is available starting with bullseye
+# - on Debian
+#    - we don't build java and use Python3 _after_ buster
+#    - libcriterion-dev
+#        - is available starting with bullseye
+#        - has regression issues in testing, so it is banned from time to time
 debian-bullseye		python3,nojava,notzdatalegacy
 debian-bookworm		python3,nojava,notzdatalegacy
 debian-trixie		python3,nojava,notzdatalegacy
-debian-testing		python3,nojava,nocriterion
+debian-testing		python3,nojava,nocriterion,notestsonarm
 debian-sid			python3,nojava
 
 # - on ubuntu, we start using Python3 at focal onwards.
