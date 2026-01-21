@@ -210,7 +210,7 @@ json_parser_extract_values_from_complex_json_object(JSONParser *self,
               const gchar *element_value = json_object_get_string(el);
               if (i != 0)
                 g_string_append_c(value, ',');
-              str_repr_encode_append(value, element_value, -1, NULL);
+              str_repr_encode_append(value, element_value, -1, ",");
             }
           else
             {
