@@ -36,7 +36,9 @@
 
 #define IP_BUF_SIZE 64
 
-/* This class implements: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt */
+/*
+ * This class implements: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+ */
 
 /* the size of the buffer we use to fetch the PROXY header into */
 #define PROXY_PROTO_HDR_BUFFER_SIZE 1500
@@ -79,9 +81,6 @@ struct _LogTransportHAProxy
   gsize proxy_header_buff_len;
 };
 
-
-
-/* This class implements: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt */
 
 /* PROXYv1 line without newlines or terminating zero character.  The
  * protocol specification contains the number 108 that includes both the
@@ -255,11 +254,10 @@ _parse_proxy_v1_header(LogTransportHAProxy *self)
   if (!_extract_proxy_v1_header(self, &proxy_line, &proxy_line_len))
     return FALSE;
 
-
-  gsize header_len = 0;
-
   if (!_check_proxy_v1_header_length(proxy_line, proxy_line_len))
     return FALSE;
+
+  gsize header_len = 0;
 
   if (_is_proxy_v1_unknown(proxy_line, proxy_line_len, &header_len))
     {
@@ -513,6 +511,7 @@ static void
 _save_addresses(LogTransportHAProxy *self)
 {
   LogTransportStack *stack = self->super.super.stack;
+
   if (self->info.unknown)
     return;
 
