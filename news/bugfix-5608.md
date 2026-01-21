@@ -1,0 +1,1 @@
+`transport(proxied-tcp)`: Fixed an internal assertion-caused crash when a Proxy Protocol v2 message was received with a LOCAL command, which was not handled earlier. Now LOCAL commands are treated as health check messages for both v1 and v2 proxy messages, accepted but dropped, just as the [protocol definition](www.haproxy.org/download/3.0/doc/proxy-protocol.txt) suggests.
