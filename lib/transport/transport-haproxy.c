@@ -335,6 +335,7 @@ _parse_proxy_v2_header(LogTransportHAProxy *self)
   if ((proxy_hdr->ver_cmd & 0xF) == 0)
     {
       /* LOCAL connection */
+      self->info.unknown = TRUE;
       return TRUE;
     }
   else if ((proxy_hdr->ver_cmd & 0xF) == 1)
