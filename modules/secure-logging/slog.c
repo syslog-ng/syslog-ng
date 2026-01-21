@@ -1359,7 +1359,6 @@ gboolean finalizeVerify(
 
   if (equal != 0)
     {
-      // TODO cmac_tag most likely wrong
       msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Aggregated MAC mismatch. Log might be incomplete"));
       ret = FALSE;
     }
@@ -1380,20 +1379,10 @@ gboolean initVerify(
   guchar *mainKey,
   guint64 *nextLogEntry,
   guint64 *startingEntry,
-  GPtrArray *input,
-  GHashTable **tab)
+  GPtrArray *input)
 {
   if (entriesInFile == 0)
     {
-      return FALSE;
-    }
-
-  // Create hash table
-  *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
-
-  if (*tab == NULL)
-    {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot create hash table"));
       return FALSE;
     }
 
@@ -1478,15 +1467,26 @@ gboolean iterativeFileVerify(
       startedWithZero = 1;
     }
 
+  // Create hash table not in initVerify any longer
+  // (must be outside SLOG_SEC_START macros!! for clean-up!)
+  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+  if (tab == NULL)
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot create hash table"));
+      return FALSE; //-- ERROR
+    }
+
   // Create input and output files
   SLogFile *inf = create_file(inputFileName, "r");
   if (inf == NULL)
     {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create inf."));
       return FALSE;
     }
   SLogFile *outf = create_file(outputFileName, "w+");
   if (outf == NULL)
     {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create out."));
       close_file(inf);
       g_free(inf);
       return FALSE;
@@ -1501,13 +1501,17 @@ gboolean iterativeFileVerify(
   // Allocate buffers
   if (inputBuffer == NULL)
     {
-      SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate inputBuffer."));
+      result = FALSE;
+      goto CLEANUP_ITERATIVEFILEVERIFY;
     }
 
   SLOG_SECT_START(outputBuffer)
   if (outputBuffer == NULL)
     {
-      SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate outputBuffer."));
+      result = FALSE;
+      goto CLEANUP_ITERATIVEFILEVERIFY;
     }
 
   SLOG_SECT_START(inf)
@@ -1516,7 +1520,9 @@ gboolean iterativeFileVerify(
   if (!result)
     {
       handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+      inputBuffer = NULL;
       handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+      outputBuffer = NULL;
       SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
     }
 
@@ -1525,7 +1531,9 @@ gboolean iterativeFileVerify(
   if (!result)
     {
       handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+      inputBuffer = NULL;
       handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+      outputBuffer = NULL;
       SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
     }
 
@@ -1549,19 +1557,6 @@ gboolean iterativeFileVerify(
       chunkLength = entriesInFile;
     }
 
-  // Create the hash table
-  GHashTable *tab = g_hash_table_new(g_str_hash, g_str_equal);
-  if (tab == NULL)
-    {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot create hash table"));
-      result = FALSE;
-      // Cannot continue -> Release memory and file resources prematurely
-      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
-      handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-      handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
-      SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
-    }
-
   // Process file in chunks
   for (int j = 0; j < (entriesInFile / chunkLength); j++)
     {
@@ -1580,7 +1575,9 @@ gboolean iterativeFileVerify(
               result = FALSE;
               // Cannot continue -> Release memory and file resources prematurely
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              inputBuffer = NULL;
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+              outputBuffer = NULL;
               handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
               SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
             }
@@ -1598,7 +1595,9 @@ gboolean iterativeFileVerify(
               if (!result)
                 {
                   handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+                  inputBuffer = NULL;
                   handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+                  inputBuffer = NULL;
                   handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
                   SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
                 }
@@ -1623,7 +1622,9 @@ gboolean iterativeFileVerify(
               result = FALSE;
               // Cannot continue -> Release memory and file resources prematurely
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              inputBuffer = NULL;
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+              inputBuffer = NULL;
               handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, outf);
               SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
             }
@@ -1641,7 +1642,9 @@ gboolean iterativeFileVerify(
               if (!result)
                 {
                   handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+                  inputBuffer = NULL;
                   handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+                  outputBuffer = NULL;
                   handleFileError(__FILE__, __LINE__, SLOG_FILE_INCOMPLETE_READ, inf);
                   SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
                 }
@@ -1659,19 +1662,50 @@ gboolean iterativeFileVerify(
       result = FALSE;
     }
 
-  // Close files
-  close_file(outf);
-  close_file(inf);
 
-  // Release memory resources
-  g_ptr_array_free(outputBuffer, TRUE);
-  g_ptr_array_free(inputBuffer, TRUE);
+CLEANUP_ITERATIVEFILEVERIFY:
+
   SLOG_SECT_END(outf)
   SLOG_SECT_END(inf)
   SLOG_SECT_END(outputBuffer)
   SLOG_SECT_END(inputBuffer)
-  g_free(outf);
-  g_free(inf);
+
+  g_print("fileVerify: CLEANUP_FILEVERIFY\n");
+
+  if (tab != NULL)
+    {
+      g_hash_table_destroy(tab);
+      tab = NULL;
+    }
+
+  //-- Release memory
+  if (NULL != outputBuffer)
+    {
+      g_ptr_array_free(outputBuffer, TRUE);
+      outputBuffer = NULL;
+    }
+
+  if (NULL != inputBuffer)
+    {
+      g_ptr_array_free(inputBuffer, TRUE);
+      inputBuffer = NULL;
+    }
+
+  if (NULL != outf)
+    {
+      close_file(outf);
+      g_free(outf);
+      outf = NULL;
+    }
+
+  if (NULL != inf)
+    {
+      close_file(inf);
+      g_free(inf);
+      inf = NULL;
+    }
+
+  g_print("fileVerify: CLEANUP_FILEVERIFY done\n");
 
   return result;
 }
@@ -1687,33 +1721,42 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
                     char *outputFileName, guchar *aggMAC,
                     guint64 entriesInFile, int chunkLength, guchar mac0[CMAC_LENGTH])
 {
-  gboolean volatile result = TRUE;
+  gboolean volatile result = TRUE; //-- SUCCSS
 
   if (entriesInFile == 0)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Nothing to verify"));
-      return 0;
+      return FALSE; //-- ERROR
     }
 
-
+  // Create hash table not in initVerify any longer
+  // (must be outside SLOG_SEC_START macros!! for clean-up!)
+  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+  if (tab == NULL)
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot create hash table"));
+      return FALSE; //-- ERROR
+    }
 
   SLogFile *inf = create_file(inputFileName, "r");
   if (inf == NULL)
     {
-      return FALSE;
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create inf."));
+      return FALSE; //-- ERROR
     }
   SLogFile *outf = create_file(outputFileName, "w+");
   if (outf == NULL)
     {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create outf."));
       close_file(inf);
       g_free(inf);
-      return FALSE;
+      inf = NULL;
+      return FALSE; //-- ERROR
     }
 
   guchar keyZero[KEY_LENGTH];
   memcpy(keyZero, mainKey, KEY_LENGTH);
 
-  GHashTable *tab = NULL;
   GPtrArray *inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
   GPtrArray *outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
 
@@ -1721,14 +1764,18 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
   // Allocate input buffer
   if (inputBuffer == NULL)
     {
-      SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate inputBuffer."));
+      result = FALSE; //-- ERROR
+      goto CLEANUP_FILEVERIFY;
     }
 
   SLOG_SECT_START(outputBuffer)
   // Allocate output buffer
   if (outputBuffer == NULL)
     {
-      SLogSectForward(__FILE__, __LINE__, SLOG_MEM_ALLOC_ERROR, handleGPtrArrayMemoryError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate outputBuffer."));
+      result = FALSE; //-- ERROR
+      goto CLEANUP_FILEVERIFY;
     }
 
   // Open input and output files
@@ -1737,7 +1784,9 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
   if (!result)
     {
       handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+      inputBuffer = NULL;
       handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+      outputBuffer = NULL;
       SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
     }
 
@@ -1746,7 +1795,9 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
   if (!result)
     {
       handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+      inputBuffer = NULL;
       handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
+      outputBuffer = NULL;
       SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
     }
 
@@ -1771,8 +1822,9 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       if (!result)
         {
           handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+          inputBuffer = NULL;
           handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-          close_file(outf);
+          outputBuffer = NULL;
           SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
         }
 
@@ -1781,14 +1833,8 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       g_string_truncate(str, (str->len) - 1);
     }
 
-  if (!initVerify(entriesInFile, mainKey, &nextLogEntry, &startingEntry, inputBuffer, &tab))
+  if (!initVerify(entriesInFile, mainKey, &nextLogEntry, &startingEntry, inputBuffer))
     {
-      if (tab != NULL)
-        {
-          g_hash_table_destroy(tab);
-          tab = NULL;
-        }
-      //-- TODO cleanup handler instead of goto
       result = FALSE;
       g_print ("\nERROR: Function initVerify fails!\n");
       goto CLEANUP_FILEVERIFY;
@@ -1797,7 +1843,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
   if (!iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
                      &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
     {
-      result = FALSE;
+      result = FALSE; //-- ERROR
     }
 
   // Write to file
@@ -1812,8 +1858,9 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
           if (!result)
             {
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              inputBuffer = NULL;
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-              close_file(inf);
+              outputBuffer = NULL;
               SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
             }
         }
@@ -1830,8 +1877,9 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
           if (!result)
             {
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              inputBuffer = NULL;
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-              close_file(outf);
+              outputBuffer = NULL;
               SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
             }
 
@@ -1843,7 +1891,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       if (!iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
                          &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
         {
-          result = FALSE;
+          result = FALSE; //-- ERROR
         }
 
       // ...and write to file
@@ -1861,8 +1909,9 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
               if (!result)
                 {
                   handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+                  inputBuffer = NULL;
                   handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                  close_file(inf);
+                  outputBuffer = NULL;
                   SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
                 }
             }
@@ -1879,8 +1928,9 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
           if (!result)
             {
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+              inputBuffer = NULL;
               handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-              close_file(outf);
+              outputBuffer = NULL;
               SLogSectForward(__FILE__, __LINE__, inf->state, handleFileError);
             }
 
@@ -1892,7 +1942,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       if (!iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
                          &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
         {
-          result = FALSE;
+          result = FALSE; //-- ERROR
         }
 
       for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
@@ -1907,8 +1957,9 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
               if (!result)
                 {
                   handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, inputBuffer);
+                  inputBuffer = NULL;
                   handleGPtrArrayMemoryError(__FILE__, __LINE__,  SLOG_MEM_ALLOC_ERROR, outputBuffer);
-                  close_file(inf);
+                  outputBuffer = NULL;
                   SLogSectForward(__FILE__, __LINE__, outf->state, handleFileError);
                 }
             }
@@ -1922,20 +1973,45 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
 
 CLEANUP_FILEVERIFY:
 
-  // Release memory
-  //
-  g_ptr_array_free(outputBuffer, TRUE);
-  g_ptr_array_free(inputBuffer, TRUE);
-
-  // Close files
-  close_file(outf);
-  close_file(inf);
   SLOG_SECT_END(outf)
   SLOG_SECT_END(inf)
   SLOG_SECT_END(outputBuffer)
   SLOG_SECT_END(inputBuffer)
-  g_free(outf);
-  g_free(inf);
+
+  g_print("\n-fileVerify: CLEANUP_FILEVERIFY\n");
+
+  if (tab != NULL)
+    {
+      g_hash_table_destroy(tab);
+      tab = NULL;
+    }
+
+  //-- Release memory
+  if (NULL != outputBuffer)
+    {
+      g_ptr_array_free(outputBuffer, TRUE);
+      outputBuffer = NULL;
+    }
+
+  if (NULL != inputBuffer)
+    {
+      g_ptr_array_free(inputBuffer, TRUE);
+      inputBuffer = NULL;
+    }
+
+  if (NULL != outf)
+    {
+      close_file(outf);
+      g_free(outf);
+      outf = NULL;
+    }
+
+  if (NULL != inf)
+    {
+      close_file(inf);
+      g_free(inf);
+      inf = NULL;
+    }
 
   return result;
 }
@@ -2087,23 +2163,40 @@ gboolean validFileNameArgCheckDirOnly(const gchar *option_name, const gchar *val
 // Error handler for file errors
 void handleFileError(const char *file, int line, int code, void *object)
 {
-  SLogFile *f = (SLogFile *)object;
-  msg_error(SLOG_ERROR_PREFIX,
-            evt_tag_str("File ", file),
-            evt_tag_long("Line ", line),
-            evt_tag_long("Code ", code),
-            evt_tag_str("Reason ", f->message->str)
-           );
+  // The error handler SHOULD have been declared with void** object.
+  // So we can not close and set pointer to NULL. This must be done by caller
+  // therefore.
+  // Because this handler is given by SLogSectForward this must be done
+  // in the clean-up section from the caller of the caller.
+  // This function is used just for logging.
+  // Directly after SLogSectForward, nothing is executed anymore until SLOG_SECT_END.
 
-  if (!close_file(f))
+  SLogFile *f = (SLogFile *)object;
+  if (NULL != f)
     {
       msg_error(SLOG_ERROR_PREFIX,
-                evt_tag_str("Unable to close file stream, File: ", __FILE__),
-                evt_tag_long("Line ", __LINE__),
-                evt_tag_long("Code ", SLOG_FILE_GENERAL_ERROR),
-                evt_tag_str("Reason ", "General file stream error")
+                evt_tag_str("File ", file),
+                evt_tag_long("Line ", line),
+                evt_tag_long("Code ", code),
+                evt_tag_str("Reason ", f->message->str)
                );
     }
+
+  /* Not possible to tell caller object is closed, freed and set to  NULL
+     if (!close_file(f))
+       {
+         msg_error(SLOG_ERROR_PREFIX,
+                   evt_tag_str("Unable to close file stream, File: ", __FILE__),
+                   evt_tag_long("Line ", __LINE__),
+                   evt_tag_long("Code ", SLOG_FILE_GENERAL_ERROR),
+                   evt_tag_str("Reason ", "General file stream error")
+                  );
+       }
+     else
+       {
+         g_free(f)
+       }
+  */
 }
 
 

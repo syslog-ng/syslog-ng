@@ -245,7 +245,7 @@ gboolean iterativeFileVerify(guchar *previousMAC, guchar *previousKey,
 // Set up log verification
 gboolean initVerify(guint64 entriesInFile, guchar *key,
                     guint64 *nextLogEntry, guint64 *startingEntry,
-                    GPtrArray *input, GHashTable **tab);
+                    GPtrArray *input);
 
 // Iterate through log entries contained in a buffer and verify them
 gboolean iterateBuffer(guint64 entriesInBuffer, GPtrArray *input,

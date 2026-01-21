@@ -195,8 +195,6 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   guchar keyZero[KEY_LENGTH];
   memcpy(keyZero, hostkey, KEY_LENGTH);
 
-  GHashTable *tab = NULL;
-
   guint64 next = 0;
   guint64 start = 0;
   guint64 numberOfLogEntries = 0UL;
@@ -215,7 +213,10 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   GPtrArray *tmpTemplate = g_ptr_array_new();
   g_ptr_array_add(tmpTemplate, templateOutput[0]);
 
-  initVerify(totalNumberOfMessages, hostkey, &next, &start, tmpTemplate, &tab);
+  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+  cr_assert_not_null(tab, "Can not create GHashTable");
+
+  initVerify(totalNumberOfMessages, hostkey, &next, &start, tmpTemplate);
   g_ptr_array_free(tmpTemplate, TRUE);
 
   GPtrArray *template = g_ptr_array_new();
@@ -256,8 +257,6 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   guchar keyZero[KEY_LENGTH];
   memcpy(keyZero, hostkey, KEY_LENGTH);
 
-  GHashTable *tab = NULL;
-
   guint64 next = 0;
   guint64 start = 0;
   guint64 numberOfLogEntries = 0UL;
@@ -269,10 +268,11 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
       g_ptr_array_add(template, templateOutput[i]);
     }
 
-  gboolean b = initVerify(totalNumberOfMessages, hostkey, &next, &start, template, &tab);
+  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+  cr_assert_not_null(tab, "Can not create GHashTable");
 
+  gboolean b = initVerify(totalNumberOfMessages, hostkey, &next, &start, template);
   cr_assert(b == TRUE, "Init verify returns FALSE.");
-
 
   GPtrArray *output = g_ptr_array_new_with_free_func((GDestroyNotify)g_string_free);
 
@@ -283,7 +283,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
 
   guchar cmac_tag[CMAC_LENGTH];
   gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
-  ret = initVerify(totalNumberOfMessages, hostkey, &next, &start, template, &tab);
+  ret = initVerify(totalNumberOfMessages, hostkey, &next, &start, template);
   cr_assert(ret == TRUE, "initVerify failed");
 
   //------------ initial MAC file, mac0.dat
