@@ -227,7 +227,7 @@ gboolean writeKey(guchar *key, guint64 counter, gchar *keypath);
  */
 gboolean fileVerify(guchar *key, char *inputFileName,
                     char *outputFileName, guchar *bigMac,
-                    guint64 entriesInFile, int chunkLength,
+                    guint64 entriesInFile, guint64 chunkLength,
                     guchar mac0[CMAC_LENGTH]);
 
 /*
@@ -240,7 +240,7 @@ gboolean fileVerify(guchar *key, char *inputFileName,
 gboolean iterativeFileVerify(guchar *previousMAC, guchar *previousKey,
                              char *inputFileName, guchar *currentMAC,
                              char *outputFileName, guint64 entriesInFile,
-                             int chunkLength, guint64 keyNumber);
+                             guint64 chunkLength, guint64 keyNumber);
 
 // Set up log verification
 gboolean initVerify(guint64 entriesInFile, guchar *key,

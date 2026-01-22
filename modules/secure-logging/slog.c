@@ -1442,7 +1442,7 @@ gboolean iterativeFileVerify(
   guchar *aggMAC,
   char *outputFileName,
   guint64 entriesInFile,
-  int chunkLength,
+  guint64 chunkLength,
   guint64 keyNumber)
 {
 
@@ -1558,7 +1558,7 @@ gboolean iterativeFileVerify(
     }
 
   // Process file in chunks
-  for (int j = 0; j < (entriesInFile / chunkLength); j++)
+  for (guint64 j = 0; j < (entriesInFile / chunkLength); j++)
     {
       for (guint64 i = 0; i < chunkLength; i++)
         {
@@ -1670,7 +1670,7 @@ CLEANUP_ITERATIVEFILEVERIFY:
   SLOG_SECT_END(outputBuffer)
   SLOG_SECT_END(inputBuffer)
 
-  g_print("fileVerify: CLEANUP_FILEVERIFY\n");
+  g_print("fileVerify: CLEANUP_ITERATIVEFILEVERIFY\n");
 
   if (tab != NULL)
     {
@@ -1705,7 +1705,7 @@ CLEANUP_ITERATIVEFILEVERIFY:
       inf = NULL;
     }
 
-  g_print("fileVerify: CLEANUP_FILEVERIFY done\n");
+  g_print("fileVerify: CLEANUP_ITERATIVEFILEVERIFY done\n");
 
   return result;
 }
@@ -1719,7 +1719,7 @@ CLEANUP_ITERATIVEFILEVERIFY:
  */
 gboolean fileVerify(guchar *mainKey, char *inputFileName,
                     char *outputFileName, guchar *aggMAC,
-                    guint64 entriesInFile, int chunkLength, guchar mac0[CMAC_LENGTH])
+                    guint64 entriesInFile, guint64 chunkLength, guchar mac0[CMAC_LENGTH])
 {
   gboolean volatile result = TRUE; //-- SUCCSS
 
@@ -1867,7 +1867,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
     }
 
   // Process file in chunks
-  for (int j = 0; j < (entriesInFile / chunkLength) - 1; j++)
+  for (guint64 j = 0; j < (entriesInFile / chunkLength) - 1; j++)
     {
       for (guint64 i = 0; i < chunkLength; i++)
         {
@@ -2013,6 +2013,7 @@ CLEANUP_FILEVERIFY:
       inf = NULL;
     }
 
+  g_print("\n-fileVerify: CLEANUP_FILEVERIFY done\n");
   return result;
 }
 

@@ -22,15 +22,14 @@
 #
 #############################################################################
 
-
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   cli02_crypt_verify
-# Date:   2025-12-19
+# Date:   2026-01-22
 #
 # Smoke Test of cli tools slogkey, slogencrypt and slogverify
 # Needed keys are generated in test.
 
-VERSION="Version 1.3.1"
+VERSION="Version 1.3.2"
 
 # remove path and extension from $0
 s=$0
@@ -45,10 +44,9 @@ echo "PID: ${PID}"
 
 RANDOM_ID=$(
     /bin/dd if=/dev/urandom bs=1 count=4 2>/dev/null |
-    od -An -N4 -tx
+        od -An -N4 -tx
 )
 CLEAN_ID=$(echo "${RANDOM_ID}" | tr -d ' ')
-
 
 NOW=$(date +%Y-%m-%d_%H%M%S)
 echo " "
@@ -91,6 +89,7 @@ echo "TEST: ${TEST}"
 
 HOME_BACKUP=${HOME}/${SUBFOLDER_TEST}/${SCRIPTNAME}
 COPY_TO_HOME_BACKUP="false"
+# COPY_TO_HOME_BACKUP="true"
 MACADDRESS="01:23:45:67:89:AB"
 SERIALNUMBER="12345678"
 
@@ -185,7 +184,7 @@ rm -f "${TEST}"/*.out "${TEST}"/*.log "${TEST}"/*.slo* 2>/dev/null
 
 if [ "${COPY_TO_HOME_BACKUP}" = "true" ]; then
     rm -f "${HOME_BACKUP}"/*.key "${HOME_BACKUP}"/*.dat "${HOME_BACKUP}"/*.txt "${HOME_BACKUP}"/*.chk 2>/dev/null
-    rm -f "${HOME_BACKUP}"/*.out "${HOME_BACKUP}"/*.log "${HOME_BACKUP}"/*.slo* 2>/dev/null
+    rm -f "${HOME_BACKUP}"/*.out "${HOME_BACKUP}"/*.slo* 2>/dev/null
 fi
 
 if ! [ -f "${TEST}/host.key" ]; then
@@ -409,6 +408,9 @@ while [ "${i}" -lt "${MAX_LOOP}" ]; do
             cnt_error=$((cnt_error + 1))
         fi
         if grep -q "There is a problem with log verification." "${TEST}/slogverify-iterative-mode-result${i}.log"; then
+            cnt_error=$((cnt_error + 1))
+        fi
+        if grep -Fq "[SLOG] ERROR" "${TEST}/slogverify-iterative-mode-result${i}.log"; then
             cnt_error=$((cnt_error + 1))
         fi
     fi

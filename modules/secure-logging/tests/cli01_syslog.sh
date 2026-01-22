@@ -24,7 +24,7 @@
 
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   cli01_syslog.sh
-# Date:   2025-12-19
+# Date:   2026-01-22
 #
 # Smoke Test of cli tools slogkey, syslog-ng, syslog-ng-cli, slogverify
 #
@@ -54,7 +54,7 @@
 
 set -x
 
-VERSION="Version 1.4.1"
+VERSION="Version 1.4.2"
 
 # remove path and extension from $0
 s=$0
@@ -556,6 +556,9 @@ else
     if grep -q "There is a problem with log verification. Please check log manually" "${TEST}/slogverify-normal-mode-result.log"; then
         cnt_error=$((cnt_error + 1))
     fi
+    if grep -Fq "[SLOG] ERROR" "${TEST}/slogverify-normal-mode-result.log"; then
+        cnt_error=$((cnt_error + 1))
+    fi
 fi
 
 echo " "
@@ -635,6 +638,9 @@ while [ "${i}" -lt "${MAX_LOOP}" ]; do
             cnt_error=$((cnt_error + 1))
         fi
         if grep -q "There is a problem with log verification." "${TEST}/slogverify-iterative-mode-result${i_offset}.log"; then
+            cnt_error=$((cnt_error + 1))
+        fi
+        if grep -Fq "[SLOG] ERROR" "${TEST}/slogverify-iterative-mode-result${i_offset}.log"; then
             cnt_error=$((cnt_error + 1))
         fi
     fi

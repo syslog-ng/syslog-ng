@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #############################################################################
 # Copyright (c) 2025 Airbus Commercial Aircraft
 #
@@ -24,7 +24,7 @@
 
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   cli06_syslog.sh
-# Date:   2025-12-19
+# Date:   2026-01-21
 #
 # Smoke Test of cli tools slogkey, syslog-ng, syslog-ng-cli, slogverify
 # In this test syslog-ng is only stopped after all log entries have been
@@ -56,8 +56,9 @@
 # only for one running instance of this script.
 
 set -x
+set -o pipefail
 
-VERSION="Version 1.3.1"
+VERSION="Version 1.3.2"
 
 # remove path and extension from $0
 s=$0
@@ -110,7 +111,7 @@ SFNCONF=syslog-ng-test-udp-nc.conf
 # e.g.: /home/johndoe/Software/fork/modules/secure-logging/tests/syslog-ng-test-udp-nc.conf
 # The default path in conf is: mypath "/tmp/test_slog/data"
 
-MAX_LOOP=7
+MAX_LOOP=5
 START_WAIT_TIME=3
 STOP_WAIT_TIME=2
 STATS=true
@@ -261,7 +262,8 @@ else
 
     if [ "${COPY_TO_HOME_BACKUP}" = "true" ]; then
         rm -f "${HOME_BACKUP}"/*.key "${HOME_BACKUP}"/*.dat "${HOME_BACKUP}"/*.txt "${HOME_BACKUP}"/*.chk 2>/dev/null
-        rm -f "${HOME_BACKUP}"/*.out "${HOME_BACKUP}"/*.log "${HOME_BACKUP}"/*.slo* 2>/dev/null
+        rm -f "${HOME_BACKUP}"/*.out "${HOME_BACKUP}"/*.slo* 2>/dev/null
+        # rm -f "${HOME_BACKUP}"/*.out "${HOME_BACKUP}"/*.log "${HOME_BACKUP}"/*.slo* 2>/dev/null
     fi
 fi
 
@@ -448,6 +450,12 @@ echo " "
     --mac-file "${TEST}/mac.dat" \
     "${TEST}/messages.slog" \
     "${TEST}/messages_verified.txt" 2>&1 | tee "${TEST}/slogverify-normal-mode-result.log"
+# Capture status of slogverify
+ret=${PIPESTATUS[0]} # <- exit code of slogverify TODO not working
+if ((ret != 0)); then
+    cnt_error=$((cnt_error + 1))
+    echo "slogverify failed (rc=$ret)" >&2
+fi
 
 # check if output files do exist
 echo " "
@@ -491,6 +499,9 @@ else
         cnt_error=$((cnt_error + 1))
     fi
     if grep -q "There is a problem with log verification. Please check log manually" "${TEST}/slogverify-normal-mode-result.log"; then
+        cnt_error=$((cnt_error + 1))
+    fi
+    if grep -Fq "[SLOG] ERROR" "${TEST}/slogverify-normal-mode-result.log"; then
         cnt_error=$((cnt_error + 1))
     fi
 fi

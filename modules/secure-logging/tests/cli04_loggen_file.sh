@@ -22,10 +22,9 @@
 #
 #############################################################################
 
-
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
 # File:   cli04_loggen_file.sh
-# Date:   2025-12-19
+# Date:   2026-01-22
 #
 # Smoke Test of cli tools loggen, slogkey, syslog-ng, syslog-ng-cli, slogverify
 #
@@ -50,7 +49,7 @@
 
 set -x
 
-VERSION="Version 1.3.1"
+VERSION="Version 1.3.2"
 
 # remove path and extension from $0
 s=$0
@@ -65,7 +64,7 @@ echo "PID: ${PID}"
 
 RANDOM_ID=$(
     /bin/dd if=/dev/urandom bs=1 count=4 2>/dev/null |
-    od -An -N4 -tx
+        od -An -N4 -tx
 )
 CLEAN_ID=$(echo "${RANDOM_ID}" | tr -d ' ')
 NOW=$(date +%Y-%m-%d_%H%M%S)
@@ -248,7 +247,6 @@ if [ "${COPY_TO_HOME_BACKUP}" = "true" ]; then
     rm -f "${HOME_BACKUP}"/*.out "${HOME_BACKUP}"/*.log "${HOME_BACKUP}"/*.slo* 2>/dev/null
 fi
 
-
 if [ -f "${HOMESLOGTEST}/${PAYLOAD}" ]; then
     if ! [ -f "${PAYLOAD_FILE}" ]; then
         # Only ever do copy the example payload file, when user
@@ -270,7 +268,6 @@ if ! [ -f "${PAYLOAD_FILE}" ]; then
     check_script_config
 fi
 
-
 # config working path in syslog-ng.conf
 
 cp -f "${HOMESLOGTEST}/${SFNCONF}" "${TEST}/syslog-ng.conf"
@@ -278,7 +275,6 @@ check_missing "${TEST}/syslog-ng.conf" "${SCRIPT_DIR}/update_conf_path.sh"
 echo "Update syslog-ng.conf template path .."
 RETVALUC=$("${SCRIPT_DIR}/update_conf_path.sh" "${TEST}/syslog-ng.conf" "${PATH_SUFFIX}" "add")
 echo "RETVALUC: ${RETVALUC}"
-
 
 # Generate Key or check existing
 
@@ -332,7 +328,6 @@ if ! [ -f "${TEST}/host.key" ]; then
 fi
 
 check_missing "${TEST}/h0.key" "${TEST}/host.key" "${HOMESLOGTEST}/${SFNCONF}"
-
 
 # simple quick check whether udp port is found in conf file
 if grep -q "${UDP_PORT}" "${TEST}/syslog-ng.conf"; then
@@ -425,7 +420,7 @@ else
     cat "${TEST}/messages_verified.txt"
     echo " "
 fi
- 
+
 # Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.; entry='2'
 # Decryption not successful; entry='2'
 # Unable to recover; entry='3'
@@ -450,6 +445,9 @@ else
         cnt_error=$((cnt_error + 1))
     fi
     if grep -q "There is a problem with log verification. Please check log manually" "${TEST}/slogverify-normal-mode-result.log"; then
+        cnt_error=$((cnt_error + 1))
+    fi
+    if grep -Fq "[SLOG] ERROR" "${TEST}/slogverify-normal-mode-result.log"; then
         cnt_error=$((cnt_error + 1))
     fi
 fi
