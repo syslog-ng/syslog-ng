@@ -222,7 +222,7 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   GPtrArray *template = g_ptr_array_new();
   GPtrArray *output = g_ptr_array_new_with_free_func((GDestroyNotify)g_string_free);
 
-  for (int i = 0; i < totalNumberOfMessages; i++)
+  for (size_t i = 0; i < totalNumberOfMessages; i++)
     {
 
       g_ptr_array_add(template, templateOutput[i]);
@@ -304,7 +304,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, &tab);
   cr_assert(ret == TRUE, "finalizeVerify failed");
 
-  for (int i = 0; i < totalNumberOfMessages; i++)
+  for (size_t i = 0; i < totalNumberOfMessages; i++)
     {
       GString *str = (GString *)g_ptr_array_index(output, i);
       char *plaintextMessage = (str->str) + CTR_LEN_SIMPLE + COLON + BLANK;

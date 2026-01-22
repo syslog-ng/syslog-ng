@@ -1467,8 +1467,6 @@ gboolean iterativeFileVerify(
       startedWithZero = 1;
     }
 
-  // Create hash table not in initVerify any longer
-  // (must be outside SLOG_SEC_START macros!! for clean-up!)
   GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
   if (tab == NULL)
     {
@@ -1476,23 +1474,23 @@ gboolean iterativeFileVerify(
       return FALSE; //-- ERROR
     }
 
+  gboolean volatile result = TRUE;
+
   // Create input and output files
   SLogFile *inf = create_file(inputFileName, "r");
   if (inf == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create inf."));
-      return FALSE;
+      result = FALSE; //-- ERROR
+      goto CLEANUP_ITERATIVEFILEVERIFY;
     }
   SLogFile *outf = create_file(outputFileName, "w+");
   if (outf == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create out."));
-      close_file(inf);
-      g_free(inf);
-      return FALSE;
+      result = FALSE; //-- ERROR
+      goto CLEANUP_ITERATIVEFILEVERIFY;
     }
-
-  gboolean volatile result = TRUE;
 
   GPtrArray *inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
   GPtrArray *outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
@@ -1502,7 +1500,7 @@ gboolean iterativeFileVerify(
   if (inputBuffer == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate inputBuffer."));
-      result = FALSE;
+      result = FALSE; //-- ERROR
       goto CLEANUP_ITERATIVEFILEVERIFY;
     }
 
@@ -1510,7 +1508,7 @@ gboolean iterativeFileVerify(
   if (outputBuffer == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate outputBuffer."));
-      result = FALSE;
+      result = FALSE; //-- ERROR
       goto CLEANUP_ITERATIVEFILEVERIFY;
     }
 
@@ -1662,15 +1660,14 @@ gboolean iterativeFileVerify(
       result = FALSE;
     }
 
-
-CLEANUP_ITERATIVEFILEVERIFY:
-
   SLOG_SECT_END(outf)
   SLOG_SECT_END(inf)
   SLOG_SECT_END(outputBuffer)
   SLOG_SECT_END(inputBuffer)
 
-  g_print("fileVerify: CLEANUP_ITERATIVEFILEVERIFY\n");
+CLEANUP_ITERATIVEFILEVERIFY:
+
+  g_print("iterativeFileVerify: CLEANUP\n");
 
   if (tab != NULL)
     {
@@ -1705,7 +1702,7 @@ CLEANUP_ITERATIVEFILEVERIFY:
       inf = NULL;
     }
 
-  g_print("fileVerify: CLEANUP_ITERATIVEFILEVERIFY done\n");
+  g_print("iterativeFileVerify: CLEANUP done\n");
 
   return result;
 }
@@ -1729,8 +1726,6 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       return FALSE; //-- ERROR
     }
 
-  // Create hash table not in initVerify any longer
-  // (must be outside SLOG_SEC_START macros!! for clean-up!)
   GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
   if (tab == NULL)
     {
@@ -1742,16 +1737,15 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
   if (inf == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create inf."));
-      return FALSE; //-- ERROR
+      result = FALSE; //-- ERROR
+      goto CLEANUP_FILEVERIFY;
     }
   SLogFile *outf = create_file(outputFileName, "w+");
   if (outf == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create outf."));
-      close_file(inf);
-      g_free(inf);
-      inf = NULL;
-      return FALSE; //-- ERROR
+      result = FALSE; //-- ERROR
+      goto CLEANUP_FILEVERIFY;
     }
 
   guchar keyZero[KEY_LENGTH];
@@ -1970,15 +1964,14 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       result = FALSE;
     }
 
-
-CLEANUP_FILEVERIFY:
-
   SLOG_SECT_END(outf)
   SLOG_SECT_END(inf)
   SLOG_SECT_END(outputBuffer)
   SLOG_SECT_END(inputBuffer)
 
-  g_print("\n-fileVerify: CLEANUP_FILEVERIFY\n");
+CLEANUP_FILEVERIFY:
+
+  g_print("\n-fileVerify: CLEANUP\n");
 
   if (tab != NULL)
     {
@@ -2013,7 +2006,7 @@ CLEANUP_FILEVERIFY:
       inf = NULL;
     }
 
-  g_print("\n-fileVerify: CLEANUP_FILEVERIFY done\n");
+  g_print("\n-fileVerify: CLEANUP done\n");
   return result;
 }
 
@@ -2167,9 +2160,9 @@ void handleFileError(const char *file, int line, int code, void *object)
   // The error handler SHOULD have been declared with void** object.
   // So we can not close and set pointer to NULL. This must be done by caller
   // therefore.
-  // Because this handler is given by SLogSectForward this must be done
-  // in the clean-up section from the caller of the caller.
-  // This function is used just for logging.
+  // When this handler is called by SLogSectForward, the cleanup must be done
+  // in the clean-up section from the caller of SLogSecForward.
+  // This function is used just for logging currently.
   // Directly after SLogSectForward, nothing is executed anymore until SLOG_SECT_END.
 
   SLogFile *f = (SLogFile *)object;
@@ -2183,7 +2176,7 @@ void handleFileError(const char *file, int line, int code, void *object)
                );
     }
 
-  /* Not possible to tell caller object is closed, freed and set to  NULL
+  /*
      if (!close_file(f))
        {
          msg_error(SLOG_ERROR_PREFIX,
@@ -2204,6 +2197,9 @@ void handleFileError(const char *file, int line, int code, void *object)
 // Error handler for memory errors
 void handleGPtrArrayMemoryError(const char *file, int line, int code, void *object)
 {
+  //-- The error handler SHOULD have been declared with void** object.
+  //   The caller must take care that no dangling pointer is used after
+  //   this call.
   GPtrArray *pa = (GPtrArray *)object;
   const gchar *msg1 = "Premature memory release of GPtrArray";
   const gchar *msg2 = "GPtrArray address is NULL";
@@ -2250,7 +2246,10 @@ gboolean getCounter(GString *entry, guint64 *logEntryOnDisk)
   else
     {
       memcpy(logEntryOnDisk, decoded, sizeof(guint64));
-      //-- TODO investigate if this runs on a BigEndian machine also
+      //-- TODO Investigate if this runs on a BigEndian machine also.
+      //   Usecase: crypt on BigEndian machine and decrypt (verify) on
+      //   LittleEndian machine and vice versa. Currently no test machine
+      //   with BigEndian is available.
       ret = TRUE;
     }
 
