@@ -160,7 +160,7 @@ GString *applyTemplate(LogTemplate *templ, LogMessage *msg)
 {
   GString *output = g_string_new(prefix);
 
-  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id, LM_VT_STRING};
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id, LM_VT_STRING, log_template_default_escape_method}; //-- TODO clarify escape
   // Execute secure logging template
   log_template_append_format_with_context(
     templ,       // Secure logging template
@@ -183,6 +183,14 @@ int findInArray(int index, int *buffer, int size)
         }
     }
   return 0;
+}
+
+
+// helper for verifyMaliciousMessages to clean-up correctly
+static void gstring_destroy (gpointer data)
+{
+  /* free_segment == TRUE → also free the underlying buffer */
+  g_string_free (data, TRUE);
 }
 
 // Verify messages with malicious modification and detect which entry is corrupted
@@ -220,7 +228,7 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   g_ptr_array_free(tmpTemplate, TRUE);
 
   GPtrArray *template = g_ptr_array_new();
-  GPtrArray *output = g_ptr_array_new_with_free_func((GDestroyNotify)g_string_free);
+  GPtrArray *output = g_ptr_array_new_with_free_func (gstring_destroy);
 
   for (size_t i = 0; i < totalNumberOfMessages; i++)
     {
@@ -274,7 +282,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   gboolean b = initVerify(totalNumberOfMessages, hostkey, &next, &start, template);
   cr_assert(b == TRUE, "Init verify returns FALSE.");
 
-  GPtrArray *output = g_ptr_array_new_with_free_func((GDestroyNotify)g_string_free);
+  GPtrArray *output = g_ptr_array_new_with_free_func (gstring_destroy);
 
   guchar mac[CMAC_LENGTH];
 
@@ -757,6 +765,8 @@ void test_slog_malicious_modifications(void)
 
 void test_slog_performance(void)
 {
+  LogTemplateEvalOptions my_default_template_eval_optons = {NULL, LTZ_LOCAL, 999, context_id, LM_VT_STRING, log_template_default_escape_method}; //-- TODO clarify escape
+
   g_print("-- test_slog_performance\n");
   TestData *testData = initialize("test_slog_performance");
 
@@ -770,7 +780,10 @@ void test_slog_performance(void)
   start_stopwatch();
   for (i = 0; i < PERFORMANCE_COUNTER; i++)
     {
-      log_template_format(slog_templ, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, res);
+      //-- DEFAULT_TEMPLATE_EVAL_OPTIONS seems to miss escape
+      //-- log_template_format(slog_templ, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, res);
+      log_template_format(slog_templ, msg, &my_default_template_eval_optons, res);
+
     }
   stop_stopwatch_and_display_result(PERFORMANCE_COUNTER, "%-90.*s", (int)strlen(slog_templ->template_str) - 1,
                                     slog_templ->template_str);
