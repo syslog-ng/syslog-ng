@@ -2021,12 +2021,6 @@ int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg)
 
   g_print("%s", g_option_context_get_help(ctx, TRUE, NULL));
 
-  // if (NULL != grp) {
-  //    g_print("%s", g_option_context_get_help(ctx, TRUE, grp));
-  // } else {
-  //    g_print("%s", g_option_context_get_help(ctx, TRUE, NULL));
-  // }
-
   g_option_context_free(ctx);
 
   return 1;
@@ -2175,22 +2169,6 @@ void handleFileError(const char *file, int line, int code, void *object)
                 evt_tag_str("Reason ", f->message->str)
                );
     }
-
-  /*
-     if (!close_file(f))
-       {
-         msg_error(SLOG_ERROR_PREFIX,
-                   evt_tag_str("Unable to close file stream, File: ", __FILE__),
-                   evt_tag_long("Line ", __LINE__),
-                   evt_tag_long("Code ", SLOG_FILE_GENERAL_ERROR),
-                   evt_tag_str("Reason ", "General file stream error")
-                  );
-       }
-     else
-       {
-         g_free(f)
-       }
-  */
 }
 
 

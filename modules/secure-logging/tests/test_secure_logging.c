@@ -185,19 +185,16 @@ int findInArray(int index, int *buffer, int size)
   return 0;
 }
 
-
-// helper for verifyMaliciousMessages to clean-up correctly
+// helper for verifyMaliciousMessages and verifyMessages to clean-up correctly
 static void gstring_destroy (gpointer data)
 {
-  /* free_segment == TRUE → also free the underlying buffer */
-  g_string_free (data, TRUE);
+  g_string_free (data, TRUE); //-- TRUE -> also free the underlying buffer
 }
 
 // Verify messages with malicious modification and detect which entry is corrupted
 GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString **templateOutput,
                                   size_t totalNumberOfMessages, int *brokenEntries)
 {
-
   cr_assert(totalNumberOfMessages > 0, "Total number of message must be >0");
 
   guchar keyZero[KEY_LENGTH];
@@ -232,7 +229,6 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
 
   for (size_t i = 0; i < totalNumberOfMessages; i++)
     {
-
       g_ptr_array_add(template, templateOutput[i]);
       g_ptr_array_add(output, g_string_new(NULL));
 
@@ -245,7 +241,6 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
         }
       g_ptr_array_remove_index(template, 0);
       g_ptr_array_remove_index(output, 0);
-
     }
 
   ret = finalizeVerify(start, totalNumberOfMessages, mac, cmac_tag, &tab);
