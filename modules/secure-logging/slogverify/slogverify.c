@@ -344,6 +344,6 @@ int main(int argc, char *argv[])
 
   // Release messaging resources
   msg_deinit();
-
+  g_option_context_free(context);
   return ret;
 }

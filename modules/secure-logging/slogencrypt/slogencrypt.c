@@ -224,6 +224,7 @@ int main(int argc, char *argv[])
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason", "Unable to open output log file!"),
                 evt_tag_str("file", outputlogpath));
+      fclose(inputFile);
       return -1; //-- ERROR
     }
 
@@ -305,6 +306,9 @@ int main(int argc, char *argv[])
           msg_warning(SLOG_WARNING_PREFIX,
                       evt_tag_str("Reason", "Unable to encrypt log entry!"),
                       evt_tag_str("line", inputGString->str));
+
+          fclose(inputFile);
+          fclose(outputFile);
           return -1; //-- ERROR;
         }
 
@@ -316,6 +320,8 @@ int main(int argc, char *argv[])
       if (!outcome)
         {
           msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to evolve key!"));
+          fclose(inputFile);
+          fclose(outputFile);
           return -1; //-- ERROR
         }
 
@@ -332,6 +338,8 @@ int main(int argc, char *argv[])
   if (!writeAggregatedMAC(outputMACpath, mac))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Problem with output MAC file!"));
+      fclose(inputFile);
+      fclose(outputFile);
       return -1; //-- ERROR
     }
 
@@ -342,12 +350,15 @@ int main(int argc, char *argv[])
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason", "Unable to write new host key"),
                 evt_tag_str("file", outputlogpath));
+      fclose(inputFile);
+      fclose(outputFile);
       return -1; //-- ERROR
     }
 
   fclose(outputFile);
+  fclose(inputFile);
 
   msg_info("All data successfully imported.");
-
+  g_option_context_free(context);
   return 0; //-- SUCCESS
 }

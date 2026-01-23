@@ -222,19 +222,20 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
 
   int len;
   int ciphertext_len;
+  int result = 0; //-- default in case of error
 
   /* Create and initialise the context */
   if ( !(ctx = EVP_CIPHER_CTX_new()) )
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize OpenSSL contex"));
-      return 0;
+      return result;
     }
 
   /* Initialise the encryption operation. */
   if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize OpenSSL contex"));
-      return 0;
+      goto CLEANUP_SLOGENCRYPT;
     }
 
   if (IV_LENGTH != 12)
@@ -243,7 +244,7 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
       if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
         {
           msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to set IV length"));
-          return 0;
+          goto CLEANUP_SLOGENCRYPT;
         }
     }
 
@@ -251,7 +252,7 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
   if (1 != EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize encryption key and IV"));
-      return 0;
+      goto CLEANUP_SLOGENCRYPT;
     }
 
   /* Provide the message to be encrypted, and obtain the encrypted output.
@@ -260,7 +261,7 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
   if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to encrypt data"));
-      return 0;
+      goto CLEANUP_SLOGENCRYPT;
     }
 
   ciphertext_len = len;
@@ -271,7 +272,7 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
   if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to complete encryption of data"));
-      return 0;
+      goto CLEANUP_SLOGENCRYPT;
     }
 
   ciphertext_len += len;
@@ -280,13 +281,18 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
   if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, AES_BLOCKSIZE, tag))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to acquire encryption tag"));
-      return 0;
+      goto CLEANUP_SLOGENCRYPT;
     }
 
-  /* Clean up */
-  EVP_CIPHER_CTX_free(ctx);
+  result = ciphertext_len;
 
-  return ciphertext_len;
+CLEANUP_SLOGENCRYPT:
+
+  if (ctx)
+    {
+      EVP_CIPHER_CTX_free(ctx);
+    }
+  return result;
 }
 
 /*
@@ -316,6 +322,7 @@ int sLogDecrypt(guchar *ciphertext,
   int len;
   int plaintext_len;
   int ret;
+  int ret_val = 0; //-- 0: ERROR
 
   /* Create and initialise the context */
   if (!(ctx = EVP_CIPHER_CTX_new()))
@@ -328,7 +335,7 @@ int sLogDecrypt(guchar *ciphertext,
   if (!EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable initiate decryption operation"));
-      return 0;
+      goto CLEANUP_SLOGDECRYPT;
     }
 
   if (IV_LENGTH != 12)
@@ -337,7 +344,7 @@ int sLogDecrypt(guchar *ciphertext,
       if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
         {
           msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable set IV length"));
-          return 0;
+          goto CLEANUP_SLOGDECRYPT;
         }
     }
 
@@ -345,7 +352,7 @@ int sLogDecrypt(guchar *ciphertext,
   if (!EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize key and IV"));
-      return 0;
+      goto CLEANUP_SLOGDECRYPT;
     }
 
   /* Provide the message to be decrypted, and obtain the plaintext output.
@@ -354,7 +361,7 @@ int sLogDecrypt(guchar *ciphertext,
   if (!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to decrypt"));
-      return 0;
+      goto CLEANUP_SLOGDECRYPT;
     }
 
   plaintext_len = len;
@@ -363,27 +370,31 @@ int sLogDecrypt(guchar *ciphertext,
   if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, AES_BLOCKSIZE, tag))
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable set tag value"));
-      return 0;
+      goto CLEANUP_SLOGDECRYPT;
     }
 
   /* Finalise the decryption. A positive return value indicates success,
    * anything else is a failure - the plaintext is not trustworthy.
    */
-  ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
-
-  /* Clean up */
-  EVP_CIPHER_CTX_free(ctx);
-  if (ret > 0)
+  if (EVP_DecryptFinal_ex(ctx, plaintext + len, &len) > 0)
     {
       /* Success */
       plaintext_len += len;
-      return plaintext_len;
+      ret_val = plaintext_len;
     }
   else
     {
       /* Verify failed */
-      return -1;
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Decryption/Tag verification failed"));
+      ret_val = -1;
     }
+
+CLEANUP_SLOGDECRYPT:
+  if (ctx)
+    {
+      EVP_CIPHER_CTX_free(ctx);
+    }
+  return ret_val;
 }
 
 /*
@@ -535,9 +546,12 @@ gboolean cmac(guchar *key, const void *input,
               gsize *outlen, gsize out_capacity)
 {
   size_t output_len;
+  gboolean success = FALSE;
 
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
+
   EVP_MAC *mac = EVP_MAC_fetch(NULL, "CMAC", NULL);
+  EVP_MAC_CTX *ctx = NULL;
   if (mac == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX,
@@ -555,7 +569,7 @@ gboolean cmac(guchar *key, const void *input,
     OSSL_PARAM_END,
   };
 
-  EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
+  ctx = EVP_MAC_CTX_new(mac);
   if (ctx == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX,
@@ -564,9 +578,7 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
                 evt_tag_str("Reason: ", "EVP_MAC_CTX_new() returned NULL")
                );
-
-      EVP_MAC_free(mac);
-      return FALSE;
+      goto CLEANUP_CMAC;
     }
 
   if (EVP_MAC_init(ctx, key, KEY_LENGTH, params) == 0)
@@ -577,9 +589,7 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "EVP_MAC_init() returned 0")
                );
-      EVP_MAC_CTX_free(ctx);
-      EVP_MAC_free(mac);
-      return FALSE;
+      goto CLEANUP_CMAC;
     }
 
   if (EVP_MAC_update(ctx, input, length) == 0)
@@ -590,9 +600,7 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "EVP_MAC_update() returned 0")
                );
-      EVP_MAC_CTX_free(ctx);
-      EVP_MAC_free(mac);
-      return FALSE;
+      goto CLEANUP_CMAC;
     }
 
   if (EVP_MAC_final(ctx, out, &output_len, out_capacity) == 0)
@@ -603,14 +611,11 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "EVP_MAC_final() returned 0")
                );
-      EVP_MAC_CTX_free(ctx);
-      EVP_MAC_free(mac);
-      return FALSE;
+      goto CLEANUP_CMAC;
     }
 
-  EVP_MAC_CTX_free(ctx);
-  EVP_MAC_free(mac);
-#else
+#else //-- OPENSSL_VERSION_NUMBER
+
   CMAC_CTX *ctx = CMAC_CTX_new();
   if (ctx == NULL)
     {
@@ -631,8 +636,7 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "CMAC_Init() returned 0")
                );
-      CMAC_CTX_free(ctx);
-      return FALSE;
+      goto CLEANUP_CMAC;
     }
 
   if (CMAC_Update(ctx, input, length) == 0)
@@ -643,8 +647,7 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "CMAC_Update() returned 0")
                );
-      CMAC_CTX_free(ctx);
-      return FALSE;
+      goto CLEANUP_CMAC;
     }
 
   if (CMAC_Final(ctx, out, &output_len) == 0)
@@ -655,11 +658,10 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Code: ", SLOG_OPENSSL_LIBRARY_ERROR),
                 evt_tag_str("Reason: ", "CMAC_Final() returned 0")
                );
-      CMAC_CTX_free(ctx);
-      return FALSE;
+      goto CLEANUP_CMAC;
     }
-  CMAC_CTX_free(ctx);
-#endif
+
+#endif //-- OPENSSL_VERSION_NUMBER
 
   // CMAC length must be 16 bytes
   if (output_len != CMAC_LENGTH)
@@ -672,12 +674,33 @@ gboolean cmac(guchar *key, const void *input,
                 evt_tag_long("Expected bytes: ", CMAC_LENGTH),
                 evt_tag_long("Got bytes: ", output_len)
                );
-      return FALSE;
+      goto CLEANUP_CMAC;
     }
 
   *outlen = (gsize)output_len;
+  success = TRUE;
 
-  return TRUE;
+CLEANUP_CMAC:
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+  if (ctx)
+    {
+      EVP_MAC_CTX_free(ctx);
+      ctx = NULL;
+    }
+  if (mac)
+    {
+      EVP_MAC_free(mac);
+      mac = NULL;
+    }
+#else
+  if (ctx)
+    {
+      CMAC_CTX_free(ctx);
+      ctx = NULL;
+    }
+#endif
+  return success;
 }
 
 /*
@@ -2018,11 +2041,15 @@ int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg)
       g_print ("\nERROR: %s\n\n", errormsg->str);
       g_string_free(errormsg, TRUE);
     }
-
-  g_print("%s", g_option_context_get_help(ctx, TRUE, NULL));
-
-  g_option_context_free(ctx);
-
+  if (NULL != ctx)
+    {
+      g_print("%s", g_option_context_get_help(ctx, TRUE, NULL));
+      g_option_context_free(ctx);
+    }
+  else
+    {
+      g_print ("\nERROR: invalid context in slog_usage!\n");
+    }
   return 1;
 }
 
