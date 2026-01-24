@@ -80,7 +80,6 @@ int main(int argc, char *argv[])
       g_print("!g_opton_context_parse, argc: %d\n", argc);
       GString *errorMsg = g_string_new(error->message);
       (void) slog_usage(context, group, errorMsg);
-      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -95,7 +94,6 @@ int main(int argc, char *argv[])
     {
       g_print("ERROR: Count of arguments is out of range!\n\n");
       (void) slog_usage(context, group, NULL);
-      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -119,7 +117,6 @@ int main(int argc, char *argv[])
                 evt_tag_str("Reason",
                             "Option --key-file or -k with a valid path to a Host key is missing!"));
       (void) slog_usage(context, group, NULL);
-      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -132,7 +129,6 @@ int main(int argc, char *argv[])
                 evt_tag_str("Reason",
                             "Option --mac-file or -m does not provide a valid path to a MAC file!"));
       (void) slog_usage(context, group, NULL);
-      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -145,7 +141,6 @@ int main(int argc, char *argv[])
       g_print("ERROR: Path to new host key is missing!\n\n");
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to new host key is missing!"));
       (void) slog_usage(context, group, NULL);
-      g_option_context_free(context);
       g_assert_not_reached();
       return 1; //-- ERROR
     }
@@ -158,7 +153,6 @@ int main(int argc, char *argv[])
       g_print("ERROR: Path to new MAC file is missing!\n\n");
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to new MAC file is missing!"));
       (void) slog_usage(context, group, NULL);
-      g_option_context_free(context);
       g_assert_not_reached();
       return 1; //-- ERROR
     }
@@ -172,7 +166,6 @@ int main(int argc, char *argv[])
       g_string_append(errorMsg, inputlogpath);
       (void) slog_usage(context, group, errorMsg);
       g_string_free(errorMsg, TRUE);
-      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -183,7 +176,6 @@ int main(int argc, char *argv[])
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to output log is missing!\n\n");
       (void) slog_usage(context, group, NULL);
-      g_option_context_free(context);
       g_assert_not_reached();
       return 1; //-- ERROR
     }
