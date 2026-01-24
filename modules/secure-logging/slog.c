@@ -321,8 +321,7 @@ int sLogDecrypt(guchar *ciphertext,
   EVP_CIPHER_CTX *ctx;
   int len;
   int plaintext_len;
-  int ret;
-  int ret_val = 0; //-- 0: ERROR
+  int result = 0; //-- 0: ERROR
 
   /* Create and initialise the context */
   if (!(ctx = EVP_CIPHER_CTX_new()))
@@ -380,13 +379,13 @@ int sLogDecrypt(guchar *ciphertext,
     {
       /* Success */
       plaintext_len += len;
-      ret_val = plaintext_len;
+      result = plaintext_len;
     }
   else
     {
       /* Verify failed */
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Decryption/Tag verification failed"));
-      ret_val = -1;
+      result = -1;
     }
 
 CLEANUP_SLOGDECRYPT:
@@ -394,7 +393,7 @@ CLEANUP_SLOGDECRYPT:
     {
       EVP_CIPHER_CTX_free(ctx);
     }
-  return ret_val;
+  return result;
 }
 
 /*
@@ -877,24 +876,27 @@ gboolean writeAggregatedMAC(gchar *filename, guchar *outputBuffer)
 
   if (f == NULL)
     {
-      return FALSE;
+      return FALSE; //-- ERROR
     }
 
   gboolean volatile result = TRUE;
   gboolean volatile cmacOk = TRUE;
 
-  SLOG_SECT_START(f)
   result = open_file(f);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   // Write aggregated MAC
   result = write_to_file(f, (gchar *) outputBuffer, CMAC_LENGTH);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error aggregated MAC write_to_file"));
+      (void) close_file(f);
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   // Compute new aggregated MAC
@@ -917,16 +919,17 @@ gboolean writeAggregatedMAC(gchar *filename, guchar *outputBuffer)
   result = write_to_file(f, outputmacdata, CMAC_LENGTH);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error new MAC write_to_file"));
+      (void) close_file(f);
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
-  // Close file
   result = close_file(f);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error close_file"));
     }
-  SLOG_SECT_END(f)
   g_free(f);
 
   return result && cmacOk;
@@ -956,22 +959,25 @@ gboolean readAggregatedMAC(gchar *filename, guchar *outputBuffer)
   if (!g_file_test(filename, G_FILE_TEST_IS_REGULAR))
     {
       msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "MAC does not yet exist and will be created"));
-      close_file(f);
+      g_free(f);
       return TRUE;
     }
 
-
-  SLOG_SECT_START(f)
   result = open_file(f);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error open_file"));
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   result = read_from_file(f, macdata, 2 * CMAC_LENGTH);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error read_from_file"));
+      (void) close_file(f);
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   gsize outlen = 0;
@@ -1003,15 +1009,13 @@ gboolean readAggregatedMAC(gchar *filename, guchar *outputBuffer)
       msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "MAC successfully loaded"));
     }
 
+  memcpy(outputBuffer, macdata, CMAC_LENGTH);
+
   result = close_file(f);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error close_file"));
     }
-
-  memcpy(outputBuffer, macdata, CMAC_LENGTH);
-
-  SLOG_SECT_END(f)
   g_free(f);
 
   return result && cmacOk;
@@ -1030,7 +1034,7 @@ gboolean readKey(guchar *destKey, guint64 *destCounter, gchar *keypath)
 
   if (f == NULL)
     {
-      return FALSE;
+      return FALSE; //-- ERROR
     }
 
   gboolean volatile result = TRUE;
@@ -1038,11 +1042,12 @@ gboolean readKey(guchar *destKey, guint64 *destCounter, gchar *keypath)
   gchar keydata[KEY_LENGTH + CMAC_LENGTH];
   guint64 littleEndianCounter;
 
-  SLOG_SECT_START(f)
   result = open_file(f);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error open_file"));
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   // Key file contains
@@ -1054,13 +1059,19 @@ gboolean readKey(guchar *destKey, guint64 *destCounter, gchar *keypath)
   result = read_from_file(f, keydata, KEY_LENGTH + CMAC_LENGTH);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error keydata read_from_file"));
+      (void) close_file(f);
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   result = read_from_file(f, (gchar *)&littleEndianCounter, sizeof(littleEndianCounter));
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error littleEndianCounter read_from_file"));
+      (void) close_file(f);
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   gsize outlen = 0;
@@ -1083,19 +1094,14 @@ gboolean readKey(guchar *destKey, guint64 *destCounter, gchar *keypath)
       result = FALSE;
     }
 
-  // Close file
+  memcpy(destKey, keydata, KEY_LENGTH);
+  *destCounter = GUINT64_FROM_LE(littleEndianCounter);
   result = close_file(f);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error close_file"));
     }
-
-  SLOG_SECT_END(f)
-
-  memcpy(destKey, keydata, KEY_LENGTH);
-  *destCounter = GUINT64_FROM_LE(littleEndianCounter);
   g_free(f);
-
   return result && cmacOk;
 }
 
@@ -1112,24 +1118,28 @@ gboolean writeKey(guchar *key, guint64 counter, gchar *keypath)
 
   if (f == NULL)
     {
-      return FALSE;
+      return FALSE; //-- ERROR
     }
 
   gboolean volatile result = TRUE;
   gboolean volatile cmacOk = TRUE;
 
-  SLOG_SECT_START(f)
   result = open_file(f);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error open_file"));
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   // Write key
   result = write_to_file(f, (gchar *) key, KEY_LENGTH);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error key write_to_file"));
+      (void) close_file(f);
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   guint64 littleEndianCounter = GINT64_TO_LE(counter);
@@ -1152,25 +1162,28 @@ gboolean writeKey(guchar *key, guint64 counter, gchar *keypath)
   result = write_to_file(f, outputmacdata, CMAC_LENGTH);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error MAC write_to_file"));
+      (void) close_file(f);
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   // Write counter
   result = write_to_file(f, (gchar *)&littleEndianCounter,  sizeof(littleEndianCounter));
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error littleEndianCounter write_to_file"));
+      (void) close_file(f);
+      g_free(f);
+      return FALSE; //-- ERROR
     }
 
   result = close_file(f);
   if (!result)
     {
-      SLogSectForward(__FILE__, __LINE__, f->state, handleFileError);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Error close_file"));
     }
-
-  SLOG_SECT_END(f)
   g_free(f);
-
   return result && cmacOk;
 }
 

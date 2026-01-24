@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
       g_print("!g_opton_context_parse, argc: %d\n", argc);
       GString *errorMsg = g_string_new(error->message);
       (void) slog_usage(context, group, errorMsg);
+      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -94,6 +95,7 @@ int main(int argc, char *argv[])
     {
       g_print("ERROR: Count of arguments is out of range!\n\n");
       (void) slog_usage(context, group, NULL);
+      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -117,6 +119,7 @@ int main(int argc, char *argv[])
                 evt_tag_str("Reason",
                             "Option --key-file or -k with a valid path to a Host key is missing!"));
       (void) slog_usage(context, group, NULL);
+      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -129,6 +132,7 @@ int main(int argc, char *argv[])
                 evt_tag_str("Reason",
                             "Option --mac-file or -m does not provide a valid path to a MAC file!"));
       (void) slog_usage(context, group, NULL);
+      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -141,6 +145,7 @@ int main(int argc, char *argv[])
       g_print("ERROR: Path to new host key is missing!\n\n");
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to new host key is missing!"));
       (void) slog_usage(context, group, NULL);
+      g_option_context_free(context);
       g_assert_not_reached();
       return 1; //-- ERROR
     }
@@ -153,6 +158,7 @@ int main(int argc, char *argv[])
       g_print("ERROR: Path to new MAC file is missing!\n\n");
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to new MAC file is missing!"));
       (void) slog_usage(context, group, NULL);
+      g_option_context_free(context);
       g_assert_not_reached();
       return 1; //-- ERROR
     }
@@ -165,6 +171,8 @@ int main(int argc, char *argv[])
       GString *errorMsg = g_string_new(FILE_ERROR);
       g_string_append(errorMsg, inputlogpath);
       (void) slog_usage(context, group, errorMsg);
+      g_string_free(errorMsg, TRUE);
+      g_option_context_free(context);
       return 1; //-- ERROR
     }
 
@@ -175,6 +183,7 @@ int main(int argc, char *argv[])
       // Safe. Will not be reached due check of argc above
       g_print("ERROR: Path to output log is missing!\n\n");
       (void) slog_usage(context, group, NULL);
+      g_option_context_free(context);
       g_assert_not_reached();
       return 1; //-- ERROR
     }
@@ -187,6 +196,7 @@ int main(int argc, char *argv[])
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason", "Unable to read host key!"),
                 evt_tag_str("file", hostkeypath));
+      g_option_context_free(context);
       return -1; //-- ERROR
     }
 
@@ -214,6 +224,7 @@ int main(int argc, char *argv[])
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason", "Unable to open input log file!"),
                 evt_tag_str("file", inputlogpath));
+      g_option_context_free(context);
       return -1; //-- ERROR
     }
 
@@ -225,6 +236,7 @@ int main(int argc, char *argv[])
                 evt_tag_str("Reason", "Unable to open output log file!"),
                 evt_tag_str("file", outputlogpath));
       fclose(inputFile);
+      g_option_context_free(context);
       return -1; //-- ERROR
     }
 
@@ -309,6 +321,14 @@ int main(int argc, char *argv[])
 
           fclose(inputFile);
           fclose(outputFile);
+          g_option_context_free(context);
+          g_string_free(result, TRUE);
+          g_string_free(inputGString, TRUE);
+          if (NULL != line)
+            {
+              free(line);
+              line = NULL;
+            }
           return -1; //-- ERROR;
         }
 
@@ -322,16 +342,27 @@ int main(int argc, char *argv[])
           msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Unable to evolve key!"));
           fclose(inputFile);
           fclose(outputFile);
+          g_option_context_free(context);
+          g_string_free(result, TRUE);
+          g_string_free(inputGString, TRUE);
+          if (NULL != line)
+            {
+              free(line);
+              line = NULL;
+            }
           return -1; //-- ERROR
         }
 
-      counter++;
-
-      readLen = 0;
-      free(line);
       g_string_free(result, TRUE);
       g_string_free(inputGString, TRUE);
-      line = NULL;
+      if (NULL != line)
+        {
+          free(line);
+          line = NULL;
+        }
+
+      counter++;
+      readLen = 0;
     }
 
   // Write whole log MAC
@@ -340,6 +371,12 @@ int main(int argc, char *argv[])
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Problem with output MAC file!"));
       fclose(inputFile);
       fclose(outputFile);
+      g_option_context_free(context);
+      if (NULL != line)
+        {
+          free(line);
+          line = NULL;
+        }
       return -1; //-- ERROR
     }
 
@@ -352,13 +389,25 @@ int main(int argc, char *argv[])
                 evt_tag_str("file", outputlogpath));
       fclose(inputFile);
       fclose(outputFile);
+      g_option_context_free(context);
+      if (NULL != line)
+        {
+          free(line);
+          line = NULL;
+        }
       return -1; //-- ERROR
     }
 
-  fclose(outputFile);
   fclose(inputFile);
+  fclose(outputFile);
+  g_option_context_free(context);
+  if (NULL != line)
+    {
+      free(line);
+      line = NULL;
+    }
 
   msg_info("All data successfully imported.");
-  g_option_context_free(context);
+
   return 0; //-- SUCCESS
 }
