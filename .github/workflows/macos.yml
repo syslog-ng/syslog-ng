@@ -18,8 +18,9 @@ jobs:
       fail-fast: false
       matrix:
         # https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners
-        # 13, 14-intel - X86_64
-        # 14, 15 or latest, 26 - Arm64 M1
+        # https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+        #   13, 15-intel          - X86_64
+        #   14, 15 or latest, 26  - Arm64 (M1)
         version: [14, 15, 15-intel, 26]
         build-tool: [autotools, cmake]
         compiler: [{ cpp: clang++, c: clang }, { cpp: g++, c: gcc }]
@@ -32,7 +33,7 @@ jobs:
           - version: 26
             compiler: { cpp: clang++, c: clang }
     runs-on: macOS-${{ matrix.version }}
-    name: macOS${{ matrix.version }}-${{ matrix.version == '14' && 'arm64' || 'amd64' }}, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
+    name: macOS${{ matrix.version }}-${{ matrix.version == '15-intel' && 'amd64' || 'arm64' }}, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
     env:
       MACPORTS_ARCHIVE_DIR: $HOME/macports-cache
       MACPORTS_ARCHIVE_FILE: $HOME/macports-cache/macports.tzst
@@ -162,7 +163,6 @@ jobs:
             RAW_VERSION="${{ matrix.version }}"
             MAJOR_VERSION="${RAW_VERSION%%-*}"
             case "$MAJOR_VERSION" in
-              13) OS_NAME="Ventura" ;;
               14) OS_NAME="Sonoma" ;;
               15) OS_NAME="Sequoia" ;;
               26) OS_NAME="Tahoe" ;;
