@@ -218,7 +218,7 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   GPtrArray *tmpTemplate = g_ptr_array_new();
   g_ptr_array_add(tmpTemplate, templateOutput[0]);
 
-  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, NULL);
   cr_assert_not_null(tab, "Can not create GHashTable");
 
   initVerify(totalNumberOfMessages, hostkey, &next, &start, tmpTemplate);
@@ -271,7 +271,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
       g_ptr_array_add(template, templateOutput[i]);
     }
 
-  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, NULL);
   cr_assert_not_null(tab, "Can not create GHashTable");
 
   gboolean b = initVerify(totalNumberOfMessages, hostkey, &next, &start, template);

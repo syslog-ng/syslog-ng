@@ -1503,7 +1503,7 @@ gboolean iterativeFileVerify(
       startedWithZero = 1;
     }
 
-  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, NULL);
   if (tab == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot create hash table"));
@@ -1762,7 +1762,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       return FALSE; //-- ERROR
     }
 
-  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+  GHashTable *tab = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, NULL);
   if (tab == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot create hash table"));
@@ -2244,33 +2244,26 @@ void handleGPtrArrayMemoryError(const char *file, int line, int code, void *obje
 // Retrieve counter from encrypted log entry
 gboolean getCounter(GString *entry, guint64 *logEntryOnDisk)
 {
-  if (!entry || !logEntryOnDisk || entry->len < COUNTER_LENGTH)
+  if (G_UNLIKELY(!entry || !logEntryOnDisk || entry->len < COUNTER_LENGTH))
     {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot derive integer value - not enough data"));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Insufficient data"));
       return FALSE;
     }
-  //-- Make a NUL-terminated copy of the base64 chunk
-  char *b64 = g_strndup(entry->str, COUNTER_LENGTH);
-  gsize out_len;
-  guchar *decoded = g_base64_decode(b64, &out_len);
-  g_free(b64);
-  gboolean ret;
-
-  if (!decoded || out_len != sizeof(guint64))
+  // Allocate the decode buffer on the stack to avoid heap allocation entirely.
+  guchar decoded_buffer[16];
+  gint state = 0;
+  guint save = 0;
+  gsize out_len = g_base64_decode_step(entry->str, COUNTER_LENGTH, decoded_buffer, &state, &save);
+  if (G_UNLIKELY(out_len != sizeof(guint64)))
     {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot derive integer value from counter field"));
-      ret = FALSE; //-- bad base64 or wrong length
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Base64 decode length mismatch"));
+      return FALSE;
     }
-  else
-    {
-      guint64 raw_val;
-      memcpy(&raw_val, decoded, sizeof(guint64));
-      *logEntryOnDisk = GUINT64_FROM_LE(raw_val);
-      ret = TRUE;
-    }
-
-  g_free(decoded);
-  return ret;
+  // Extract the value directly from the stack buffer.
+  guint64 raw_val;
+  memcpy(&raw_val, decoded_buffer, sizeof(guint64));
+  *logEntryOnDisk = GUINT64_FROM_LE(raw_val);
+  return TRUE;
 }
 
 
@@ -2298,7 +2291,7 @@ gboolean tableContainsKey(GHashTable *table, guint64 key)
 // Add new value to table
 gboolean addValueToTable(GHashTable *table, guint64 value)
 {
-  if (table == NULL)
+  if (G_UNLIKELY(table == NULL))
     {
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("File: ", __FILE__),
@@ -2308,15 +2301,9 @@ gboolean addValueToTable(GHashTable *table, guint64 value)
                );
       return FALSE;
     }
-
   //-- Create new key to string and use value as key
   char *key = g_strdup_printf("%" G_GUINT64_FORMAT, value);
-
-  //-- Create new value
-  guint64 *p_value = g_new(guint64, 1);
-  *p_value = value;
-
-  return g_hash_table_insert(table, key, p_value);
+  return g_hash_table_insert(table, key, GUINT_TO_POINTER(value));
 }
 
 // Get a single line from a log file
