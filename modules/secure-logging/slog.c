@@ -2263,11 +2263,9 @@ gboolean getCounter(GString *entry, guint64 *logEntryOnDisk)
     }
   else
     {
-      memcpy(logEntryOnDisk, decoded, sizeof(guint64));
-      //-- TODO Investigate if this runs on a BigEndian machine also.
-      //   Usecase: crypt on BigEndian machine and decrypt (verify) on
-      //   LittleEndian machine and vice versa. Currently no test machine
-      //   with BigEndian is available.
+      guint64 raw_val;
+      memcpy(&raw_val, decoded, sizeof(guint64));
+      *logEntryOnDisk = GUINT64_FROM_LE(raw_val);
       ret = TRUE;
     }
 
