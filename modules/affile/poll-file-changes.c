@@ -92,6 +92,15 @@ poll_file_changes_check_file(gpointer s)
           msg_trace("poll-file-changes: polled fd got opened", evt_tag_int("fd", fd));
           self->fd_is_open = TRUE;
         }
+      if (self->file_reader->options->follow_always_reads)
+        {
+          /* if the fd e.g. is not seekable, we can try to read it directly */
+          msg_trace("poll-file-changes: trying to read the fd directly",
+                    evt_tag_int("fd", fd));
+          poll_file_changes_on_read(self);
+          return;
+        }
+
       msg_trace("poll-file-changes: checking if the followed file has new lines",
                 evt_tag_str("follow_filename", self->follow_filename));
 

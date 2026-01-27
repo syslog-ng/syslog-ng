@@ -701,6 +701,12 @@ file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq
   options->follow_freq = follow_freq;
 }
 
+void
+file_reader_options_set_follow_always_reads(FileReaderOptions *options, gboolean follow_always_reads)
+{
+  options->follow_always_reads = follow_always_reads;
+}
+
 gboolean
 file_reader_options_set_follow_method(FileReaderOptions *options, const gchar *follow_method)
 {

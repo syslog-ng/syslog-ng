@@ -29,6 +29,7 @@
 typedef struct _FileReaderOptions
 {
   gint follow_freq;
+  gboolean follow_always_reads;
   FollowMethod follow_method;
   gint multi_line_timeout;
   gboolean restore_state;
@@ -75,6 +76,7 @@ void file_reader_stop_follow_file(FileReader *self);
 void file_reader_cue_buffer_flush(FileReader *self);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
+void file_reader_options_set_follow_always_reads(FileReaderOptions *options, gboolean follow_always_reads);
 gboolean file_reader_options_set_follow_method(FileReaderOptions *options, const gchar *follow_method);
 void file_reader_options_set_multi_line_timeout(FileReaderOptions *options, gint multi_line_timeout);
 
