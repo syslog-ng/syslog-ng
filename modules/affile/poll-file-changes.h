@@ -34,6 +34,7 @@ struct _PollFileChanges
 {
   PollEvents super;
   gint fd;
+  gboolean fd_is_open;
   gchar *follow_filename;
   gint follow_freq;
   struct iv_timer follow_timer;

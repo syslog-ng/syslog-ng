@@ -82,10 +82,19 @@ poll_file_changes_check_file(gpointer s)
   off_t pos = -1;
   gint fd = self->fd;
 
-  msg_trace("Checking if the followed file has new lines",
-            evt_tag_str("follow_filename", self->follow_filename));
-  if (fd >= 0)
+  if (fd < 0)
+    self->fd_is_open = FALSE;
+  else
     {
+      if (self->fd_is_open == FALSE)
+        {
+          /* the file got created/opened */
+          msg_trace("poll-file-changes: polled fd got opened", evt_tag_int("fd", fd));
+          self->fd_is_open = TRUE;
+        }
+      msg_trace("poll-file-changes: checking if the followed file has new lines",
+                evt_tag_str("follow_filename", self->follow_filename));
+
       pos = lseek(fd, 0, SEEK_CUR);
       if (pos == (off_t) -1)
         {
@@ -153,7 +162,7 @@ poll_file_changes_check_file(gpointer s)
         }
       else
         {
-          msg_trace("Follow mode file still does not exist",
+          msg_trace("poll-file-changes: Follow mode file still does not exist",
                     evt_tag_str("filename", self->follow_filename));
         }
     }
@@ -231,6 +240,7 @@ poll_file_changes_init_instance(PollFileChanges *self,
   log_pipe_ref(&self->file_reader->super);
 
   self->fd = fd;
+  self->fd_is_open = fd < 0 ? FALSE : TRUE;
   self->follow_filename = g_strdup(follow_filename);
   self->follow_freq = follow_freq;
 
