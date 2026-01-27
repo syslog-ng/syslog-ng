@@ -44,6 +44,7 @@ struct _FileReader
   FileReaderOptions *options;
   FileOpener *opener;
   LogReader *reader;
+  gboolean can_check_eof;
   const gchar *persist_name;
   const gchar *persist_name_prefix;
   gboolean monitor_can_notify_file_changes;
