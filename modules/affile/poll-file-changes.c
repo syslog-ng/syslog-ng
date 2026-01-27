@@ -59,7 +59,7 @@ poll_file_changes_on_file_moved(PollFileChanges *self)
 {
   if (self->on_file_moved)
     self->on_file_moved(self);
-  log_pipe_notify(self->control, NC_FILE_MOVED, self);
+  log_pipe_notify(&self->file_reader->super, NC_FILE_MOVED, self);
 }
 
 static inline gboolean
@@ -210,13 +210,16 @@ poll_file_changes_free(PollEvents *s)
 {
   PollFileChanges *self = (PollFileChanges *) s;
 
-  log_pipe_unref(self->control);
+  log_pipe_unref(&self->file_reader->super);
   g_free(self->follow_filename);
 }
 
 void
-poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *follow_filename, gint follow_freq,
-                                LogPipe *control)
+poll_file_changes_init_instance(PollFileChanges *self,
+                                gint fd,
+                                const gchar *follow_filename,
+                                gint follow_freq,
+                                FileReader *reader)
 {
   self->super.stop_watches = poll_file_changes_stop_watches;
   self->super.update_watches = poll_file_changes_update_watches;
@@ -224,10 +227,12 @@ poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *fol
   self->super.get_fd = _get_fd;
   self->super.free_fn = poll_file_changes_free;
 
+  self->file_reader = reader;
+  log_pipe_ref(&self->file_reader->super);
+
   self->fd = fd;
   self->follow_filename = g_strdup(follow_filename);
   self->follow_freq = follow_freq;
-  self->control = log_pipe_ref(control);
 
   IV_TIMER_INIT(&self->follow_timer);
   self->follow_timer.cookie = self;
@@ -235,10 +240,10 @@ poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *fol
 }
 
 PollEvents *
-poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control)
+poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, FileReader *reader)
 {
   PollFileChanges *self = g_new0(PollFileChanges, 1);
-  poll_file_changes_init_instance(self, fd, follow_filename, follow_freq, control);
+  poll_file_changes_init_instance(self, fd, follow_filename, follow_freq, reader);
 
   return &self->super;
 }

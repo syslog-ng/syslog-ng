@@ -24,7 +24,7 @@
 #define POLL_FILE_CHANGES_H_INCLUDED
 
 #include "poll-events.h"
-#include "logpipe.h"
+#include "file-reader.h"
 
 #include <iv.h>
 
@@ -37,17 +37,17 @@ struct _PollFileChanges
   gchar *follow_filename;
   gint follow_freq;
   struct iv_timer follow_timer;
-  LogPipe *control;
+  FileReader *file_reader;
 
   void (*on_read)(PollFileChanges *);
   gboolean (*on_eof)(PollFileChanges *);
   void (*on_file_moved)(PollFileChanges *);
 };
 
-PollEvents *poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control);
+PollEvents *poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, FileReader *reader);
 
 void poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *follow_filename, gint follow_freq,
-                                     LogPipe *control);
+                                     FileReader *reader);
 void poll_file_changes_update_watches(PollEvents *s, GIOCondition cond);
 void poll_file_changes_stop_watches(PollEvents *s);
 void poll_file_changes_free(PollEvents *s);
