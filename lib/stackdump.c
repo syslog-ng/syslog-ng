@@ -316,6 +316,15 @@ _stackdump_print_registers(_STRUCT_MCONTEXT *p)
 
 #elif defined(__aarch64__) || defined(__arm64__) || defined(__arm64)
 
+/* Define PSTATE cast based on format */
+#if defined(__linux__)
+# define SDUMP_CAST_PSTATE (unsigned long long)
+#elif defined(__APPLE__)
+# define SDUMP_CAST_PSTATE (unsigned int)
+#elif defined(__FreeBSD__)
+# define SDUMP_CAST_PSTATE (uint32_t)
+#endif
+
 void
 _stackdump_print_registers(_STRUCT_MCONTEXT *p)
 {
@@ -327,12 +336,18 @@ _stackdump_print_registers(_STRUCT_MCONTEXT *p)
     "x18=%016llx x19=%016llx x20=%016llx x21=%016llx x22=%016llx x23=%016llx "
     "x24=%016llx x25=%016llx x26=%016llx x27=%016llx x28=%016llx fp=%016llx "
     "lr=%016llx sp=%016llx pc=%016llx pstate=" SDUMP_FMT_PSTATE,
-    SDUMP_REG_X(0), SDUMP_REG_X(1), SDUMP_REG_X(2), SDUMP_REG_X(3), SDUMP_REG_X(4), SDUMP_REG_X(5),
-    SDUMP_REG_X(6), SDUMP_REG_X(7), SDUMP_REG_X(8), SDUMP_REG_X(9), SDUMP_REG_X(10), SDUMP_REG_X(11),
-    SDUMP_REG_X(12), SDUMP_REG_X(13), SDUMP_REG_X(14), SDUMP_REG_X(15), SDUMP_REG_X(16), SDUMP_REG_X(17),
-    SDUMP_REG_X(18), SDUMP_REG_X(19), SDUMP_REG_X(20), SDUMP_REG_X(21), SDUMP_REG_X(22), SDUMP_REG_X(23),
-    SDUMP_REG_X(24), SDUMP_REG_X(25), SDUMP_REG_X(26), SDUMP_REG_X(27), SDUMP_REG_X(28), SDUMP_REG_FP,
-    SDUMP_REG_LR, SDUMP_REG_SP, SDUMP_REG_PC, SDUMP_REG_PSTATE);
+    (unsigned long long) SDUMP_REG_X(0), (unsigned long long) SDUMP_REG_X(1), (unsigned long long) SDUMP_REG_X(2),
+    (unsigned long long) SDUMP_REG_X(3), (unsigned long long) SDUMP_REG_X(4), (unsigned long long) SDUMP_REG_X(5),
+    (unsigned long long) SDUMP_REG_X(6), (unsigned long long) SDUMP_REG_X(7), (unsigned long long) SDUMP_REG_X(8),
+    (unsigned long long) SDUMP_REG_X(9), (unsigned long long) SDUMP_REG_X(10), (unsigned long long) SDUMP_REG_X(11),
+    (unsigned long long) SDUMP_REG_X(12), (unsigned long long) SDUMP_REG_X(13), (unsigned long long) SDUMP_REG_X(14),
+    (unsigned long long) SDUMP_REG_X(15), (unsigned long long) SDUMP_REG_X(16), (unsigned long long) SDUMP_REG_X(17),
+    (unsigned long long) SDUMP_REG_X(18), (unsigned long long) SDUMP_REG_X(19), (unsigned long long) SDUMP_REG_X(20),
+    (unsigned long long) SDUMP_REG_X(21), (unsigned long long) SDUMP_REG_X(22), (unsigned long long) SDUMP_REG_X(23),
+    (unsigned long long) SDUMP_REG_X(24), (unsigned long long) SDUMP_REG_X(25), (unsigned long long) SDUMP_REG_X(26),
+    (unsigned long long) SDUMP_REG_X(27), (unsigned long long) SDUMP_REG_X(28), (unsigned long long) SDUMP_REG_FP,
+    (unsigned long long) SDUMP_REG_LR, (unsigned long long) SDUMP_REG_SP, (unsigned long long) SDUMP_REG_PC,
+    SDUMP_CAST_PSTATE SDUMP_REG_PSTATE);
 
   _stackdump_print_stack((gpointer) SDUMP_REG_SP);
 }
