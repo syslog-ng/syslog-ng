@@ -370,8 +370,13 @@ Test(qdisk, prealloc)
   cr_assert(stat(filename, &file_stats) == 0, "Stat call failed, errno: %d", errno);
   gint64 real_size = file_stats.st_size;
 
-  cr_assert_eq(qdisk_get_file_size(qdisk), MIN_CAPACITY_BYTES);
-  cr_assert_eq(qdisk_get_file_size(qdisk), real_size);
+  gint64 actual = qdisk_get_file_size(qdisk);
+  cr_assert_eq(actual, real_size,
+               "qdisk real size mismatch: actual=%"G_GINT64_FORMAT" real=%"G_GINT64_FORMAT,
+               actual, real_size);
+  cr_assert_eq(actual, (gint64) MIN_CAPACITY_BYTES,
+               "qdisk size mismatch: actual=%"G_GINT64_FORMAT" expected=%"G_GINT64_FORMAT,
+               actual, (gint64) MIN_CAPACITY_BYTES);
 
   qdisk_stop(qdisk, NULL, NULL, NULL);
   cleanup_qdisk(filename, qdisk);

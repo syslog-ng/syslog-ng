@@ -320,6 +320,7 @@ jobs:
 
       - name: cmake check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
+        #        Criterion tests rerquire none PIE binaries, which is not supported on silicon ARM macs anymore
         if: matrix.build-tool == 'cmake' && matrix.version == '15-intel'
         run: |
           cmake --build ./build -j ${THREADS} --target check
@@ -351,6 +352,7 @@ jobs:
 
       - name: make check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
+        #        Criterion tests rerquire none PIE binaries, which is not supported on silicon ARM macs anymore
         if: matrix.build-tool == 'autotools' && matrix.version == '15-intel'
         run: |
           set -e
