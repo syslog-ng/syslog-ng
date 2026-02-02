@@ -1,0 +1,17 @@
+Line 01
+
+Line 03 (Line 02 is empty)
+Line 04 Hello, World! 🌍, Voilà! Le garçon déçu a mangé un gâteau.
+
+Line 06 (Line 05 is empty)
+Line 07 öäüÖÄÜßi Special chars: !@#€,<£$%^&*\`§©®™) 🤪
+Line 08 last no newline at the end
+
+Line 10
+
+Line 12 (Line 11 is empty)
+Line 13 A man in an interrogation room says, “I’m not saying a word without my lawyer present. 🌍
+Line 14 Cop: “You are the lawyer.”
+Line 15 Lawyer: “Exactly, so where’s my present?” 🤪
+Line 16 ***
+Line 17 End of multiline test file

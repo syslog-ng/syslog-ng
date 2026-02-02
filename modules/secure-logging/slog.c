@@ -42,9 +42,10 @@
 #endif
 
 #include "messages.h"
+#include "utils_slog.h"
 #include "slog.h"
 
-// Argument indicators for command line utilities
+/* Argument indicators for command line utilities */
 #define LONG_OPT_INDICATOR "--"
 #define SHORT_OPT_INDICATOR "-"
 
@@ -213,8 +214,8 @@ gboolean get_path_mac0(const gchar *pathAggMac, gchar *pathMac0, size_t sizePath
  * Note: caller must take care of memory management.
  *
  * Return:
- * Length of ciphertext (>0)
- * 0 on error
+ * Length of ciphertext (>=0)
+ * <0 on error
  */
 int sLogEncrypt(guchar *plaintext, int plaintext_len,
                 guchar *key, guchar *iv,
@@ -230,19 +231,20 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
 
   int len;
   int ciphertext_len;
-  int result = 0; //-- default in case of error
+  int result = -1; //-- default in case of error
 
   /* Create and initialise the context */
   if ( !(ctx = EVP_CIPHER_CTX_new()) )
     {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize OpenSSL contex"));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "sLogEncrypt, -1, Unable to initialize OpenSSL contex"));
       return result;
     }
 
   /* Initialise the encryption operation. */
   if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
     {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize OpenSSL contex"));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "sLogEncrypt, -2, Unable to initialize OpenSSL contex"));
+      result = -2;
       goto CLEANUP_SLOGENCRYPT;
     }
 
@@ -251,7 +253,8 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
       /* Set IV length if default 12 bytes (96 bits) is not appropriate */
       if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
         {
-          msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to set IV length"));
+          msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "sLogEncrypt, -3, Unable to set IV length"));
+          result = -3;
           goto CLEANUP_SLOGENCRYPT;
         }
     }
@@ -259,7 +262,8 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
   /* Initialise key and IV */
   if (1 != EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv))
     {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize encryption key and IV"));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "sLogEncrypt, -4, Unable to initialize encryption key and IV"));
+      result = -4;
       goto CLEANUP_SLOGENCRYPT;
     }
 
@@ -268,7 +272,8 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
    */
   if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
     {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to encrypt data"));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "sLogEncrypt, -5, Unable to encrypt data"));
+      result = -5;
       goto CLEANUP_SLOGENCRYPT;
     }
 
@@ -279,7 +284,8 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
    */
   if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
     {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to complete encryption of data"));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "sLogEncrypt, -6, Unable to complete encryption of data"));
+      result = -6;
       goto CLEANUP_SLOGENCRYPT;
     }
 
@@ -288,7 +294,8 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
   /* Get the tag */
   if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, AES_BLOCKSIZE, tag))
     {
-      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to acquire encryption tag"));
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "sLogEncrypt, -7, Unable to acquire encryption tag"));
+      result = -7;
       goto CLEANUP_SLOGENCRYPT;
     }
 
@@ -303,14 +310,142 @@ CLEANUP_SLOGENCRYPT:
   return result;
 }
 
+
+/*
+ * GMAC - Tag generation only
+ *
+ * 1. Parameter: pointer to plaintext (input)
+ * 2. Parameter: length of plaintext (input)
+ * 3. Parameter: pointer to key (input)
+ * 4. Parameter: pointer to IV (input, nonce of length IV_LENGTH)
+ * 5. Parameter: pointer to tag (output)
+ *
+ * Note: caller must take care of memory management.
+ *
+ * Return:
+ * 0: in case of success
+ * < 0 in case of error
+ */
+
+int sLogGMAC(guchar *plaintext, int plaintext_len, guchar *key, guchar *iv, guchar *tag)
+{
+  /* This function performs GMAC (Tag generation only).
+   * No data is encrypted. The 'ciphertext' buffer remains untouched but seems to be needed.
+   */
+  EVP_CIPHER_CTX *ctx = NULL;
+
+  int len;
+  int ciphertext_len = 0; // Initialize to 0 as we are not producing ciphertext
+  int result = 0;
+
+  if (NULL == plaintext || NULL == key || NULL == iv || NULL == tag)
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "sLogGMAC: invalid input"));
+      return -42; //-- ERROR
+    }
+
+  guchar *ciphertext = NULL;
+  int ct_dummy_len = 256;
+  if (0 != plaintext_len)
+    {
+      ct_dummy_len = plaintext_len;
+    }
+  ciphertext = g_try_new0(guchar, ct_dummy_len);
+  if (NULL == ciphertext)
+    {
+      return -420;  //-- ERROR, NEVER EVER
+    }
+
+  /* Create and initialise the context */
+  if (!(ctx = EVP_CIPHER_CTX_new()))
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize OpenSSL context"));
+      result = -1; //-- ERROR
+      goto CLEANUP_SLOGGMAC;
+    }
+
+  /* Initialise the encryption operation. */
+  if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize OpenSSL context"));
+      result = -2; //-- ERROR
+      goto CLEANUP_SLOGGMAC;
+    }
+
+  if (IV_LENGTH != 12)
+    {
+      if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
+        {
+          msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to set IV length"));
+          result = -3; //-- ERROR
+          goto CLEANUP_SLOGGMAC;
+        }
+    }
+
+  /* Initialise key and IV */
+  if (1 != EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv))
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to initialize encryption key and IV"));
+      result = -4; //-- ERROR
+      goto CLEANUP_SLOGGMAC;
+    }
+
+  /* Note: This step is different to sLogEncrypt
+   * Pass NULL as the second argument (output buffer).
+   * This tells OpenSSL to treat 'plaintext' as AAD (Additional Authenticated Data).
+   * It will be hashed into the TAG, but NOT encrypted.
+   */
+  if (1 != EVP_EncryptUpdate(ctx, NULL, &len, plaintext, plaintext_len))
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to update AAD"));
+      result = -5; //-- ERROR
+      goto CLEANUP_SLOGGMAC;
+    }
+
+  /* Note: In GCM, usually you finalize encryption here.
+   * Since we only have AAD, this step mainly finalizes the internal state for the Tag.
+   * Its not clear whether chiphertext is really need, so a valid buffer is provided
+   * here even when the called function does not write into it.
+   */
+  if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + ciphertext_len, &len))
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to complete GMAC"));
+      result = -6; //-- ERROR
+      goto CLEANUP_SLOGGMAC;
+    }
+
+  // ciphertext_len remains 0 here
+
+  /* Get the tag */
+  if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, AES_BLOCKSIZE, tag))
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to acquire encryption tag"));
+      result = -7; //-- ERROR
+      goto CLEANUP_SLOGGMAC;
+    }
+
+  // Note: 0 to indicate no ciphertext was produced as we are in GMAC mode
+  result = ciphertext_len; //-- 0, SUCCESS
+
+CLEANUP_SLOGGMAC:
+  if (ctx)
+    {
+      EVP_CIPHER_CTX_free(ctx);
+    }
+  g_free(ciphertext);
+  return result;
+}
+
+
 /*
  * Decrypt ciphertext and verify integrity
  *
  * 1. Parameter: Pointer to ciphertext (input)
  * 2. Parameter: Ciphertext length (input)
  * 3. Parameter: Pointer to integrity tag (input)
- * 4. Parameter: Pointer to IV (input)
- * 5. Parameter: Pointer to plaintext (output)
+ * 4. Parameter: Pointer to key (input)
+ * 5. Parameter: Pointer to IV (input)
+ * 6. Parameter: Pointer to plaintext (output)
  *
  * Note: Caller must take care of memory management.
  *
@@ -405,18 +540,21 @@ CLEANUP_SLOGDECRYPT:
 }
 
 
-/*
- *  Create new forward-secure log entry
+/**
+ * @brief Create new forward-secure log entry
  *
  * This function creates a new encrypted log entry updates the corresponding MAC accordingly
  *
- * 1. Parameter: Number of log entries (for enumerating the entries in the log file)
- * 2. Parameter: The original log message
- * 3. Parameter: The current key
- * 4. Parameter: The current MAC
- * 5. Parameter: The resulting encrypted log entry
- * 6. Parameter: The newly updated MAC
- * 7. Parameter: The capacity of the newly updated MAC buffer
+ * @param numberOfLogEntries  1. Parameter: Number of log entries (for enumerating the entries in the log file)
+ * @param text                2. Parameter: The original log message
+ * @param mainKey             3. Parameter: The current key
+ * @param inputBigMax         4. Parameter: The current MAC
+ * @param output              5. Parameter: The resulting encrypted log entry
+ * @param outputBigMac        6. Parameter: The newly updated MAC
+ * @param outputBigMac_capacity  7. Parameter: The capacity of the newly updated MAC buffer
+ * @param logmode             8. Parameter: The log mode (direct|base64|enc)
+ *
+ * @return TRUE in case of SUCCESS else FALSE
 */
 gboolean sLogEntry(
   guint64 numberOfLogEntries,
@@ -425,10 +563,18 @@ gboolean sLogEntry(
   guchar *inputBigMac,
   GString *output,
   guchar *outputBigMac,
-  gsize outputBigMac_capacity)
+  gsize outputBigMac_capacity,
+  enum LogMode logmode)
 {
   guchar encKey[KEY_LENGTH];
   guchar MACKey[KEY_LENGTH];
+
+  if (LOGMODE_PLAIN_DIRECT != logmode && LOGMODE_PLAIN_BASE64 != logmode && LOGMODE_ENCRYPTED != logmode)
+    {
+      g_print("ERROR sLogEntry: logmode: %d\n", (gint)logmode);
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "sLogEntry: Wrong logmode!"), evt_tag_long("logmode", logmode));
+      return FALSE; //-- ERROR, NEVER EVER
+    }
 
   //-- according sub functions mainKey is also  most likely of length KEY_LENGTH
   if (!deriveSubKeys(mainKey, encKey, MACKey))
@@ -439,47 +585,103 @@ gboolean sLogEntry(
   // Compute current log entry number
   gchar *counterString = g_base64_encode((const guchar *)&numberOfLogEntries, sizeof(numberOfLogEntries));
 
-  int slen = (int) text->len;
-
-  // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
+  // This buffer holds everything: AggregatedMAC, IV, Tag, and log message
   // Binary data cannot be larger than its base64 encoding
-  guchar bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + slen];
+  // old:  guchar bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + slen];
+  // Use of heap instad of stack becasue the length of a log message shall be unlimited.
+  // Allocate slightly more than twice as much as needed
+  int slen = (int) text->len;
+  if (0 == slen)
+    {
+      msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Log string is empty!"));
+    }
+
+  guchar *bigBuf = g_try_new0(guchar, AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + 2 * (slen + 64) + 1);
+  if (NULL == bigBuf)
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to allocate memory buffer"));
+      g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
+                      SLOG_ERROR_PREFIX ": Unable to allocate memory for log message:", text->str);
+      g_free(counterString);
+      return FALSE; //-- ERROR, NEVER EVER
+    }
 
   // This is where are ciphertext related data starts
-  guchar *ctBuf = &bigBuf[AES_BLOCKSIZE];
-  guchar *iv = ctBuf;
+  guchar *ivtagmsgBuf = &bigBuf[AES_BLOCKSIZE];
+  guchar *iv = ivtagmsgBuf;
   guchar *tag = &bigBuf[AES_BLOCKSIZE + IV_LENGTH];
-  guchar *ciphertext = &bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE];
+  guchar *msg = &bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE];
 
-// Generate random nonce
+  // Generate random nonce
   if (RAND_bytes(iv, IV_LENGTH) == 1)
     {
-      // Encrypt log data
-      int ct_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, ciphertext, tag);
-      if (ct_length <= 0)
+      int msg_length = -1; //-- init with ERROR
+      if (LOGMODE_ENCRYPTED == logmode)
         {
-          msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to correctly encrypt log message"));
-          g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
-                          SLOG_ERROR_PREFIX ": Unable to correctly encrypt the following log message:", text->str);
-          g_free(counterString);
-          return FALSE;
+          // Encrypt log data
+          msg_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, msg, tag);
+          if (msg_length < 0) //-- Fix: Now less than 0 means error
+            {
+              msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to correctly encrypt log message"));
+              g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
+                              SLOG_ERROR_PREFIX ": Unable to correctly encrypt the following log message:", text->str);
+              g_free(counterString);
+              g_free(bigBuf);
+              return FALSE; //-- ERROR
+            }
+          if (msg_length != slen)
+            {
+              //-- NEVER EVER because EVP_aes_256_gcm is used
+              msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason",
+                                                           "Length of encrypted message should be the same as the plain message!!"));
+            }
         }
+      else
+        {
+          // Provide log message unencrypted as is or Base64 encoded
+          int retvalGMAC = sLogGMAC((guchar *)text->str, slen, encKey, iv, tag);
+          if (0 != retvalGMAC)
+            {
+              msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to get GMAC tag from log message"),
+                        evt_tag_long("retvalGMAC: ", retvalGMAC));
+
+              g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
+                              SLOG_ERROR_PREFIX ": Unable to get GMAC tag from the following log message:", text->str);
+              g_free(counterString);
+              g_free(bigBuf);
+              return FALSE; //-- ERROR
+            }
+          memcpy(msg, (guchar *)text->str, slen); //-- copy log message without encryption directly into bigBuf
+          msg_length = slen;
+        }
+
+      //-- common for encrypted and plain mode ---
 
       // Write current log entry number
       g_string_printf (output, "%*.*s:", COUNTER_LENGTH, COUNTER_LENGTH, counterString);
       g_free(counterString);
 
-      // Write IV, tag, and ciphertext at once
-      gchar *encodedCtBuf = g_base64_encode(ctBuf, IV_LENGTH + AES_BLOCKSIZE + ct_length);
-      g_string_append(output, encodedCtBuf);
-      g_free(encodedCtBuf);
+      if (LOGMODE_ENCRYPTED == logmode || LOGMODE_PLAIN_BASE64 == logmode)
+        {
+          // Show log message in file Base64 encoded after counter, :, IV and TAG
+          // Write IV, tag, and msg (encrypted or not)
+          gchar *base64Buf = g_base64_encode(ivtagmsgBuf, IV_LENGTH + AES_BLOCKSIZE + msg_length);
+          g_string_append(output, base64Buf);
+          g_free(base64Buf);
+        }
+      else
+        {
+          // Show log message after counter, :, IV and TAG directly as is
+          gchar *base64Buf = g_base64_encode(ivtagmsgBuf, IV_LENGTH + AES_BLOCKSIZE);
+          g_string_append(output, base64Buf); //-- Provide IV and TAG in Base64
+          g_free(base64Buf);
+          g_string_append(output, text->str); //-- Provide log message M as is (Do NOT encode M as Base64).
+        }
 
       // Compute aggregated MAC
       gsize outlen = 0;
-      //-- The initial MAC file has been created, so there is no need
-      //   anymore to check whether this is the very first encryption.
       memcpy(bigBuf, inputBigMac, AES_BLOCKSIZE);
-      if (!cmac(MACKey, bigBuf, AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + ct_length, outputBigMac, &outlen,
+      if (!cmac(MACKey, bigBuf, AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + msg_length, outputBigMac, &outlen,
                 outputBigMac_capacity))
         {
           msg_error(SLOG_ERROR_PREFIX,
@@ -488,7 +690,8 @@ gboolean sLogEntry(
                     evt_tag_long("Code: ", SLOG_MEM_ALLOC_ERROR),
                     evt_tag_str("Reason: ", "Bad CMAC")
                    );
-          return FALSE;
+          g_free(bigBuf);
+          return FALSE; //-- ERROR
         }
     }
   else
@@ -498,10 +701,14 @@ gboolean sLogEntry(
       g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
                       SLOG_ERROR_PREFIX ": Could not obtain enough random bytes for the following log message:", text->str);
       g_free(counterString);
-      return FALSE;
+      g_free(bigBuf);
+      return FALSE; //-- ERROR
     }
-  return TRUE;
+
+  g_free(bigBuf);
+  return TRUE; //-- SUCCESS
 }
+
 
 /*
  * Evolve key multiple times
@@ -783,7 +990,14 @@ gboolean PRF(guchar *key, guchar *originalInput,
   //-- content:  i || Label || 00 || Context || outputLength
   gsize myInputLength = gsize_len + label_len + 1 + context_len + output_len;
 
-  guchar *input = g_new0(guchar, myInputLength);
+  guchar *input = g_try_new0(guchar, myInputLength);
+  if (NULL == input)
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Failed to allocate memory"),
+                evt_tag_str("File: ", __FILE__),
+                evt_tag_long("Line: ", __LINE__));
+      return FALSE;
+    }
 
   for (gsize i = 0 ; i < n ; i++)
     {
@@ -1128,12 +1342,12 @@ gboolean readKey(guchar *destKey, guint64 *destCounter, gchar *keypath)
   return result && cmacOk;
 }
 
-/*
- * Write key to file
- *
- * Return:
- * TRUE on success
- * FALSE on error
+/**
+ * @brief Write key to file
+ * @param key     Pointer to key buffer
+ * @param counter Counter value used for CMAC check
+ * @param keypath Full file name of key file
+ * @return TRUE on success, FALSE on error
  */
 gboolean writeKey(guchar *key, guint64 counter, gchar *keypath)
 {
@@ -1205,7 +1419,28 @@ CLEANUP_WRITEKEY:
   return result && cmacOk;
 }
 
-// Iterate through log entries contained in a buffer and verify them
+
+/**
+ * @brief Iterate through log entries contained in a buffer and verify them
+ *
+ * Decrypts and verifies checksums of log entries depending on one of the three log modes.
+ * Detects whether log entry has been tampered.
+ *
+ * @param entriesInBuffer  Count of entries in input GPtrArray
+ * @param input            GPtrAtrray containing GString pointers with encrypted log lines
+ * @param nextLogEntry     Counter value of log line
+ * @param mainKey
+ * @param keyZero
+ * @param keyNumber
+ * @param output           GPtrArray containing GSTring pointers with unencrypted/checked log lines
+ * @param numberOfLogEntries,
+ * @param cmac_tag,
+ * @param cmac_tag_capacity,
+ * @param tab,
+ * @param logmode  The log mode used for all entries in input array (plain, plain-base64, encrypted-base64)
+ *
+ * @return TRUE in case success else FALSE
+ */
 gboolean iterateBuffer(
   guint64 entriesInBuffer,
   GPtrArray *input,
@@ -1217,16 +1452,25 @@ gboolean iterateBuffer(
   guint64 *numberOfLogEntries,
   guchar *cmac_tag,
   gsize cmac_tag_capacity,
-  GHashTable *tab)
+  GHashTable *tab,
+  enum LogMode logmode)
 {
-  gboolean result = TRUE;
+  gboolean result = TRUE; //-- TRUE means success
+  gboolean is_verbose = FALSE;
+
+  if (LOGMODE_PLAIN_DIRECT != logmode && LOGMODE_PLAIN_BASE64 != logmode && LOGMODE_ENCRYPTED != logmode)
+    {
+      msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "iterateBuffer: Wrong logmode!"), evt_tag_long("logmode", logmode));
+      result = FALSE; //-- ERROR, NEVER EVER
+    }
+
   for (guint64 i = 0; i < entriesInBuffer; i++)
     {
       g_ptr_array_add(output, g_string_new(NULL));
-
       GString *entry = (GString *)g_ptr_array_index(input, i);
       guint64 len = entry->len;
       guint64 logEntryOnDisk;
+      gboolean is_tampered = FALSE; //-- detect tampered string, e.g. base64 manipulation
 
       if (len > (COUNTER_LENGTH + 1))
         {
@@ -1235,14 +1479,11 @@ gboolean iterateBuffer(
               // Cannot determine counter value -> Jump to next entry
               logEntryOnDisk = *nextLogEntry;
             }
-
           // Subtract counter from log entry
           len = len - (COUNTER_LENGTH + 1);
-
           if (logEntryOnDisk != *nextLogEntry) //-- not equal
             {
               //-- This branch is not the normal expected case
-
               if (tableContainsKey(tab, logEntryOnDisk))
                 {
                   msg_error(SLOG_ERROR_PREFIX,
@@ -1250,7 +1491,6 @@ gboolean iterateBuffer(
                             evt_tag_long("entry", logEntryOnDisk));
                   result = FALSE;
                 }
-
               if (logEntryOnDisk < (*nextLogEntry)) //-- Case 1 less
                 {
                   if (logEntryOnDisk < keyNumber)
@@ -1273,7 +1513,6 @@ gboolean iterateBuffer(
                       result = FALSE;
                     }
                 }
-
               else  //-- Case 2 greater
                 {
                   if (logEntryOnDisk - (*nextLogEntry) > 1000000)
@@ -1285,37 +1524,163 @@ gboolean iterateBuffer(
                                evt_tag_long("key to derive to", logEntryOnDisk),
                                evt_tag_long("number of log entries", *numberOfLogEntries));
                     }
-
                   (void) deriveKey(mainKey, logEntryOnDisk, *nextLogEntry);
                   *nextLogEntry = logEntryOnDisk;
                 }
-
-            } //-- not equal
+            } //-- not equal (handling of not expected case)
 
           GString *line = (GString *)g_ptr_array_index(input, i);
           GString *out = (GString *)g_ptr_array_index(output, i);
+          //-- iv, tag, msg all in one go base64 (when mode encryption and plain mode base64)
+          char *ct = &(line->str)[COUNTER_LENGTH + 1]; //-- Note: ct might point to manipulated stuff
+          gsize outputLength = 0;
+          guchar *bigBuf = NULL;
+          guchar *binBuf = NULL;
+          //-- One size fits all, plain mode Base64, plain mode direct and encrypted mode (and also diff enc algo)
+          //   Base64 is always longer or equal than unencoded (padding, len muliply of 4, (4/3)*orginalLength)
+          bigBuf = g_try_new0(guchar, AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + 2 * (line->len + 64) + 1);
+          if (NULL == bigBuf)
+            {
+              //-- ERROR, NEVER EVER
+              msg_error(SLOG_ERROR_PREFIX,
+                        evt_tag_str("Reason", "Heap allocation fails for bigBuf in iterateBuffer"),
+                        evt_tag_long("entry", logEntryOnDisk));
+              result = FALSE;
+            }
 
-          char *ct = &(line->str)[COUNTER_LENGTH + 1];
-          gsize outputLength;
+          //-- logmode ---
 
-          // binBuf = IV + TAG + CT
-          guchar *binBuf = g_base64_decode(ct, &outputLength);
-          int pt_length = 0;
+          if (LOGMODE_PLAIN_DIRECT == logmode)
+            {
+              gsize len_iv_tag = 0;
+              guchar *binBuf_iv_tag = NULL;
+              guchar *b64_iv_tag = NULL;
+              GString *gstr_ivtag = g_string_new("");
+              binBuf = &bigBuf[AES_BLOCKSIZE]; //-- points to IV, in this mode its only a pointer, currently empty IV
+              gsize len_expected_ivtag_b64 = get_base64_length( IV_LENGTH + AES_BLOCKSIZE ); //-- ideal, when not manipulated
+              // COUNTER_LENGTH 12 (in Base64 str len), 1: colon (NONE Base64),
+              if (line->len < (COUNTER_LENGTH + 1 + len_expected_ivtag_b64))
+                {
+                  is_tampered = TRUE;
+                  msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "is_tampered, wrong line->len"), evt_tag_long("Entry: ",
+                              logEntryOnDisk));
+                }
+              if (FALSE == is_tampered)
+                {
+                  g_string_append_len(gstr_ivtag, &(line->str)[COUNTER_LENGTH + 1], len_expected_ivtag_b64 );
+                  b64_iv_tag = (guchar *) & (gstr_ivtag->str)[0];
+                  if (TRUE == is_verbose)
+                    {
+                      GString *ptest = g_string_new("");
+                      g_string_append_len(ptest, &(line->str)[0], COUNTER_LENGTH + 1 );
+                      g_print("\n\nline->str:\n%s\nCounterColon:\n%s\nb64_iv_tag:\n%s\n\n", line->str, ptest->str,  b64_iv_tag);
+                      g_string_free(ptest, TRUE);
+                    }
+                  gboolean is_base64 = is_likely_base64((const char *) b64_iv_tag);
+                  if (FALSE == is_base64)
+                    {
+                      is_tampered = TRUE;
+                      msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "is_tampered, not likely base64 iv tag"), evt_tag_long("Entry: ",
+                                  logEntryOnDisk));
+                    }
+                }
+              if (FALSE == is_tampered)
+                {
+                  binBuf_iv_tag = g_base64_decode((const gchar *) b64_iv_tag, &len_iv_tag);
+                  if (len_iv_tag != IV_LENGTH + AES_BLOCKSIZE)
+                    {
+                      is_tampered = TRUE;
+                      msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "is_tampered, wrong length from g_base64_decode"),
+                                  evt_tag_long("Entry: ", logEntryOnDisk));
+                    }
+                }
+              if (FALSE == is_tampered)
+                {
+                  memcpy(&bigBuf[AES_BLOCKSIZE], binBuf_iv_tag, IV_LENGTH);
+                  memcpy(&bigBuf[AES_BLOCKSIZE + IV_LENGTH], &binBuf_iv_tag[IV_LENGTH], AES_BLOCKSIZE);
+                  gsize offset = COUNTER_LENGTH + 1 + len_expected_ivtag_b64;
+                  gsize len_msg = 0;
+                  if (line->len > offset)
+                    {
+                      len_msg = line->len - offset; //-- msg len > 0
+                      memcpy(binBuf + IV_LENGTH + AES_BLOCKSIZE, &(line->str)[offset], len_msg);
+                    }
+                  outputLength = IV_LENGTH + AES_BLOCKSIZE + len_msg;
+                }
+              g_free(binBuf_iv_tag);
+              g_string_free(gstr_ivtag, TRUE);
+            }
+          else //-- if (LOGMODE_PLAIN_DIRECT == logmode)
+            {
+              //-- logmode: LOGMODE_BASE64 or LOGMODE_ENCRYPTED
+              // binBuf = IV + TAG + msg, msg = CT | PT
+              binBuf = g_base64_decode(ct, &outputLength); //-- in this mode its a buffer that must be freed
+            }
+
+          int pt_length = -1; //-- init with invalid value for error
 
           // Check whether something weird has happened during conversion
-          if (outputLength > IV_LENGTH + AES_BLOCKSIZE)
+          if (outputLength >= IV_LENGTH + AES_BLOCKSIZE) //-- Fix allow length 0 of msg
             {
-              guchar pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
+              // guchar pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
+              guchar  *pt = g_try_new0(guchar, outputLength + 2 * (line->len + 64) + 1); //-- safe
+              if (NULL == pt)
+                {
+                  msg_error(SLOG_ERROR_PREFIX,
+                            evt_tag_str("Reason", "Heap allocation fails for pt in iterateBuffer"),
+                            evt_tag_long("entry", logEntryOnDisk));
+                  result = FALSE; //-- ERROR, NEVER EVER
+                }
               guchar encKey[KEY_LENGTH];
-              deriveEncSubKey(mainKey, encKey);
-              pt_length = sLogDecrypt(&binBuf[IV_LENGTH + AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE,
-                                      &binBuf[IV_LENGTH],
-                                      encKey, binBuf, pt);
+              deriveEncSubKey(mainKey, encKey); //-- TODO clarify: what when tampared and wrong outputLength?
+              if (LOGMODE_ENCRYPTED == logmode)
+                {
+                  pt_length = sLogDecrypt(&binBuf[IV_LENGTH + AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE,
+                                          &binBuf[IV_LENGTH],
+                                          encKey, binBuf, pt);
+                }
+              else
+                {
+                  //-- plain modes (LOGMODE_DIRECT or LOGMODE_BASE64) ---
+                  pt_length = -1; //-- init with error
+                  if (FALSE == is_tampered)
+                    {
+                      memcpy(pt, &binBuf[IV_LENGTH + AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE);
+                      //-- check TAG ---
+                      guchar *tag_expected = &binBuf[IV_LENGTH]; //-- expected tag
+                      guchar tag_recalc[AES_BLOCKSIZE];
+                      int retvalGMAC = sLogGMAC(pt, outputLength - IV_LENGTH - AES_BLOCKSIZE, encKey, binBuf, tag_recalc);
+                      if (0 == retvalGMAC) //-- 0 means success of sLogGMAC (tag generated successfully)
+                        {
+                          int retmemcmp = memcmp(tag_expected, tag_recalc, AES_BLOCKSIZE);
+                          if (0 == retmemcmp)
+                            {
+                              //-- TAG verification was successful
+                              pt_length = outputLength - IV_LENGTH - AES_BLOCKSIZE;
+                            }
+                          else
+                            {
+                              //-- pt_length provides an invalid value which is checked below
+                              msg_warning(SLOG_WARNING_PREFIX,
+                                          evt_tag_str("Reason", "Different TAG in plain mode detected!"),
+                                          evt_tag_long("Entry: ", logEntryOnDisk));
+                            } // memcmp
+                        } // GMAC
+                      else
+                        {
+                          msg_error(SLOG_ERROR_PREFIX,
+                                    evt_tag_str("Reason", "sLogGMAC returns with error!"),
+                                    evt_tag_long("retvalGMAC: ", retvalGMAC),
+                                    evt_tag_long("Entry: ", logEntryOnDisk));
+                        }
+                    } // if (FALSE == is_tampered)
+                } //-- plain mode (LOGMODE_DIRECT or LOGMODE_BASE64)
 
-              if (pt_length > 0)
+              if (pt_length >= 0) //-- allow msg len 0
                 {
                   // Include colon, whitespace, and \0
                   g_string_append_printf(out, "%0*"G_GINT64_MODIFIER"x: %.*s", CTR_LEN_SIMPLE, logEntryOnDisk, pt_length, pt);
+                  //g_print("out: %s\n", out->str);
 
                   // Add to table
                   if (!addValueToTable(tab, logEntryOnDisk))
@@ -1332,9 +1697,13 @@ gboolean iterateBuffer(
                   deriveMACSubKey(mainKey, MACKey);
                   //-- now that an inital aggregated MAC exists, do the
                   //   same for first entry as for any other entries!
-                  guchar bigBuf[AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + pt_length];
                   memcpy(bigBuf, cmac_tag, AES_BLOCKSIZE);
-                  memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH + AES_BLOCKSIZE + pt_length);
+
+                  if (LOGMODE_ENCRYPTED == logmode || LOGMODE_PLAIN_BASE64 == logmode)
+                    {
+                      memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH + AES_BLOCKSIZE + pt_length);
+                      //-- Note: When in plain direct mode then bigBuf contains already needed data and binBuf points to inside bigBuf
+                    }
                   if (!cmac(MACKey, bigBuf, AES_BLOCKSIZE + IV_LENGTH + AES_BLOCKSIZE + pt_length, cmac_tag, &outlen, cmac_tag_capacity))
                     {
                       msg_error(SLOG_ERROR_PREFIX,
@@ -1343,35 +1712,62 @@ gboolean iterateBuffer(
                                 evt_tag_long("Line: ", __LINE__));
                       result = FALSE;
                     }
-                }
-            }
+                } // pt_length
 
-          if (pt_length <= 0)
+              g_free(pt);
+              pt = NULL;
+
+            } // length check if (outputLength > IV_LENGTH + AES_BLOCKSIZE)
+
+          if (pt_length < 0)
             {
               msg_warning(SLOG_WARNING_PREFIX,
-                          evt_tag_str("Reason", "Decryption not successful"),
+                          evt_tag_str("Reason", (LOGMODE_ENCRYPTED == logmode) ? "Decryption not successful" : "Verificaton not successful" ),
                           evt_tag_long("entry", logEntryOnDisk));
               result = FALSE;
             }
 
-          g_free(binBuf);
+          g_free(bigBuf);
+          bigBuf = NULL;
+
+          if (LOGMODE_ENCRYPTED == logmode || LOGMODE_PLAIN_BASE64 == logmode)
+            {
+              g_free(binBuf); //-- Note: binBuf is just a pointer inside bigBuf when plain mode direct
+              binBuf = NULL;
+            }
 
           evolveKey(mainKey);
           (*numberOfLogEntries)++;
           (*nextLogEntry)++;
-        }
+
+        } //-- if (len > (COUNTER_LENGTH + 1))
       else
         {
           msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Cannot read log entry"), evt_tag_long("", *nextLogEntry));
           result = FALSE;
         }
 
-    } // for
+    } //-- for (guint64 i = 0; i < entriesInBuffer; i++)
 
   return result;
 }
 
-// Perform the final verification step
+
+/**
+ * @brief Perform the final verification step
+ *
+ * Search for missing entries and let the user / caller know by log output.
+ * Compares also provided aggMAC with cmac_tag.
+ * This function also do a clean-up of the hash table tab.
+ *
+ * @param startingEntry
+ * @param entriesInFile
+ * @param aggMAC
+ * @param cmac_tag
+ * @param tab
+ *
+ * @return TRUE in case success (all log entries succcesfull processed) else FALSE
+ */
 gboolean finalizeVerify(
   guint64 startingEntry,
   guint64 entriesInFile,
@@ -1410,7 +1806,6 @@ gboolean finalizeVerify(
     }
 
   int equal = memcmp(aggMAC, cmac_tag, CMAC_LENGTH);
-
   if (equal != 0)
     {
       msg_warning(SLOG_WARNING_PREFIX, evt_tag_str("Reason", "Aggregated MAC mismatch. Log might be incomplete"));
@@ -1427,7 +1822,20 @@ gboolean finalizeVerify(
   return ret;
 }
 
-// Initialize log verification
+
+/**
+ * @brief Initialize log verification
+ *
+ * Start point of log verification
+ *
+ * @param entriesInFile  Use for check if there are log entries at all
+ * @param mainKey
+ * @param nextLogEntry
+ * @param startingEntry
+ * @param input          Array of log lines
+ *
+ * @return TRUE in case success else FALSE
+ */
 gboolean initVerify(
   guint64 entriesInFile,
   guchar *mainKey,
@@ -1497,7 +1905,8 @@ gboolean iterativeFileVerify(
   char *outputFileName,
   guint64 entriesInFile,
   guint64 chunkLength,
-  guint64 keyNumber)
+  guint64 keyNumber,
+  enum LogMode logmode)
 {
   if (entriesInFile == 0)
     {
@@ -1621,7 +2030,7 @@ gboolean iterativeFileVerify(
             }
         }
       result = iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber, outputBuffer,
-                             &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
+                             &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab, logmode);
 
       // ...and write to file
       for (guint64 i = 0; i < chunkLength; i++)
@@ -1669,7 +2078,7 @@ gboolean iterativeFileVerify(
         }
 
       result = iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber,
-                             outputBuffer, &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
+                             outputBuffer, &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab, logmode);
 
       for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
@@ -1749,9 +2158,14 @@ CLEANUP_ITERATIVEFILEVERIFY:
  * TRUE on success
  * FALSE on error
  */
-gboolean fileVerify(guchar *mainKey, char *inputFileName,
-                    char *outputFileName, guchar *aggMAC,
-                    guint64 entriesInFile, guint64 chunkLength, guchar mac0[CMAC_LENGTH])
+gboolean fileVerify(guchar *mainKey,
+                    char *inputFileName,
+                    char *outputFileName,
+                    guchar *aggMAC,
+                    guint64 entriesInFile,
+                    guint64 chunkLength,
+                    guchar mac0[CMAC_LENGTH],
+                    enum LogMode logmode)
 {
   gboolean volatile result = TRUE; //-- SUCCSS
 
@@ -1859,7 +2273,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
     }
 
   if (!iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                     &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
+                     &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab, logmode))
     {
       result = FALSE; //-- ERROR
     }
@@ -1909,7 +2323,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
         }
 
       if (!iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                         &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
+                         &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab, logmode))
         {
           result = FALSE; //-- ERROR
         }
@@ -1958,7 +2372,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
         }
 
       if (!iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                         &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab))
+                         &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab, logmode))
         {
           result = FALSE; //-- ERROR
         }
@@ -2287,101 +2701,14 @@ void SLogStringFree(gpointer *arg)
 }
 
 
-//----------------------------------------------------------------------
-// truncate_uft8_gstring
-//
-// Ensures that when a log string must be truncated, no invalid
-// UTF-8 characters is created.
-// Also ensured: When truncation takes place, a '\n' character is added
-// at the new end of the string.
-//
-// in/out gslog: GString to be truncated in a valid way
-// in max_octet_len: Maximal allowed count of octets in gslog
-// return -
-
-void truncate_utf8_gstring(GString *gslog, gsize max_octet_len)
-{
-  if (NULL == gslog)
-    {
-      return;
-    }
-  if (gslog->len <= max_octet_len)
-    {
-      return;
-    }
-  if (0 == max_octet_len)
-    {
-      g_string_truncate(gslog, 0);
-      return;
-    }
-  gsize max_text_len = max_octet_len - 1; //-- reserve one byte for '\n'
-  gsize new_len = max_text_len;
-  //--Walk backwards to find a valid UTF-8 character / Symbol (Emoij) boundary.
-  while (new_len > 0 && (gslog->str[new_len] & 0xC0) == 0x80)
-    {
-      new_len--;
-    }
-  g_string_truncate(gslog, new_len);
-  g_string_append_c(gslog, '\n');
-}
-
 
 //----------------------------------------------------------------------
-// is_file_path_safe_and_valid
-//
-// Checks wether a file path argument is safe and valid.
-// It does NOT check if the file exists and it SHALL NOT check.
-// Only the existens of extracted directory is verified because the file
-// might be created.
-//
-// in input_path: zero terminated path string
-// return TRUE when valid and usable else FALSE
 
-gboolean is_file_path_safe_and_valid(const gchar *input_path)
-{
-  gboolean retval = FALSE;
-  gchar *safe_path = NULL;
-  gchar *dir_name = NULL;
-  gchar *base_name = NULL;
-
-  if (input_path == NULL || *input_path == '\0')
-    {
-      return FALSE;
-    }
-  safe_path = g_strndup(input_path, PATH_MAX - 1);
-  dir_name = g_path_get_dirname(safe_path);
-  base_name = g_path_get_basename(safe_path);
-
-  if (!g_file_test(dir_name, G_FILE_TEST_IS_DIR))
-    {
-      g_warning("Parent directory does not exist or is inaccessible: %s", dir_name);
-      goto CLEANUP_IFPSAV;
-    }
-
-  if (g_strcmp0(base_name, ".") == 0 || g_strcmp0(base_name, "..") == 0)
-    {
-      g_warning("Invalid filename: %s", base_name);
-      goto CLEANUP_IFPSAV;
-    }
-
-  if (access(dir_name, W_OK | X_OK) != 0)
-    {
-      g_warning("No write permissions in directory: %s", dir_name);
-      goto CLEANUP_IFPSAV;
-    }
-
-  retval = TRUE;
-
-CLEANUP_IFPSAV:
-  g_free(safe_path);
-  g_free(dir_name);
-  g_free(base_name);
-  return retval;
-}
+//-- File handling
 
 SLogFile *create_file(const gchar *filename, const gchar *mode)
 {
-  SLogFile *f = g_new0(SLogFile, 1);
+  SLogFile *f = g_try_new0(SLogFile, 1);
 
   if (f == NULL)
     {
@@ -2530,14 +2857,17 @@ gboolean read_from_file(SLogFile *f, gchar *data, gsize len)
 
 gboolean read_line_from_file(SLogFile *f, GString *line)
 {
-  // File must be open
-  if (f == NULL || f->state != SLOG_FILE_OPEN)
+  if (f == NULL || f->state != SLOG_FILE_OPEN || f->channel == NULL)
     {
       return FALSE;
     }
-  f->status =  g_io_channel_read_line_string(f->channel, line, NULL, &f->error);
-  gboolean result = f->status == G_IO_STATUS_NORMAL;
-  return result;
+  g_string_truncate(line, 0);
+  if (f->error != NULL)
+    {
+      g_clear_error(&f->error);
+    }
+  f->status = g_io_channel_read_line_string(f->channel, line, NULL, &f->error);
+  return (f->status == G_IO_STATUS_NORMAL);
 }
 
 gboolean close_channel(SLogFile *f)

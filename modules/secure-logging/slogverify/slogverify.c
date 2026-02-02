@@ -32,9 +32,13 @@
 
 #include "messages.h"
 #include "slog.h"
+#include "utils_slog.h"
+
+static gboolean is_verbose = FALSE;
 
 // Return TRUE on success, FALSE on error
-gboolean normalMode(char *path_hostkey, char *path_MACfile, char *path_inputlog, char *path_outputlog, int bufsize)
+gboolean normalMode(char *path_hostkey, char *path_MACfile, char *path_inputlog, char *path_outputlog, int bufsize,
+                    enum LogMode logmode)
 {
   guchar key[KEY_LENGTH];
   guint64 counter;
@@ -131,7 +135,8 @@ gboolean normalMode(char *path_hostkey, char *path_MACfile, char *path_inputlog,
                                MAC,
                                entries,
                                bufsize,
-                               MAC0);
+                               MAC0,
+                               logmode);
 
   OPENSSL_cleanse(key, sizeof key);
   OPENSSL_cleanse(MAC, sizeof MAC);
@@ -149,7 +154,8 @@ gboolean normalMode(char *path_hostkey, char *path_MACfile, char *path_inputlog,
 
 // Return TRUE on success, FALSE on error
 gboolean iterativeMode(char *path_prevKey, char *path_prevMAC, char *path_curMAC, char *path_inputlog,
-                       char *path_outputlog, int bufsize)
+                       char *path_outputlog, int bufsize,
+                       enum LogMode logmode)
 {
   guchar previousKey[KEY_LENGTH];
   guint64 previousKeyCounter = 0;
@@ -231,7 +237,8 @@ gboolean iterativeMode(char *path_prevKey, char *path_prevMAC, char *path_curMAC
                                         path_outputlog,
                                         entries,
                                         bufsize,
-                                        previousKeyCounter);
+                                        previousKeyCounter,
+                                        logmode);
 
   OPENSSL_cleanse(previousKey, sizeof previousKey);
   OPENSSL_cleanse(previousMAC, sizeof previousMAC);
@@ -254,15 +261,27 @@ int main(int argc, char *argv[])
 {
   setlocale(LC_ALL, "");
 
+  enum LogMode logmode = LOGMODE_ENCRYPTED;
   gint retval = 0; //-- 0: SUCCESS, main logic
   gboolean iterative = FALSE;
   int bufSize = DEF_BUF_SIZE;
+
+
+  if (TRUE == is_verbose)
+    {
+      g_print("ENTER slogverify: argc: %d\n", argc);
+      for (int i = 0; i < argc; i++)
+        {
+          g_print("   argv[%d]: %s\n", i, argv[i]);
+        }
+    }
 
   SLogOptions options[] =
   {
     { "iterative", 'i', "Iterative verification", NULL, NULL },
     { "key-file", 'k', "Initial host key file", "FILE", NULL },
     { "mac-file", 'm', "Current MAC file", "FILE", NULL },
+    { "logmode",  'l', "Log mode (direct|base64|enc) whether log is expected as is (direct) or plain but encoded as base64 or encrypted", "LOGMODE", NULL },
     { "prev-key-file", 'p', "Previous host key file in iterative mode", "FILE", NULL },
     { "prev-mac-file", 'r', "Previous MAC file in iterative mode", "FILE", NULL },
     { NULL }
@@ -273,8 +292,9 @@ int main(int argc, char *argv[])
     { options[0].longname, options[0].shortname, 0, G_OPTION_ARG_NONE, &iterative, options[0].description, NULL },
     { options[1].longname, options[1].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[1].description, options[1].type },
     { options[2].longname, options[2].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[2].description, options[2].type },
-    { options[3].longname, options[3].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[3].description, options[3].type },
+    { options[3].longname, options[3].shortname, 0, G_OPTION_ARG_CALLBACK, &validLogModeArg, options[3].description, options[3].type },
     { options[4].longname, options[4].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[4].description, options[4].type },
+    { options[5].longname, options[5].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[5].description, options[5].type },
     { NULL }
   };
 
@@ -285,6 +305,7 @@ int main(int argc, char *argv[])
                                                  "    ./slogverify\n" \
                                                  "    --key-file ./host.key\n" \
                                                  "    --mac-file ./mac.dat\n" \
+                                                 "    --logmode enc\n" \
                                                  "    ./messages.slog\n" \
                                                  "    ./messages_verified.txt\n\n"
                                                  "  iterative mode:\n" \
@@ -292,6 +313,7 @@ int main(int argc, char *argv[])
                                                  "    --prev-key-file ./host0.key\n" \
                                                  "    --prev-mac-file ./mac0.dat\n" \
                                                  "    --mac-file ./mac1.dat\n" \
+                                                 "    --logmode enc\n" \
                                                  "    ./plainlog_1.out\n" \
                                                  "    ./plainlog_1.chk\n"
                                                 );
@@ -308,6 +330,15 @@ int main(int argc, char *argv[])
       (void) slog_usage(context, group, errorMsg);
       g_error_free(error);
       return 1; //-- ERROR
+    }
+
+  if (TRUE == is_verbose)
+    {
+      g_print("AFTER g_option_context_parse slogverify: argc: %d\n", argc);
+      for (int i = 0; i < argc; i++)
+        {
+          g_print("   argv[%d]: %s\n", i, argv[i]);
+        }
     }
 
   if (argc < 2 || argc > 4)
@@ -400,6 +431,40 @@ int main(int argc, char *argv[])
       }
   }
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("mac-file", gstr_path_curMAC->str));
+
+
+  //-- logmode (direct|base64|enc) ---
+  if (NULL == options[index].arg)
+    {
+      msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Old configuration without logmode: Use default enc"));
+      logmode = LOGMODE_ENCRYPTED;
+      index++; //-- inc
+    }
+  else
+    {
+      char *str_logmode_arg = g_strndup(options[index].arg, PATH_MAX - 1); //-- limit buffer
+      g_free(options[index].arg);
+      options[index++].arg = NULL; //-- inc
+      logmode = convert_str_logmode(str_logmode_arg);
+      g_free(str_logmode_arg);
+      str_logmode_arg = NULL;
+      if (LOGMODE_PLAIN_DIRECT != logmode && LOGMODE_PLAIN_BASE64 != logmode
+          && LOGMODE_ENCRYPTED != logmode)
+        {
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("Reason",
+                                "Option --logmode or -l does not provide a valid logmode"));
+          retval = 1; //-- ERROR
+          goto CLEANUP_SLOGVERIFY;
+        }
+    }
+  GString *gstr_logmode = convert_logmode_str(logmode);
+  if (gstr_logmode)
+    {
+      msg_info(SLOG_INFO_PREFIX, evt_tag_str("logmode", gstr_logmode->str));
+      g_string_free(gstr_logmode, TRUE);
+      gstr_logmode = NULL;
+    }
 
   //-- prev-key-file (prevhostkey), only iterative mode ---
   if (iterative)
@@ -566,7 +631,8 @@ int main(int argc, char *argv[])
                                       gstr_path_curMAC->str,
                                       gstr_path_inputlog->str,
                                       gstr_path_outputlog->str,
-                                      bufSize);
+                                      bufSize,
+                                      logmode);
       if (!result)
         {
           retval = 1; //-- ERROR
@@ -584,7 +650,8 @@ int main(int argc, char *argv[])
                                    gstr_path_curMAC->str,
                                    gstr_path_inputlog->str,
                                    gstr_path_outputlog->str,
-                                   bufSize);
+                                   bufSize,
+                                   logmode);
       if (!result)
         {
           retval = 1; //-- ERROR

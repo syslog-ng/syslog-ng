@@ -24,16 +24,18 @@
 #ifndef SLOG_H_INCLUDED
 #define SLOG_H_INCLUDED 1
 
-//-- logging
+#include "utils_slog.h"
+
+/* logging */
 #define SLOG_INFO_PREFIX "[SLOG] INFO"
 #define SLOG_WARNING_PREFIX "[SLOG] WARNING"
 #define SLOG_ERROR_PREFIX "[SLOG] ERROR"
 
-//-- errors
+/* errors */
 #define SLOG_MEM_ALLOC_ERROR 3000
 #define SLOG_OPENSSL_LIBRARY_ERROR 4000
 
-//-- file handling
+/* file handling */
 #define NUM_MODES 6
 #define LEN_MODES 2
 #define SLOG_FILE_DOMAIN 100
@@ -48,11 +50,11 @@
 #define SLOG_FILE_INCOMPLETE_WRITE 2005
 #define SLOG_FILE_SHUTDOWN_ERROR 2006
 
-//-- 2025-10-20, The code is designed to work with any length of log line.
-//   For security reason the length of the utf-8 string is limited.
-#define MESSAGE_LEN 2048 //-- The max length in bytes (octets) of a log line
-//-- 2025-12-04
-#define IS_LIMIT_LOGSTR 0 //-- 0: Do not truncate log string to length of MESSAGE_LEN octets
+/* 2025-10-20, The code is designed to work with any length of log line. */
+/*             For security reason the length of the utf-8 string is limited. */
+#define MESSAGE_LEN 2048 /* The max length in bytes (octets) of a log line for classic secure-logging only */
+/* 2025-12-04 */
+#define IS_LIMIT_LOGSTR 0 /* 0: Do not truncate log string to length of MESSAGE_LEN octets */
 
 #define AES_BLOCKSIZE 16
 #define IV_LENGTH 12
@@ -64,20 +66,20 @@
 #define KEY_WRITE_ERROR 0x22
 #define COLON 1
 #define BLANK 1
-#define COUNTER_LENGTH 12 // We use an 8 byte counter resulting in 12 byte BASE64 encoding
-#define CTR_LEN_SIMPLE 20 // This is for the string representation of 8 byte (=2^64) counters
+#define COUNTER_LENGTH 12 /* We use an 8 byte counter resulting in 12 byte BASE64 encoding */
+#define CTR_LEN_SIMPLE 20 /* This is for the string representation of 8 byte (=2^64) counters */
 
-// These are arbitrary constants (with mean) Hamming distance.
+/* These are arbitrary constants (with mean) Hamming distance. */
 #define IPAD 0x36
 #define OPAD 0x5C
 #define EPAD 0x6A
 
-// Buffer size for import and verification
+/* Buffer size for import and verification */
 #define MIN_BUF_SIZE 10
-#define MAX_BUF_SIZE 1073741823 // INT_MAX/2
-#define DEF_BUF_SIZE 1000  // Default size
+#define MAX_BUF_SIZE 1073741823 /* INT_MAX/2 */
+#define DEF_BUF_SIZE 1000 /* Default size */
 
-// Error message in case of invalid file
+/* Error message in case of invalid file */
 #define FILE_ERROR "Invalid path or non existing regular file: "
 
 /* --- Static Assert Abstraction --- */
@@ -113,7 +115,7 @@
 
 /* --- End of Macro Static Assert Abstraction --- */
 
-// Command line arguments of template and utilities
+/* Command line arguments of template and utilities */
 typedef struct
 {
   char *longname;
@@ -123,7 +125,7 @@ typedef struct
   char *arg;
 } SLogOptions;
 
-// File abstraction
+/* File abstraction */
 typedef struct
 {
   const gchar *filename;
@@ -135,7 +137,7 @@ typedef struct
   unsigned int state;
 } SLogFile;
 
-// File operations
+/* File operations */
 SLogFile *create_file(const gchar *filename, const gchar *mode);
 gboolean open_file(SLogFile *f);
 gboolean write_to_file(SLogFile *f, const gchar *data, gsize len);
@@ -162,14 +164,35 @@ gboolean close_file(SLogFile *f);
 int sLogEncrypt(guchar *plaintext, int plaintext_len,
                 guchar *key, guchar *iv,
                 guchar *ciphertext, guchar *tag);
+
+
+/*
+ * GMAC - Tag generation only
+ *
+ * 1. Parameter: pointer to plaintext (input)
+ * 2. Parameter: length of plaintext (input)
+ * 3. Parameter: pointer to key (input)
+ * 4. Parameter: pointer to IV (input, nonce of length IV_LENGTH)
+ * 5. Parameter: pointer to tag (output)
+ *
+ * Note: caller must take care of memory management.
+ *
+ * Return:
+ * 0: in case of success
+ * < 0 in case of error
+ */
+
+int sLogGMAC(guchar *plaintext, int plaintext_len, guchar *key, guchar *iv, guchar *tag);
+
 /*
  * Decrypt ciphertext and verify integrity
  *
  * 1. Parameter: Pointer to ciphertext (input)
  * 2. Parameter: Ciphertext length (input)
  * 3. Parameter: Pointer to integrity tag (input)
- * 4. Parameter: Pointer to IV (input)
- * 5. Parameter: Pointer to plaintext (output)
+ * 4. Parameter: Pointer to key (input)
+ * 5. Parameter: Pointer to IV (input)
+ * 6. Parameter: Pointer to plaintext (output)
  *
  * Note: Caller must take care of memory management.
  *
@@ -213,27 +236,30 @@ gboolean cmac(guchar *key, const void *input,
  */
 gboolean deriveKey(guchar *dst, guint64 index, guint64 currentKey);
 
+
 /*
- * Create a new encrypted log entry
+ *  Create new forward-secure log entry
  *
- * This function creates a new encrypted log entry updates the corresponding MAC accordingly
+ * This function creates a new plain or encrypted log entry updates the corresponding MAC accordingly
  *
  * 1. Parameter: Number of log entries (for enumerating the entries in the log file)
  * 2. Parameter: The original log message
- * 3. Parameter: The current encryption key
+ * 3. Parameter: The current key
  * 4. Parameter: The current MAC
  * 5. Parameter: The resulting encrypted log entry
  * 6. Parameter: The newly updated MAC
  * 7. Parameter: The capacity of the newly updated MAC buffer
- *
- * Return:
- *   TRUE on success
- *   FALSE on error
- */
-gboolean sLogEntry(guint64 numberOfLogEntries, GString *text,
-                   guchar *key, guchar *inputBigMac,
-                   GString *output, guchar *outputBigMac,
-                   gsize outputBigMac_capacity);
+ * 8. Parameter: The log mode: How the log shall appear (direct, base64, enc)
+*/
+
+gboolean sLogEntry(guint64 numberOfLogEntries,
+                   GString *text,
+                   guchar *key,
+                   guchar *inputBigMac,
+                   GString *output,
+                   guchar *outputBigMac,
+                   gsize outputBigMac_capacity,
+                   enum LogMode logmode);
 
 /*
  * Generate a master key
@@ -300,10 +326,14 @@ gboolean writeKey(guchar *key, guint64 counter, gchar *keypath);
  * TRUE on success
  * FALSE on error
  */
-gboolean fileVerify(guchar *key, char *inputFileName,
-                    char *outputFileName, guchar *bigMac,
-                    guint64 entriesInFile, guint64 chunkLength,
-                    guchar mac0[CMAC_LENGTH]);
+gboolean fileVerify(guchar *key,
+                    char *inputFileName,
+                    char *outputFileName,
+                    guchar *bigMac,
+                    guint64 entriesInFile,
+                    guint64 chunkLength,
+                    guchar mac0[CMAC_LENGTH],
+                    enum LogMode logmode);
 
 /*
  * Iteratively verify the integrity of a log archive
@@ -312,50 +342,66 @@ gboolean fileVerify(guchar *key, char *inputFileName,
  * TRUE on success
  * FALSE on error
  */
-gboolean iterativeFileVerify(guchar *previousMAC, guchar *previousKey,
-                             char *inputFileName, guchar *currentMAC,
-                             char *outputFileName, guint64 entriesInFile,
-                             guint64 chunkLength, guint64 keyNumber);
+gboolean iterativeFileVerify(guchar *previousMAC,
+                             guchar *previousKey,
+                             char *inputFileName,
+                             guchar *currentMAC,
+                             char *outputFileName,
+                             guint64 entriesInFile,
+                             guint64 chunkLength,
+                             guint64 keyNumber,
+                             enum LogMode logmode);
 
-// Set up log verification
-gboolean initVerify(guint64 entriesInFile, guchar *key,
-                    guint64 *nextLogEntry, guint64 *startingEntry,
+/* Set up log verification */
+gboolean initVerify(guint64 entriesInFile,
+                    guchar *key,
+                    guint64 *nextLogEntry,
+                    guint64 *startingEntry,
                     GPtrArray *input);
 
-// Iterate through log entries contained in a buffer and verify them
-gboolean iterateBuffer(guint64 entriesInBuffer, GPtrArray *input,
-                       guint64 *nextLogEntry, guchar *key,
-                       guchar *keyZero, guint keyNumber,
-                       GPtrArray *output, guint64 *numberOfLogEntries,
-                       guchar *cmac_tag, gsize cmac_tag_capacity, GHashTable *tab);
+/* Iterate through log entries contained in a buffer and verify them */
+gboolean iterateBuffer(guint64 entriesInBuffer,
+                       GPtrArray *input,
+                       guint64 *nextLogEntry,
+                       guchar *key,
+                       guchar *keyZero,
+                       guint keyNumber,
+                       GPtrArray *output,
+                       guint64 *numberOfLogEntries,
+                       guchar *cmac_tag,
+                       gsize cmac_tag_capacity,
+                       GHashTable *tab,
+                       enum LogMode logmode);
 
-// Finalize the verification
-gboolean finalizeVerify(guint64 startingEntry, guint64 entriesInFile,
-                        guchar *aggMac, guchar *cmac_tag,
+/* Finalize the verification */
+gboolean finalizeVerify(guint64 startingEntry,
+                        guint64 entriesInFile,
+                        guchar *aggMac,
+                        guchar *cmac_tag,
                         GHashTable **tab);
 
-// Create a new key based on an existing key
+/* Create a new key based on an existing key */
 gboolean evolveKey(guchar *key);
 
-// Key derivation for encryption key
+/* Key derivation for encryption key */
 gboolean deriveEncSubKey(guchar *mainKey, guchar *encKey);
 
-// Key derivation for HMAC
+/* Key derivation for HMAC */
 gboolean deriveMACSubKey(guchar *mainKey, guchar *MACKey);
 
-// Create initial MAC mac0 before first encryption happens to provide this data
-// later for verification. Note: Does not write the file mac0.dat.
+/* Create initial MAC mac0 before first encryption happens to provide this data */
+/* later for verification. Note: Does not write the file mac0.dat. */
 gboolean create_initial_mac0(guchar mainKey[KEY_LENGTH], guchar mac[CMAC_LENGTH]);
 
-// Get path of aggregated MAC file and provides full file name for mac0.dat
+/* Get path of aggregated MAC file and provides full file name for mac0.dat */
 gboolean get_path_mac0(const char *pathAggMac, char *pathMac0, size_t sizePathMac0);
 
-// Pseudo-random function implementation
+/* Pseudo-random function implementation */
 gboolean PRF(guchar *key, guchar *originalInput,
              guint64 inputLength, guchar *output,
              guint64 outputLength);
 
-// Print usage message and clean up
+/*  Print usage message and clean up */
 int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg);
 
 /*
@@ -376,17 +422,4 @@ gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer
  */
 gboolean validFileNameArgCheckDirOnly(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 
-// Error handlers
-void handleFileError(const char *file, int line, int code, void *object);
-void handleGPtrArrayMemoryError(const char *file, int line, int code, void *object);
-
-
-/** Miscellaneous helper functions */
-
-// Limit length of an utf-8 log line, in a way, that no invalid character / symbol is created.
-void truncate_utf8_gstring(GString *gslog, gsize max_octet_len);
-
-//-- helper to check file path argument
-gboolean is_file_path_safe_and_valid(const gchar *input_path);
-
-#endif
+#endif /* SLOG_H_INCLUDED */

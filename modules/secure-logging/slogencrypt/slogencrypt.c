@@ -22,6 +22,7 @@
  */
 
 #include <glib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,6 +35,7 @@
 
 #include "messages.h"
 #include "slog.h"
+#include "utils_slog.h"
 #include "compat/string.h"
 
 //
@@ -43,13 +45,25 @@ int main(int argc, char *argv[])
 {
   gint retval = 0; //-- 0: SUCCESS, main logic
   guint64 bufSize = DEF_BUF_SIZE;
-
+  gboolean is_verbose = FALSE;
+  enum LogMode logmode = LOGMODE_ENCRYPTED;
   setlocale(LC_ALL, "");
 
+  if (TRUE == is_verbose)
+    {
+      g_print("ENTER slogencrypt: argc: %d\n", argc);
+      for (int i = 0; i < argc; i++)
+        {
+          g_print("   argv[%d]: %s\n", i, argv[i]);
+        }
+    }
+
+  //-- Note in regard to plain mode: When plain mode, log entries migth be available as Base64 coded string - but without encryption!
   SLogOptions options[] =
   {
     { "key-file", 'k', "Current host key file", "FILE", NULL },
     { "mac-file", 'm', "Current MAC file", "FILE", NULL },
+    { "logmode",  'l', "Log mode (direct|base64|enc) whether log is expected as is (direct) or plain but encoded as base64 or encrypted", "LOGMODE", NULL },
     { NULL }
   };
 
@@ -57,6 +71,7 @@ int main(int argc, char *argv[])
   {
     { options[0].longname, options[0].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[0].description, options[0].type },
     { options[1].longname, options[1].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArgCheckDirOnly, options[1].description, options[1].type },
+    { options[2].longname, options[2].shortname, 0, G_OPTION_ARG_CALLBACK, &validLogModeArg, options[2].description, options[2].type },
     { NULL }
   };
 
@@ -67,6 +82,7 @@ int main(int argc, char *argv[])
                          "  ./slogencrypt\n" \
                          "  --key-file ./current_host.key\n" \
                          "  --mac-file ./current_mac.dat\n" \
+                         "  --logmode enc\n" \
                          "  ./new_host.key\n" \
                          "  ./new_mac.dat\n" \
                          "  ./input_log.txt\n" \
@@ -86,6 +102,15 @@ int main(int argc, char *argv[])
       (void) slog_usage(context, group, errorMsg);
       g_error_free(error);
       return 1; //-- ERROR
+    }
+
+  if (TRUE == is_verbose)
+    {
+      g_print("AFTER g_option_context_parse slogencrypt: argc: %d\n", argc);
+      for (int i = 0; i < argc; i++)
+        {
+          g_print("   argv[%d]: %s\n", i, argv[i]);
+        }
     }
 
   // Note: When all data is provided correctly, argc is 5 or 6 after parsing
@@ -184,6 +209,38 @@ int main(int argc, char *argv[])
   }
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("mac-file", gstr_path_inputMAC->str));
 
+  //-- logmode (direct|base64|enc) ---
+  if (NULL == options[index].arg)
+    {
+      msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Old configuration without logmode: Use default enc"));
+      logmode = LOGMODE_ENCRYPTED;
+    }
+  else
+    {
+      //-- variant --logmode <direct|base64|enc> provided
+      char *str_logmode_arg = g_strndup(options[index].arg, PATH_MAX - 1); //-- limit buffer
+      g_free(options[index].arg);
+      options[index].arg = NULL;
+      logmode = convert_str_logmode(str_logmode_arg);
+      g_free(str_logmode_arg);
+      str_logmode_arg = NULL;
+      if (LOGMODE_PLAIN_DIRECT != logmode && LOGMODE_PLAIN_BASE64 != logmode
+          && LOGMODE_ENCRYPTED != logmode)
+        {
+          msg_error(SLOG_ERROR_PREFIX,
+                    evt_tag_str("Reason",
+                                "Option --logmode or -l does not provide a valid logmode"));
+          retval = 1; //-- ERROR
+          goto CLEANUP_SLOGENCRYPT;
+        }
+    }
+  GString *gstr_logmode = convert_logmode_str(logmode);
+  if (gstr_logmode)
+    {
+      msg_info(SLOG_INFO_PREFIX, evt_tag_str("logmode", gstr_logmode->str));
+      g_string_free(gstr_logmode, TRUE);
+      gstr_logmode = NULL;
+    }
 
   //-- Input and output file arguments -----
 
@@ -456,7 +513,9 @@ int main(int argc, char *argv[])
                           mac,
                           result,
                           outputmacdata,
-                          outputmacdata_capacity);
+                          outputmacdata_capacity,
+                          logmode);
+
       if (!outcome)
         {
           msg_warning(SLOG_WARNING_PREFIX,
