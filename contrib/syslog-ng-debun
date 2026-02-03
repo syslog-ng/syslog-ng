@@ -656,9 +656,11 @@ remove_passwords_from_file () {
 	# The goal is matching substrings that look like this, to replace the password string, and preserve original formatting:
 	# password ( 'password-string' ) -->  password ( '___PASSWORD_REMOVED___' )
 	###
-	${sed_equivalent_cmd} "s|password([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+\3([ \t\r\n\v\f]*)\)|password\1(\2\3___PASSWORD_REMOVED___\3\4)|g" <"${1}" | \
-		${sed_equivalent_cmd} "s|token([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+\3([ \t\r\n\v\f]*)\)|token\1(\2\3___AUTH_TOKEN_REMOVED___\3\4)|g" | \
-		${sed_equivalent_cmd} "s|Authorization: [^\"']+|Authorization: ___AUTH_TOKEN_REMOVED___|g" >"${1}.bak"
+	${sed_equivalent_cmd}   "s|password([ \t\r\n\v\f]*)\\(([ \t\r\n\v\f]*)([\"']?)([^)\"']+)\\3([ \t\r\n\v\f]*)\\)|password\\1(\\2\\3___PASSWORD_REMOVED___\\3\\5)|g" < "${1}" | \
+		${sed_equivalent_cmd} "s|password([ \t\r\n\v\f]*)=([ \t\r\n\v\f]*)([\"']?)([^\"'; \t\r\n\v\f]+)\\3|password\\1=\\2\\3___PASSWORD_REMOVED___\\3|g" | \
+		${sed_equivalent_cmd} "s|token([ \t\r\n\v\f]*)\\(([ \t\r\n\v\f]*)([\"']?)([^)\"']+)\\3([ \t\r\n\v\f]*)\\)|token\\1(\\2\\3___AUTH_TOKEN_REMOVED___\\3\\5)|g" | \
+		${sed_equivalent_cmd} "s|token([ \t\r\n\v\f]*)=([ \t\r\n\v\f]*)([\"']?)([^\"'; \t\r\n\v\f]+)\\3|token\\1=\\2\\3___AUTH_TOKEN_REMOVED___\\3|g" | \
+		${sed_equivalent_cmd} "s|Authorization: [^\"']+|Authorization: ___AUTH_TOKEN_REMOVED___|g" > "${1}.bak"
 
 	[ -s "${1}.bak" ] && mv "${1}.bak" "${1}"
 }
