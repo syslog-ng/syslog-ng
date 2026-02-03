@@ -1762,7 +1762,7 @@ run_debug () {
 	else
 		read line
 	fi
-	}
+}
 
 ###
 ### Main program tasks
@@ -1771,15 +1771,22 @@ run_debug () {
 debun_init
 detect_env
 setup_env
+
 debun_run
+
 [ "$syslogfhs" = "linux" ] && fhs_set_linux
 [ "$syslogfhs" = "unix" ] && fhs_set_unix
+
 run_specific_extras
+
 acquire_general_info
+
 if [ -n "$privacy_mode" ]; then
 	acquire_syslog_nprv
 else
 	acquire_syslog_all
 fi
+
 [ -n "$debug_mode" ] && run_debug
+
 debun_final
