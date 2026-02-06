@@ -110,7 +110,7 @@ void file_reader_init_instance(FileReader *self, const gchar *filename,
 {
   log_pipe_init_instance(&self->super, cfg);
   self->reader = log_reader_new(cfg);
-  self->reader->poll_events = poll_file_changes_new(-1, "", 1, &self->super);
+  self->reader->poll_events = poll_file_changes_new(-1, "", 1, self);
   return;
 }
 

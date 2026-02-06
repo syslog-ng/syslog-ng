@@ -34,4 +34,8 @@ add_module(
   SOURCES ${KAFKA_SOURCES}
 )
 
-add_test_subdirectory(tests)
+# TODO: Kafka tests are disabled on FreeBSD due to immediate test hangs, even with empty test bodies.
+#       Investigation and fixing is required to re-enable them.
+if (NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  add_test_subdirectory(tests)
+endif()

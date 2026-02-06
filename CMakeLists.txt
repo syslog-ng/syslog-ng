@@ -8,7 +8,7 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_MACOSX_RPATH 1)
+set(CMAKE_MACOSX_RPATH TRUE)
 
 # add the automatically determined parts of the RPATH
 # which point to directories outside the build tree to the install RPATH
@@ -17,7 +17,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 project(syslog-ng C)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
-set(CMAKE_POSITION_INDEPENDENT_CODE 1)
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
 include(common_helpers)
 include(CheckIncludeFiles)
@@ -140,8 +140,9 @@ add_subdirectory(syslog-ng)
 add_subdirectory(syslog-ng-ctl)
 add_subdirectory(persist-tool)
 add_subdirectory(doc)
+# This contains some test utilities (like loggen), so some parts must be included, do not include via add_test_subdirectory()
 add_subdirectory(tests)
-add_subdirectory(libtest)
+add_test_subdirectory(libtest)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 

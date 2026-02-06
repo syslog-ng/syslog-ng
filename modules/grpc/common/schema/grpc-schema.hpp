@@ -42,8 +42,13 @@
 #pragma GCC diagnostic ignored "-Wswitch-default"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
-#if (defined(__clang__) && __clang_major__ >= 10)
-#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#if defined(__clang__)
+# if __has_warning("-Wdeprecated-copy-with-dtor")
+#   pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
+# endif
+# if __has_warning("-Wdeprecated-redundant-constexpr-static-def")
+#   pragma clang diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
+# endif
 #endif
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>

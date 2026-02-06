@@ -813,15 +813,31 @@ SAFE_C_CHECK_BEGIN
 
 LDFLAGS="$LDFLAGS $no_pie_ldflags"
 
-AC_LINK_IFELSE([AC_LANG_SOURCE([int main(void) {return 0;}])],
-    [no_pie_option_available=yes],
-    [no_pie_option_available=no])
+AC_MSG_CHECKING([whether linker supports $no_pie_ldflags])
+tmpdir="${TMPDIR:-/tmp}/conftest-nopie-$$"
+rm -rf "$tmpdir" 2>/dev/null || :
+mkdir -p "$tmpdir"
+cat > "$tmpdir/conftest.c" << EOF
+int main(void) {return 0;}
+EOF
+$CC $CFLAGS $LDFLAGS "$tmpdir/conftest.c" -o "$tmpdir/conftest" > "$tmpdir/conftest.out" 2>&1
+compile_result=$?
+if test "$compile_result" -eq 0; then
+  if grep -q -i "warning.*\(-no.pie\|-no_pie\).*\(ignored\)" "$tmpdir/conftest.out" 2>/dev/null; then
+    NO_PIE_LDFLAG=""
+    AC_MSG_RESULT([no (deprecated or ignored)])
+  else
+    NO_PIE_LDFLAG="$no_pie_ldflags"
+    AC_MSG_RESULT([yes])
+  fi
+else
+  NO_PIE_LDFLAG=""
+  AC_MSG_RESULT([no])
+fi
+rm -rf "$tmpdir" 2>/dev/null || :
 
 SAFE_C_CHECK_END
 
-if test "$no_pie_option_available" = "yes"; then
-  NO_PIE_LDFLAG="$no_pie_ldflags"
-fi
 AC_SUBST([NO_PIE_LDFLAG])
 
 dnl ***************************************************************************

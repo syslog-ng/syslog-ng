@@ -113,7 +113,9 @@ jobs:
           prepare: |
             #cat /etc/pkg/FreeBSD.conf
 
-            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf criterion gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk19 rabbitmq-c riemann-c-client
+            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk19 rabbitmq-c riemann-c-client
+            # For testing
+            pkg install -y criterion libxml2 qpdf
             if  [ "${{ matrix.build-tool }}" = "autotools" ]; then
               # NOTE: Must have for autotools builds, but breaks cmake builds, nice :S
               pkg install -y gmake
@@ -153,8 +155,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE; pwd
 
-          # TODO: Skip for now, should fix the FreeBSD tests
-          #cmake --build ./build -j ${THREADS} --target check
+          cmake --build ./build -j ${THREADS} --target check
 
       - name: autotools build
         if: matrix.build-tool == 'autotools'
@@ -174,7 +175,7 @@ jobs:
           ./autogen.sh
           mkdir build
           cd build
-          ../configure --disable-dependency-tracking ${CONFIGURE_FLAGS}
+          ../configure --disable-dependency-tracking --disable-colored-log ${CONFIGURE_FLAGS}
           cd ..
           /usr/local/bin/gmake -C build install -j ${THREADS}
 
@@ -186,5 +187,4 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE; pwd
 
-          # TODO: Skip for now, should fix the FreeBSD tests
-          #/usr/local/bin/gmake -C build check -j ${THREADS}
+          /usr/local/bin/gmake -C build check -j ${THREADS}

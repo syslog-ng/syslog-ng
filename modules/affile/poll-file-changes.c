@@ -59,7 +59,7 @@ poll_file_changes_on_file_moved(PollFileChanges *self)
 {
   if (self->on_file_moved)
     self->on_file_moved(self);
-  log_pipe_notify(self->control, NC_FILE_MOVED, self);
+  log_pipe_notify(&self->file_reader->super, NC_FILE_MOVED, self);
 }
 
 static inline gboolean
@@ -82,10 +82,28 @@ poll_file_changes_check_file(gpointer s)
   off_t pos = -1;
   gint fd = self->fd;
 
-  msg_trace("Checking if the followed file has new lines",
-            evt_tag_str("follow_filename", self->follow_filename));
-  if (fd >= 0)
+  if (fd < 0)
+    self->fd_is_open = FALSE;
+  else
     {
+      if (self->fd_is_open == FALSE)
+        {
+          /* the file got created/opened */
+          msg_trace("poll-file-changes: polled fd got opened", evt_tag_int("fd", fd));
+          self->fd_is_open = TRUE;
+        }
+      if (self->file_reader->options->follow_always_reads)
+        {
+          /* if the fd e.g. is not seekable, we can try to read it directly */
+          msg_trace("poll-file-changes: trying to read the fd directly",
+                    evt_tag_int("fd", fd));
+          poll_file_changes_on_read(self);
+          return;
+        }
+
+      msg_trace("poll-file-changes: checking if the followed file has new lines",
+                evt_tag_str("follow_filename", self->follow_filename));
+
       pos = lseek(fd, 0, SEEK_CUR);
       if (pos == (off_t) -1)
         {
@@ -153,7 +171,7 @@ poll_file_changes_check_file(gpointer s)
         }
       else
         {
-          msg_trace("Follow mode file still does not exist",
+          msg_trace("poll-file-changes: Follow mode file still does not exist",
                     evt_tag_str("filename", self->follow_filename));
         }
     }
@@ -210,13 +228,16 @@ poll_file_changes_free(PollEvents *s)
 {
   PollFileChanges *self = (PollFileChanges *) s;
 
-  log_pipe_unref(self->control);
+  log_pipe_unref(&self->file_reader->super);
   g_free(self->follow_filename);
 }
 
 void
-poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *follow_filename, gint follow_freq,
-                                LogPipe *control)
+poll_file_changes_init_instance(PollFileChanges *self,
+                                gint fd,
+                                const gchar *follow_filename,
+                                gint follow_freq,
+                                FileReader *reader)
 {
   self->super.stop_watches = poll_file_changes_stop_watches;
   self->super.update_watches = poll_file_changes_update_watches;
@@ -224,10 +245,13 @@ poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *fol
   self->super.get_fd = _get_fd;
   self->super.free_fn = poll_file_changes_free;
 
+  self->file_reader = reader;
+  log_pipe_ref(&self->file_reader->super);
+
   self->fd = fd;
+  self->fd_is_open = fd < 0 ? FALSE : TRUE;
   self->follow_filename = g_strdup(follow_filename);
   self->follow_freq = follow_freq;
-  self->control = log_pipe_ref(control);
 
   IV_TIMER_INIT(&self->follow_timer);
   self->follow_timer.cookie = self;
@@ -235,10 +259,10 @@ poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *fol
 }
 
 PollEvents *
-poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control)
+poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, FileReader *reader)
 {
   PollFileChanges *self = g_new0(PollFileChanges, 1);
-  poll_file_changes_init_instance(self, fd, follow_filename, follow_freq, control);
+  poll_file_changes_init_instance(self, fd, follow_filename, follow_freq, reader);
 
   return &self->super;
 }
