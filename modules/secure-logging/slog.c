@@ -219,7 +219,7 @@ int sLogEncrypt(guchar *plaintext, int plaintext_len,
    * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_GCM_mode
    *
    */
-  EVP_CIPHER_CTX *ctx;
+  EVP_CIPHER_CTX *ctx = NULL;
 
   int len;
   int ciphertext_len;
@@ -319,7 +319,7 @@ int sLogDecrypt(guchar *ciphertext,
                 guchar *iv,
                 guchar *plaintext)
 {
-  EVP_CIPHER_CTX *ctx;
+  EVP_CIPHER_CTX *ctx = NULL;
   int len;
   int plaintext_len;
   int result = 0; //-- 0: ERROR
@@ -1482,7 +1482,6 @@ gboolean iterativeFileVerify(
   guint64 chunkLength,
   guint64 keyNumber)
 {
-
   if (entriesInFile == 0)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Nothing to verify"));
@@ -1512,16 +1511,20 @@ gboolean iterativeFileVerify(
     }
 
   gboolean volatile result = TRUE;
+  SLogFile *inf = NULL;
+  SLogFile *outf = NULL;
+  GPtrArray *inputBuffer = NULL;
+  GPtrArray *outputBuffer = NULL;
 
   // Create input and output files
-  SLogFile *inf = create_file(inputFileName, "r");
+  inf = create_file(inputFileName, "r");
   if (inf == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create inf."));
       result = FALSE; //-- ERROR
       goto CLEANUP_ITERATIVEFILEVERIFY;
     }
-  SLogFile *outf = create_file(outputFileName, "w+");
+  outf = create_file(outputFileName, "w+");
   if (outf == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create out."));
@@ -1529,17 +1532,15 @@ gboolean iterativeFileVerify(
       goto CLEANUP_ITERATIVEFILEVERIFY;
     }
 
-  GPtrArray *inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
-  GPtrArray *outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
-
   // Allocate buffers
+  inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
   if (inputBuffer == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate inputBuffer."));
       result = FALSE; //-- ERROR
       goto CLEANUP_ITERATIVEFILEVERIFY;
     }
-
+  outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
   if (outputBuffer == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate outputBuffer."));
@@ -1733,14 +1734,19 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
       return FALSE; //-- ERROR
     }
 
-  SLogFile *inf = create_file(inputFileName, "r");
+  SLogFile *inf = NULL;
+  SLogFile *outf = NULL;
+  GPtrArray *inputBuffer = NULL;
+  GPtrArray *outputBuffer = NULL;
+
+  inf = create_file(inputFileName, "r");
   if (inf == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create inf."));
       result = FALSE; //-- ERROR
       goto CLEANUP_FILEVERIFY;
     }
-  SLogFile *outf = create_file(outputFileName, "w+");
+  outf = create_file(outputFileName, "w+");
   if (outf == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not create outf."));
@@ -1751,10 +1757,8 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
   guchar keyZero[KEY_LENGTH];
   memcpy(keyZero, mainKey, KEY_LENGTH);
 
-  GPtrArray *inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
-  GPtrArray *outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
-
   // Allocate input buffer
+  inputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
   if (inputBuffer == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate inputBuffer."));
@@ -1763,6 +1767,7 @@ gboolean fileVerify(guchar *mainKey, char *inputFileName,
     }
 
   // Allocate output buffer
+  outputBuffer = g_ptr_array_new_with_free_func((GDestroyNotify)SLogStringFree);
   if (outputBuffer == NULL)
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Can not allocate outputBuffer."));
