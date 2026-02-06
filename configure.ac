@@ -2986,12 +2986,13 @@ if test "x$enable_cpp" = "xyes"; then
     print_config_line "C++ compiler options" "$CXXFLAGS"
 fi
 print_config_line "linker flags" "$LDFLAGS $LIBS"
-print_config_line "prefix" "$prefix"
+print_config_line "linking mode" "$linking_mode"
 if test $ostype = "Darwin"; then
     print_config_line "classic linking mode" "${enable_force_classic_linking:=no}"
 fi
 print_config_line "embedded crypto" "${with_embedded_crypto:=no}"
 print_config_line "__thread keyword" "${ac_cv_have_tls:=no}"
+print_config_line "prefix" "$prefix"
 
 print_heading "Test dependencies"
 print_config_line "Criterion" "${with_criterion:=no}"
