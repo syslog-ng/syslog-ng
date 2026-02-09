@@ -1703,17 +1703,18 @@ fi
 INTERNAL_IVYKIS_CFLAGS=""
 if test "x$with_ivykis" = "xinternal"; then
     if $IVYKIS_INTERNAL_SOURCE_EXISTS; then
-        # these can only be used in lib as it assumes
-        # the current directory just one below ivykis
+        # these can only be used in lib as it assumes the current directory just one below ivykis
 
         IVYKIS_CFLAGS="-isystem \$(top_srcdir)/lib/ivykis/src/include -isystem \$(top_builddir)/lib/ivykis/src/include"
-        IVYKIS_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
+        # Use libtool convenience library for static library usage to avoid linking against system dylib - libtool will handle it properly without -Wl flags
+        # The -whole-archive semantics should be handled by listing it with -XCClinker flags in Makefile.am if needed
+        IVYKIS_LIBS="\$(top_builddir)/lib/ivykis/src/libivykis.la"
         INTERNAL_IVYKIS_CFLAGS="-isystem \${includedir}/syslog-ng/ivykis"
 
         IVYKIS_VERSION_UPDATED="yes"
 
         # LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
-        IVYKIS_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
+        IVYKIS_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} \$(top_builddir)/lib/ivykis/src/.libs/libivykis.a -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 
         # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
         AC_SEARCH_LIBS([io_uring_queue_init], [uring], [IO_URING_LIBS="-luring"])
@@ -1729,8 +1730,7 @@ else
     PKG_CHECK_MODULES(IVYKIS_VERSION_CHECK, ivykis >= $IVYKIS_UPDATED_VERSION, [IVYKIS_VERSION_UPDATED="yes"], [IVYKIS_VERSION_UPDATED="no"])
 
     # in case we're using a system installed ivykis, we can link against
-    # it even without libtool and without extra linker arguments (as
-    # we're linking dynamically)
+    # it even without libtool and without extra linker arguments (as we're linking dynamically)
 
     IVYKIS_NO_LIBTOOL_LIBS="$IVYKIS_LIBS"
 
