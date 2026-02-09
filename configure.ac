@@ -872,8 +872,8 @@ dnl We are checking for the postive warning flag, as gcc handles the
 dnl -Wno-XXX version oddly, so if no other warnings are present, it is not
 dnl reported at all, causing it to be unusable for detection purposes.
 
-AX_CFLAGS_GCC_OPTION(-Winitializer-overrides, CFLAGS_W_INITIALIZER_OVERRIDES, CFLAGS_W_NO_INITIALIZER_OVERRIDES="-Wno-initializer-overrides")
-AX_CFLAGS_GCC_OPTION(-Wold-style-declaration, CFLAGS_W_OLD_STYLE_DECLARATION)
+AX_CHECK_COMPILE_FLAG([-Winitializer-overrides], [CFLAGS_W_NO_INITIALIZER_OVERRIDES="-Wno-initializer-overrides"])
+AX_CHECK_COMPILE_FLAG([-Wold-style-declaration], [CFLAGS_W_OLD_STYLE_DECLARATION="-Wold-style-declaration"])
 AC_SUBST(CFLAGS_W_NO_INITIALIZER_OVERRIDES)
 AC_SUBST(CFLAGS_W_OLD_STYLE_DECLARATION)
 
