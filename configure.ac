@@ -687,11 +687,7 @@ dnl Checks for programs.
 #       -------------------------------
 #
 AC_PROG_CC
-AC_PROG_CC_C99
 AM_PROG_CC_C_O
-if test "x$ac_cv_prog_cc_c99" = "xno"; then
-	AC_MSG_ERROR([C99 standard compliant C compiler required. Try GCC 3.x or later.])
-fi
 
 dnl Turned out that even the latest gcc has no proper support of the required ObjC version
 dnl Once gcc is able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
