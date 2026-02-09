@@ -464,7 +464,6 @@ ryslog is not on the system.
     --enable-smtp \
     --enable-shared \
     --disable-static \
-    --enable-dynamic-linking \
     --enable-python \
 %if %{with grpc}
     --enable-cpp --enable-grpc \

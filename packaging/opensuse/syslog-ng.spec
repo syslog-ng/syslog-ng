@@ -487,7 +487,6 @@ export BPFTOOL=/usr/sbin/bpftool
 %configure \
 	--prefix=%{_prefix}			\
 	--enable-ipv6				\
-	--enable-manpages			\
 	--enable-tcp-wrapper			\
 	--enable-spoof-source			\
 	--sysconfdir=/etc/syslog-ng		\
@@ -559,7 +558,7 @@ export BPFTOOL=/usr/sbin/bpftool
 %if %{with bpf}
 	--enable-ebpf				\
 %endif
-        --enable-dynamic-linking
+	--enable-manpages
 
 #
 # - build syslog-ng

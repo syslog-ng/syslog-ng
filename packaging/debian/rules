@@ -125,7 +125,6 @@ override_dh_auto_configure:
 		--libdir=/usr/lib/syslog-ng \
 		${SILENT_MODE} \
 		\
-		--enable-dynamic-linking \
 		--enable-ssl \
 		--enable-spoof-source \
 		--enable-tcp-wrapper \

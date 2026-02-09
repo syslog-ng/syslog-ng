@@ -419,14 +419,6 @@ AC_ARG_WITH(sanitizer,
     AS_HELP_STRING([--with-sanitizer=[address/undefined/etc...]], [Enables compiler sanitizer supports (default: no)]),
     , with_sanitizer="no")
 
-AC_ARG_ENABLE(dynamic-linking,
-    AS_HELP_STRING([--enable-dynamic-linking], [Link everything dynamically.]),
-    , enable_dynamic_linking="auto")
-
-AC_ARG_ENABLE(mixed-linking,
-    AS_HELP_STRING([--enable-mixed-linking], [Link 3rd party libraries statically, system libraries dynamically]),
-    , enable_mixed_linking="auto")
-
 AC_ARG_ENABLE(force-classic-linking,
     AS_HELP_STRING([--enable-force-classic-linking], [Link using ld-classic (default: no)]),
     , enable_force_classic_linking="no")
@@ -702,7 +694,7 @@ if test "x$ac_cv_prog_cc_c99" = "xno"; then
 fi
 
 dnl Turned out that even the latest gcc has no proper support of the required ObjC version
-dnl Once gcc was able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
+dnl Once gcc is able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
 AC_PROG_OBJC([$OBJC clang])
 AC_PROG_YACC
 AM_PROG_LEX
@@ -965,47 +957,6 @@ case "$ostype" in
 		CFLAGS="${CFLAGS} -D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -D_OSF_SOURCE -D_POSIX_C_SOURCE"
 		;;
 esac
-
-if test "$enable_dynamic_linking" = "auto" -a "$enable_mixed_linking" = "auto"; then
-	enable_dynamic_linking="yes"
-	enable_mixed_linking="no"
-fi
-
-linkopts=0
-if test "x$enable_dynamic_linking" = "xyes"; then
-       linkopts=`expr $linkopts + 1`
-fi
-if test "x$enable_mixed_linking" = "xyes"; then
-       linkopts=`expr $linkopts + 1`
-fi
-
-if test "$linkopts" -gt 1; then
-       AC_MSG_ERROR([You cannot specify multiple linking options at the same time (--enable-dynamic-linking, --enable-mixed-linking).])
-fi
-
-if test "x$enable_dynamic_linking" = "xyes"; then
-	enable_dynamic_linking="yes"
-	enable_mixed_linking="no"
-	linking_mode="dynamic"
-elif test "x$enable_mixed_linking" = "xyes"; then
-	enable_dynamic_linking="no"
-	enable_mixed_linking="yes"
-	linking_mode="mixed"
-fi
-
-dnl ***************************************************************************
-dnl Check for --whole-archive flag
-dnl ***************************************************************************
-
-if test $ostype = "Darwin"; then
-  # -all_load loads all members of static archive libraries, it can't be selectively disabled (do not use -noall_load)
-  # use -force_load for each static library if mixed linking needs to be supported on macOS
-  WHOLE_ARCHIVE_OPT="-all_load"
-  NO_WHOLE_ARCHIVE_OPT=""
-else
-  WHOLE_ARCHIVE_OPT="--whole-archive"
-  NO_WHOLE_ARCHIVE_OPT="--no-whole-archive"
-fi
 
 dnl ***************************************************************************
 dnl Is the __thread keyword available?
@@ -1341,7 +1292,6 @@ dnl libevtlog headers/libraries (remove after relicensing libevtlog)
 dnl ***************************************************************************
 
 EVTLOG_LIBS="\$(top_builddir)/lib/eventlog/src/libevtlog.la"
-EVTLOG_NO_LIBTOOL_LIBS="\$(top_builddir)/lib/eventlog/src/.libs/libevtlog.so"
 EVTLOG_CFLAGS="-I\$(top_srcdir)/lib/eventlog/src -I\$(top_builddir)/lib/eventlog/src"
 
 dnl ***************************************************************************
@@ -1349,7 +1299,6 @@ dnl secret storage libraries
 dnl ***************************************************************************
 
 SECRETSTORAGE_LIBS="\$(top_builddir)/lib/secret-storage/libsecret-storage.la"
-SECRETSTORAGE_NO_LIBTOOL_LIBS="\$(top_builddir)/lib/secret-storage/.libs/libsecret-storage.so"
 
 dnl ***************************************************************************
 dnl libwrap headers/libraries
@@ -1439,15 +1388,6 @@ SAFE_C_CHECK_BEGIN
 GLIB_ADDONS="gmodule-2.0 gthread-2.0"
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= $GLIB_MIN_VERSION $GLIB_ADDONS,,)
 
-if test "$linking_mode" != "dynamic"; then
-    # strip out -ldl & -lrt as it cannot be linked statically
-    GLIB_LIBS=`echo $GLIB_LIBS | tr ' ' '\n' | egrep -v "^(-ldld?)|(-lrt)$" | tr '\n' ' '`
-
-    LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC $BASE_LIBS"
-    AC_CHECK_FUNC(g_hash_table_new, blb_cv_static_glib=yes, blb_cv_static_glib=no)
-    LIBS=$LIBS_SAVE
-fi
-
 CPPFLAGS="$GLIB_CFLAGS"
 LDFLAGS="$LDFLAGS $GLIB_LIBS"
 LIBS="$LIBS $GLIB_LIBS"
@@ -1489,10 +1429,6 @@ if test "x$blb_cv_glib_sane" = "xno"; then
 	AC_MSG_ERROR([Glib headers inconsistent with current compiler setting. You might be using 32 bit Glib with a 64 bit compiler, check PKG_CONFIG_PATH])
 fi
 
-if test "x$linking_mode" != "xdynamic" -a "x$blb_cv_static_glib" = "xno"; then
-	AC_MSG_ERROR([static GLib libraries not found (a file named libglib-2.0.a), either link GLib dynamically using the --enable-dynamic-linking or install a static GLib])
-fi
-
 dnl ***************************************************************************
 dnl geoip2 headers/libraries
 dnl ***************************************************************************
@@ -1525,20 +1461,6 @@ dnl ***************************************************************************
 dnl pcre headers/libraries
 dnl ***************************************************************************
 
-if test "$linking_mode" != "dynamic"; then
-    # You can use the saved ones CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE if needed
-    SAFE_C_CHECK_BEGIN
-
-    # check if we have a pcre bundled in glib. In case glib is
-    # dynamic it doesn't matter as glib doesn't export those
-    # symbols.  But in case glib is static, linking it through
-    # glib and through libpcre would clash.
-    LIBS="$LD_START_STATIC $GLIB_LIBS $LD_END_STATIC $LIBS"
-    AC_CHECK_FUNC(pcre_compile2, AC_MSG_ERROR([You cannot use a GLib embedded PCRE in mixed linking mode]))
-
-    SAFE_C_CHECK_END
-fi
-
 PKG_CHECK_MODULES(PCRE2, libpcre2-8 >= $PCRE2_MIN_VERSION,, PCRE2_LIBS="")
 
 if test -z "$PCRE2_LIBS"; then
@@ -1559,18 +1481,6 @@ PKG_CHECK_MODULES(OPENSSL,
                 openssl >= $OPENSSL_MIN_VERSION,,
                 AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
 
-if test -n "$OPENSSL_LIBS" -a "$linking_mode" != "dynamic"; then
-    dnl required for openssl, but only when linking statically
-    AC_CHECK_LIB(z, inflate, ZLIB_LIBS="-lz")
-
-    dnl Remove -ldl as it cannot be linked statically on some platforms, it will be present in DL_LIBS
-    OPENSSL_LIBS=`echo $OPENSSL_LIBS | tr ' ' '\n' | egrep -v "^-ldld?$" | tr '\n' ' '`
-
-    LIBS="$LD_START_STATIC $OPENSSL_LIBS $ZLIB_LIBS $LD_END_STATIC $DL_LIBS"
-    AC_CHECK_FUNC(SSL_library_init, blb_cv_static_openssl=yes, blb_cv_static_openssl=no)
-    LIBS=$LIBS_SAVE
-fi
-
 CPPFLAGS="$CPPFLAGS $OPENSSL_CFLAGS"
 
 AC_CHECK_DECLS([SSL_CTX_get0_param],[], [], [[#include <openssl/ssl.h>]])
@@ -1590,18 +1500,6 @@ AC_CHECK_DECLS([SSL_add_dir_cert_subjects_to_stack],[], [], [[#include <openssl/
 AC_CHECK_DECLS([SSL_CTX_set_min_proto_version],[], [], [[#include <openssl/ssl.h>]])
 
 SAFE_C_CHECK_END
-
-dnl
-dnl Right now, openssl is never linked statically as it is only used by the
-dnl TLS build of the afsocket plugin which is loaded dynamically anyway.
-dnl
-dnl The static check remains though, because the core may need openssl in the
-dnl future, in which case it becomes relevant again.
-dnl
-
-dnl if test "x$linking_mode" != "xdynamic" -a "x$blb_cv_static_openssl" = "xno"; then
-dnl	AC_MSG_ERROR([static OpenSSL libraries not found (libssl.a, libcrypto.a and their external dependencies like libz.a), either link OpenSSL statically using the --enable-dynamic-linking, or install a static OpenSSL])
-dnl fi
 
 dnl ***************************************************************************
 dnl libnet headers/libraries
@@ -1707,14 +1605,10 @@ if test "x$with_ivykis" = "xinternal"; then
 
         IVYKIS_CFLAGS="-isystem \$(top_srcdir)/lib/ivykis/src/include -isystem \$(top_builddir)/lib/ivykis/src/include"
         # Use libtool convenience library for static library usage to avoid linking against system dylib - libtool will handle it properly without -Wl flags
-        # The -whole-archive semantics should be handled by listing it with -XCClinker flags in Makefile.am if needed
         IVYKIS_LIBS="\$(top_builddir)/lib/ivykis/src/libivykis.la"
         INTERNAL_IVYKIS_CFLAGS="-isystem \${includedir}/syslog-ng/ivykis"
 
         IVYKIS_VERSION_UPDATED="yes"
-
-        # LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
-        IVYKIS_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} \$(top_builddir)/lib/ivykis/src/.libs/libivykis.a -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 
         # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
         AC_SEARCH_LIBS([io_uring_queue_init], [uring], [IO_URING_LIBS="-luring"])
@@ -1722,17 +1616,12 @@ if test "x$with_ivykis" = "xinternal"; then
         # internal version surely has iv_work_pool_submit_continuation
         AC_DEFINE(HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION, 1)
     else
-        AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
+        AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency if --with_ivykis=xinternal option is used, unable to build syslog-ng without them.])
     fi
 else
     with_ivykis="system"
     PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION,,)
     PKG_CHECK_MODULES(IVYKIS_VERSION_CHECK, ivykis >= $IVYKIS_UPDATED_VERSION, [IVYKIS_VERSION_UPDATED="yes"], [IVYKIS_VERSION_UPDATED="no"])
-
-    # in case we're using a system installed ivykis, we can link against
-    # it even without libtool and without extra linker arguments (as we're linking dynamically)
-
-    IVYKIS_NO_LIBTOOL_LIBS="$IVYKIS_LIBS"
 
     dnl check if iv_work_pool_submit_continuation is available in the system ivykis
     LIBS="$LIBS $IVYKIS_LIBS"
@@ -2371,7 +2260,7 @@ if test "x$enable_darwin_osl" = "xauto" || test "x$enable_darwin_osl" = "xyes"; 
 
                 AC_LANG_PUSH([Objective C])
 
-                # TODO: Once gcc was able to compile our ObjC code correctly we should add here a more sopgisticated check
+                # TODO: Once GCC is able to compile our ObjC code correctly, we should add a more sophisticated check here
                 AC_CHECK_HEADERS([OSLog/OSLog.h], [enable_darwin_osl=yes], [enable_darwin_osl=no])
 
                 AC_LANG_POP([Objective C])
@@ -2622,19 +2511,10 @@ CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE2_CFLAGS $OPENSSL_CFLAGS $L
 ########################################################
 ## NOTES: on how syslog-ng is linked
 #
-# There are two major linking modes currently:
-#   1) dynamic: all libraries are linked dynamically, and assumed to be available as dynamic libraries
-#
-#   2) mixed: typical system provided libraries are linked dynamicaly, the
-#      rest is linked statically (Glib etc).  Please note that _only_ the
-#      main syslog-ng executable is linked this way so that it can be
-#      started early during startup, tools and unit tests are linked
-#      dynamically the same way.
-#
 # The following variables are introduced and AC_SUBSTed to be used in Makefiles:
 #
 # SYSLOGNG_DEPS_LIBS:
-#       includes all dependendent libraries used by binary that can be linked in mixed mode (e.g. only the syslog-ng binary).
+#       includes all dependendent libraries used by syslog-ng binary.
 #
 # TOOL_DEPS_LIBS:
 #       executables (e.g. tools & unit test programs) that link against
@@ -2664,34 +2544,23 @@ if test -z "$MODULE_LDFLAGS"; then
 fi
 MODULE_DEPS_LIBS="\$(top_builddir)/lib/libsyslog-ng.la"
 
-if test "x$linking_mode" = "xdynamic"; then
-	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $DL_LIBS $LIBUNWIND_LIBS $JSON_LIBS $OPENSSL_LIBS"
+SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $DL_LIBS $LIBUNWIND_LIBS $JSON_LIBS $OPENSSL_LIBS"
 
-	if test "x$with_ivykis" = "xinternal"; then
-		# when using the internal ivykis, we're linking it statically into libsyslog-ng.so
-
-		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
-	else
-		# otherwise everything needs to link against libivykis.so
-
-		SYSLOGNG_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
-
-		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-	fi
-
-	# syslog-ng binary is linked with the default link command (e.g. libtool)
-	SYSLOGNG_LINK='$(LINK)'
+if test "x$with_ivykis" = "xinternal"; then
+    # when using the internal ivykis, we're linking it statically into libsyslog-ng.so
+    TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
+    CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
 else
-	SYSLOGNG_DEPS_LIBS="$LIBS $BASE_LIBS $RESOLV_LIBS $EVTLOG_NO_LIBTOOL_LIBS $SECRETSTORAGE_NO_LIBTOOL_LIBS $LD_START_STATIC -Wl,${WHOLE_ARCHIVE_OPT} $GLIB_LIBS $PCRE2_LIBS $REGEX_LIBS $LIBUNWIND_LIBS $JSON_LIBS $OPENSSL_LIBS -Wl,${NO_WHOLE_ARCHIVE_OPT} $IVYKIS_NO_LIBTOOL_LIBS $LD_END_STATIC $LIBCAP_LIBS $DL_LIBS"
-	TOOL_DEPS_LIBS="$LIBS $BASE_LIBS $GLIB_LIBS $EVTLOG_LIBS $SECRETSTORAGE_LIBS $RESOLV_LIBS $LIBCAP_LIBS $PCRE2_LIBS $REGEX_LIBS $IVYKIS_LIBS $DL_LIBS $JSON_LIBS $OPENSSL_LIBS"
-	CORE_DEPS_LIBS=""
+    # otherwise everything needs to link against libivykis.so
+    SYSLOGNG_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
 
-	# bypass libtool in case we want to do mixed linking because it
-	# doesn't support -Wl,-Bstatic -Wl,-Bdynamic on a per-library basis.
-	SYSLOGNG_LINK='$(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@'
+    TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
+    CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
 fi
+
+# syslog-ng binary is linked with the default link command (e.g. libtool)
+SYSLOGNG_LINK='$(LINK)'
+
 YFLAGS="-d"
 
 enable_value()
@@ -2986,7 +2855,6 @@ if test "x$enable_cpp" = "xyes"; then
     print_config_line "C++ compiler options" "$CXXFLAGS"
 fi
 print_config_line "linker flags" "$LDFLAGS $LIBS"
-print_config_line "linking mode" "$linking_mode"
 if test $ostype = "Darwin"; then
     print_config_line "classic linking mode" "${enable_force_classic_linking:=no}"
 fi
