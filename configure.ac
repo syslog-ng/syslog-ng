@@ -693,7 +693,7 @@ dnl Turned out that even the latest gcc has no proper support of the required Ob
 dnl Once gcc is able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
 AC_PROG_OBJC([$OBJC clang])
 AC_PROG_YACC
-AM_PROG_LEX
+AM_PROG_LEX([noyywrap])
 AM_MISSING_PROG([GPERF], [gperf])
 AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
