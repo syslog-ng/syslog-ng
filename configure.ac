@@ -1395,19 +1395,16 @@ fi
 
 AC_CACHE_CHECK(sanity checking Glib headers,
 blb_cv_glib_sane,
-[AC_TRY_RUN([
+[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
     #include <glib.h>
-
-    int main()
-    {
+]], [[
     if (sizeof(long) != GLIB_SIZEOF_LONG)
         return 1;
     return 0;
-    }
-],
-blb_cv_glib_sane=yes,
-blb_cv_glib_sane=no,
-blb_cv_glib_sane=yes)])
+]])],
+[blb_cv_glib_sane=yes],
+[blb_cv_glib_sane=no],
+[blb_cv_glib_sane=yes])])
 
 SAFE_C_CHECK_END
 
