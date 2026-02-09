@@ -2217,9 +2217,9 @@ fi
 if test "x$enable_java" = "xyes"; then
     if test "x$enable_java_modules" = "xauto" || test "x$enable_java_modules" = "xyes"; then
         if test "x$enable_java_modules" = "xauto"; then
-          AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java_modules=yes], [enable_java_modules=no])
+          AX_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java_modules=yes], [enable_java_modules=no])
         else
-          AC_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java_modules=yes], [AC_MSG_ERROR([Gradle not found])])
+          AX_CHECK_GRADLE_VERSION([$GRADLE_MIN_VERSION], [enable_java_modules=yes], [AC_MSG_ERROR([Gradle not found])])
         fi
     fi
 else
