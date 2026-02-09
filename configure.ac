@@ -993,8 +993,6 @@ dnl ***************************************************************************
 dnl Miscellanneous headers
 dnl ***************************************************************************
 
-AC_HEADER_STDC
-
 CHECK_HEADERS_AND_DEFINE([
     dmalloc.h
     linux/sock_diag.h
