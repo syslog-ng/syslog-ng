@@ -2454,7 +2454,7 @@ dnl ***************************************************************************
 dnl check if we have timezone variable in <time.h>
 dnl ***************************************************************************
 
-AC_VAR_TIMEZONE_EXTERNALS
+AX_VAR_TIMEZONE_EXTERNALS
 if test "x$ac_cv_func_timezone" = "xyes"; then
     AC_DEFINE([HAVE_TIMEZONE], [1], [Define if timezone-related externals exist])
 else
