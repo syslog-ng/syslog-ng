@@ -1302,27 +1302,20 @@ SAFE_C_CHECK_BEGIN
 
 AC_CACHE_CHECK(for TCP wrapper library,
                 blb_cv_c_lwrap,
-
+[
 for libwrap in "-lwrap" "/usr/local/lib/libwrap.a"; do
         LIBS="$LIBS_SAVE $libwrap"
-
-        [AC_TRY_LINK(,
-        [
-}
-
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 int allow_severity;
 int deny_severity;
 extern int hosts_access(void);
-
-int foo(void)
-{
+]], [[
         hosts_access();
-],
+]])],
         [blb_cv_c_lwrap=$libwrap
         break],
-        blb_cv_c_lwrap="")
+        [blb_cv_c_lwrap=""])
 done
-
 ])
 
 SAFE_C_CHECK_END
