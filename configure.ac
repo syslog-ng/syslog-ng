@@ -2752,13 +2752,14 @@ AC_SUBST(LIBSYSTEMD_JOURNAL_LIBS)
 AX_PREFIX_CONFIG_H(syslog-ng-config.h, "SYSLOG_NG")
 AX_VALGRIND_CHECK
 
-AC_OUTPUT(dist.conf
+AC_CONFIG_FILES([dist.conf
           Makefile
 	  syslog-ng.pc
           libtest/syslog-ng-test.pc
 	  scripts/update-patterndb
 	  scripts/syslog-ng-update-virtualenv
-          )
+          ])
+AC_OUTPUT
 
 # Function to print a line with colorized value and optional warning
 # Arguments: 1 = label, 2 = value, 3 = optional warning string
