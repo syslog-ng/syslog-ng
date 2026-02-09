@@ -1525,7 +1525,7 @@ dnl ***************************************************************************
 dnl pcre headers/libraries
 dnl ***************************************************************************
 
-if test "x$linking_mode" = "xmixed"; then
+if test "$linking_mode" != "dynamic"; then
     # You can use the saved ones CFLAGS_SAVE CPPFLAGS_SAVE LIBS_SAVE LDFLAGS_SAVE if needed
     SAFE_C_CHECK_BEGIN
 
