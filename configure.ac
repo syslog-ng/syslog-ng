@@ -1180,23 +1180,22 @@ fi
 
 AC_CACHE_CHECK(for modern utmp,
                blb_cv_c_modern_utmp,
-[AC_TRY_COMPILE([
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
 #else
 #include <utmp.h>
 #endif
-],
-[
+]], [[
 #ifdef HAVE_UTMPX_H
 struct utmpx ut;
 #else
 struct utmp ut;
 #endif
   return sizeof(ut.ut_type) & sizeof(ut.ut_user);
-],
-blb_cv_c_modern_utmp=yes,
-blb_cv_c_modern_utmp=no)])
+]])],
+[blb_cv_c_modern_utmp=yes],
+[blb_cv_c_modern_utmp=no])])
 
 if test "x$blb_cv_c_modern_utmp" = "xyes"; then
 	AC_DEFINE(HAVE_MODERN_UTMP, 1, [have modern utmp/utmpx format])
