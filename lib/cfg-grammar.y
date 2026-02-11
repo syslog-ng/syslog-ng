@@ -289,9 +289,9 @@
 %token KW_TIME_REAP                   10211
 %token KW_TIME_SLEEP                  10212
 
-%token KW_PARTITIONS                  10213
-%token KW_PARTITION_KEY               10214
 %token KW_PARALLELIZE                 10215
+%token KW_PARTITIONS                  10216
+%token KW_PARTITION_KEY               10217
 
 /* destination options */
 %token KW_TMPL_ESCAPE                 10220
@@ -761,6 +761,14 @@ log_scheduler_option
             last_scheduler_options->num_partitions = $3;
           }
         | KW_PARTITION_KEY '(' template_content ')'
+          {
+            log_scheduler_options_set_partition_key_ref(last_scheduler_options, $3);
+          }
+        | KW_WORKERS '(' nonnegative_integer ')'
+          {
+            last_scheduler_options->num_partitions = $3;
+          }
+        | KW_WORKER_PARTITION_KEY '(' template_content ')'
           {
             log_scheduler_options_set_partition_key_ref(last_scheduler_options, $3);
           }
