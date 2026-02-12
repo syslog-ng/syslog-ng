@@ -32,7 +32,7 @@
 #include "timeutils/misc.h"
 #include "host-id.h"
 
-// TODO: Move to a common lib place
+// TODO: Move these to a common lib place
 GList *
 g_list_remove_duplicates(GList *list, GEqualFunc compare_func, GDestroyNotify free_func)
 {
@@ -59,13 +59,30 @@ g_list_remove_duplicates(GList *list, GEqualFunc compare_func, GDestroyNotify fr
   return list;
 }
 
+gboolean
+g_int32_equal(gconstpointer  v1, gconstpointer  v2)
+{
+  return (int32_t)GPOINTER_TO_INT(v1) == (int32_t)GPOINTER_TO_INT(v2);
+}
+
+gboolean
+g_int32_compare(gconstpointer  v1, gconstpointer  v2)
+{
+  if ((int32_t)GPOINTER_TO_INT(v1) < (int32_t)GPOINTER_TO_INT(v2))
+    return -1;
+  else if ((int32_t)GPOINTER_TO_INT(v1) > (int32_t)GPOINTER_TO_INT(v2))
+    return 1;
+  else
+    return 0;
+}
+
 typedef gboolean (*ListItemConvertFunc)(const gchar *token, gpointer *item);
 typedef gboolean (*ListItemValidateFunc)(gpointer token, GError **error);
 
 static GList *
-split_and_convert_to_list(const gchar *name, const gchar *input, const gchar *split_str,
-                          gboolean break_on_validate_err,
-                          GDestroyNotify free_func, ListItemConvertFunc convert_func, ListItemValidateFunc validate_func)
+_split_to_list(const gchar *name, const gchar *input, const gchar *split_str,
+               gboolean break_on_validate_err,
+               GDestroyNotify free_func, ListItemConvertFunc convert_func, ListItemValidateFunc validate_func)
 {
   g_assert(input);
   if (*input == 0)
@@ -584,9 +601,6 @@ _find_stored_msg_offset(KafkaSourceDriver *self, const gchar *topic, int32_t par
 static gboolean
 _restore_msg_offsets_from_local(KafkaSourceDriver *self)
 {
-  // rd_kafka_resp_err_t err = rd_kafka_offsets_for_times(self->kafka, self->assigned_partitions,
-  //                                                      self->options.super.state_update_timeout);
-
   for (int i = 0 ; i < self->assigned_partitions->cnt ; i++)
     {
       rd_kafka_topic_partition_t *partition = &self->assigned_partitions->elems[i];
@@ -595,7 +609,10 @@ _restore_msg_offsets_from_local(KafkaSourceDriver *self)
 
       if (found && self->options.ignore_saved_bookmarks == FALSE)
         {
-          /* FIXME: this doesn not work either, it simply can return without any error even if the offset does not exist */
+          /* TODO: Similar to rd_kafka_offsets_for_times, this does not work properly either; it can return
+           *       without any error even if the offset does not exist.
+           *       kafka_seek_partitions will solve this, but it is worth investigating how this should work.
+           */
           if (kafka_seek_partition(self, partition, offset, self->options.super.state_update_timeout))
             {
               partition->offset = offset >= 0 ? offset + 1 : offset;
@@ -719,7 +736,7 @@ _partitions_persists_create(KafkaSourceDriver *self)
   gchar key[MAX_KAFKA_PARTITION_KEY_NAME_LEN];
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
 
-  gboolean use__kafka_offsets = (self->options.persist_store == KSPS_REMOTE);
+  gboolean use_kafka_offsets = (self->options.persist_store == KSPS_REMOTE);
   gboolean persist_use_offset_tracker = kafka_sd_parallel_processing(self);
   int64_t override_start_offset = self->options.ignore_saved_bookmarks ?
                                   _get_start_fallback_offset_code(self) :
@@ -737,7 +754,7 @@ _partitions_persists_create(KafkaSourceDriver *self)
 
       KafkaSourcePersist *persist = kafka_source_persist_new(self);
       kafka_source_persist_init(persist, cfg->state, topic, partition_num,
-                                use__kafka_offsets && partition->offset >= 0 ? partition->offset : override_start_offset,
+                                use_kafka_offsets && partition->offset >= 0 ? partition->offset : override_start_offset,
                                 persist_use_offset_tracker);
       g_hash_table_insert(self->persists, g_strdup(key), persist);
     }
@@ -864,13 +881,13 @@ kafka_sd_persist_is_ready(KafkaSourceDriver *self,
   if (self->all_persists_ready)
     return TRUE;
 
-  gboolean this_persis_ready = FALSE;
+  gboolean this_persist_ready = FALSE;
   KafkaSourcePersist *persist = _find_persist(self, msg_topic_name, msg_partition);
   g_assert(persist);
 
-  this_persis_ready = kafka_source_persist_is_ready(persist);
+  this_persist_ready = kafka_source_persist_is_ready(persist);
 
-  return this_persis_ready;
+  return this_persist_ready;
 }
 
 inline guint
@@ -1343,34 +1360,17 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
 }
 
 static gboolean
-_g_int32_equal(gconstpointer  v1, gconstpointer  v2)
-{
-  return (int32_t)GPOINTER_TO_INT(v1) == (int32_t)GPOINTER_TO_INT(v2);
-}
-
-static gboolean
-_g_int32_compare(gconstpointer  v1, gconstpointer  v2)
-{
-  if ((int32_t)GPOINTER_TO_INT(v1) < (int32_t)GPOINTER_TO_INT(v2))
-    return -1;
-  else if ((int32_t)GPOINTER_TO_INT(v1) > (int32_t)GPOINTER_TO_INT(v2))
-    return 1;
-  else
-    return 0;
-}
-
-static gboolean
 _check_and_sort_partitions(KafkaSourceDriver *self, const gchar *partitions, GList **requested_partitions)
 {
-  GList *list = split_and_convert_to_list("partition", partitions, ",", TRUE, NULL,
-                                          _convert_to_int, _validate_part_num);
+  GList *list = _split_to_list("partition", partitions, ",", TRUE, NULL,
+                               _convert_to_int, _validate_part_num);
   if (list == NULL)
     return FALSE;
 
-  list = g_list_sort(list, _g_int32_compare);
+  list = g_list_sort(list, g_int32_compare);
   const gint original_length = g_list_length(list);
   if (list)
-    list = g_list_remove_duplicates(list, _g_int32_equal, NULL);
+    list = g_list_remove_duplicates(list, g_int32_equal, NULL);
 
   const gpointer all_parts = GINT_TO_POINTER((gint)RD_KAFKA_PARTITION_UA);
   if (g_list_find(list, all_parts))
@@ -1923,10 +1923,10 @@ kafka_sd_set_log_fetch_queue_full_delay(LogDriver *s, guint new_value)
   self->options.fetch_queue_full_delay = new_value;
 }
 
-void kafka_sd_set_single_worker_queue(LogDriver *s, gboolean new_value)
+void kafka_sd_set_separate_worker_queues(LogDriver *s, gboolean new_value)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *)s;
-  self->options.separated_worker_queues = (FALSE == new_value);
+  self->options.separated_worker_queues = new_value;
 }
 
 void kafka_sd_set_store_kafka_metadata(LogDriver *s, gboolean new_value)
@@ -1954,7 +1954,7 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->persist_store = KSPS_LOCAL;
   self->store_kafka_metadata = TRUE;
   self->separated_worker_queues = FALSE;
-  self->fetch_queue_full_delay = 1000; /* fetch_queue_full_delay milliseconds - 1 second */
+  self->fetch_queue_full_delay = 1000; /* fetch_queue_full_delay milliseconds = 1 second */
   self->fetch_delay = 1000; /* 1 second / fetch_delay * 1000000 = 1 millisecond */
   self->fetch_retry_delay = 10000; /* 1 second / fetch_retry_delay * 1000000 = 10 milliseconds */
   self->fetch_limit = 10000;

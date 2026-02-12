@@ -189,15 +189,6 @@ _log_position_date_from_persist(DarwinOSLogSourceDriver *self, NSDate **startDat
   return FALSE;
 }
 
-static gsize
-_log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_options, LogMessage **out_msg)
-{
-  gsize msg_len = strlen(msg_cstring);
-  *out_msg = msg_format_construct_message(format_options, (const guchar *) msg_cstring, msg_len);
-  msg_format_parse_into(format_options, *out_msg, (const guchar *) msg_cstring, msg_len);
-  return msg_len;
-}
-
 static gboolean
 _open_osl(DarwinOSLogSourceDriver *self)
 {
@@ -298,7 +289,7 @@ _fetch(LogThreadedSourceWorker *worker)
                 evt_tag_printf("filter predicate hash", "%u", self->log_source_position.last_used_filter_predicate_hash));
     }
   LogMessage *msg;
-  gsize msg_len = _log_message_from_string(log_string, self->options.format_options, &msg);
+  gsize msg_len = msg_format_from_string(self->options.format_options, log_string, &msg);
   /* TODO: Move this to a module MsgFormatHandler (pacct-format.cor linux-kmsg-format.c are good examples */
   log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "darwin:oslog");
   log_msg_set_value_to_string(msg, LM_V_TRANSPORT, "local+darwinoslog");

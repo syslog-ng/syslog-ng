@@ -29,15 +29,6 @@
 #include "stats/aggregator/stats-aggregator.h"
 #include "scratch-buffers.h"
 
-static gsize
-_log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_options, LogMessage **out_msg)
-{
-  gsize msg_len = strlen(msg_cstring);
-  *out_msg = msg_format_construct_message(format_options, (const guchar *) msg_cstring, msg_len);
-  msg_format_parse_into(format_options, *out_msg, (const guchar *) msg_cstring, msg_len);
-  return msg_len;
-}
-
 gboolean _has_wildcard_partition(GList *requested_topics)
 {
   g_assert(g_list_length(requested_topics));
@@ -56,9 +47,9 @@ gboolean _has_wildcard_partition(GList *requested_topics)
 }
 
 static inline void
-_send(LogThreadedSourceWorker *self, LogMessage *msg)
+_send(KafkaSourceWorker *self, LogMessage *msg)
 {
-  log_threaded_source_worker_blocking_post(self, msg);
+  log_threaded_source_worker_blocking_post(&self->super, msg);
 }
 
 static inline LogMessage *
@@ -75,7 +66,7 @@ _prepare_message(KafkaSourceWorker *self, rd_kafka_message_t *msg, gsize *msg_le
             evt_tag_str("driver", driver->super.super.super.id));
 
   LogMessage *log_msg;
-  *msg_len = _log_message_from_string((gchar *)msg->payload, driver->options.format_options, &log_msg);
+  *msg_len = msg_format_from_string(driver->options.format_options, (gchar *)msg->payload, &log_msg);
 
   log_msg_set_value_to_string(log_msg, LM_V_TRANSPORT, "local+kafka");
 
@@ -110,7 +101,7 @@ _send_message(KafkaSourceWorker *self,
     kafka_sd_persist_add_msg_bookmark(driver, self->super.super.ack_tracker,
                                       rd_kafka_topic_name(msg->rkt), msg->partition,
                                       msg->offset);
-  _send(&self->super, log_msg);
+  _send(self, log_msg);
 
   kafka_sd_update_msg_length_stats(driver, log_msg_len);
   log_msg_set_recvd_rawmsg_size(log_msg, msg->len);
@@ -289,9 +280,9 @@ _next_target_queue_ndx(KafkaSourceDriver *driver, guint *rr)
 
 
 static void
-_stop_consumer(KafkaSourceWorker *worker, const gdouble iteration_sleep_time)
+_stop_consumer(KafkaSourceWorker *self, const gdouble iteration_sleep_time)
 {
-  KafkaSourceDriver *driver = (KafkaSourceDriver *) worker->super.control;
+  KafkaSourceDriver *driver = (KafkaSourceDriver *) self->super.control;
 
   kafka_msg_debug("kafka: stopping kafka consumer",
                   evt_tag_str("group_id", driver->group_id),

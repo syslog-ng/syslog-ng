@@ -32,8 +32,8 @@ topic_name_error_quark(void)
   return g_quark_from_static_string("invalid-topic-name-error-quark");
 }
 
-gboolean
-kafka_is_valid_topic_name_pattern(const gchar *name)
+static gboolean
+_is_valid_topic_name_pattern(const gchar *name)
 {
   const gchar *p;
   for (p = name; *p; p++)
@@ -97,7 +97,7 @@ kafka_validate_topic_name(const gchar *name, GError **error)
       return FALSE;
     }
 
-  if (FALSE == kafka_is_valid_topic_name_pattern(name))
+  if (FALSE == _is_valid_topic_name_pattern(name))
     {
       if (error)
         g_set_error(error, TOPIC_NAME_ERROR, TOPIC_INVALID_PATTERN,

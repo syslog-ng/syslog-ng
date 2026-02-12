@@ -195,6 +195,15 @@ msg_format_parse_into(MsgFormatOptions *options, LogMessage *msg,
     }
 }
 
+gsize
+msg_format_from_string(MsgFormatOptions *format_options, const char *msg_cstring, LogMessage **out_msg)
+{
+  gsize msg_len = strlen(msg_cstring);
+  *out_msg = msg_format_construct_message(format_options, (const guchar *) msg_cstring, msg_len);
+  msg_format_parse_into(format_options, *out_msg, (const guchar *) msg_cstring, msg_len);
+  return msg_len;
+}
+
 static gsize
 _determine_payload_size(MsgFormatOptions *parse_options, const guchar *data, gsize length)
 {

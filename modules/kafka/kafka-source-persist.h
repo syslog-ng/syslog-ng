@@ -47,10 +47,6 @@ gboolean kafka_source_persist_is_ready(KafkaSourcePersist *self);
 gboolean kafka_source_persist_matching(KafkaSourcePersist *self,
                                        const gchar *topic,
                                        int32_t partition);
-
-void kafka_source_persist_lock(KafkaSourcePersist *self);
-void kafka_source_persist_unlock(KafkaSourcePersist *self);
-
 /* Lock must be held before calling */
 gboolean kafka_source_persist_remote_is_valid(KafkaSourcePersist *self);
 int32_t kafka_source_persist_get_partition(KafkaSourcePersist *self);

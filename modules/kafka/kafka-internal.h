@@ -87,7 +87,6 @@ GQuark topic_name_error_quark(void);
 
 gboolean kafka_validate_topic_pattern(const char *topic, GError **error);
 gboolean kafka_validate_topic_name(const gchar *name, GError **error);
-gboolean kafka_is_valid_topic_name_pattern(const gchar *name);
 gboolean kafka_conf_get_prop(const rd_kafka_conf_t *conf, const gchar *name, gchar *dest, size_t *dest_size);
 gboolean kafka_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value);
 gboolean kafka_apply_config_props(rd_kafka_conf_t *conf, GList *props, gchar **protected_properties,

@@ -377,6 +377,19 @@ _check_compatibility(KafkaSourcePersist *self, PersistEntryHandle persist_handle
   return TRUE;
 }
 
+
+static void
+_persist_lock(KafkaSourcePersist *self)
+{
+  g_mutex_lock(&self->mutex);
+}
+
+static void
+_persist_unlock(KafkaSourcePersist *self)
+{
+  g_mutex_unlock(&self->mutex);
+}
+
 static void
 _save_bookmark(Bookmark *bookmark)
 {
@@ -387,7 +400,7 @@ _save_bookmark(Bookmark *bookmark)
   gboolean should_store = TRUE;
   gboolean partitions_changed = FALSE;
 
-  kafka_source_persist_lock(persist);
+  _persist_lock(persist);
 
   /* Local store can be used to save the bookmark, even if kafka connection and/or the partition assignment is invalidated */
   if (kafka_source_persist_remote_is_valid(persist) || persistable_data->persist_store == KSPS_LOCAL)
@@ -444,7 +457,7 @@ _save_bookmark(Bookmark *bookmark)
                     evt_tag_int("partition", (int) persist->partition),
                     evt_tag_long("offset", position_to_store));
 
-  kafka_source_persist_unlock(persist);
+  _persist_unlock(persist);
   kafka_source_persist_unref(persist);
 }
 
@@ -572,15 +585,6 @@ kafka_source_persist_init(KafkaSourcePersist *self,
          _create_persist_entry(self, persist_name, override_position);
 }
 
-void kafka_source_persist_lock(KafkaSourcePersist *self)
-{
-  g_mutex_lock(&self->mutex);
-}
-
-void kafka_source_persist_unlock(KafkaSourcePersist *self)
-{
-  g_mutex_unlock(&self->mutex);
-}
 
 /* Lock must be held before calling */
 int32_t kafka_source_persist_get_partition(KafkaSourcePersist *self)
@@ -636,6 +640,7 @@ kafka_source_persist_new(KafkaSourceDriver *owner)
   return self;
 }
 
+/* Lock must be held before calling */
 static void
 _kafka_source_persist_free(KafkaSourcePersist *self)
 {
