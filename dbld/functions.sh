@@ -1,5 +1,31 @@
 set -e
 
+__TAR_APP_PATH=""
+
+# tools (like tar) linked with newer glibc can cause ABI issues in QEMU
+# try to use not effected alternatives
+
+tar_app() {
+    # Return cached value if already resolved
+    if [ -n "$__TAR_APP_PATH" ]; then
+        printf '%s\n' "$__TAR_APP_PATH"
+        return 0
+    fi
+
+    # Prefer bsdtar if available in PATH
+    if command -v bsdtar >/dev/null 2>&1; then
+        __TAR_APP_PATH="$(command -v bsdtar)"
+    elif command -v tar >/dev/null 2>&1; then
+        __TAR_APP_PATH="$(command -v tar)"
+    else
+        echo "Error: neither bsdtar nor tar found in PATH" >&2
+        return 1
+    fi
+
+    printf '%s\n' "$__TAR_APP_PATH"
+    return 0
+}
+
 function get_version() {
 	[ -n "$VERSION" ] && echo $VERSION && return
 	[ -d /source/scripts ] && cd /source && scripts/version.sh || echo "unknown-version"

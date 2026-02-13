@@ -128,8 +128,10 @@ function install_criterion_from_source() {
 
     download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2 criterion/${CRITERION_VERSION}/criterion.tar.bz2 "${HASH}"
     cd /tmp/
-    tar xvf /tmp/criterion.tar.bz2
+    "$(tar_app)" xvf /tmp/criterion.tar.bz2
     cd /tmp/criterion-v${CRITERION_VERSION}
+    which cmake
+    cmake --version
     cmake -Wno-dev -DCMAKE_INSTALL_PREFIX=/usr .
     make install
     ldconfig
@@ -141,7 +143,7 @@ function install_criterion() {
     HASH="f1b3dd5186783dcdd63433c1facd3b4d6af5244a151057370b53bdda80f16121"
 
     download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-${CRITERION_VERSION}-linux-x86_64.tar.xz" /tmp/criterion.tar.xz criterion/${CRITERION_VERSION}/criterion.tar.xz "${HASH}"
-    tar -C /usr --strip-components=1 -xvf /tmp/criterion.tar.xz
+    "$(tar_app)" -C /usr --strip-components=1 -xvf /tmp/criterion.tar.xz
     ldconfig
     rm -rf /tmp/criterion.tar.xz
 }
@@ -177,8 +179,8 @@ function install_bison_from_source {
     HASH="69dc0bb46ea8fc307d4ca1e0b61c8c355eb207d0b0c69f4f8462328e74d7b9ea"
 
     cd /tmp
-    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz "${HASH}"
-    tar xvfz /tmp/bison-${BISON_VERSION}.tar.gz
+    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}."$(tar_app)".gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz "${HASH}"
+    "$(tar_app)" xvfz /tmp/bison-${BISON_VERSION}.tar.gz
     cd /tmp/bison-${BISON_VERSION}
     ./configure --prefix=/usr/local --disable-nls
     make && make install
@@ -194,6 +196,8 @@ function install_astyle_from_source {
     cd /tmp/astyle-${ASTYLE_VERSION}
     mkdir build
     cd build
+    which cmake
+    cmake --version
     cmake ../
     make && make install
 }

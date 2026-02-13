@@ -18,6 +18,9 @@ unzip                           [centos, almalinux, fedora, debian, opensuse, rh
 # I dont know why this is needed.
 bzip2                           [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 
+# tools (like tar) linked with new glibc can cause ABI issues in QEMU
+bsdtar                          [fedora]
+
 # Basic interactive tools
 gawk                            [opensuse, rhel, rocky]
 less                            [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
