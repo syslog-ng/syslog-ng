@@ -157,19 +157,35 @@ function download_target() {
 }
 
 function install_criterion_from_source() {
-    CRITERION_VERSION=2.3.3
-    HASH="8c85e1fcdb9a39b82bee50394bedfe74a0c839ffff129ddfc6fb73b11adafa29"
+    local tool="${1:-cmake}"
 
-    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2 criterion/${CRITERION_VERSION}/criterion.tar.bz2 "${HASH}"
-    cd /tmp/
-    "$(tar_app)" xvf /tmp/criterion.tar.bz2
-    cd /tmp/criterion-v${CRITERION_VERSION}
-    which cmake
-    cmake --version
-    cmake -Wno-dev -DCMAKE_INSTALL_PREFIX=/usr .
-    make install
-    ldconfig
-    rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
+    if [ "$tool" = "cmake" ]; then
+        CRITERION_VERSION=2.3.3
+        HASH="8c85e1fcdb9a39b82bee50394bedfe74a0c839ffff129ddfc6fb73b11adafa29"
+
+        download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2 criterion/${CRITERION_VERSION}/criterion.tar.bz2 "${HASH}"
+        cd /tmp/
+        "$(tar_app)" xvf /tmp/criterion.tar.bz2
+        cd /tmp/criterion-v${CRITERION_VERSION}
+        which cmake
+        cmake --version
+        cmake -Wno-dev -DCMAKE_INSTALL_PREFIX=/usr .
+        make install
+        ldconfig
+        rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
+    else
+        CRITERION_VERSION=2.4.3
+        HASH="6d924ee5eeaaaed7762ab968f560b9ff543fc3473aa949bf53ac56a2a1a9416c"
+
+        download_target "https://github.com/Snaipe/Criterion/archive/refs/tags/v${CRITERION_VERSION}.tar.gz" /tmp/criterion.tar.gz criterion/${CRITERION_VERSION}/criterion.tar.gz "${HASH}"
+        cd /tmp/
+        "$(tar_app)" xvf /tmp/criterion.tar.gz
+        cd /tmp/Criterion-${CRITERION_VERSION}
+        meson setup build --prefix=/usr
+        meson install -C build
+        ldconfig
+        rm -rf /tmp/criterion.tar.gz /tmp/Criterion-${CRITERION_VERSION}
+    fi
 }
 
 function install_criterion() {
