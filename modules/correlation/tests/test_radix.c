@@ -706,6 +706,16 @@ ParameterizedTestParameters(dbparser, test_radix_search_matches)
     },
     {
       .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "+0xAF12345 hihihi",
+      .expected_pattern = {"number", "+0xAF12345", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "-0xAF12345 hihihi",
+      .expected_pattern = {"number", "-0xAF12345", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
       .key = "0x12345 hihihi",
       .expected_pattern = {"number", "0x12345", NULL}
     },
