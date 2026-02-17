@@ -92,7 +92,7 @@ find_package(WRAP)
 external_or_find_package(JSONC REQUIRED)
 include(find_python_and_build_venv)
 include(find_ivykis)
-pkg_check_modules(LIBPCRE REQUIRED libpcre2-8)
+pkg_check_modules(LIBPCRE REQUIRED IMPORTED_TARGET libpcre2-8)
 
 include(detect_features)
 include(platform_options)
