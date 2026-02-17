@@ -721,6 +721,11 @@ ParameterizedTestParameters(dbparser, test_radix_search_matches)
     },
     {
       .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "+12345 hihihi",
+      .expected_pattern = {"number", "+12345", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
       .key = "v12345",
       .expected_pattern = {NULL}
     },
@@ -935,6 +940,11 @@ ParameterizedTestParameters(dbparser, test_radix_search_matches)
     },
     {
       .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12.345e+12 hihihi",
+      .expected_pattern = {"float", "12.345e+12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
       .key = "-12.345E12 hihihi",
       .expected_pattern = {"float", "-12.345E12", NULL},
     },
@@ -942,6 +952,16 @@ ParameterizedTestParameters(dbparser, test_radix_search_matches)
       .node_to_insert = {"@FLOAT:float@", NULL},
       .key = "-12.345E-12 hihihi",
       .expected_pattern = {"float", "-12.345E-12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "+12.345E12 hihihi",
+      .expected_pattern = {"float", "+12.345E12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "+12.345E+12 hihihi",
+      .expected_pattern = {"float", "+12.345E+12", NULL},
     },
     {
       .node_to_insert = {"@FLOAT:float@", NULL},
