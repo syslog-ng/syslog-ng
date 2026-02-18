@@ -82,8 +82,6 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
 {
   gchar **pattern_parts, **hostname_parts;
   gboolean success = FALSE;
-  gchar *lower_pattern = NULL;
-  gchar *lower_hostname = NULL;
   gint i;
 
   pattern_parts = g_strsplit(pattern, ".", 0);
@@ -151,10 +149,13 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
                   break;
                 }
 
-              lower_pattern = g_ascii_strdown(pattern_parts[i], -1);
-              lower_hostname = g_ascii_strdown(hostname_parts[i], -1);
+              gchar *lower_pattern = g_ascii_strdown(pattern_parts[i], -1);
+              gchar *lower_hostname = g_ascii_strdown(hostname_parts[i], -1);
+              gboolean match = g_pattern_match_simple(lower_pattern, lower_hostname);
+              g_free(lower_pattern);
+              g_free(lower_hostname);
 
-              if (!g_pattern_match_simple(lower_pattern, lower_hostname))
+              if (!match)
                 {
                   success = FALSE;
                   break;
@@ -166,8 +167,6 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
         }
     }
 
-  g_free(lower_pattern);
-  g_free(lower_hostname);
   g_strfreev(pattern_parts);
   g_strfreev(hostname_parts);
   return success;
