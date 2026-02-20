@@ -140,7 +140,8 @@ console_acquire_from_fds(gint fds[3], gint fds_to_steal)
   GString *stolen_fn_names = _get_fn_names(fds_to_steal);
   gchar *takeover_message_on_old_console = g_strdup_printf("[Console(%s) taken over, no further output here]\n",
                                                            stolen_fn_names->str);
-  (void) write(STDOUT_FILENO, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
+  ssize_t ret = write(STDOUT_FILENO, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
+  (void) ret; /* silence unused result (and this way variable) warning */
   g_free(takeover_message_on_old_console);
   g_string_free(stolen_fn_names, TRUE);
 
@@ -211,7 +212,8 @@ console_release(void)
   GString *stolen_fn_names = _get_fn_names(fds_to_restore);
   gchar *restore_message_on_orig_console = g_strdup_printf("[Console(%s) restored]\n",
                                                            stolen_fn_names->str);
-  (void) write(STDOUT_FILENO, restore_message_on_orig_console, strlen(restore_message_on_orig_console));
+  ssize_t ret = write(STDOUT_FILENO, restore_message_on_orig_console, strlen(restore_message_on_orig_console));
+  (void) ret; /* silence unused result (and this way variable) warning */
   g_free(restore_message_on_orig_console);
   g_string_free(stolen_fn_names, TRUE);
 

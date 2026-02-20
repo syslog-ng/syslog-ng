@@ -1053,7 +1053,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value,
             r_insert_node(node, key + 2, value, capture_prefix, value_func, location);
 
         }
-      else if ((keylen >= 2) && (end = strchr((const gchar *)key + 1, '@')) != NULL)
+      else if ((keylen >= 2) && (end = strchr((gchar *)key + 1, '@')) != NULL)
         {
           /* we are a parser node */
           *end = '\0';

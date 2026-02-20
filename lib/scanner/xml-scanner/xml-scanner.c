@@ -184,7 +184,7 @@ static gint
 before_last_dot(GString *str)
 {
   const gchar *s = str->str;
-  gchar *pos = strrchr(s, '.');
+  const gchar *pos = strrchr(s, '.');
   if (!pos)
     return 0;
   return (pos - s);
