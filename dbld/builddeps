@@ -10,6 +10,42 @@ ZYPPER_INSTALL="zypper -n install"
 set -e
 set -x
 
+function normalize_architecture() {
+    local architecture="$1"
+
+    architecture="${architecture,,}"
+
+    case "${architecture}" in
+        x86_64|amd64|x64|x86-64|intel64|em64t)
+            echo "x86_64"
+            ;;
+        aarch64|arm64)
+            echo "arm64"
+            ;;
+        *)
+            echo "${architecture}"
+            ;;
+    esac
+}
+
+function require_platform_architecture() {
+    local required_architecture="${1:-x86_64}"
+    local current_architecture
+    local normalized_required_architecture
+    local normalized_current_architecture
+
+    current_architecture="$(uname -m)"
+    normalized_required_architecture="$(normalize_architecture "${required_architecture}")"
+    normalized_current_architecture="$(normalize_architecture "${current_architecture}")"
+
+    if [ "${normalized_current_architecture}" = "${normalized_required_architecture}" ]; then
+        return 0
+    fi
+
+    echo "Error: unsupported platform architecture '${current_architecture}' (normalized: '${normalized_current_architecture}'). Required: '${required_architecture}' (normalized: '${normalized_required_architecture}')."
+    exit 1
+}
+
 function hashfile() {
     FILE="$1"
     if command -v sha256sum >/dev/null 2>&1; then
@@ -77,8 +113,7 @@ function workaround_rpm_repos() {
 # needed by this script _before_ installing packages from packages.manifest.
 #
 # NOTE: If at all possible don't put anything here.
-function install_dbld_dependencies()
-{
+function install_dbld_dependencies() {
     case "${OS_DISTRIBUTION}" in
         debian|ubuntu)
             $APT_INSTALL curl gnupg2
@@ -92,8 +127,7 @@ function install_dbld_dependencies()
     esac
 }
 
-function download_target()
-{
+function download_target() {
     TARGET=$1
     OUTPUT=$2
     FALLBACK_PATH=$3
@@ -139,6 +173,8 @@ function install_criterion_from_source() {
 }
 
 function install_criterion() {
+    require_platform_architecture "x86_64"
+
     CRITERION_VERSION=2.4.3
     HASH="f1b3dd5186783dcdd63433c1facd3b4d6af5244a151057370b53bdda80f16121"
 
