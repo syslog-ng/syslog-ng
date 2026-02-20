@@ -23,10 +23,7 @@
 #include "kafka-source-worker.h"
 #include "kafka-source-persist.h"
 #include "kafka-internal.h"
-#include "kafka-props.h"
 #include "kafka-topic-parts.h"
-#include "ack-tracker/ack_tracker_factory.h"
-#include "stats/aggregator/stats-aggregator.h"
 #include "scratch-buffers.h"
 
 gboolean _has_wildcard_partition(GList *requested_topics)
@@ -89,7 +86,7 @@ _prepare_message(KafkaSourceWorker *self, rd_kafka_message_t *msg, gsize *msg_le
   return log_msg;
 }
 
-static inline gboolean
+static inline void
 _send_message(KafkaSourceWorker *self,
               LogMessage *log_msg,
               gsize log_msg_len,
@@ -106,11 +103,9 @@ _send_message(KafkaSourceWorker *self,
   kafka_sd_update_msg_length_stats(driver, log_msg_len);
   log_msg_set_recvd_rawmsg_size(log_msg, msg->len);
   kafka_sd_inc_msg_topic_stats(driver, rd_kafka_topic_name(msg->rkt));
-
-  return TRUE;
 }
 
-static gboolean
+static void
 _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
 {
   KafkaSourceWorker *self = (KafkaSourceWorker *) worker;
@@ -118,15 +113,10 @@ _process_message(LogThreadedSourceWorker *worker, rd_kafka_message_t *msg)
   gsize log_msg_len;
   LogMessage *log_msg = _prepare_message(self, msg, &log_msg_len);
 
-  gboolean result = _send_message(self, log_msg, log_msg_len, msg);
-
-  if (G_UNLIKELY(FALSE == result))
-    log_msg_unref(log_msg);
-
+  _send_message(self, log_msg, log_msg_len, msg);
   rd_kafka_message_destroy(msg);
 
   main_loop_worker_run_gc();
-  return result;
 }
 
 static inline ThreadedFetchResult

@@ -26,7 +26,6 @@
 #include "messages.h"
 #include "str-utils.h"
 #include <stdio.h>
-#include <stdlib.h>
 
 KafkaTopicParts *
 kafka_tps_new(const gchar *topic, GList *partitions)

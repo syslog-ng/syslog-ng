@@ -29,7 +29,6 @@
 #include "ack-tracker/ack_tracker_factory.h"
 #include "stats/stats-cluster-single.h"
 #include "stats/aggregator/stats-aggregator-registry.h"
-#include "timeutils/misc.h"
 #include "host-id.h"
 
 // TODO: Move these to a common lib place
@@ -423,8 +422,9 @@ _decide_strategy(KafkaSourceDriver *self)
               evt_tag_str("driver", self->super.super.super.id));
 }
 
-void
-kafka_log_state_changed(KafkaSourceDriver *self, KafkaConnectedState state, rd_kafka_resp_err_t err, const char *reason)
+static void
+_kafka_log_state_changed(KafkaSourceDriver *self, KafkaConnectedState state, rd_kafka_resp_err_t err,
+                         const char *reason)
 {
   const char *state_str;
   switch (state)
@@ -470,7 +470,7 @@ kafka_update_state(KafkaSourceDriver *self, gboolean lock)
 
       if (prev_state != state)
         {
-          kafka_log_state_changed(self, state, err, NULL);
+          _kafka_log_state_changed(self, state, err, NULL);
           kafka_sd_wakeup_kafka_queues(self);
         }
       rd_kafka_metadata_destroy(metadata);
@@ -483,7 +483,7 @@ kafka_update_state(KafkaSourceDriver *self, gboolean lock)
           state = KFS_DISCONNECTED;
           kafka_opaque_state_set(&self->opaque, state);
           kafka_opaque_state_set_last_error(&self->opaque, err);
-          kafka_log_state_changed(self, state, err, NULL);
+          _kafka_log_state_changed(self, state, err, NULL);
         }
     }
 
@@ -546,7 +546,7 @@ _kafka_error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
       kafka_sd_wakeup_kafka_queues(self);
 
       if (old_state != KFS_DISCONNECTED)
-        kafka_log_state_changed(self, KFS_DISCONNECTED, (rd_kafka_resp_err_t) err, reason);
+        _kafka_log_state_changed(self, KFS_DISCONNECTED, (rd_kafka_resp_err_t) err, reason);
 
       if (kafka_opaque_state_get_last_error(&self->opaque) != err)
         {
@@ -1174,7 +1174,7 @@ kafka_sd_wait_for_queue(KafkaSourceDriver *self, LogThreadedSourceWorker *worker
 
 
 static inline gboolean
-kafka_sd_all_workers_exited(KafkaSourceDriver *self)
+_kafka_sd_all_workers_exited(KafkaSourceDriver *self)
 {
   return g_atomic_counter_get(&self->running_thread_num) <=
          1; /* If no workers are started ever, even not the main one, this can be 0 as well */
@@ -1188,7 +1188,7 @@ kafka_sd_wait_for_queue_processors_to_exit(KafkaSourceDriver *self, const gdoubl
                   evt_tag_str("driver", self->super.super.super.id));
   kafka_sd_signal_queues(self);
 
-  while (FALSE == kafka_sd_all_workers_exited(self))
+  while (FALSE == _kafka_sd_all_workers_exited(self))
     {
       main_loop_worker_wait_for_exit_until(iteration_sleep_time);
       kafka_sd_signal_queues(self);
@@ -1209,7 +1209,7 @@ kafka_sd_wait_for_queue_processors_to_sleep(KafkaSourceDriver *self, const gdoub
                   evt_tag_str("group_id", self->group_id),
                   evt_tag_str("driver", self->super.super.super.id));
 
-  while (FALSE == kafka_sd_all_workers_sleeping(self) && FALSE == kafka_sd_all_workers_exited(self))
+  while (FALSE == kafka_sd_all_workers_sleeping(self) && FALSE == _kafka_sd_all_workers_exited(self))
     {
       if (poll_kafka)
         kafka_update_state(self, TRUE);
@@ -1955,8 +1955,8 @@ kafka_sd_options_defaults(KafkaSourceOptions *self,
   self->store_kafka_metadata = TRUE;
   self->separated_worker_queues = FALSE;
   self->fetch_queue_full_delay = 1000; /* fetch_queue_full_delay milliseconds = 1 second */
-  self->fetch_delay = 1000; /* 1 second / fetch_delay * 1000000 = 1 millisecond */
-  self->fetch_retry_delay = 10000; /* 1 second / fetch_retry_delay * 1000000 = 10 milliseconds */
+  self->fetch_delay = 1000; /* 1 second / fetch_delay = 1 millisecond */
+  self->fetch_retry_delay = 10000; /* 1 second / fetch_retry_delay = 0.1 millisecond */
   self->fetch_limit = 10000;
   self->time_reopen = 60; /* time_reopen seconds */
 }

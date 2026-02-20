@@ -144,7 +144,6 @@ typedef struct _KafkaOpaque
 void kafka_opaque_init(KafkaOpaque *self, LogDriver *driver, KafkaOptions *options);
 void kafka_opaque_deinit(KafkaOpaque *self);
 LogDriver *kafka_opaque_driver(KafkaOpaque *self);
-KafkaOptions *kafka_opaque_options(KafkaOpaque *self);
 void kafka_opaque_state_lock(KafkaOpaque *self);
 void kafka_opaque_state_unlock(KafkaOpaque *self);
 KafkaConnectedState kafka_opaque_state_get(KafkaOpaque *self);

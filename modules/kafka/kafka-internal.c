@@ -433,12 +433,6 @@ kafka_opaque_driver(KafkaOpaque *self)
   return self->driver;
 }
 
-inline KafkaOptions *
-kafka_opaque_options(KafkaOpaque *self)
-{
-  return self->options;
-}
-
 inline void
 kafka_opaque_state_lock(KafkaOpaque *self)
 {

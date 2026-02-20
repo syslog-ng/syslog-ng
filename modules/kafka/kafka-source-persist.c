@@ -76,7 +76,7 @@ typedef struct _KafkaSourceBookmark
 
 
 static OffsetTracker *
-offset_tracker_new(KafkaSourcePersist *owner, gint64 committed_offset)
+_offset_tracker_new(KafkaSourcePersist *owner, gint64 committed_offset)
 {
   OffsetTracker *t = g_new0(OffsetTracker, 1);
 
@@ -85,7 +85,7 @@ offset_tracker_new(KafkaSourcePersist *owner, gint64 committed_offset)
   /* If we use the offset tracker, it means a parallel processing mode is used, which means that messages
    * can be processed out-of-order. In this case, we cannot properly determine how to set up the offset tracker
    * until we receive the first message, which tells us the actual starting offset.
-   * NOTE: This is possible currently only because we use offsets_resolved/offset_tracker_is_ready() in
+   * NOTE: This is possible currently only because we use offsets_resolved/_offset_tracker_is_ready() in
    *       _run_consumer of kafka-source-worker.c to keep the messages ordered (direct processing instead of queueing)
    *       until the offset tracker is ready (the first oredered message is received).
    *       After that point, the offset tracker will be able to handle out-of-order processing and the consumer start using the queues.
@@ -146,7 +146,7 @@ _offset_tracker_get_highest_tracked(OffsetTracker *t)
 }
 
 static void
-offset_tracker_free(OffsetTracker *t)
+_offset_tracker_free(OffsetTracker *t)
 {
   /* Sanity check: verify all offsets in the window have been committed */
   int64_t highest_tracked = (int64_t)_offset_tracker_get_highest_tracked(t);
@@ -175,7 +175,7 @@ offset_tracker_free(OffsetTracker *t)
 }
 
 static inline gboolean
-offset_tracker_is_ready(OffsetTracker *t)
+_offset_tracker_is_ready(OffsetTracker *t)
 {
   return t->offsets_resolved;
 }
@@ -239,10 +239,10 @@ _offset_tracker_try_bitmap_shift(OffsetTracker *t)
 }
 
 static inline gboolean
-offset_tracker_bitmap_set(OffsetTracker *t, guint64 offset, gboolean *partitions_changed)
+_offset_tracker_bitmap_set(OffsetTracker *t, guint64 offset, gboolean *partitions_changed)
 {
-  /* Handle initial offsets resolution on the first message, see offset_tracker_new for details */
-  if (G_UNLIKELY(FALSE == offset_tracker_is_ready(t)))
+  /* Handle initial offsets resolution on the first message, see _offset_tracker_new for details */
+  if (G_UNLIKELY(FALSE == _offset_tracker_is_ready(t)))
     {
       if (t->window_start != offset)
         {
@@ -410,7 +410,7 @@ _save_bookmark(Bookmark *bookmark)
           OffsetTracker *tracker = persist->tracker;
 
           /* Persist only if committed advanced */
-          if ((should_store = offset_tracker_bitmap_set(tracker, position_to_store, &partitions_changed)))
+          if ((should_store = _offset_tracker_bitmap_set(tracker, position_to_store, &partitions_changed)))
             position_to_store = tracker->committed;
         }
 
@@ -519,10 +519,10 @@ _load_persist_entry(KafkaSourcePersist *self, const gchar *persist_name, int64_t
       /* RD_KAFKA_OFFSET_STORED - Means no override, use saved offsets if available, but only if persist_store is local */
       gboolean use_locally_saved_offset = (override_position == RD_KAFKA_OFFSET_STORED &&
                                            self->owner->options.persist_store == KSPS_LOCAL);
-      self->tracker = offset_tracker_new(self,
-                                         use_locally_saved_offset ?
-                                         persist_data->position :
-                                         override_position);
+      self->tracker = _offset_tracker_new(self,
+                                          use_locally_saved_offset ?
+                                          persist_data->position :
+                                          override_position);
       persist_state_unmap_entry(self->persist_state, persist_handle);
     }
 
@@ -553,7 +553,7 @@ _create_persist_entry(KafkaSourcePersist *self, const gchar *persist_name, int64
 
   _persist_data_defaults(persist_data);
   if (self->use_offset_tracker)
-    self->tracker = offset_tracker_new(self, override_position);
+    self->tracker = _offset_tracker_new(self, override_position);
   persist_state_unmap_entry(self->persist_state, persist_handle);
 
   self->handle = persist_handle;
@@ -615,7 +615,7 @@ inline gboolean
 kafka_source_persist_is_ready(KafkaSourcePersist *self)
 {
   g_mutex_lock(&self->mutex);
-  gboolean ready = self->use_offset_tracker ? offset_tracker_is_ready(self->tracker) : TRUE;
+  gboolean ready = self->use_offset_tracker ? _offset_tracker_is_ready(self->tracker) : TRUE;
   g_mutex_unlock(&self->mutex);
   return ready;
 }
@@ -651,7 +651,7 @@ _kafka_source_persist_free(KafkaSourcePersist *self)
   self->valid = FALSE;
 
   if (self->tracker)
-    offset_tracker_free(self->tracker);
+    _offset_tracker_free(self->tracker);
 
   g_mutex_unlock(&self->mutex);
   g_mutex_clear(&self->mutex);
@@ -672,8 +672,8 @@ inline void
 kafka_source_persist_unref(KafkaSourcePersist *self)
 {
   g_mutex_lock(&self->mutex);
+  g_assert(self->used_count > 0);
   self->used_count--;
-  g_assert(self->used_count >= 0);
   if (self->used_count == 0)
     _kafka_source_persist_free(self);
   else
