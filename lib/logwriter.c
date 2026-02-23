@@ -886,9 +886,7 @@ log_writer_append_value(GString *result, LogMessage *lm, NVHandle handle, gboole
     g_string_append_c(result, '-');
   else
     {
-      gchar *space;
-
-      space = strchr(value, ' ');
+      const gchar *space = strchr(value, ' ');
 
       if (!space)
         g_string_append_len(result, value, value_len);

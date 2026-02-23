@@ -8,8 +8,11 @@ gnupg                           [centos, almalinux, fedora, opensuse, rhel, rock
 wget                            [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 ca-certificates       	        [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
 
-# cmake, c++ modules, criterion compilation
+# packages required for criterion compilation (with cmake or meson)
 cmake                           [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+meson                           [fedora-rawhide, debian-testing]
+nanopb                          [debian-testing]
+protobuf-compiler               [debian-testing]
 gcc-c++                         [centos, almalinux, fedora, opensuse, rhel, rocky]
 
 # to unpack gradle binary package (zip file)
@@ -17,6 +20,9 @@ unzip                           [centos, almalinux, fedora, debian, opensuse, rh
 
 # I dont know why this is needed.
 bzip2                           [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
+
+# tools (like tar) linked with new glibc can cause ABI issues in QEMU
+bsdtar                          [fedora]
 
 # Basic interactive tools
 gawk                            [opensuse, rhel, rocky]
