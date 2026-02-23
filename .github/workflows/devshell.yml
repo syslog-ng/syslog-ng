@@ -275,7 +275,7 @@ jobs:
         if: ${{ matrix.image.name == 'devshell' || github.event_name == 'schedule' || inputs.use_all == 'true' }}
         working-directory: ./build
         run: |
-          make install
+          make install -j $(nproc)
           "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -Fdevt -V 2>&1 |sort
 
       - name: make check
@@ -283,7 +283,7 @@ jobs:
         if: ${{ matrix.image.name == 'devshell' || inputs.use_all == 'true' }}
         id: make_check
         working-directory: ./build
-        run: make V=1 check || (mkdir -p ${COREFILES_DIR} && find . -executable -a -type f | tar -cf ${COREFILES_DIR}/test-binaries.tar  --files-from=- && cat test-suite.log && false)
+        run: make V=1 check -j $(nproc) || (mkdir -p ${COREFILES_DIR} && find . -executable -a -type f | tar -cf ${COREFILES_DIR}/test-binaries.tar  --files-from=- && cat test-suite.log && false)
 
       - name: Python virtualenv for syslog-ng runtime
         # Skip Python virtualenv setup for now in none-devshell images or if no python support in the image yet

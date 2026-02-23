@@ -35,6 +35,6 @@ if [ ! -d debian ]; then
 	exit 1
 fi
 
-deb_run_build_command dpkg-buildpackage -rfakeroot -d
+deb_run_build_command dpkg-buildpackage -j$(nproc) -rfakeroot -d
 
 capture_debs
