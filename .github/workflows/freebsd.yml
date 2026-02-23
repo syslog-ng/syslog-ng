@@ -113,7 +113,7 @@ jobs:
           prepare: |
             #cat /etc/pkg/FreeBSD.conf
 
-            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk19 rabbitmq-c riemann-c-client
+            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk25 rabbitmq-c riemann-c-client
             # For testing
             pkg install -y criterion libxml2 qpdf
             if  [ "${{ matrix.build-tool }}" = "autotools" ]; then
