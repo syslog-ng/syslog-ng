@@ -170,7 +170,7 @@ function install_criterion_from_source() {
         which cmake
         cmake --version
         cmake -Wno-dev -DCMAKE_INSTALL_PREFIX=/usr .
-        make install
+        make -j $(nproc) install
         ldconfig
         rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
     else
@@ -235,7 +235,7 @@ function install_bison_from_source {
     "$(tar_app)" xvfz /tmp/bison-${BISON_VERSION}.tar.gz
     cd /tmp/bison-${BISON_VERSION}
     ./configure --prefix=/usr/local --disable-nls
-    make && make install
+    make -j $(nproc) && make -j $(nproc) install
 }
 
 function install_astyle_from_source {
@@ -251,7 +251,7 @@ function install_astyle_from_source {
     which cmake
     cmake --version
     cmake ../
-    make && make install
+    make -j $(nproc) && make -j $(nproc) install
 }
 
 function filter_packages_by_platform {
