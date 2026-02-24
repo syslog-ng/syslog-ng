@@ -190,6 +190,9 @@ static CfgLexerKeyword main_keywords[] =
   { "retries",            KW_RETRIES },
   { "workers",            KW_WORKERS },
   { "worker_partition_key", KW_WORKER_PARTITION_KEY },
+  { "parallelize",        KW_PARALLELIZE },
+  { "partitions",         KW_PARTITIONS, KWS_OBSOLETE, "workers" },
+  { "partition_key",      KW_PARTITION_KEY, KWS_OBSOLETE, "worker_partition_key" },
   { "batch_lines",        KW_BATCH_LINES },
   { "batch_timeout",      KW_BATCH_TIMEOUT },
 
@@ -204,9 +207,6 @@ static CfgLexerKeyword main_keywords[] =
   { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
   { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },
   { "multi_line_suffix",  KW_MULTI_LINE_GARBAGE },
-  { "parallelize",        KW_PARALLELIZE },
-  { "partitions",         KW_PARTITIONS },
-  { "partition_key",      KW_PARTITION_KEY },
 
   /* filter items */
   { "type",               KW_TYPE },
