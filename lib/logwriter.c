@@ -66,7 +66,7 @@ struct _LogWriter
 {
   LogPipe super;
   LogQueue *queue;
-  guint32 flags:31;
+  guint32 flags: 31;
   gint32 seq_num;
   gboolean handshake_in_progress;
   gboolean partial_write;
@@ -121,7 +121,7 @@ struct _LogWriter
   LogProtoStatus work_result;
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
-  guint watches_running:1, suspended:1, waiting_for_throttle:1;
+  guint watches_running: 1, suspended: 1, waiting_for_throttle: 1;
   gboolean pending_proto_present;
   GCond pending_proto_cond;
   GMutex pending_proto_lock;
@@ -886,9 +886,7 @@ log_writer_append_value(GString *result, LogMessage *lm, NVHandle handle, gboole
     g_string_append_c(result, '-');
   else
     {
-      gchar *space;
-
-      space = strchr(value, ' ');
+      const gchar *space = strchr(value, ' ');
 
       if (!space)
         g_string_append_len(result, value, value_len);
@@ -905,7 +903,7 @@ log_writer_do_padding(LogWriter *self, GString *result)
   if (!self->options->padding)
     return;
 
-  if(G_UNLIKELY(self->options->padding < result->len))
+  if (G_UNLIKELY(self->options->padding < result->len))
     {
       msg_warning("Padding is too small to hold the full message",
                   evt_tag_int("padding", self->options->padding),
@@ -1345,7 +1343,7 @@ log_writer_logrotate(LogWriter *self, gsize buf_len, gboolean *write_error)
   // and no error code has been returned, either no logrotate was setup/needed or
   // the proto has been already set by affile_dw_reopen and it was successful
   // if proto has not been update return error
-  return log_writer_opened(self)? LPS_SUCCESS : LPS_ERROR;
+  return log_writer_opened(self) ? LPS_SUCCESS : LPS_ERROR;
 }
 
 /*

@@ -42,7 +42,7 @@ CfgParser http_test_slots_parser =
 #endif
   .name = "http_test_slots",
   .keywords = http_test_slots_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer arg)) http_test_slots_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer arg)) http_test_slots_parse,
   .cleanup = (void (*)(gpointer)) log_driver_plugin_free
 };
 

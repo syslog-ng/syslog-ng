@@ -39,7 +39,7 @@ nvhandle_desc_array_new(guint reserved_size)
 void
 nvhandle_desc_array_free(NVHandleDescArray *self)
 {
-  for (gint i=0; i < self->len; ++i)
+  for (gint i = 0; i < self->len; ++i)
     {
       NVHandleDesc *handle = (NVHandleDesc *)&self->data[i];
       nvhandle_desc_free(handle);

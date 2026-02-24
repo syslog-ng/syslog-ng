@@ -14,7 +14,7 @@ rm -rf /build/dist-build
 mkdir /build/dist-build
 cd /build/dist-build
 /source/configure --enable-manpages
-make dist
+make dist -j $(nproc)
 mv ${SYSLOGNG_TARBALL} /build
 
 echo "Your tarball is in /build, also available on the host in \$(top_srcdir)/dbld/build"

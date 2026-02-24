@@ -187,7 +187,7 @@ _curl_debug_function(CURL *handle, curl_infotype type,
                      void *userp)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
-  g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
+  g_assert(type < sizeof(curl_infotype_to_text) / sizeof(curl_infotype_to_text[0]));
   const gchar *text = curl_infotype_to_text[type];
   GString *decompressed_error_data = _decompress_response_data(self, text, data, size);
   gchar *sanitized = _sanitize_curl_debug_message(decompressed_error_data ? decompressed_error_data->str : data,
@@ -273,7 +273,7 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   if (owner->proxy)
     curl_easy_setopt(self->curl, CURLOPT_PROXY, owner->proxy);
 
-  curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, owner->ssl_version);
+  curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, (long) owner->ssl_version);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, owner->peer_verify ? 2L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, owner->peer_verify ? 1L : 0L);
 
@@ -282,14 +282,14 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
 
   if (owner->accept_redirects)
     {
-      curl_easy_setopt(self->curl, CURLOPT_FOLLOWLOCATION, 1);
-      curl_easy_setopt(self->curl, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
+      curl_easy_setopt(self->curl, CURLOPT_FOLLOWLOCATION, 1L);
+      curl_easy_setopt(self->curl, CURLOPT_POSTREDIR, (long) CURL_REDIR_POST_ALL);
 #if SYSLOG_NG_HAVE_DECL_CURLOPT_REDIR_PROTOCOLS_STR
       curl_easy_setopt(self->curl, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
 #else
       curl_easy_setopt(self->curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
 #endif
-      curl_easy_setopt(self->curl, CURLOPT_MAXREDIRS, 3);
+      curl_easy_setopt(self->curl, CURLOPT_MAXREDIRS, 3L);
     }
   curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, owner->timeout);
 

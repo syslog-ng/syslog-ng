@@ -80,6 +80,13 @@ ifneq ($(filter sng-nogrpc,$(DEB_BUILD_PROFILES)),)
 DH_OPTIONS += -Nsyslog-ng-mod-grpc
 endif
 
+ifneq ($(filter sng-nobpf,$(DEB_BUILD_PROFILES)),)
+DH_OPTIONS += -Nsyslog-ng-mod-bpf
+BPF_CONFIGURE_OPTS = --disable-ebpf
+else
+BPF_CONFIGURE_OPTS = --enable-ebpf
+endif
+
 # If DH_QUIET is set, then we want silent mode.
 # If DH_VERBOSE is set, we do not want silent mode.
 # If neither is set, we want the default: verbose mode.
@@ -89,6 +96,12 @@ SILENT_MODE	       = --enable-silent-rules
 endif
 ifneq (,${DH_VERBOSE})
 SILENT_MODE	       = --disable-silent-rules
+endif
+
+ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH),arm64)
+ifeq ($(filter notestsonarm,$(DEB_BUILD_PROFILES)),)
+TEST_OPTS += --disable-tests
+endif
 endif
 
 ##
@@ -112,7 +125,6 @@ override_dh_auto_configure:
 		--libdir=/usr/lib/syslog-ng \
 		${SILENT_MODE} \
 		\
-		--enable-dynamic-linking \
 		--enable-ssl \
 		--enable-spoof-source \
 		--enable-tcp-wrapper \
@@ -131,7 +143,9 @@ override_dh_auto_configure:
 		--enable-java=auto \
 		--enable-mqtt=auto \
 		--enable-grpc=auto \
+		$(BPF_CONFIGURE_OPTS) \
 		--enable-cloud-auth=auto \
+		--disable-stackdump \
 		\
 		--with-mongoc=system \
 		--with-ivykis=internal \
@@ -143,6 +157,7 @@ override_dh_auto_configure:
 		\
 		SOURCE_REVISION="$${SOURCE_REVISION}" \
 		${SYSTEMD_CONFIGURE_OPTS} \
+		${TEST_OPTS} \
 		${EXTRA_CONFIGURE_OPTS}
 
 # The pkg-config .pc file is installed into ${libdir}/pkgconfig, but

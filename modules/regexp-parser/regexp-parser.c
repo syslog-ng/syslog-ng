@@ -79,7 +79,7 @@ regexp_parser_compile(LogParser *s, GError **error)
       self->matchers = g_list_prepend(self->matchers, log_matcher_new(&self->matcher_options));
       log_matcher_pcre_set_nv_prefix((LogMatcher *)self->matchers->data, self->prefix);
 
-      if(!log_matcher_compile((LogMatcher *)self->matchers->data, item->data, error))
+      if (!log_matcher_compile((LogMatcher *)self->matchers->data, item->data, error))
         {
           result = FALSE;
           break;

@@ -32,6 +32,14 @@
 
 #include <criterion/criterion.h>
 
+/* On i386, the FPU uses different internal precision causing different rounding than x86_64.
+ * Use relaxed epsilon for float comparisons on 32-bit platforms. */
+#if G_MAXSIZE > 0xFFFFFFFF
+#define FLOAT_COMPARE_EPSILON std::numeric_limits<double>::epsilon()
+#else
+#define FLOAT_COMPARE_EPSILON 1e-10
+#endif
+
 using namespace syslogng::grpc::otel;
 
 using namespace opentelemetry::proto::resource::v1;
@@ -167,7 +175,7 @@ _log_record_tc_asserts(const LogRecord &log_record)
   cr_assert_eq(attributes.at(1).value().int_value(), 42);
   cr_assert_str_eq(attributes.at(2).key().c_str(), "c_double_key");
   cr_assert_eq(attributes.at(2).value().value_case(), AnyValue::kDoubleValue);
-  cr_assert_float_eq(attributes.at(2).value().double_value(), 42.123456, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(attributes.at(2).value().double_value(), 42.123456, FLOAT_COMPARE_EPSILON);
   cr_assert_str_eq(attributes.at(3).key().c_str(), "d_bool_key");
   cr_assert_eq(attributes.at(3).value().value_case(), AnyValue::kBoolValue);
   cr_assert_eq(attributes.at(3).value().bool_value(), true);
@@ -376,7 +384,7 @@ _metric_gauge_tc_asserts(const Metric &metric)
   cr_assert_eq(exemplar_1.filtered_attributes().at(0).value().int_value(), 42);
   cr_assert_eq(exemplar_1.time_unix_nano(), 654);
   cr_assert_eq(exemplar_1.value_case(), Exemplar::kAsDouble);
-  cr_assert_float_eq(exemplar_1.as_double(), 88.88, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(exemplar_1.as_double(), 88.88, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(exemplar_1.span_id().length(), 8);
   cr_assert_eq(memcmp(exemplar_1.span_id().c_str(), "\3\3\3\3\3\3\3\3", 8), 0);
   cr_assert_eq(exemplar_1.trace_id().length(), 16);
@@ -389,7 +397,7 @@ _metric_gauge_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_1.start_time_unix_nano(), 111);
   cr_assert_eq(data_point_1.time_unix_nano(), 222);
   cr_assert_eq(data_point_1.value_case(), NumberDataPoint::kAsDouble);
-  cr_assert_float_eq(data_point_1.as_double(), 33.33, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_1.as_double(), 33.33, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_1.flags(), 44);
 }
 
@@ -476,7 +484,7 @@ _metric_sum_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_1.start_time_unix_nano(), 111);
   cr_assert_eq(data_point_1.time_unix_nano(), 222);
   cr_assert_eq(data_point_1.value_case(), NumberDataPoint::kAsDouble);
-  cr_assert_float_eq(data_point_1.as_double(), 33.33, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_1.as_double(), 33.33, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_1.flags(), 44);
 
   cr_assert_eq(sum.aggregation_temporality(), AggregationTemporality::AGGREGATION_TEMPORALITY_CUMULATIVE);
@@ -535,13 +543,13 @@ _metric_histogram_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_0.start_time_unix_nano(), 123);
   cr_assert_eq(data_point_0.time_unix_nano(), 456);
   cr_assert_eq(data_point_0.count(), 11);
-  cr_assert_float_eq(data_point_0.sum(), 4.2, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_0.sum(), 4.2, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_0.bucket_counts_size(), 2);
   cr_assert_eq(data_point_0.bucket_counts().at(0), 22);
   cr_assert_eq(data_point_0.bucket_counts().at(1), 33);
   cr_assert_eq(data_point_0.explicit_bounds_size(), 2);
-  cr_assert_float_eq(data_point_0.explicit_bounds().at(0), 44.44, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_0.explicit_bounds().at(1), 55.55, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_0.explicit_bounds().at(0), 44.44, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_0.explicit_bounds().at(1), 55.55, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_0.exemplars_size(), 1);
   cr_assert_eq(data_point_0.exemplars().at(0).filtered_attributes_size(), 1);
   cr_assert_str_eq(data_point_0.exemplars().at(0).filtered_attributes().at(0).key().c_str(), "a_0");
@@ -549,21 +557,21 @@ _metric_histogram_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_0.exemplars().at(0).time_unix_nano(), 987);
   cr_assert_eq(data_point_0.exemplars().at(0).as_int(), 999);
   cr_assert_eq(data_point_0.flags(), 22);
-  cr_assert_float_eq(data_point_0.min(), 13.37, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_0.max(), 73.31, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_0.min(), 13.37, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_0.max(), 73.31, FLOAT_COMPARE_EPSILON);
 
   const HistogramDataPoint &data_point_1 = histogram.data_points().at(1);
   cr_assert_eq(data_point_1.attributes_size(), 0);
   cr_assert_eq(data_point_1.start_time_unix_nano(), 111);
   cr_assert_eq(data_point_1.time_unix_nano(), 222);
   cr_assert_eq(data_point_1.count(), 33);
-  cr_assert_float_eq(data_point_1.sum(), 4.4, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_1.sum(), 4.4, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_1.bucket_counts_size(), 0);
   cr_assert_eq(data_point_1.explicit_bounds_size(), 0);
   cr_assert_eq(data_point_1.exemplars_size(), 0);
   cr_assert_eq(data_point_1.flags(), 55);
-  cr_assert_float_eq(data_point_1.min(), 66.66, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_1.max(), 77.77, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_1.min(), 66.66, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_1.max(), 77.77, FLOAT_COMPARE_EPSILON);
 
   cr_assert_eq(histogram.aggregation_temporality(), AggregationTemporality::AGGREGATION_TEMPORALITY_CUMULATIVE);
 }
@@ -643,7 +651,7 @@ _metric_exponential_histogram_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_0.start_time_unix_nano(), 123);
   cr_assert_eq(data_point_0.time_unix_nano(), 456);
   cr_assert_eq(data_point_0.count(), 555);
-  cr_assert_float_eq(data_point_0.sum(), 56.7, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_0.sum(), 56.7, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_0.scale(), 666);
   cr_assert_eq(data_point_0.zero_count(), 11);
   cr_assert_eq(data_point_0.positive().offset(), 999);
@@ -661,16 +669,16 @@ _metric_exponential_histogram_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_0.exemplars().at(0).time_unix_nano(), 987);
   cr_assert_eq(data_point_0.exemplars().at(0).as_int(), 999);
   cr_assert_eq(data_point_0.flags(), 22);
-  cr_assert_float_eq(data_point_0.min(), 13.37, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_0.max(), 73.31, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_0.zero_threshold(), 11.22, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_0.min(), 13.37, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_0.max(), 73.31, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_0.zero_threshold(), 11.22, FLOAT_COMPARE_EPSILON);
 
   const ExponentialHistogramDataPoint &data_point_1 = exponential_histogram.data_points().at(1);
   cr_assert_eq(data_point_1.attributes_size(), 0);
   cr_assert_eq(data_point_1.start_time_unix_nano(), 1111);
   cr_assert_eq(data_point_1.time_unix_nano(), 2222);
   cr_assert_eq(data_point_1.count(), 1234);
-  cr_assert_float_eq(data_point_1.sum(), 567.89, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_1.sum(), 567.89, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_1.scale(), 3333);
   cr_assert_eq(data_point_1.zero_count(), 4444);
   cr_assert_eq(data_point_1.positive().offset(), 5555);
@@ -681,9 +689,9 @@ _metric_exponential_histogram_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_1.negative().bucket_counts().at(0), 8888);
   cr_assert_eq(data_point_1.exemplars_size(), 0);
   cr_assert_eq(data_point_1.flags(), 9999);
-  cr_assert_float_eq(data_point_1.min(), 11.11, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_1.max(), 22.22, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_1.zero_threshold(), 33.33, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_1.min(), 11.11, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_1.max(), 22.22, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_1.zero_threshold(), 33.33, FLOAT_COMPARE_EPSILON);
 
   cr_assert_eq(exponential_histogram.aggregation_temporality(),
                AggregationTemporality::AGGREGATION_TEMPORALITY_CUMULATIVE);
@@ -726,9 +734,9 @@ Test(otel_protobuf_formatter, metric_exponential_histogram)
                                       ".otel.metric.data.exponential_histogram.data_points.0.negative.bucket_counts.1",
                                       "444", -1, LM_VT_INTEGER);
   log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.exponential_histogram.data_points.0.exemplars.0."
-                                      "filtered_attributes.a_0", "val_0", -1, LM_VT_STRING);
+                                           "filtered_attributes.a_0", "val_0", -1, LM_VT_STRING);
   log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.exponential_histogram.data_points.0.exemplars.0."
-                                      "time_unix_nano", "987", -1, LM_VT_INTEGER);
+                                           "time_unix_nano", "987", -1, LM_VT_INTEGER);
   log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.exponential_histogram.data_points.0.exemplars.0.value",
                                       "999", -1, LM_VT_INTEGER);
   log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.exponential_histogram.data_points.0.flags", "22", -1,
@@ -803,12 +811,12 @@ _metric_summary_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_0.start_time_unix_nano(), 123);
   cr_assert_eq(data_point_0.time_unix_nano(), 456);
   cr_assert_eq(data_point_0.count(), 555);
-  cr_assert_float_eq(data_point_0.sum(), 56.7, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_0.sum(), 56.7, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_0.quantile_values_size(), 2);
-  cr_assert_float_eq(data_point_0.quantile_values().at(0).quantile(), 11.1, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_0.quantile_values().at(0).value(), 22.2, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_0.quantile_values().at(1).quantile(), 33.3, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_0.quantile_values().at(1).value(), 44.4, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_0.quantile_values().at(0).quantile(), 11.1, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_0.quantile_values().at(0).value(), 22.2, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_0.quantile_values().at(1).quantile(), 33.3, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_0.quantile_values().at(1).value(), 44.4, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_0.flags(), 22);
 
   const SummaryDataPoint &data_point_1 = summary.data_points().at(1);
@@ -816,10 +824,10 @@ _metric_summary_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_1.start_time_unix_nano(), 111);
   cr_assert_eq(data_point_1.time_unix_nano(), 222);
   cr_assert_eq(data_point_1.count(), 333);
-  cr_assert_float_eq(data_point_1.sum(), 44.4, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_1.sum(), 44.4, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_1.quantile_values_size(), 1);
-  cr_assert_float_eq(data_point_1.quantile_values().at(0).quantile(), 55.5, std::numeric_limits<double>::epsilon());
-  cr_assert_float_eq(data_point_1.quantile_values().at(0).value(), 66.6, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_1.quantile_values().at(0).quantile(), 55.5, FLOAT_COMPARE_EPSILON);
+  cr_assert_float_eq(data_point_1.quantile_values().at(0).value(), 66.6, FLOAT_COMPARE_EPSILON);
   cr_assert_eq(data_point_1.flags(), 777);
 }
 

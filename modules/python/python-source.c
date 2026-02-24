@@ -678,7 +678,7 @@ python_sd_init(LogPipe *s)
   if (!python_binding_init(&self->binding, cfg, self->super.super.super.id))
     return FALSE;
 
-  if(!_py_sd_init(self))
+  if (!_py_sd_init(self))
     return FALSE;
 
   msg_verbose("python-source: Python source initialized",

@@ -267,11 +267,20 @@ _validate_current_time(void)
     }
 }
 
+/* Threads using their own GThread run loop will/can not feed/pump the ivykis loop (no public ivykis API anymore for that) */
+#if ! defined(USE_IV_FOR_TIME_INVALIDATION)
+# define USE_IV_FOR_TIME_INVALIDATION 1
+#endif
+
 static void
 _invalidate_current_time(void)
 {
   if (G_UNLIKELY(faking_time))
     return;
+  else if (FALSE == USE_IV_FOR_TIME_INVALIDATION)
+    {
+      invalidate_cached_realtime();
+    }
   else if (iv_inited())
     {
       if (invalidate_time_task.handler == NULL)
@@ -408,5 +417,5 @@ const gchar *const *
 cached_get_system_tznames(void)
 {
   _validate_timeutils_cache();
-  return (const gchar *const *) &state.tzname;
+  return (const gchar * const *) &state.tzname;
 }

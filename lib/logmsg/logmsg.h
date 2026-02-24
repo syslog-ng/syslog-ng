@@ -230,7 +230,7 @@ typedef struct _LogMessageQueueNode
 {
   struct iv_list_head list;
   LogMessage *msg;
-  guint ack_needed:1, embedded:1, flow_control_requested:1;
+  guint ack_needed: 1, embedded: 1, flow_control_requested: 1;
 } LogMessageQueueNode;
 
 
@@ -267,8 +267,8 @@ struct _LogMessage
    * would suffice between two checks */
   guint16 generation;
   guint16 pri;
-  guint8 initial_parse:1,
-         recursed:1,
+  guint8 initial_parse: 1,
+         recursed: 1,
 
          /* NOTE: proto is just 6 bits wide, but with that it fills a hole
           * not taking any tolls on the structure size.  Realistically, we'd
@@ -277,7 +277,7 @@ struct _LogMessage
           * protocol that was used to deliver the datagram carrying this
           * LogMessage.  */
 
-         proto:6;
+         proto: 6;
   /* number of capture groups retrieved from a regexp match (e.g. $1, $2, ...) */
   guint8 num_matches;
 

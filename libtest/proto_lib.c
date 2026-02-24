@@ -131,7 +131,7 @@ assert_proto_server_fetch(LogProtoServer *proto, const gchar *expected_msg, gssi
     expected_msg_len = strlen(expected_msg);
 
   cr_assert_eq(msg_len, expected_msg_len, "LogProtoServer expected message mismatch (length) "
-               "actual: %" G_GSIZE_FORMAT " expected: %" G_GSIZE_FORMAT, msg_len, expected_msg_len);
+                                          "actual: %" G_GSIZE_FORMAT " expected: %" G_GSIZE_FORMAT, msg_len, expected_msg_len);
   cr_assert_arr_eq((const gchar *) msg, expected_msg, expected_msg_len,
                    "LogProtoServer expected message mismatch");
 }

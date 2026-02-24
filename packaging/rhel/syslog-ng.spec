@@ -464,11 +464,11 @@ ryslog is not on the system.
     --enable-smtp \
     --enable-shared \
     --disable-static \
-    --enable-dynamic-linking \
     --enable-python \
 %if %{with grpc}
     --enable-cpp --enable-grpc \
 %endif
+    --disable-stackdump \
     --disable-java-modules \
     --with-python=%{py_ver} \
     %{?with_kafka:--enable-kafka} \

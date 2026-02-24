@@ -21,6 +21,9 @@
  *
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <grpc/grpc.h>
 #include <grpcpp/channel.h>
 #include <grpcpp/client_context.h>
@@ -28,6 +31,7 @@
 #include <grpcpp/security/credentials.h>
 
 #include <google/protobuf/util/message_differencer.h>
+#pragma GCC diagnostic pop
 
 #include "otel-dest-worker.hpp"
 

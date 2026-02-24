@@ -52,8 +52,19 @@ function (add_unit_test)
   if (${ADD_UNIT_TEST_CRITERION})
     target_link_libraries(${ADD_UNIT_TEST_TARGET} ${CRITERION_LIBRARIES})
     target_include_directories(${ADD_UNIT_TEST_TARGET} PUBLIC ${CRITERION_INCLUDE_DIRS})
-    set_property(TARGET ${ADD_UNIT_TEST_TARGET} PROPERTY POSITION_INDEPENDENT_CODE FALSE)
 
+    # PIE must be turned off for criterion tests to get them working
+    set_property(TARGET ${ADD_UNIT_TEST_TARGET} PROPERTY POSITION_INDEPENDENT_CODE OFF)
+    if (APPLE AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+      # FIXME: PIE is mandatory on the newer macOS arm64 versions, so this might have effect on other platforms only, arm criterion binaries might crash frequently
+      set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-no_pie")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+      # On FreeBSD, POSITION_INDEPENDENT_CODE OFF adds -no-pie automatically, which is not supported on all versions
+      # (as the FreeBSD binaries are PIE by default), supressing the caused warning here
+      target_compile_options(${ADD_UNIT_TEST_TARGET} PRIVATE -Wno-unused-command-line-argument)
+      # clang is called for linking as well, producing the same warning
+      target_link_options(${ADD_UNIT_TEST_TARGET} PRIVATE -Wno-unused-command-line-argument)
+    endif()
   endif()
 
   if (${ADD_UNIT_TEST_LIBTEST})

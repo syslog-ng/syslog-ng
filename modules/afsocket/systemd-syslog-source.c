@@ -150,7 +150,7 @@ static gboolean
 should_use_systemd_syslog_instead_of_unix_socket(gchar *filename)
 {
   return (service_management_get_type() == SMT_SYSTEMD &&
-          (strncmp("/dev/log", filename, 9) == 0 || strncmp("/run/systemd/journal/syslog", filename, 28) == 0))? TRUE : FALSE;
+          (strncmp("/dev/log", filename, 9) == 0 || strncmp("/run/systemd/journal/syslog", filename, 28) == 0)) ? TRUE : FALSE;
 }
 
 typedef enum _SocketType

@@ -33,6 +33,11 @@ class Authenticator
 public:
   virtual ~Authenticator() {};
   virtual void handle_http_header_request(HttpHeaderRequestSignalData *data) = 0;
+
+  virtual void handle_grpc_metadata_request(GrpcMetadataRequestSignalData *data)
+  {
+    data->result = GRPC_SLOT_PLUGIN_ERROR;
+  }
 };
 
 }

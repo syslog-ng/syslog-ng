@@ -48,7 +48,7 @@ log_rewrite_set_pri_convert_pri(const gchar *pri_text)
     return -1;
 
   /* the maximum facility code is 127 in set-facility() */
-  if (pri > 127*8 + 7)
+  if (pri > 127 * 8 + 7)
     return -1;
 
   return pri;

@@ -40,7 +40,7 @@ struct _AFSocketDestDriver
   LogDestDriver super;
 
   guint
-  connections_kept_alive_across_reloads:1;
+  connections_kept_alive_across_reloads: 1;
   gint fd;
   LogWriter *writer;
   LogWriterOptions writer_options;

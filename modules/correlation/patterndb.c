@@ -442,7 +442,7 @@ _advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params
 void
 pattern_db_advance_time(PatternDB *self, gint timeout)
 {
-  PDBProcessParams process_params= {0};
+  PDBProcessParams process_params = {0};
 
   correlation_state_advance_time(self->correlation, timeout, &process_params);
   _flush_emitted_messages(self, &process_params);

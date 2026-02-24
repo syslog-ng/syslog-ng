@@ -6,21 +6,21 @@ permissions:
 on:
   pull_request:
     paths:
-      - 'dbld/**'
-      - 'packaging/rhel/**'
-      - 'packaging/debian/**'
-      - '.github/workflows/dbld-images.yml'
+      - "dbld/**"
+      - "packaging/rhel/**"
+      - "packaging/debian/**"
+      - ".github/workflows/dbld-images.yml"
 
   push:
-    branches: [ "develop", "master" ]
+    branches: ["develop", "master"]
     paths:
-      - 'dbld/**'
-      - 'packaging/rhel/**'
-      - 'packaging/debian/**'
-      - '.github/workflows/dbld-images.yml'
+      - "dbld/**"
+      - "packaging/rhel/**"
+      - "packaging/debian/**"
+      - ".github/workflows/dbld-images.yml"
 
   schedule:
-    - cron: '00 22 * * *'
+    - cron: "00 22 * * *"
 
   workflow_dispatch:
     inputs:
@@ -53,7 +53,8 @@ jobs:
           - opensuse-tumbleweed
           - rocky-9
           - ubuntu-focal
-          - devshell
+          # Note: devshell (amd64) is built as dependency of the latest debian stable (amd64), pushed separately
+          # - devshell
           - tarball
           - kira
           # dbld docker image + binary packages
@@ -100,16 +101,15 @@ jobs:
           - image: rhel-10
             platform: ubuntu-22.04-arm
             arch: arm64
-          # arm64 images for creating binary syslog-ng package + docker image with syslog-ng binary installed
+          # arm64 images for creating binary syslog-ng package + docker image with syslog-ng binary installed, now only for debian stable
+          # Note: devshell-arm64 is built as dependency of the latest debian stable arm64, pushed separately
           - image: debian-trixie
             platform: ubuntu-22.04-arm
             arch: arm64
-          # devshell docker image for arm64 (devshell must be debian stable based)
-          - image: devshell
-            platform: ubuntu-22.04-arm
-            arch: arm64
-          # a special one, the single i386 test only image
-          - image: devshell
+          # a special one, the single i386 test only image (also debian stable based)
+          # Note: devshell-i386 is built as dependency of the latest debian stable i386, pushed separately
+          - image: debian-trixie
+            # NOTE: We use ubuntu-22.04 (x86_64) as platform because GitHub has no i386 builder support anymore
             platform: ubuntu-22.04
             arch: i386
 
@@ -123,12 +123,21 @@ jobs:
           CONTAINER_REGISTRY="$(echo "$CONTAINER_REGISTRY" | tr '[:upper:]' '[:lower:]')"
           CONTAINER_ARCH=${{ matrix.arch }}
           CONTAINER_NAME_SUFFIX="$([ ${{ matrix.arch }} = amd64 ] && echo '' || echo '-${{ matrix.arch }}')"
+          # Base image for devshell (Debian stable)
+          DEVSHELL_BASE_IMAGE="debian-trixie"
 
           . .github/workflows/gh-tools.sh
-          gh_export CONTAINER_REGISTRY CONTAINER_ARCH CONTAINER_NAME_SUFFIX
+          gh_export CONTAINER_REGISTRY CONTAINER_ARCH CONTAINER_NAME_SUFFIX DEVSHELL_BASE_IMAGE
 
       - name: Build the image
-        run: dbld/rules image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX} JENKINS_URL=${RUNNER_ENVIRONMENT}
+        run: |
+          dbld/rules image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX} JENKINS_URL=${RUNNER_ENVIRONMENT}
+
+          # For devshell base image, also build devshell which depends on it
+          if [ "${{ matrix.image }}" = "${DEVSHELL_BASE_IMAGE}" ]; then
+            echo "Building devshell${CONTAINER_NAME_SUFFIX} as dependency..."
+            dbld/rules image-devshell${CONTAINER_NAME_SUFFIX} JENKINS_URL=${RUNNER_ENVIRONMENT}
+          fi
 
       - name: Should we upload the images?
         run: |
@@ -160,6 +169,12 @@ jobs:
         if: env.UPLOAD_IMAGES_INTERNAL == 'true'
         run: |
           dbld/rules push-image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX}
+
+          # For devshell base image, also push devshell which was built as a dependency
+          if [ "${{ matrix.image }}" = "${DEVSHELL_BASE_IMAGE}" ]; then
+            echo "Pushing devshell${CONTAINER_NAME_SUFFIX} as dependency..."
+            dbld/rules push-image-devshell${CONTAINER_NAME_SUFFIX}
+          fi
 
       # FIXME: this one is something not final, exists in public preview, so the gh api command might have changed?!
       #        the rights set to internal currently manually from the UI

@@ -89,7 +89,7 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
   pattern_parts = g_strsplit(pattern, ".", 0);
   hostname_parts = g_strsplit(host_name, ".", 0);
 
-  if(g_strrstr(pattern, "\?"))
+  if (g_strrstr(pattern, "\?"))
     {
       /* Glib would treat any question marks as jokers */
       success = FALSE;
@@ -105,7 +105,7 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
         {
           struct in6_addr host_buffer, pattern_buffer;
           gint INET_TYPE, INET_ADDRLEN;
-          if(strstr(host_name, ":"))
+          if (strstr(host_name, ":"))
             {
               INET_TYPE = AF_INET6;
               INET_ADDRLEN = INET6_ADDRSTRLEN;

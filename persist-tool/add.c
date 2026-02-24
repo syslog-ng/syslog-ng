@@ -54,7 +54,7 @@ persist_state_parse_entry(PersistStateEntry *self, gchar *entry)
     }
   self->name = g_strndup(entry, p - entry);
   self->name = g_strstrip(self->name);
-  self->value = g_strdup((p+1));
+  self->value = g_strdup((p + 1));
   return TRUE;
 }
 
@@ -74,10 +74,10 @@ parse_value_string(gchar *value_str, gchar *buffer, gint buffer_length)
     return -1;
 
   p = strchr(p, '"');
-  if (!p || strlen(p)<1)
+  if (!p || strlen(p) < 1)
     return -1;
 
-  p = g_strchug(p+1); // p points to the first value
+  p = g_strchug(p + 1); // p points to the first value
 
   gint count = 0;
   gint token_index = 0;
@@ -242,7 +242,7 @@ add_main(int argc, char *argv[])
     }
 
   gchar *line = g_malloc(MAX_LINE_LEN);
-  while(fgets(line, MAX_LINE_LEN, input_file))
+  while (fgets(line, MAX_LINE_LEN, input_file))
     {
       if (strlen(line) > 3)
         {

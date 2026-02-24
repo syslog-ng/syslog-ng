@@ -86,8 +86,8 @@ _compose_response_header(LogProtoHTTPServer *self, const gchar *data G_GNUC_UNUS
   GString *response = g_string_sized_new(G_N_ELEMENTS(response_header_fmt) - 1 +
                                          G_N_ELEMENTS(http_ok_msg) - 1 +
                                          G_N_ELEMENTS(close_str) - 1 - 2 +
-                                         -4 + maxContentNumLength + data_len);
-  g_string_printf(response, response_header_fmt, http_ok_msg, maxContentNumLength, data_len,
+                                         -4 + maxContentNumLength + (long) data_len);
+  g_string_printf(response, response_header_fmt, http_ok_msg, maxContentNumLength, (unsigned long) data_len,
                   close_after_sent ? close_str : "");
   return response;
 }

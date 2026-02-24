@@ -38,24 +38,24 @@ typedef enum
 typedef enum
 {
   TVM_NONE,
-  TVM_TRUSTED=0x0001,
-  TVM_UNTRUSTED=0x0002,
-  TVM_OPTIONAL=0x0010,
-  TVM_REQUIRED=0x0020,
+  TVM_TRUSTED = 0x0001,
+  TVM_UNTRUSTED = 0x0002,
+  TVM_OPTIONAL = 0x0010,
+  TVM_REQUIRED = 0x0020,
 } TLSVerifyMode;
 
 typedef enum
 {
   TSO_NONE,
-  TSO_NOSSLv2=0x0001,
-  TSO_NOSSLv3=0x0002,
-  TSO_NOTLSv1=0x0004,
-  TSO_NOTLSv11=0x0008,
-  TSO_NOTLSv12=0x0010,
-  TSO_NOTLSv13=0x0020,
-  TSO_IGNORE_UNEXPECTED_EOF=0x0040,
-  TSO_IGNORE_HOSTNAME_MISMATCH=0x0080,
-  TSO_IGNORE_VALIDITY_PERIOD=0x0100,
+  TSO_NOSSLv2 = 0x0001,
+  TSO_NOSSLv3 = 0x0002,
+  TSO_NOTLSv1 = 0x0004,
+  TSO_NOTLSv11 = 0x0008,
+  TSO_NOTLSv12 = 0x0010,
+  TSO_NOTLSv13 = 0x0020,
+  TSO_IGNORE_UNEXPECTED_EOF = 0x0040,
+  TSO_IGNORE_HOSTNAME_MISMATCH = 0x0080,
+  TSO_IGNORE_VALIDITY_PERIOD = 0x0100,
 } TLSSslOptions;
 
 typedef enum
@@ -90,6 +90,7 @@ struct _TLSContext
   gchar *ecdh_curve_list;
   gchar *sni;
   gboolean ocsp_stapling_verify;
+  gboolean extended_key_usage_verify;
   gboolean allow_compress;
 
   SSL_CTX *ssl_ctx;
@@ -136,6 +137,7 @@ void tls_context_set_ecdh_curve_list(TLSContext *self, const gchar *ecdh_curve_l
 void tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file);
 void tls_context_set_sni(TLSContext *self, const gchar *sni);
 void tls_context_set_ocsp_stapling_verify(TLSContext *self, gboolean ocsp_stapling_verify);
+void tls_context_set_extended_key_usage_verify(TLSContext *self, gboolean extended_key_usage_verify);
 const gchar *tls_context_get_key_file(TLSContext *self);
 EVTTAG *tls_context_format_tls_error_tag(TLSContext *self);
 EVTTAG *tls_context_format_location_tag(TLSContext *self);

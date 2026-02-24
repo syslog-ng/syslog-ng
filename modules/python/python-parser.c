@@ -55,7 +55,7 @@ CfgParser python_parser =
 #endif
   .name = "python",
   .keywords = python_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) python_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) python_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

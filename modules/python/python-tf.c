@@ -150,7 +150,7 @@ tf_python_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArg
   PyGILState_STATE gstate;
   const gchar *function_name;
   PyObject *ret;
-  LogMessage *msg = args->messages[args->num_messages-1];
+  LogMessage *msg = args->messages[args->num_messages - 1];
 
   if (state->super.argc == 0)
     return;

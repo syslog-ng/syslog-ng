@@ -1,11 +1,11 @@
-.TH syslog\-ng.conf 5 "03 September 2025" 4.9.0 "The syslog\-ng.conf manual page"
+.TH syslog\-ng.conf 5 "18 December 2025" 4.10.2 "The syslog\-ng.conf manual page"
 .SH NAME
 .PP
 syslog\-ng.conf \- {{ site.product.short_name }} configuration file
-.SH Synopsis
+.SH SYNOPSIS
 .PP
 syslog\-ng.conf
-.SH Description
+.SH DESCRIPTION
 .PP
 This manual page is only an abstract.
 .PP
@@ -17,7 +17,7 @@ different devices \- called syslog\-ng OSE clients \- all run syslog\-ng OSE,
 and collect the log messages from the various applications, files, and
 other sources. The clients send all important log messages to the remote
 syslog\-ng OSE PE server, where the server sorts and stores them.
-.SH Basic concepts of syslog\-ng OSE
+.SH BASIC CONCEPTS OF syslog\-ng OSE
 .PP
 The syslog\-ng OSE application reads incoming messages and forwards them
 to the selected destinations. The syslog\-ng OSE application can receive
@@ -43,7 +43,7 @@ Other optional elements that can appear in log statements are parsers
 and rewriting rules. Parsers segment messages into different fields to
 help processing the messages, while rewrite rules modify the messages by
 adding, replacing, or removing parts of the messages.
-.SH Configuring syslog\-ng OSE
+.SH CONFIGURING syslog\-ng OSE
 .RS
 .IP \(bu 2
 The main body of the configuration file consists of object
@@ -221,7 +221,8 @@ configuration file using the following syntax:
 options { option1(params); option2(params); ... };
 .fi
 .RE
-.SS Example: Using global options
+.PP
+For example:
 .PP
 To disable domain name resolving, add the following line to the
 syslog\-ng OSE configuration file:
@@ -234,7 +235,7 @@ options { use\-dns(no); };
 .PP
 The sources, destinations, and filters available in syslog\-ng OSE are
 listed below.  
-.SH Table 1: Source drivers available in syslog\-ng OSE
+.SH TABLE 1: SOURCE DRIVERS AVAILABLE IN syslog\-ng OSE
 .TS
 allbox;
 cb cb
@@ -279,7 +280,7 @@ unix\-dgram()	Opens the specified unix socket in SOCK_DGRAM mode and listens for
 unix\-stream()	Opens the specified unix socket in SOCK_STREAM mode and listens for incoming messages.
 stdin()	Collects messages from the standard input stream.
 .TE
-.SH Table 2: Destination drivers available in syslog\-ng
+.SH TABLE 2: DESTINATION DRIVERS AVAILABLE IN syslog\-ng OSE
 .TS
 allbox;
 cb cb
@@ -332,7 +333,7 @@ unix\-dgram()	Sends messages to the specified unix socket in SOCK_DGRAM style (B
 unix\-stream()	Sends messages to the specified unix socket in SOCK_STREAM style (Linux).
 usertty()	Sends messages to the terminal of the specified user, if the user is logged in.
 .TE
-.SH Table 3: Filter functi|ons available in syslog\-ng OSE
+.SH TABLE 3: FILTER FUNCTIONS AVAILABLE IN syslog\-ng OSE
 .TS
 allbox;
 cb cb
@@ -361,11 +362,11 @@ program()
 source()	
 tags()	
 .TE
-.SH Files
+.SH FILES
 .PP
-/opt/syslog\-ng/
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/
 .PP
-/opt/syslog\-ng/etc/syslog\-ng.conf
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/etc/syslog\-ng.conf
 .PP
 \fBNOTE:\fP
 If you experience any problems or need help with syslog\-ng OSE, see the \fIsyslog\-ng OSE Administration Guide\fP[1], or visit the \fIsyslog\-ng OSE mailing list\fP[2].

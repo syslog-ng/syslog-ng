@@ -46,6 +46,27 @@ kafka_property_free(KafkaProperty *self)
   g_free(self);
 }
 
+static gint
+_property_name_compare(const KafkaProperty *kp1, const KafkaProperty *kp2)
+{
+  return g_strcmp0(kp1->name, kp2->name);
+}
+
+KafkaProperty *
+kafka_property_list_find_not_empty(GList *l, const gchar *name)
+{
+  KafkaProperty key = { (gchar *)name, NULL };
+  GList *li = g_list_find_custom(l, &key, (GCompareFunc) _property_name_compare);
+
+  if (li == NULL)
+    return NULL;
+
+  KafkaProperty *conf_data = (KafkaProperty *)li->data;
+  if (conf_data != NULL && conf_data->value != NULL && conf_data->value[0] != '\0')
+    return conf_data;
+  return NULL;
+}
+
 void
 kafka_property_list_free(GList *l)
 {

@@ -62,7 +62,7 @@ CfgParser afamqp_parser =
 #endif
   .name = "afamqp",
   .keywords = afamqp_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afamqp_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) afamqp_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

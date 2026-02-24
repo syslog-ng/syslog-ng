@@ -136,6 +136,8 @@ static NSString *customBugFixDateFormat = @"yyyy-MM-dd'T'HH:mm:ss'.%06.0f'ZZZZZ"
   return nextLogEntry;
 }
 
+/* TODO: Move these to a module MsgFormatHandler (pacct-format.cor linux-kmsg-format.c are good examples */
+
 + (int) darwinOSLogLevelToPriority:(OSLogEntryLogLevel)level
 {
   struct
@@ -154,7 +156,6 @@ static NSString *customBugFixDateFormat = @"yyyy-MM-dd'T'HH:mm:ss'.%06.0f'ZZZZZ"
   const int maxLevels = sizeof(levels) / sizeof(levels[0]);
   return (level >= 0 && level < maxLevels ? levels[level].pri : LOG_NOTICE);
 }
-
 
 - (NSString *) stringFromDarwinOSLogEntry:(OSLogEntry *)nextLogEntry
 {

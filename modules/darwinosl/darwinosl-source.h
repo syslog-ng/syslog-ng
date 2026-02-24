@@ -33,7 +33,8 @@ LogDriver *darwinosl_sd_new(GlobalConfig *cfg);
 
 gboolean darwinosl_sd_set_filter_predicate(LogDriver *s, const gchar *type);
 void darwinosl_sd_set_go_reverse(LogDriver *s, gboolean newValue);
-void darwinosl_sd_set_do_not_use_bookmark(LogDriver *s, gboolean newValue);
+void darwinosl_sd_set_disable_bookmarks(LogDriver *s, gboolean newValue);
+void darwinosl_sd_set_ignore_saved_bookmarks(LogDriver *s, gboolean newValue);
 void darwinosl_sd_set_max_bookmark_distance(LogDriver *s, guint newValue);
 void darwinosl_sd_set_log_fetch_delay(LogDriver *s, guint new_value);
 void darwinosl_sd_set_log_fetch_retry_delay(LogDriver *s, guint newValue);

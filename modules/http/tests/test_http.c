@@ -132,7 +132,7 @@ ParameterizedTestParameters(http, http_code_tests)
     { 599, "doesnotexist", LTR_NOT_CONNECTED}
   };
 
-  return cr_make_param_array(struct http_action_test_params, params, sizeof(params)/sizeof(params[0]));
+  return cr_make_param_array(struct http_action_test_params, params, sizeof(params) / sizeof(params[0]));
 }
 
 ParameterizedTest(struct http_action_test_params *param, http, http_code_tests)

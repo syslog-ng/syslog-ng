@@ -5,7 +5,11 @@ modules_kafka_tests_TESTS			= \
 	modules/kafka/tests/test_kafka_config \
 	modules/kafka/tests/test_kafka_topic
 
+# TODO: Kafka tests are disabled on FreeBSD due to immediate test hangs, even with empty test bodies.
+#       Investigation and fixing is required to re-enable them.
+if !OS_TYPE_FREEBSD
 check_PROGRAMS					+= ${modules_kafka_tests_TESTS}
+endif
 
 modules_kafka_tests_test_kafka_props_SOURCES = 	\
 	modules/kafka/tests/test_kafka_props.c

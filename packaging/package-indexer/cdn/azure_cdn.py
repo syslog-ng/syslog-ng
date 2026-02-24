@@ -26,6 +26,7 @@ from azure.core.polling import LROPoller
 from azure.identity import ClientSecretCredential
 from azure.mgmt.cdn import CdnManagementClient
 from azure.mgmt.cdn.models import PurgeParameters
+from azure.core.exceptions import HttpResponseError
 
 from .cdn import CDN
 
@@ -102,17 +103,23 @@ class AzureCDN(CDN):
         path_str = str(Path("/", path))
 
         self._log_info("Refreshing CDN cache.", path=path_str, domains=str(self.__domains))
+        try:
+            poller: LROPoller = self.__cdn.afd_endpoints.begin_purge_content(
+                resource_group_name=self.__resource_group_name,
+                profile_name=self.__profile_name,
+                endpoint_name=self.__endpoint_name,
+                contents={"contentPaths": [path_str], "domains": self.__domains},
+            )
+            poller.wait()
+            status = poller.status()
 
-        poller: LROPoller = self.__cdn.afd_endpoints.begin_purge_content(
-            resource_group_name=self.__resource_group_name,
-            profile_name=self.__profile_name,
-            endpoint_name=self.__endpoint_name,
-            contents={"contentPaths": [path_str], "domains": self.__domains},
-        )
-        poller.wait()
+            if not status == "Succeeded":
+                raise Exception("Failed to refresh CDN cache. status: {}".format(status))
 
-        status = poller.status()
-        if not status == "Succeeded":
-            raise Exception("Failed to refresh CDN cache. status: {}".format(status))
-
-        self._log_info("Successfully refreshed CDN cache.", path=path_str, domains=str(self.__domains))
+            self._log_info("Successfully refreshed CDN cache.", path=path_str, domains=str(self.__domains))
+        except HttpResponseError as err:
+            # 2025.10.29 Azure outage led to temporary blockage of these requests, so we just have to ignore them
+            if "All Changes to Azure Frondoor Configuration are blocked currently." in err.message:
+                self._log_info("%s Skipping changes." % err.message)
+            else:
+                raise err

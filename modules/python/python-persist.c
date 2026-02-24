@@ -180,7 +180,7 @@ copy_persist_name(const LogPipe *self, const gchar *module, PythonPersistMembers
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
 
-  PyObject *ret =_call_generate_persist_name_method(options);
+  PyObject *ret = _call_generate_persist_name_method(options);
   if (ret)
     {
       const gchar *ret_as_c_str;
@@ -302,7 +302,7 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
 static void
 py_persist_dealloc(PyObject *s)
 {
-  PyPersist *self =(PyPersist *)s;
+  PyPersist *self = (PyPersist *)s;
 
   g_free(self->persist_name);
   self->persist_name = NULL;

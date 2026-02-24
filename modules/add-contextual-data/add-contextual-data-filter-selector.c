@@ -153,7 +153,7 @@ _filter_store_order_by_selectors(FilterStore *self, GList *ordered_selectors)
   GList *name_it, *filter_it, *selector_it;
   gboolean inserted;
 
-  for(selector_it = ordered_selectors; selector_it != NULL; selector_it = selector_it->next)
+  for (selector_it = ordered_selectors; selector_it != NULL; selector_it = selector_it->next)
     {
       inserted = FALSE;
       for (filter_it = self->filters, name_it = self->filter_names;

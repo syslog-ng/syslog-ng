@@ -243,7 +243,7 @@ __check_value_len(NVHandle handle, const gchar *name,
                   LogMessageValueType type, gpointer user_data)
 {
   TestCase *self = user_data;
-  gchar *error_message = g_strdup_printf("Bad value size; name: %s, value: %s len: %ld", name, value, value_len);
+  gchar *error_message = g_strdup_printf("Bad value size; name: %s, value: %s len: %ld", name, value, (long) value_len);
   if (strcmp(name, "HOST_FROM") != 0 && strcmp(name, "TRANSPORT") != 0)
     {
       cr_assert_leq(value_len, GPOINTER_TO_INT(self->user_data), "%s", error_message);
@@ -304,7 +304,7 @@ _test_default_facility_init(TestCase *self, TestSource *src, JournalReader *read
 {
   MockEntry *entry = __create_dummy_entry("test default facility");
   gint facility = GPOINTER_TO_INT(self->user_data);
-  if(options->default_pri == 0xFFFF)
+  if (options->default_pri == 0xFFFF)
     options->default_pri = LOG_NOTICE;
   options->default_pri = (options->default_pri & 7) | facility;
   mock_journal_add_entry(entry);

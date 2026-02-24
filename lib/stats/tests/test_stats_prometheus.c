@@ -239,8 +239,11 @@ Test(stats_prometheus, test_prometheus_format_value)
   /* None, bytes and milli/nanoseconds units are unaffected */
   stats_cluster_single_key_add_unit(&key, SCU_NONE);
   cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "9");
+#if G_MAXSIZE > 0xFFFFFFFF
+  /* 32 bits stats counters cannot be tested with these values */
   stats_cluster_single_key_add_unit(&key, SCU_GIB);
   cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "9663676416");
+#endif
   stats_cluster_single_key_add_unit(&key, SCU_MIB);
   cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "9437184");
   stats_cluster_single_key_add_unit(&key, SCU_KIB);
@@ -256,13 +259,15 @@ Test(stats_prometheus, test_prometheus_format_value)
   actual = g_ascii_strtod(stats_format_prometheus_format_value(&key, &counter), NULL);
   cr_assert_float_eq(actual, (gdouble) 9e-9, DBL_EPSILON);
 
-  /* Hours, minutes and seconds are affected */
+#if G_MAXSIZE > 0xFFFFFFFF
+  /* 32 bits stats counters cannot be tested with these values */
   stats_cluster_single_key_add_unit(&key, SCU_HOURS);
   cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "4102416061");
   stats_cluster_single_key_add_unit(&key, SCU_MINUTES);
   cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "4102447921");
   stats_cluster_single_key_add_unit(&key, SCU_SECONDS);
   cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "4102448452");
+#endif
 }
 
 

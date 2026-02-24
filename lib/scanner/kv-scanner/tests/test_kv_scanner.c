@@ -599,9 +599,9 @@ Test(kv_scanner, quotation_is_stored_in_the_was_quoted_value_member)
 
 Test(kv_scanner, spaces_around_value_separator_are_ignored)
 {
-  ScannerConfig config=
+  ScannerConfig config =
   {
-    .kv_separator=':',
+    .kv_separator = ':',
   };
   _IMPL_EXPECT_KV(config, "key1: \"value1\" key2 : value2 key3 :value3 ",
   {"key1", "value1"},
@@ -611,7 +611,7 @@ Test(kv_scanner, spaces_around_value_separator_are_ignored)
 
 Test(kv_scanner, value_separator_is_used_to_separate_key_from_value)
 {
-  ScannerConfig config=
+  ScannerConfig config =
   {
     .kv_separator = ':',
   };
@@ -646,7 +646,7 @@ Test(kv_scanner, invalid_value_encoding_is_copied_literally)
 
 Test(kv_scanner, separator_in_key)
 {
-  ScannerConfig config=
+  ScannerConfig config =
   {
     .kv_separator = '-',
   };
@@ -941,8 +941,8 @@ _provide_cases_for_performance_test_parse_long_msg(void)
     },
     {
       .input = "IN=em1 OUT= MAC=a2:be:d2:ab:11:af:e2:f2:00:00 SRC=192.168.2.115 DST=192.168.1.23 "
-      "LEN=52 TOS=0x00 PREC=0x00 TTL=127 ID=9434 DF PROTO=TCP SPT=58428 DPT=443 WINDOW=8192 "
-      "RES=0x00 SYN URGP=0",
+               "LEN=52 TOS=0x00 PREC=0x00 TTL=127 ID=9434 DF PROTO=TCP SPT=58428 DPT=443 WINDOW=8192 "
+               "RES=0x00 SYN URGP=0",
       .expected = INIT_KVCONTAINER(
       {"IN", "em1"},
       {"OUT", ""},

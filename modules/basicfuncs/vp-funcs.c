@@ -51,7 +51,7 @@ tf_value_pairs_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
 
   if (strcmp(argv[0], "values") == 0)
     state->result_type = TFVP_VALUES;
-  else if(strcmp(argv[0], "names") == 0)
+  else if (strcmp(argv[0], "names") == 0)
     state->result_type = TFVP_NAMES;
   else
     g_assert_not_reached();
@@ -100,7 +100,7 @@ tf_value_pairs_call(LogTemplateFunction *self, gpointer s,
 
   value_pairs_foreach(state->vp,
                       tf_value_pairs_foreach,
-                      args->messages[args->num_messages-1],
+                      args->messages[args->num_messages - 1],
                       args->options, &iter_state);
 }
 

@@ -44,7 +44,7 @@ test_vp_obj_start(const gchar *name,
 {
   static int times_called = 0;
 
-  switch(times_called)
+  switch (times_called)
     {
     case 0:
       cr_expect_null(prefix, "First vp_obj_start but prefix is not NULL!");
@@ -74,7 +74,7 @@ test_vp_obj_stop(const gchar *name,
 {
   static int times_called = 0;
 
-  switch(times_called)
+  switch (times_called)
     {
     case 0:
       cr_expect_str_eq(prefix, "root.test", "First vp_obj_stop but prefix is not 'root.test'!");

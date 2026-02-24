@@ -39,7 +39,7 @@ static CfgLexerKeyword kv_parser_keywords[] =
     "allow_pair_separator_in_value", KW_ALLOW_PAIR_SEPARATOR_OPTION,
     .kw_status = KWS_OBSOLETE,
     .kw_explain = "The allow-pair-separator-in-value(yes) has become the default behavior of kv-parser(), "
-    "and the option does nothing, you can safely remove it from your configuration."
+                  "and the option does nothing, you can safely remove it from your configuration."
   },
   { NULL }
 };

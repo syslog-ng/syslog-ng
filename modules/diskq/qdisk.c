@@ -458,7 +458,7 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
             evt_tag_int("fd", self->fd));
 }
 
-#if ! SYSLOG_NG_HAVE_POSIX_FALLOCATE
+#if ! SYSLOG_NG_HAVE_POSIX_FALLOCATE || defined(__FreeBSD__)
 static gint
 _compat_preallocate(int fd, off_t offset, off_t len)
 {
@@ -494,7 +494,8 @@ _preallocate_qdisk_file(QDisk *self, off_t size)
 
   gint result;
 
-#if SYSLOG_NG_HAVE_POSIX_FALLOCATE
+// TODO: review FreeBSD support for fallocate, it seems to have issues depending on the used filesystem
+#if SYSLOG_NG_HAVE_POSIX_FALLOCATE && ! defined(__FreeBSD__)
   result = posix_fallocate(self->fd, QDISK_RESERVED_SPACE, size - QDISK_RESERVED_SPACE);
 #else
   result = _compat_preallocate(self->fd, QDISK_RESERVED_SPACE, size - QDISK_RESERVED_SPACE);
@@ -1250,7 +1251,7 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
 
   serialized = g_string_sized_new(4096);
   sa = serialize_string_archive_new(serialized);
-  for (gint i = 0; i < g_queue_get_length(q); i+=2)
+  for (gint i = 0; i < g_queue_get_length(q); i += 2)
     {
       /* NOTE: we might have some flow-controlled events on front_cache, when
        * saving them to disk, we ack them, they are restored as
@@ -1258,7 +1259,7 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
        * disk anyway. */
 
       msg = g_queue_peek_nth(q, i);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_peek_nth(q, i+1), &path_options);
+      POINTER_TO_LOG_PATH_OPTIONS(g_queue_peek_nth(q, i + 1), &path_options);
       log_msg_serialize(msg, sa, 0);
 
       if (string_reached_memory_limit(serialized))
@@ -1321,7 +1322,7 @@ _save_state(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_cont
 
   self->hdr->front_cache_pos = front_cache_pos;
   self->hdr->backlog_pos = backlog_pos;
-  self->hdr->flow_control_window_pos= flow_control_window_pos;
+  self->hdr->flow_control_window_pos = flow_control_window_pos;
 
   if (!self->options->reliable)
     msg_info("Disk-buffer state saved",

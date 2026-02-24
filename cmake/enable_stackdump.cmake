@@ -43,7 +43,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Da
   message(FATAL_ERROR "ENABLE_STACKDUMP is only supported on Linux, macOS, or FreeBSD.")
 endif()
 
-find_package(LIBUNWIND)
+find_package(LIBUNWIND QUIET)
 
 if("${ENABLE_STACKDUMP}" MATCHES "^(auto|AUTO)$")
   if(LIBUNWIND_FOUND)

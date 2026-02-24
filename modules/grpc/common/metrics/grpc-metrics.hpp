@@ -31,7 +31,11 @@
 #include "stats/stats-cluster-key-builder.h"
 #include "compat/cpp-end.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <grpc++/grpc++.h>
+#pragma GCC diagnostic pop
 #include <map>
 
 namespace syslogng {

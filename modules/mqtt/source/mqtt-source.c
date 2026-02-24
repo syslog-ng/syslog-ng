@@ -226,10 +226,10 @@ _init(LogPipe *s)
       return FALSE;
     }
 
-  if(!mqtt_client_options_checker(&self->options))
+  if (!mqtt_client_options_checker(&self->options))
     return FALSE;
 
-  if(!log_threaded_fetcher_driver_init_method(s))
+  if (!log_threaded_fetcher_driver_init_method(s))
     return FALSE;
 
   if (mqtt_client_options_get_client_id(&self->options) == NULL)

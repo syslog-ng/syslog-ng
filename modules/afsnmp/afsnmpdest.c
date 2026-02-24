@@ -251,7 +251,7 @@ gboolean snmpdest_dd_set_engine_id(LogDriver *d, const gchar *eid)
 
   if (_has_hexadecimal_prefix(eid))
     {
-      eidlength = eidlength -2;
+      eidlength = eidlength - 2;
       eid = eid + 2;
     }
 

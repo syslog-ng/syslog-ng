@@ -260,8 +260,11 @@
 
 %token KW_PASS_UNIX_CREDENTIALS       10180
 %token KW_PERSIST_NAME                10181
-%token KW_READ_OLD_RECORDS            10182
-%token KW_USE_SYSLOGNG_PID            10183
+%token KW_USE_SYSLOGNG_PID            10182
+
+%token KW_READ_OLD_RECORDS            10185
+%token KW_IGNORE_SAVED_BOOKMARKS      10186
+%token KW_DISABLE_BOOKMARKS           10187
 
 /* log statement options */
 %token KW_FLAGS                       10190
@@ -287,15 +290,19 @@
 %token KW_TIME_REAP                   10211
 %token KW_TIME_SLEEP                  10212
 
-%token KW_PARTITIONS                  10213
-%token KW_PARTITION_KEY               10214
 %token KW_PARALLELIZE                 10215
+%token KW_PARTITIONS                  10216
+%token KW_PARTITION_KEY               10217
 
 /* destination options */
 %token KW_TMPL_ESCAPE                 10220
 
+/* source options */
+%token KW_LOG_FETCH_DELAY             10230
+%token KW_LOG_FETCH_RETRY_DELAY       10231
+
 /* driver specific options */
-%token KW_OPTIONAL                    10230
+%token KW_OPTIONAL                    10235
 
 /* file related options */
 %token KW_CREATE_DIRS                 10240
@@ -318,8 +325,8 @@
 
 %token KW_PORT                        10323
 %token KW_HTTP                        10324
-/* misc options */
 
+/* misc options */
 %token KW_USE_TIME_RECVD              10340
 
 /* filter items*/
@@ -340,7 +347,6 @@
 %token KW_VALUE                       10372
 
 /* yes/no switches */
-
 %token KW_YES                         10380
 %token KW_NO                          10381
 %token KW_AUTO                        10382
@@ -756,6 +762,14 @@ log_scheduler_option
             last_scheduler_options->num_partitions = $3;
           }
         | KW_PARTITION_KEY '(' template_content ')'
+          {
+            log_scheduler_options_set_partition_key_ref(last_scheduler_options, $3);
+          }
+        | KW_WORKERS '(' nonnegative_integer ')'
+          {
+            last_scheduler_options->num_partitions = $3;
+          }
+        | KW_WORKER_PARTITION_KEY '(' template_content ')'
           {
             log_scheduler_options_set_partition_key_ref(last_scheduler_options, $3);
           }

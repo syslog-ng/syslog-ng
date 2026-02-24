@@ -66,7 +66,7 @@ CfgParser riemann_parser =
 #endif
   .name = "riemann",
   .keywords = riemann_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) riemann_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) riemann_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

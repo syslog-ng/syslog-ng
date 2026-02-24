@@ -54,7 +54,7 @@ GQueue sync_call_actions = G_QUEUE_INIT;
 
 /* cause workers to stop, no new I/O jobs to be submitted */
 volatile gboolean main_loop_workers_quit;
-volatile gboolean is_reloading_scheduled;
+volatile gboolean reloading_scheduled;
 
 /* number of I/O worker jobs running */
 static GAtomicCounter main_loop_jobs_running;
@@ -158,7 +158,68 @@ typedef struct _WorkerExitNotification
   gpointer user_data;
 } WorkerExitNotification;
 
+typedef struct _ExitCondition
+{
+  GMutex lock;
+  GCond cond;
+} ExitCondition;
+
 static GList *exit_notification_list = NULL;
+static ExitCondition exit_cond;
+
+static void
+_exit_cond_init(void)
+{
+  g_cond_init(&exit_cond.cond);
+  g_mutex_init(&exit_cond.lock);
+}
+
+static void
+_exit_cond_destroy(void)
+{
+  g_cond_clear(&exit_cond.cond);
+  g_mutex_clear(&exit_cond.lock);
+}
+
+static inline void
+_exit_cond_signal(void)
+{
+  g_mutex_lock(&exit_cond.lock);
+  g_cond_broadcast(&exit_cond.cond);
+  g_mutex_unlock(&exit_cond.lock);
+}
+
+void
+main_loop_worker_wait_for_exit(void)
+{
+  g_mutex_lock(&exit_cond.lock);
+  g_cond_wait(&exit_cond.cond, &exit_cond.lock);
+  g_mutex_unlock(&exit_cond.lock);
+}
+
+inline gdouble
+mainloop_sleep_time(const gdouble delay)
+{
+  return delay > 0 ? 1.0 / delay : 0.0;
+}
+
+gboolean
+main_loop_worker_wait_for_exit_until(gdouble wait_time)
+{
+  /* Fast-path: check without lock (intentionally racy, worst case is one extra wait cycle).
+   * main_loop_workers_quit is write-once (FALSE->TRUE), so eventual consistency is acceptable. */
+  if (G_UNLIKELY(main_loop_workers_quit))
+    return TRUE;
+
+  if (wait_time > 0.0)
+    {
+      g_mutex_lock(&exit_cond.lock);
+      gint64 end = g_get_monotonic_time() + (gint64) wait_time * G_USEC_PER_SEC;
+      g_cond_wait_until(&exit_cond.cond, &exit_cond.lock, end);
+      g_mutex_unlock(&exit_cond.lock);
+    }
+  return main_loop_workers_quit;
+}
 
 void
 main_loop_worker_register_exit_notification_callback(WorkerExitNotificationFunc func, gpointer user_data)
@@ -180,11 +241,21 @@ _invoke_worker_exit_callback(WorkerExitNotification *func)
 static void
 _request_all_threads_to_exit(void)
 {
+  /* NOTE: Order is important here too, worker threads loops which rely on main_loop_worker_job_quit() (a.k.a. main_loop_workers_quit)
+   *       must see main_loop_workers_quit set to TRUE before they check it for proper, quick thread exit.
+   *
+   *       This variable is ambiguous in terms of usage, as it is used both for signaling the exit request, and the exited state.
+   *       Probably it would be better to have separate variables for these two states in the future,
+   *       e.g. main_loop_workers_should_quit and main_loop_workers_quit.
+   */
+  main_loop_workers_quit = TRUE;
+  /* Waiting threads also might rely on main_loop_workers_quit, so signal the exit cond only after setting it */
+  _exit_cond_signal();
+
   g_list_foreach(exit_notification_list, (GFunc) _invoke_worker_exit_callback, NULL);
   g_list_foreach(exit_notification_list, (GFunc) g_free, NULL);
   g_list_free(exit_notification_list);
   exit_notification_list = NULL;
-  main_loop_workers_quit = TRUE;
 }
 
 /* Call this function from worker threads, when you start up */
@@ -347,14 +418,56 @@ main_loop_worker_assert_batch_callbacks_were_processed(void)
   g_assert(iv_list_empty(&batch_callbacks));
 }
 
+inline gboolean
+is_reloading_scheduled(void)
+{
+  return reloading_scheduled;
+}
+
+inline void
+set_reloading_scheduled(gboolean scheduled)
+{
+  reloading_scheduled = scheduled;
+}
+
 static void
 _reenable_worker_jobs(void *s)
 {
+  /* NOTE:
+   *     - If a config reload is not in progress, reaching this point means either:
+   *          - workers are being enabled for the first time, or
+   *          - workers are being re-enabled to allow the exit process to complete.
+   *       Neither of these cases requires setting main_loop_workers_quit back to FALSE.
+   *       On the first call, its value must already be FALSE.
+   *       During re-enabling for exit, once exit has been requested, all threads must exit ASAP.
+   *
+   *     - During a config reload, resetting this before _invoke_sync_call_actions is mandatory,
+   *       as some worker thread startups
+   *       (e.g. log_threaded_source_driver_start_workers) are currently bound to
+   *       cfg_init/cfg_tree_post_config_init/log_pipe_post_config_init calls,
+   *       which can start the worker threads immediately.
+   *       Worker thread loops that check main_loop_worker_job_quit() (or main_loop_workers_quit directly)
+   *       would immediately exit again if main_loop_workers_quit is not reset here
+   *       before the worker threads are started.
+   *
+   * FIXME: We need to fix this by decoupling worker thread startups from the config init process.
+   *        Worker thread startups should be explicit (e.g. directly triggered after the config is fully read),
+   *        and not tied to the config init logic. (by a good chance tha same is true for config deinit and worker's shutdown)
+   */
+  if (reloading_scheduled)
+    main_loop_workers_quit = FALSE;
+
   _invoke_sync_call_actions();
-  main_loop_workers_quit = FALSE;
-  if (is_reloading_scheduled)
+
+  if (reloading_scheduled)
     msg_notice("Configuration reload finished");
-  is_reloading_scheduled = FALSE;
+  reloading_scheduled = FALSE;
+}
+
+inline gboolean
+main_loop_worker_job_quit(void)
+{
+  return main_loop_workers_quit;
 }
 
 void
@@ -451,6 +564,7 @@ __pre_init_hook(gint type, gpointer user_data)
 void
 main_loop_worker_init(void)
 {
+  _exit_cond_init();
   IV_TASK_INIT(&main_loop_workers_reenable_jobs_task);
   main_loop_workers_reenable_jobs_task.handler = _reenable_worker_jobs;
   register_application_hook(AH_CONFIG_PRE_INIT, __pre_init_hook, NULL, AHM_RUN_REPEAT);
@@ -459,4 +573,5 @@ main_loop_worker_init(void)
 void
 main_loop_worker_deinit(void)
 {
+  _exit_cond_destroy();
 }

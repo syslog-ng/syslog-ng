@@ -49,13 +49,13 @@ int normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlog, in
 
   msg_info("[SLOG] INFO: Reading key file", evt_tag_str("name", hostkey));
   int ret = readKey(key, &counter, hostkey);
-  if (ret!=1)
+  if (ret != 1)
     {
       msg_error("[SLOG] ERROR: Unable to read host key", evt_tag_str("file", hostkey));
       return 0;
     }
 
-  if (counter!=0UL)
+  if (counter != 0UL)
     {
       msg_error("[SLOG] ERROR: Initial key k0 is required for verification and decryption but the supplied key read has a counter > 0.",
                 evt_tag_long("Counter", counter));
@@ -64,21 +64,21 @@ int normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlog, in
 
   msg_info("[SLOG] INFO: Reading MAC file", evt_tag_str("name", MACfile));
   FILE *bigMAC = fopen(MACfile, "r");
-  if(bigMAC == NULL)
+  if (bigMAC == NULL)
     {
       msg_error("[SLOG] ERROR: Unable to read MAC", evt_tag_str("file", MACfile));
       return 0;
     }
 
   unsigned char MAC[CMAC_LENGTH];
-  if (readBigMAC(MACfile, (char *)MAC)==0)
+  if (readBigMAC(MACfile, (char *)MAC) == 0)
     {
       msg_warning("[SLOG] WARNING: Unable to read MAC", evt_tag_str("file", MACfile));
     }
 
   FILE *input = fopen(inputlog, "r");
 
-  if(input == NULL)
+  if (input == NULL)
     {
       msg_error("[SLOG] ERROR: Unable to open input log", evt_tag_str("file", inputlog));
       return 0;
@@ -86,10 +86,10 @@ int normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlog, in
 
   // Scan through file ones
   guint64 entries = 0;
-  while(!feof(input))
+  while (!feof(input))
     {
       char c = fgetc(input);
-      if(c == '\n')
+      if (c == '\n')
         {
           entries++;
         }
@@ -116,7 +116,7 @@ int iterativeMode(char *prevKey, char *prevMAC, char *curMAC, char *inputlog, ch
 
   msg_info("[SLOG] INFO: Reading previous key file", evt_tag_str("name", prevKey));
   int ret = readKey(previousKey, &previousKeyCounter, prevKey);
-  if (ret!=1)
+  if (ret != 1)
     {
       msg_error("[SLOG] ERROR: Previous key could not be loaded.", evt_tag_str("file", prevKey));
       return 0;
@@ -124,34 +124,34 @@ int iterativeMode(char *prevKey, char *prevMAC, char *curMAC, char *inputlog, ch
 
   msg_info("[SLOG] INFO: Reading previous MAC file", evt_tag_str("name", prevMAC));
   FILE *previousBigMAC = fopen(prevMAC, "r");
-  if(previousBigMAC == NULL)
+  if (previousBigMAC == NULL)
     {
       msg_error("[SLOG] ERROR: Unable to read previous MAC", evt_tag_str("file", prevMAC));
       return 0;
     }
 
   unsigned char previousMAC[CMAC_LENGTH];
-  if (readBigMAC(prevMAC, (char *)previousMAC)==0)
+  if (readBigMAC(prevMAC, (char *)previousMAC) == 0)
     {
       msg_warning("[SLOG] WARNING: Unable to read previous MAC", evt_tag_str("file", prevMAC));
     }
 
   msg_info("[SLOG] INFO: Reading current MAC file", evt_tag_str("name", curMAC));
   FILE *currentBigMAC = fopen(curMAC, "r");
-  if(currentBigMAC == NULL)
+  if (currentBigMAC == NULL)
     {
       msg_error("[SLOG] ERROR: Unable to read current MAC", evt_tag_str("file", curMAC));
       return 0;
     }
 
   unsigned char currentMAC[CMAC_LENGTH];
-  if (readBigMAC(curMAC, (char *)currentMAC)==0)
+  if (readBigMAC(curMAC, (char *)currentMAC) == 0)
     {
       msg_warning("[SLOG] WARNING: Unable to read current MAC", evt_tag_str("file", curMAC));
     }
 
   FILE *input = fopen(inputlog, "r");
-  if(input == NULL)
+  if (input == NULL)
     {
       msg_error("[SLOG] ERROR: Unable to open input log", evt_tag_str("file", inputlog));
       return 0;
@@ -159,10 +159,10 @@ int iterativeMode(char *prevKey, char *prevMAC, char *curMAC, char *inputlog, ch
 
   // Scan through file ones
   guint64 entries = 0;
-  while(!feof(input))
+  while (!feof(input))
     {
       char c = fgetc(input);
-      if(c == '\n')
+      if (c == '\n')
         {
           entries++;
         }
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
       return slog_usage(context, group, errorMsg);
     }
 
-  if(argc < 2 || argc > 4)
+  if (argc < 2 || argc > 4)
     {
       return slog_usage(context, group, NULL);
     }
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
   index = 1;
   inputLog = argv[index];
   index++;
-  if(!g_file_test(inputLog, G_FILE_TEST_IS_REGULAR))
+  if (!g_file_test(inputLog, G_FILE_TEST_IS_REGULAR))
     {
       GString *errorMsg = g_string_new(FILE_ERROR);
       g_string_append(errorMsg, inputLog);
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 
   outputLog = argv[index];
   index++;
-  if(outputLog == NULL)
+  if (outputLog == NULL)
     {
       return slog_usage(context, group, NULL);
     }
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
     {
       bufSize = atoi(argv[index]);
 
-      if(bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
+      if (bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
         {
           msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", bufSize),
                     evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));

@@ -168,13 +168,13 @@ Test(json_parser, test_json_parser_different_type_arrays)
 
   json_parser_set_prefix(json_parser, ".prefix.");
   msg = parse_json_into_log_message("{'intarray': [1, 2, 3],"
-                                    " 'strarray': ['foo', 'bar', 'baz'],"
+                                    " 'strarray': ['foo', 'bar', 'baz', 'foo,bar,baz'],"
                                     " 'boolarray': [true,false,true],"
                                     " 'dblarray': [1.234,1e6,5.6789],"
                                     " 'nullarray': [null,null,null,null]}",
                                     json_parser);
   assert_log_message_value_and_type_by_name(msg, ".prefix.intarray", "[1,2,3]", LM_VT_JSON);
-  assert_log_message_value_and_type_by_name(msg, ".prefix.strarray", "foo,bar,baz", LM_VT_LIST);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.strarray", "foo,bar,baz,\"foo,bar,baz\"", LM_VT_LIST);
   assert_log_message_value_and_type_by_name(msg, ".prefix.boolarray", "[true,false,true]", LM_VT_JSON);
   assert_log_message_value_and_type_by_name(msg, ".prefix.dblarray", "[1.234,1e6,5.6789]", LM_VT_JSON);
   assert_log_message_value_and_type_by_name(msg, ".prefix.nullarray", "[null,null,null,null]", LM_VT_JSON);

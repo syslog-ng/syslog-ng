@@ -191,6 +191,21 @@ log_transport_tls_send_shutdown(LogTransportTLS *self)
   return shutdown_rc;
 }
 
+static inline gboolean
+log_transport_tls_aux_data_add_peer_info(LogTransportTLS *self, LogTransportAuxData *aux)
+{
+  /* if we have found the peer has a certificate */
+  if (self->tls_session->peer_info.found)
+    {
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_cn", self->tls_session->peer_info.cn);
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o);
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou);
+      return TRUE;
+    }
+  else
+    return FALSE;
+}
+
 static gssize
 log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
@@ -203,24 +218,6 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
   if (G_UNLIKELY(self->sending_shutdown))
     return (log_transport_tls_send_shutdown(self) >= 0) ? 0 : -1;
 
-  if (aux)
-    {
-      /* if we have found the peer has a certificate */
-      if (self->tls_session->peer_info.found)
-        {
-          log_transport_aux_data_add_nv_pair(aux, ".tls.x509_cn", self->tls_session->peer_info.cn);
-          log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o);
-          log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou);
-        }
-      if (self->tls_session->peer_info.fingerprint[0])
-        log_transport_aux_data_add_nv_pair(aux, ".tls.x509_fp", self->tls_session->peer_info.fingerprint);
-
-      /* NOTE: we only support TLS on top of TCP for now.  We could reuse the
-       * proto auto detection code from transport-socket to make this more
-       * accurate.  */
-
-      aux->proto = IPPROTO_TCP;
-    }
   do
     {
       rc = SSL_read(self->tls_session->ssl, buf, buflen);
@@ -246,10 +243,10 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
               rc = (log_transport_tls_send_shutdown(self) >= 0) ? 0 : -1;
               break;
             case SSL_ERROR_SYSCALL:
-              // https://github.com/openssl/openssl/pull/11400
-              // There is a known bug in OpenSSL where it reports SSL_ERROR_SYSCALL without setting
-              // the proper errno value. The mentioned PR were reverted because lot of legacy code
-              // were broken by the fix. OpenSSL 3.0.0 will contain it.
+              /* https://github.com/openssl/openssl/pull/11400
+               * There is a known bug in OpenSSL where it reports SSL_ERROR_SYSCALL without setting
+               * the proper errno value. The mentioned PR were reverted because lot of legacy code
+               * were broken by the fix. OpenSSL 3.0.0 will contain it. */
               rc = (errno == 0) ? 0 : -1;
               break;
             default:
@@ -259,9 +256,22 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
     }
   while (rc == -1 && errno == EINTR);
 
-  return rc;
-tls_error:
+  /* NOTE: Peer info might not be presented till SSL_read did not happen */
+  if (aux)
+    {
+      log_transport_tls_aux_data_add_peer_info(self, aux);
 
+      if (self->tls_session->peer_info.fingerprint[0])
+        log_transport_aux_data_add_nv_pair(aux, ".tls.x509_fp", self->tls_session->peer_info.fingerprint);
+
+      /* NOTE: we only support TLS on top of TCP for now.  We could reuse the
+       * proto auto detection code from transport-socket to make this more
+       * accurate.  */
+      aux->proto = IPPROTO_TCP;
+    }
+  return rc;
+
+tls_error:
   msg_error("SSL error while reading stream",
             tls_context_format_tls_error_tag(self->tls_session->ctx),
             tls_context_format_location_tag(self->tls_session->ctx));

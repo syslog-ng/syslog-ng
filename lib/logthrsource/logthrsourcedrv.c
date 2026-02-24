@@ -161,6 +161,12 @@ _worker_thread_run(MainLoopThreadedWorker *s)
 {
   LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
 
+  GString *thread_name = g_string_new(self->control->super.super.id);
+  if (self->worker_index > 0)
+    g_string_append_printf(thread_name, "[%d]", self->worker_index);
+  set_thread_name(thread_name->str);
+  g_string_free(thread_name, TRUE);
+
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->control->super.super.id),
             evt_tag_int("worker_index", self->worker_index));
@@ -192,7 +198,8 @@ _worker_thread_request_exit(MainLoopThreadedWorker *s)
             evt_tag_str("driver", self->control->super.super.id),
             evt_tag_int("worker_index", self->worker_index));
   self->under_termination = TRUE;
-  self->request_exit(self);
+  if (self->request_exit)
+    self->request_exit(self);
   _worker_wakeup(&self->super);
 }
 

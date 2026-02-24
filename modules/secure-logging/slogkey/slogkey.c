@@ -107,7 +107,7 @@ int main(int argc, char **argv)
     }
 
   // Host key derivation needs one option and four arguments
-  if(host && argc != 5)
+  if (host && argc != 5)
     {
       g_print("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
       char *keyfile = argv[index];
 
       success = generateMasterKey(masterkey);
-      if(!success)
+      if (!success)
         {
           msg_error("Unable to create master key");
           ret = -1;
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
       else
         {
           success = writeKey((gchar *)masterkey, 0, keyfile);
-          if(!success)
+          if (!success)
             {
               msg_error("[SLOG] ERROR: Unable to write master key to file", evt_tag_str("file", keyfile));
               ret = -1;
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
       char *keyfile = argv[index];
       guint64 counterValue;
       success = readKey(key, &counterValue, keyfile);
-      if(!success)
+      if (!success)
         {
           msg_error("[SLOG] ERROR: Unable to read key file", evt_tag_str("file", keyfile));
           return ret;
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
           guchar hostKey[KEY_LENGTH];
 
           success = deriveHostKey((guchar *)masterKey, macAddr, serial, hostKey);
-          if(!success)
+          if (!success)
             {
               msg_error("[SLOG] ERROR: Unable to derive a host key");
               ret = -1;
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
           else
             {
               success = writeKey((char *)hostKey, 0, hostKeyFileName);
-              if(success == 0)
+              if (success == 0)
                 {
                   msg_error("[SLOG] ERROR: Unable to write host key to file", evt_tag_str("file", hostKeyFileName));
                   ret = -1;

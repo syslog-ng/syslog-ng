@@ -36,7 +36,7 @@ struct _SerializeArchive
 {
   GError *error;
   guint16 len;
-  guint16 silent:1;
+  guint16 silent: 1;
 
   gboolean (*read_bytes)(SerializeArchive *archive, gchar *buf, gsize count, GError **error);
   gboolean (*write_bytes)(SerializeArchive *archive, const gchar *buf, gsize count, GError **error);
@@ -90,14 +90,14 @@ serialize_read_uint32(SerializeArchive *archive, guint32 *value)
 static inline gboolean
 serialize_write_uint32_array(SerializeArchive *archive, guint32 *values, gsize elements)
 {
-  const gsize buffer_size = 128;
-  guint32 converted_values[buffer_size];
+#define BUFFER_SIZE 128
+  guint32 converted_values[BUFFER_SIZE];
   gsize converted_ndx;
 
   while (elements > 0)
     {
       for (converted_ndx = 0;
-           converted_ndx < buffer_size && converted_ndx < elements;
+           converted_ndx < BUFFER_SIZE && converted_ndx < elements;
            converted_ndx++)
         converted_values[converted_ndx] = GUINT32_TO_BE(values[converted_ndx]);
 

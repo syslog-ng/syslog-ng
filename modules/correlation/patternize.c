@@ -478,8 +478,8 @@ ptz_print_patterndb_rule(gpointer key, gpointer value, gpointer user_data)
 
   /* pop the delimiters from the cluster key */
   wordcount = g_strv_length(words);
-  delimiters = words[wordcount-1];
-  words[wordcount-1] = 0;
+  delimiters = words[wordcount - 1];
+  words[wordcount - 1] = 0;
 
   for (i = 0; words[i]; ++i)
     {
@@ -615,8 +615,8 @@ ptz_load_file(Patternizer *self, gchar *input_file, gboolean no_parse, GError **
   while (fgets(line, PTZ_MAXLINELEN, file))
     {
       len = strlen(line);
-      if (line[len-1] == '\n')
-        line[len-1] = 0;
+      if (line[len - 1] == '\n')
+        line[len - 1] = 0;
 
       msg = msg_format_parse(&parse_options, (const guchar *) line, len);
       g_ptr_array_add(self->logs, msg);

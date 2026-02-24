@@ -202,7 +202,7 @@ Test(csv_scanner, greedy_column)
 
 Test(csv_scanner, greedy_column_strip_whitespace)
 {
-  csv_scanner_init(&scanner, _default_options_with_flags(2, CSV_SCANNER_GREEDY|CSV_SCANNER_STRIP_WHITESPACE),
+  csv_scanner_init(&scanner, _default_options_with_flags(2, CSV_SCANNER_GREEDY | CSV_SCANNER_STRIP_WHITESPACE),
                    "foo,  bar,baz  ");
 
   cr_expect(_column_index_equals(0));
@@ -225,7 +225,7 @@ Test(csv_scanner, greedy_column_strip_whitespace)
 
 Test(csv_scanner, greedy_column_null_value)
 {
-  _default_options_with_flags(2, CSV_SCANNER_GREEDY|CSV_SCANNER_STRIP_WHITESPACE);
+  _default_options_with_flags(2, CSV_SCANNER_GREEDY | CSV_SCANNER_STRIP_WHITESPACE);
 
   csv_scanner_options_set_null_value(&options, "bar,baz");
   csv_scanner_init(&scanner, &options, "foo,  bar,baz  ");
@@ -380,15 +380,15 @@ Test(csv_scanner, columnless_no_flags)
   cr_expect(!_scan_complete());
 
   cr_expect(_scan_next());
-  cr_expect(strcmp(csv_scanner_get_current_value(&scanner), "val1")==0);
+  cr_expect(strcmp(csv_scanner_get_current_value(&scanner), "val1") == 0);
   cr_expect(!_scan_complete());
 
   cr_expect(_scan_next());
-  cr_expect(strcmp(csv_scanner_get_current_value(&scanner), "val2")==0);
+  cr_expect(strcmp(csv_scanner_get_current_value(&scanner), "val2") == 0);
   cr_expect(!_scan_complete());
 
   cr_expect(_scan_next());
-  cr_expect(strcmp(csv_scanner_get_current_value(&scanner), "val3")==0);
+  cr_expect(strcmp(csv_scanner_get_current_value(&scanner), "val3") == 0);
   cr_expect(!_scan_complete());
 
   /* go past the last column */

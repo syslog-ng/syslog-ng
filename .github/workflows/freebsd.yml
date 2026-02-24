@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [ "develop", "master" ]
+    branches: ["develop", "master"]
   schedule:
-    - cron: '00 21 * * *'
+    - cron: "00 21 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -17,11 +17,11 @@ jobs:
     strategy:
       matrix:
         # https://github.com/marketplace/actions/freebsd-vm
-        release: [ "15.0", "14.2" ]
-        arch: [ aarch64, amd64 ]
-        build-tool: [ cmake, autotools ]
-        compiler: [ {cpp: clang++, c: clang} ] # , {cpp: g++, c: gcc}
-        runner: [ ubuntu-24.04, ubuntu-24.04-arm ]
+        release: ["15.0", "14.2"]
+        arch: [aarch64, amd64]
+        build-tool: [cmake, autotools]
+        compiler: [{ cpp: clang++, c: clang }] # , {cpp: g++, c: gcc}
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
         exclude:
           # Do not use mismatching runner and vm arch
           - runner: ubuntu-24.04
@@ -52,7 +52,7 @@ jobs:
           #THREADS=$(sysctl -n hw.ncpu) # TODO: Check how to get it on the FreeBSD VM
           BSDPORTS_PREFIX=/usr/local
           SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
-          WARNING_FLAGS="-Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
+          WARNING_FLAGS="-DNO_PTHREAD_SELF_USAGE_WARNING=1 -Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
           CFLAGS="-I${BSDPORTS_PREFIX}/include/ ${WARNING_FLAGS}"
           CXXFLAGS="${CFLAGS}"
           LDFLAGS="-L${BSDPORTS_PREFIX}/lib"
@@ -113,7 +113,9 @@ jobs:
           prepare: |
             #cat /etc/pkg/FreeBSD.conf
 
-            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf criterion gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk18 rabbitmq-c riemann-c-client
+            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk25 rabbitmq-c riemann-c-client
+            # For testing
+            pkg install -y criterion libxml2 qpdf
             if  [ "${{ matrix.build-tool }}" = "autotools" ]; then
               # NOTE: Must have for autotools builds, but breaks cmake builds, nice :S
               pkg install -y gmake
@@ -153,8 +155,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE; pwd
 
-          # TODO: Skip for now, should fix the FreeBSD tests
-          #cmake --build ./build -j ${THREADS} --target check
+          cmake --build ./build -j ${THREADS} --target check
 
       - name: autotools build
         if: matrix.build-tool == 'autotools'
@@ -174,7 +175,7 @@ jobs:
           ./autogen.sh
           mkdir build
           cd build
-          ../configure --disable-dependency-tracking ${CONFIGURE_FLAGS}
+          ../configure --disable-dependency-tracking --disable-colored-log ${CONFIGURE_FLAGS}
           cd ..
           /usr/local/bin/gmake -C build install -j ${THREADS}
 
@@ -186,5 +187,4 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE; pwd
 
-          # TODO: Skip for now, should fix the FreeBSD tests
-          #/usr/local/bin/gmake -C build check -j ${THREADS}
+          /usr/local/bin/gmake -C build check -j ${THREADS}

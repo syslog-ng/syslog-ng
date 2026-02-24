@@ -86,7 +86,7 @@ csv_scanner_options_set_quote_pairs(CSVScannerOptions *options, const gchar *quo
   options->quotes_start = g_malloc((strlen(quote_pairs) / 2) + 1);
   options->quotes_end = g_malloc((strlen(quote_pairs) / 2) + 1);
 
-  for (i = 0; quote_pairs[i] && quote_pairs[i+1]; i += 2)
+  for (i = 0; quote_pairs[i] && quote_pairs[i + 1]; i += 2)
     {
       options->quotes_start[i / 2] = quote_pairs[i];
       options->quotes_end[i / 2] = quote_pairs[i + 1];
@@ -134,7 +134,7 @@ csv_scanner_options_clean(CSVScannerOptions *options)
 gboolean
 csv_scanner_options_validate(CSVScannerOptions *options)
 {
-  if(options->expected_columns == 0 && (options->flags & CSV_SCANNER_GREEDY))
+  if (options->expected_columns == 0 && (options->flags & CSV_SCANNER_GREEDY))
     {
       msg_error("The greedy flag of csv-parser can not be used without specifying the columns() option");
       return FALSE;
@@ -249,9 +249,9 @@ _parse_character_with_quotation(CSVScanner *self)
               ch = '\v';
               break;
             case 'x':
-              if (*(self->src+1) && *(self->src+2))
+              if (*(self->src + 1) && *(self->src + 2))
                 {
-                  gint decoded = _decode_xbyte(*(self->src+1), *(self->src+2));
+                  gint decoded = _decode_xbyte(*(self->src + 1), *(self->src + 2));
                   if (decoded >= 0)
                     {
                       self->src += 2;
@@ -268,7 +268,7 @@ _parse_character_with_quotation(CSVScanner *self)
     }
   else if (self->options->dialect == CSV_SCANNER_ESCAPE_DOUBLE_CHAR &&
            *self->src == self->current_quote &&
-           *(self->src+1) == self->current_quote)
+           *(self->src + 1) == self->current_quote)
     {
       self->src++;
       ch = *self->src;

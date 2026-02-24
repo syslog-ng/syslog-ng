@@ -31,7 +31,7 @@ Test(test_atomic_gssize, set_min_value)
   atomic_gssize_set(&min, G_MINSSIZE);
   cr_assert_eq(atomic_gssize_get(&min), G_MINSSIZE);
   atomic_gssize_inc(&min);
-  cr_assert_eq(atomic_gssize_get(&min), G_MINSSIZE+1);
+  cr_assert_eq(atomic_gssize_get(&min), G_MINSSIZE + 1);
   atomic_gssize_sub(&min, 2);
   cr_assert_eq(atomic_gssize_get(&min), G_MAXSSIZE);
 }

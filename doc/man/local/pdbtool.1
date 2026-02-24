@@ -1,11 +1,11 @@
-.TH pdbtool 1 "03 September 2025" 4.9.0 "The pdbtool manual page"
+.TH pdbtool 1 "18 December 2025" 4.10.2 "The pdbtool manual page"
 .SH NAME
 .PP
 pdbtool \-\-\- An application to test and convert {{ site.product.short_name }} pattern database rules
-.SH Synopsis
+.SH SYNOPSIS
 .PP
 pdbtool [command] [options]
-.SH Description
+.SH DESCRIPTION
 .PP
 This manual page is only an abstract.
 .PP
@@ -34,28 +34,38 @@ large amount of log messages
 \fB\fCdump the RADIX tree\fR built from the pattern database
 (or a part of it) to explore how the pattern matching works.
 .RE
-.SH The dictionary command
+.SH THE DICTIONARY COMMAND
 .PP
 dictionary [options]
 .PP
 Lists every name\-value pair that can be set by the rules of the pattern
 database.
+.PP
+\fB\fC\-\-dump\-tag\fR or \fB\fC\-T\fR
+.PP
 .RS
-.IP \(bu 2
-\-\-dump\-tag or \-T
-.PP
+.nf
 List the tags instead of the names of the name\-value pairs.
-.IP \(bu 2
-\-\-pdb <path\-to\-file> or \-p <path\-to\-file>
+.fi
+.RE
 .PP
+\fB\fC\-\-pdb <path\-to\-file>\fR or \fB\fC\-p <path\-to\-file>\fR
+.PP
+.RS
+.nf
 Name of the pattern database file to use.
-.IP \(bu 2
-\-\-program <programname> or \-P <programname>
+.fi
+.RE
 .PP
+\fB\fC\-\-program <programname>\fR or \fB\fC\-P <programname>\fR
+.PP
+.RS
+.nf
 List only the name\-value pairs that can be set for the messages of
 the specified ${PROGRAM} application.
+.fi
 .RE
-.SH The dump command
+.SH THE DUMP COMMAND
 .PP
 dump [options]
 .PP
@@ -63,30 +73,48 @@ Display the RADIX tree built from the patterns. This shows how are the
 patterns represented in syslog\-ng OSE and it might also help to track
 down pattern\-matching problems. The dump utility can dump the tree used
 for matching the \fB\fCPROGRAM\fR or the \fB\fCMSG\fR parts.
+.PP
+\fB\fC\-\-debug\fR or \fB\fC\-d\fR
+.PP
 .RS
-.IP \(bu 2
-\-\-debug or \-d
-.PP
+.nf
 Enable debug/diagnostic messages on stderr.
-.IP \(bu 2
-\-\-pdb or \-p
+.fi
+.RE
 .PP
+\fB\fC\-\-pdb\fR or \fB\fC\-p\fR
+.PP
+.RS
+.nf
 Name of the pattern database file to use.
-.IP \(bu 2
-\-\-program or \-P
+.fi
+.RE
 .PP
+\fB\fC\-\-program\fR or \fB\fC\-P\fR
+.PP
+.RS
+.nf
 Displays the RADIX tree built from the patterns belonging to the
 ${PROGRAM} application.
-.IP \(bu 2
-\-\-program\-tree or \-T
-.PP
-Display the ${PROGRAM} tree.
-.IP \(bu 2
-\-\-verbose or \-v
-.PP
-Enable verbose messages on stderr.
+.fi
 .RE
-.SS Example and sample output
+.PP
+\fB\fC\-\-program\-tree\fR or \fB\fC\-T\fR
+.PP
+.RS
+.nf
+Display the ${PROGRAM} tree.
+.fi
+.RE
+.PP
+\fB\fC\-\-verbose\fR or \fB\fC\-v\fR
+.PP
+.RS
+.nf
+Enable verbose messages on stderr.
+.fi
+.RE
+.SS EXAMPLE:
 .PP
 .RS
 .nf
@@ -115,7 +143,7 @@ pdbtool dump \-p patterndb.xml  \-P 'sshd'
                     '2' rule_id='fc44a9fe\-75fd\-11dd\-9bba\-001e6806451b'
 .fi
 .RE
-.SH The match command
+.SH THE MATCH COMMAND
 .PP
 match [options]
 .PP
@@ -137,64 +165,106 @@ pattern).
 .RE
 .PP
 The match command has the following options:
-.RS
-.IP \(bu 2
-\-\-color\-out or \-c
 .PP
+\fB\fC\-\-color\-out\fR or \fB\fC\-c\fR
+.PP
+.RS
+.nf
 Color the terminal output to highlight the part of the message that
 was successfully parsed.
-.IP \(bu 2
-\-\-debug or \-d
+.fi
+.RE
 .PP
+\fB\fC\-\-debug\fR or \fB\fC\-d\fR
+.PP
+.RS
+.nf
 Enable debug/diagnostic messages on stderr.
-.IP \(bu 2
-\-\-debug\-csv or \-C
+.fi
+.RE
 .PP
-Print the debugging information returned by the \-\-debug\-pattern
+\fB\fC\-\-debug\-csv\fR or \fB\fC\-C\fR
+.PP
+.RS
+.nf
+Print the debugging information returned by the `\-\-debug\-pattern`
 option as comma\-separated values.
-.IP \(bu 2
-\-\-debug\-pattern or \-D
+.fi
+.RE
 .PP
+\fB\fC\-\-debug\-pattern\fR or \fB\fC\-D\fR
+.PP
+.RS
+.nf
 Print debugging information about the pattern matching. See also the
-\-\-debug\-csv option.
-.IP \(bu 2
-\-\-file=<filename\-with\-path> or \-f
+`\-\-debug\-csv` option.
+.fi
+.RE
 .PP
+\fB\fC\-\-file=<filename\-with\-path>\fR or \fB\fC\-f\fR
+.PP
+.RS
+.nf
 Process the messages of the specified log file with the pattern
 database. This option allows to classify messages offline, and to
 apply the pattern database to already existing logfiles. To read the
 messages from the standard input (stdin), specify a hyphen (\-)
 character instead of a filename.
-.IP \(bu 2
-\-\-filter=<filter\-expression> or \-F
+.fi
+.RE
 .PP
+\fB\fC\-\-filter=<filter\-expression>\fR or \fB\fC\-F\fR
+.PP
+.RS
+.nf
 Print only messages matching the specified syslog\-ng OSE filter
 expression.
-.IP \(bu 2
-\-\-message or \-M
+.fi
+.RE
 .PP
-The text of the log message to match (only the \fB\fCMESSAGE\fR part
+\fB\fC\-\-message\fR or \fB\fC\-M\fR
+.PP
+.RS
+.nf
+The text of the log message to match (only the `MESSAGE` part
 without the syslog headers).
-.IP \(bu 2
-\-\-pdb or \-p
+.fi
+.RE
 .PP
+\fB\fC\-\-pdb\fR or \fB\fC\-p\fR
+.PP
+.RS
+.nf
 Name of the pattern database file to use.
-.IP \(bu 2
-\-\-program or \-P
+.fi
+.RE
 .PP
-Name of the program to use, as contained in the \fB\fCPROGRAM\fR part of
+\fB\fC\-\-program\fR or \fB\fC\-P\fR
+.PP
+.RS
+.nf
+Name of the program to use, as contained in the `PROGRAM` part of
 the syslog message.
-.IP \(bu 2
-\-\-template=<template\-expression> or \-T
+.fi
+.RE
 .PP
+\fB\fC\-\-template=<template\-expression>\fR or \fB\fC\-T\fR
+.PP
+.RS
+.nf
 A syslog\-ng OSE template expression that is used to format the output
 messages.
-.IP \(bu 2
-\-\-verbose or \-v
-.PP
-Enable verbose messages on stderr.
+.fi
 .RE
-.SS Example \- check
+.PP
+\fB\fC\-\-verbose\fR or \fB\fC\-v\fR
+.PP
+.RS
+.nf
+Enable verbose messages on stderr.
+.fi
+.RE
+.SS EXAMPLE: CHECK
 .PP
 The following command checks if the patterndb.xml file recognizes the
 Accepted publickey for myuser from 127.0.0.1 port 59357 ssh6 message:
@@ -204,7 +274,7 @@ Accepted publickey for myuser from 127.0.0.1 port 59357 ssh6 message:
 pdbtool match \-p patterndb.xml \-P sshd \-M "Accepted publickey for myuser from 127.0.0.1 port 59357 ssh6"
 .fi
 .RE
-.SS Example \- apply
+.SS EXAMPLE: APPLY
 .PP
 The following example applies the sshd.pdb pattern database file to the
 log messages stored in the /var/log/messages file, and displays only the
@@ -217,7 +287,7 @@ pdbtool match \-p sshd.pdb \\
     –filter ‘tags(“usracct”);’
 .fi
 .RE
-.SH The merge command
+.SH THE MERGE COMMAND
 .PP
 merge [options]
 .PP
@@ -227,42 +297,33 @@ applications to simplify maintenance). If a file uses an older database
 format, it is automatically updated to the latest format (V3). See the
 The syslog\-ng OSE Administrator Guide for
 details on the different pattern database versions.
-.RS
-.IP \(bu 2
-\-\-debug or \-d
 .PP
-Enable debug/diagnostic messages on stderr.
-.IP \(bu 2
-\-\-directory or \-D
+\fB\fC\-\-debug\fR or \fB\fC\-d\fR
+    Enable debug/diagnostic messages on stderr.
 .PP
-The directory that contains the pattern database XML files to be
-merged.
-.IP \(bu 2
-\-\-glob or \-G
+\fB\fC\-\-directory\fR or \fB\fC\-D\fR
+    The directory that contains the pattern database XML files to be
+    merged.
 .PP
-Specify filenames to be merged using a glob pattern, for example,
-using wildcards. For details on glob patterns, see man glob. This
-pattern is applied only to the filenames, and not on directory
-names.
-.IP \(bu 2
-\-\-pdb or \-p
+\fB\fC\-\-glob\fR or \fB\fC\-G\fR
+    Specify filenames to be merged using a glob pattern, for example,
+    using wildcards. For details on glob patterns, see man glob. This
+    pattern is applied only to the filenames, and not on directory
+    names.
 .PP
-Name of the output pattern database file.
-.IP \(bu 2
-\-\-recursive or \-r
+\fB\fC\-\-pdb\fR or \fB\fC\-p\fR
+    Name of the output pattern database file.
 .PP
-Merge files from subdirectories as well.
-.IP \(bu 2
-\-\-sort or \-s
+\fB\fC\-\-recursive\fR or \fB\fC\-r\fR
+    Merge files from subdirectories as well.
 .PP
-Sort files into alphabetic order during the merge (first sort by
-filename, then by directory name).
-.IP \(bu 2
-\-\-verbose or \-v
+\fB\fC\-\-sort\fR or \fB\fC\-s\fR
+    Sort files into alphabetic order during the merge (first sort by
+    filename, then by directory name).
 .PP
-Enable verbose messages on stderr.
-.RE
-.SS Example \- merge
+\fB\fC\-\-verbose\fR or \fB\fC\-v\fR
+    Enable verbose messages on stderr.
+.SS EXAMPLE: MERGE
 .PP
 .RS
 .nf
@@ -273,9 +334,13 @@ pdbtool merge \-\-recursive \-\-directory /home/me/mypatterns/  \-\-pdb /var/lib
 Currently it is not possible to convert a file without merging, so if
 you only want to convert an older pattern database file to the latest
 format, you have to copy it into an empty directory.
-.SH The patternize command
+.SH THE PATTERNIZE COMMAND
 .PP
+.RS
+.nf
 patternize [options]
+.fi
+.RE
 .PP
 Automatically create a pattern database from a log file containing a
 large number of log messages. The resulting pattern database is printed
@@ -284,106 +349,91 @@ data clustering technique to find similar log messages and replacing the
 differing parts with @ESTRING:: @ parsers. For details on pattern
 databases and message parsers, see the The syslog\-ng OSE Administrator Guide \[la]https://www.syslog-ng.com/\[ra]\&. The patternize command is available
 only in version 3.2 and later.
-.RS
-.IP \(bu 2
-\-\-debug or \-d
 .PP
-Enable debug/diagnostic messages on stderr.
-.IP \(bu 2
-\-\-file=<path> or \-f
+\fB\fC\-\-debug\fR or \fB\fC\-d\fR
+    Enable debug/diagnostic messages on stderr.
 .PP
-The logfile containing the log messages to create patterns from. To
-receive the log messages from the standard input (stdin), use \-.
-.IP \(bu 2
-\-\-iterate\-outliers or \-o
+\fB\fC\-\-file=<path>\fR or \fB\fC\-f\fR
+    The logfile containing the log messages to create patterns from. To
+    receive the log messages from the standard input (stdin), use \-.
 .PP
-Recursively iterate on the log lines to cover as many log messages
-with patterns as possible.
-.IP \(bu 2
-\-\-named\-parsers or \-n
+\fB\fC\-\-iterate\-outliers\fR or \fB\fC\-o\fR
+    Recursively iterate on the log lines to cover as many log messages
+    with patterns as possible.
 .PP
-The number of example log messages to include in the pattern
-database for every pattern. Default value: 1
-.IP \(bu 2
-\-\-no\-parse or \-p
+\fB\fC\-\-named\-parsers\fR or \fB\fC\-n\fR
+    The number of example log messages to include in the pattern
+    database for every pattern. Default value: 1
 .PP
-Do not parse the input file, treat every line as the message part of
-a log message.
-.IP \(bu 2
-\-\-samples=<number\-of\-samples>
+\fB\fC\-\-no\-parse\fR or \fB\fC\-p\fR
+    Do not parse the input file, treat every line as the message part of
+    a log message.
 .PP
-Include a generated name in the parsers, for example,
-\fB\&.dict.string1\fP, \fB\&.dict.string2\fP, and so on.
-.IP \(bu 2
-\-\-support=<number> or \-S
+\fB\fC\-\-samples=<number\-of\-samples>\fR
+    Include a generated name in the parsers, for example,
+    \fB\&.dict.string1\fP, \fB\&.dict.string2\fP, and so on.
 .PP
-A pattern is added to the output pattern database if at least the
-specified percentage of log messages from the input logfile match
-the pattern. For example, if the input logfile contains 1000 log
-messages and the \-\-support=3.0 option is used, a pattern is created
-only if the pattern matches at least 3 percent of the log messages
-(that is, 30 log messages). If patternize does not create enough
-patterns, try to decrease the support value.
+\fB\fC\-\-support=<number>\fR or \fB\fC\-S\fR
+    A pattern is added to the output pattern database if at least the
+    specified percentage of log messages from the input logfile match
+    the pattern. For example, if the input logfile contains 1000 log
+    messages and the \fB\fC\-\-support=3.0\fR option is used, a pattern is created
+    only if the pattern matches at least 3 percent of the log messages
+    (that is, 30 log messages). If patternize does not create enough
+    patterns, try to decrease the support value.
+    Default value: 4.0
 .PP
-Default value: 4.0
-.IP \(bu 2
-\-\-verbose or \-v
-.PP
-Enable verbose messages on stderr.
-.RE
-.SS Example \- patternize
+\fB\fC\-\-verbose\fR or \fB\fC\-v\fR
+    Enable verbose messages on stderr.
+.SS EXAMPLE: PATTERINZE
 .PP
 .RS
 .nf
 pdbtool patternize \-\-support=2.5 \-\-file=/var/log/messages
 .fi
 .RE
-.SH The test command
+.SH THE TEST COMMAND
 .PP
+.RS
+.nf
 test [options]
+.fi
+.RE
 .PP
 Use the test command to validate a pattern database XML file. Note that
 you must have the xmllint application installed. The test command is
 available only in syslog\-ng OSE version 3.2 and later.
-.RS
-.IP \(bu 2
-\-\-color\-out or \-c
 .PP
-Enable coloring in terminal output.
-.IP \(bu 2
-\-\-debug or \-d
+\fB\fC\-\-color\-out\fR or \fB\fC\-c\fR
+    Enable coloring in terminal output.
 .PP
-Enable debug/diagnostic messages on stderr.
-.IP \(bu 2
-\-\-debug or \-D
+\fB\fC\-\-debug\fR or \fB\fC\-d\fR
+    Enable debug/diagnostic messages on stderr.
 .PP
-Print debugging information on non\-matching patterns.
-.IP \(bu 2
-\-\-rule\-id or \-r
+\fB\fC\-\-debug\fR or \fB\fC\-D\fR
+    Print debugging information on non\-matching patterns.
 .PP
-Test only the patterndb rule (specified by its rule id) against its
-example.
-.IP \(bu 2
-\-\-validate
+\fB\fC\-\-rule\-id\fR or \fB\fC\-r\fR
+    Test only the patterndb rule (specified by its rule id) against its
+    example.
 .PP
-Validate a pattern database XML file.
-.IP \(bu 2
-\-\-verbose or \-v
+\fB\fC\-\-validate\fR
+    Validate a pattern database XML file.
 .PP
-Enable verbose messages on stderr.
-.RE
-.SS Example \- test
+\fB\fC\-\-verbose\fR or \fB\fC\-v\fR
+    Enable verbose messages on stderr.
+.SS EXAMPLE: TEST
 .PP
 .RS
 .nf
 pdbtool test \-\-validate /home/me/mypatterndb.pdb
 .fi
 .RE
-.SH Files
+.SH FILES
 .PP
-/opt/syslog\-ng/
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/
 .PP
-/opt/syslog\-ng/etc/syslog\-ng.conf
+/Users/hofi/Develop/Balabit/syslog-ng/build/install/etc/syslog\-ng.conf
 .PP
 \fBNOTE:\fP
 If you experience any problems or need help with syslog\-ng OSE, see the \fIsyslog\-ng OSE Administration Guide\fP[1], or visit the \fIsyslog\-ng OSE mailing list\fP[2].

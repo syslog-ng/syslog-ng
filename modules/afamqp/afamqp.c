@@ -556,7 +556,7 @@ afamqp_dd_connect(AMQPDestDriver *self)
         }
     }
 
-  if(!afamqp_dd_socket_init(self))
+  if (!afamqp_dd_socket_init(self))
     goto exception_amqp_dd_connect_failed_init;
 
   struct timeval delay;
@@ -755,7 +755,7 @@ _handle_heartbeat(void *cookie)
 
   iv_validate_now();
   self->heartbeat_timer.expires = iv_now;
-  timespec_add_msec(&self->heartbeat_timer.expires, self->heartbeat*1000);
+  timespec_add_msec(&self->heartbeat_timer.expires, self->heartbeat * 1000);
 
   iv_timer_register(&self->heartbeat_timer);
 }

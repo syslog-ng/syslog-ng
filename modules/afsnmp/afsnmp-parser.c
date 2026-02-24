@@ -61,7 +61,7 @@ CfgParser afsnmp_parser =
 {
   .name = "afsnmp",
   .keywords = afsnmp_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afsnmp_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) afsnmp_parse,
   .cleanup = log_pipe_unref_wrapper,
 };
 

@@ -27,15 +27,22 @@
 #include "kafka-grammar.h"
 
 extern int kafka_debug;
+
 int kafka_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword kafka_keywords[] =
 {
+  { "kafka",          KW_KAFKA },
+  { "kafka_c",        KW_KAFKA_C },   /* compatibility with old incubator naming */
+
   { "topic",          KW_TOPIC },
   { "fallback_topic", KW_FALLBACK_TOPIC},
+  { "partition",      KW_PARTITION},
+  { "strategy_hint",  KW_STRATEGY_HINT },
 
   /* https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md */
   { "config",         KW_CONFIG },
+  { "kafka_logging",  KV_KAFKA_LOGGING },
   { "flush_timeout_on_shutdown", KW_FLUSH_TIMEOUT_ON_SHUTDOWN },
   { "flush_timeout_on_reload",   KW_FLUSH_TIMEOUT_ON_RELOAD },
 
@@ -44,7 +51,12 @@ static CfgLexerKeyword kafka_keywords[] =
   { "sync_send",      KW_SYNC_SEND},
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
   { "poll_timeout",   KW_POLL_TIMEOUT },
-  { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
+  { "separate_worker_queues", KW_SEPARATE_WORKER_QUEUES },
+  { "log_fetch_queue_full_delay", KW_LOG_FETCH_QUEUE_FULL_DELAY },
+  { "state_update_timeout",   KW_STATE_UPDATE_TIMEOUT },
+  { "persist_store",  KW_PERSIST_STORE },
+  { "store_metadata",   KW_STORE_METADATA },
+
   { NULL }
 };
 

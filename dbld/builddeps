@@ -10,6 +10,42 @@ ZYPPER_INSTALL="zypper -n install"
 set -e
 set -x
 
+function normalize_architecture() {
+    local architecture="$1"
+
+    architecture="${architecture,,}"
+
+    case "${architecture}" in
+        x86_64|amd64|x64|x86-64|intel64|em64t)
+            echo "x86_64"
+            ;;
+        aarch64|arm64)
+            echo "arm64"
+            ;;
+        *)
+            echo "${architecture}"
+            ;;
+    esac
+}
+
+function require_platform_architecture() {
+    local required_architecture="${1:-x86_64}"
+    local current_architecture
+    local normalized_required_architecture
+    local normalized_current_architecture
+
+    current_architecture="$(uname -m)"
+    normalized_required_architecture="$(normalize_architecture "${required_architecture}")"
+    normalized_current_architecture="$(normalize_architecture "${current_architecture}")"
+
+    if [ "${normalized_current_architecture}" = "${normalized_required_architecture}" ]; then
+        return 0
+    fi
+
+    echo "Error: unsupported platform architecture '${current_architecture}' (normalized: '${normalized_current_architecture}'). Required: '${required_architecture}' (normalized: '${normalized_required_architecture}')."
+    exit 1
+}
+
 function hashfile() {
     FILE="$1"
     if command -v sha256sum >/dev/null 2>&1; then
@@ -77,8 +113,7 @@ function workaround_rpm_repos() {
 # needed by this script _before_ installing packages from packages.manifest.
 #
 # NOTE: If at all possible don't put anything here.
-function install_dbld_dependencies()
-{
+function install_dbld_dependencies() {
     case "${OS_DISTRIBUTION}" in
         debian|ubuntu)
             $APT_INSTALL curl gnupg2
@@ -92,8 +127,7 @@ function install_dbld_dependencies()
     esac
 }
 
-function download_target()
-{
+function download_target() {
     TARGET=$1
     OUTPUT=$2
     FALLBACK_PATH=$3
@@ -122,19 +156,48 @@ function download_target()
     fi
 }
 
+function install_criterion_from_source() {
+    local tool="${1:-cmake}"
+
+    if [ "$tool" = "cmake" ]; then
+        CRITERION_VERSION=2.3.3
+        HASH="8c85e1fcdb9a39b82bee50394bedfe74a0c839ffff129ddfc6fb73b11adafa29"
+
+        download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2 criterion/${CRITERION_VERSION}/criterion.tar.bz2 "${HASH}"
+        cd /tmp/
+        "$(tar_app)" xvf /tmp/criterion.tar.bz2
+        cd /tmp/criterion-v${CRITERION_VERSION}
+        which cmake
+        cmake --version
+        cmake -Wno-dev -DCMAKE_INSTALL_PREFIX=/usr .
+        make -j $(nproc) install
+        ldconfig
+        rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
+    else
+        CRITERION_VERSION=2.4.3
+        HASH="6d924ee5eeaaaed7762ab968f560b9ff543fc3473aa949bf53ac56a2a1a9416c"
+
+        download_target "https://github.com/Snaipe/Criterion/archive/refs/tags/v${CRITERION_VERSION}.tar.gz" /tmp/criterion.tar.gz criterion/${CRITERION_VERSION}/criterion.tar.gz "${HASH}"
+        cd /tmp/
+        "$(tar_app)" xvf /tmp/criterion.tar.gz
+        cd /tmp/Criterion-${CRITERION_VERSION}
+        meson setup build --prefix=/usr
+        meson install -C build
+        ldconfig
+        rm -rf /tmp/criterion.tar.gz /tmp/Criterion-${CRITERION_VERSION}
+    fi
+}
+
 function install_criterion() {
-    CRITERION_VERSION=2.3.3
-    HASH="8c85e1fcdb9a39b82bee50394bedfe74a0c839ffff129ddfc6fb73b11adafa29"
+    require_platform_architecture "x86_64"
 
-    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2 criterion/${CRITERION_VERSION}/criterion.tar.bz2 "${HASH}"
-    cd /tmp/
-    tar xvf /tmp/criterion.tar.bz2
-    cd /tmp/criterion-v${CRITERION_VERSION}
-    cmake -DCMAKE_INSTALL_PREFIX=/usr .
-    make install
+    CRITERION_VERSION=2.4.3
+    HASH="f1b3dd5186783dcdd63433c1facd3b4d6af5244a151057370b53bdda80f16121"
+
+    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-${CRITERION_VERSION}-linux-x86_64.tar.xz" /tmp/criterion.tar.xz criterion/${CRITERION_VERSION}/criterion.tar.xz "${HASH}"
+    "$(tar_app)" -C /usr --strip-components=1 -xvf /tmp/criterion.tar.xz
     ldconfig
-    rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
-
+    rm -rf /tmp/criterion.tar.xz
 }
 
 function set_jvm_paths() {
@@ -168,11 +231,27 @@ function install_bison_from_source {
     HASH="69dc0bb46ea8fc307d4ca1e0b61c8c355eb207d0b0c69f4f8462328e74d7b9ea"
 
     cd /tmp
-    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz "${HASH}"
-    tar xvfz /tmp/bison-${BISON_VERSION}.tar.gz
+    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}."$(tar_app)".gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz "${HASH}"
+    "$(tar_app)" xvfz /tmp/bison-${BISON_VERSION}.tar.gz
     cd /tmp/bison-${BISON_VERSION}
     ./configure --prefix=/usr/local --disable-nls
-    make && make install
+    make -j $(nproc) && make -j $(nproc) install
+}
+
+function install_astyle_from_source {
+    ASTYLE_VERSION=3.6.13
+    HASH="83a207e9b4e96fbab1662a786c74434f7fe6881003ee5e5d66fcaf87c96a8672"
+
+    cd /tmp
+    download_target https://gitlab.com/saalen/astyle/-/archive/${ASTYLE_VERSION}/astyle-${ASTYLE_VERSION}.zip?ref_type=tags /tmp/astyle-${ASTYLE_VERSION}.zip astyle/${ASTYLE_VERSION}/astyle.zip "${HASH}"
+    unzip /tmp/astyle-${ASTYLE_VERSION}.zip
+    cd /tmp/astyle-${ASTYLE_VERSION}
+    mkdir build
+    cd build
+    which cmake
+    cmake --version
+    cmake ../
+    make -j $(nproc) && make -j $(nproc) install
 }
 
 function filter_packages_by_platform {

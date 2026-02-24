@@ -21,7 +21,6 @@ set(SCL_DIRS
     iptables
     jellyfin
     junos
-    kafka
     linux-audit
     loadbalancer
     loggly
@@ -55,7 +54,8 @@ set(SCL_DIRS
     azure
 )
 
-install(DIRECTORY ${SCL_DIRS} DESTINATION share/syslog-ng/include/scl)
+install(DIRECTORY ${SCL_DIRS} DESTINATION share/syslog-ng/include/scl
+        USE_SOURCE_PERMISSIONS)
 install(FILES scl.conf DESTINATION share/syslog-ng/include)
 
 if (NOT EXISTS ${CMAKE_INSTALL_PREFIX}/etc/syslog-ng.conf)

@@ -283,7 +283,7 @@ cr_assert_gdouble_eq(gdouble a, gdouble b)
       return;
     }
 
-  cr_assert(fabs(a-b) < G_MINDOUBLE);
+  cr_assert(fabs(a - b) < G_MINDOUBLE);
 }
 
 ParameterizedTest(StringDoublePair *string_value_pair, type_hints, test_double_cast)

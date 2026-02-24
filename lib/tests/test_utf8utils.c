@@ -88,7 +88,7 @@ ParameterizedTestParameters(test_utf8utils, test_escaped_text)
     {"\xad", "\\\\xad", 0, -1},
     {"Á\xadÉ", "Á\\\\xadÉ", 0, -1},
     {"\"text\"", "\\\"text\\\"", AUTF8_UNSAFE_QUOTE, -1},
-    {"\"te't\"", "\\\"te\\'t\\\"", AUTF8_UNSAFE_QUOTE|AUTF8_UNSAFE_APOSTROPHE, -1},
+    {"\"te't\"", "\\\"te\\'t\\\"", AUTF8_UNSAFE_QUOTE | AUTF8_UNSAFE_APOSTROPHE, -1},
   };
 
   return cr_make_param_array(StringValueList, string_value_list,

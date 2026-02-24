@@ -32,7 +32,11 @@
 FollowMethod
 file_monitor_factory_follow_method_from_string(const gchar *method)
 {
-  if (strcmp(method, "legacy") == 0)
+  if (strcmp(method, "auto") == 0)
+    {
+      return FM_AUTO;
+    }
+  else if (strcmp(method, "legacy") == 0)
     {
       return FM_LEGACY;
     }
@@ -72,7 +76,7 @@ create_file_monitor_events(FileReader *self, FollowMethod file_follow_mode, gint
 
     case FM_POLL:
       if (file_reader_options_get_log_proto_options(self->options)->super.super.multi_line_options.mode == MLM_NONE)
-        poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
+        poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, self);
       else
         poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
                                                       self->options->multi_line_timeout, self);

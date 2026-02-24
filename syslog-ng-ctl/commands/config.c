@@ -49,7 +49,7 @@ slng_config(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
     {
       g_string_append(cmd, "GET ");
 
-      if(config_options_preprocessed)
+      if (config_options_preprocessed)
         g_string_append(cmd, "PREPROCESSED");
       else
         g_string_append(cmd, "ORIGINAL");

@@ -57,7 +57,6 @@ add_module(
           ${ZLIB_LIBRARIES}
           OpenSSL::SSL
           OpenSSL::Crypto
-          libnet
           ${Libsystemd_LIBRARIES}
           ${LIBNET_LIBRARIES}
   SOURCES ${AFSOCKET_SOURCES}
