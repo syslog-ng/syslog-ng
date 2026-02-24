@@ -21,7 +21,6 @@ set(SCL_DIRS
     iptables
     jellyfin
     junos
-    kafka
     linux-audit
     loadbalancer
     loggly

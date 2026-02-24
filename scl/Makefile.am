@@ -21,7 +21,6 @@ SCL_SUBDIRS	= \
 	iptables	\
 	jellyfin	\
 	junos		\
-	kafka		\
 	linux-audit	\
 	loadbalancer	\
 	loggly		\

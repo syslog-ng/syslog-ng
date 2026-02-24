@@ -22,21 +22,48 @@
  * COPYING for details.
  *
  */
+#include "kafka-topic-parts.h"
+#include "messages.h"
+#include "str-utils.h"
+#include <stdio.h>
 
-#ifndef KAFKA_PROPS_H_INCLUDED
-#define KAFKA_PROPS_H_INCLUDED
-
-#include "syslog-ng.h"
-
-typedef struct _KafkaProperty
+KafkaTopicParts *
+kafka_tps_new(const gchar *topic, GList *partitions)
 {
-  gchar *name;
-  gchar *value;
-} KafkaProperty;
+  KafkaTopicParts *self = g_new0(KafkaTopicParts, 1);
 
-KafkaProperty *kafka_property_new(const gchar *name, const gchar *value);
-void kafka_property_free(KafkaProperty *self);
-void kafka_property_list_free(GList *l);
-KafkaProperty *kafka_property_list_find_not_empty(GList *l, const gchar *name);
+  self->topic = g_strdup(topic);
+  self->partitions = partitions;
+  return self;
+}
 
-#endif
+/* We assume both lists are sorted */
+gboolean
+kafka_tps_equal(gconstpointer tps1, gconstpointer tps2)
+{
+  GList *parts1 = ((KafkaTopicParts *)tps1)->partitions;
+  GList *parts2 = ((KafkaTopicParts *)tps2)->partitions;
+
+  if (FALSE == g_str_equal(((KafkaTopicParts *)tps1)->topic, ((KafkaTopicParts *)tps2)->topic)
+      || g_list_length(parts1) != g_list_length(parts2))
+    return FALSE;
+
+  for (; parts1 && parts2; parts1 = parts1->next, parts2 = parts2->next)
+    if (parts1->data != parts2->data)
+      return FALSE;
+  return TRUE;
+}
+
+void
+kafka_tps_free(KafkaTopicParts *self)
+{
+  g_free(self->topic);
+  g_list_free(self->partitions);
+  g_free(self);
+}
+
+void
+kafka_tps_list_free(GList *l)
+{
+  g_list_free_full(l, (GDestroyNotify) kafka_tps_free);
+}

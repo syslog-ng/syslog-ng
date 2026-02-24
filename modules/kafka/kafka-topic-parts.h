@@ -23,20 +23,20 @@
  *
  */
 
-#ifndef KAFKA_PROPS_H_INCLUDED
-#define KAFKA_PROPS_H_INCLUDED
+#ifndef KAFKA_TOPIC_PARTS_H_INCLUDED
+#define KAFKA_TOPIC_PARTS_H_INCLUDED
 
 #include "syslog-ng.h"
 
-typedef struct _KafkaProperty
+typedef struct _KafkaTopicParts
 {
-  gchar *name;
-  gchar *value;
-} KafkaProperty;
+  gchar *topic;
+  GList *partitions;
+} KafkaTopicParts;
 
-KafkaProperty *kafka_property_new(const gchar *name, const gchar *value);
-void kafka_property_free(KafkaProperty *self);
-void kafka_property_list_free(GList *l);
-KafkaProperty *kafka_property_list_find_not_empty(GList *l, const gchar *name);
+KafkaTopicParts *kafka_tps_new(const gchar *topic, GList *partitions);
+void kafka_tps_free(KafkaTopicParts *self);
+void kafka_tps_list_free(GList *l);
+gboolean kafka_tps_equal(gconstpointer tps1, gconstpointer tps2);
 
 #endif

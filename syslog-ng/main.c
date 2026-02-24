@@ -238,6 +238,8 @@ main(int argc, char *argv[])
   GOptionContext *ctx;
   GError *error = NULL;
 
+  set_thread_name("syslog-ng-main");
+
   console_global_init("syslog-ng");
   MainLoop *main_loop = main_loop_get_instance();
 

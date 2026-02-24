@@ -34,7 +34,9 @@
 
 #include "cfg-grammar-internal.h"
 #include "plugin.h"
-#include "kafka-dest-driver.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "kafka-internal.h"
 #include "kafka-props.h"
 
 }
@@ -56,57 +58,97 @@
 %type <ptr> kafka_property
 
 %token KW_KAFKA
+%token KW_KAFKA_C
 %token KW_TOPIC
 %token KW_FALLBACK_TOPIC
+%token KW_PARTITION
 %token KW_CONFIG
+%token KW_STRATEGY_HINT
+%token KV_KAFKA_LOGGING
 %token KW_FLUSH_TIMEOUT_ON_SHUTDOWN
 %token KW_FLUSH_TIMEOUT_ON_RELOAD
 %token KW_POLL_TIMEOUT
+%token KW_STATE_UPDATE_TIMEOUT
+%token KW_LOG_FETCH_QUEUE_FULL_DELAY
+%token KW_SEPARATE_WORKER_QUEUES
 %token KW_BOOTSTRAP_SERVERS
 %token KW_SYNC_SEND
+%token KW_PERSIST_STORE
+%token KW_STORE_METADATA
 
 %%
 
 start
-        : LL_CONTEXT_DESTINATION KW_KAFKA
-          {
+        : LL_CONTEXT_SOURCE KW_KAFKA
+        {
+            last_driver = *instance = kafka_sd_new(configuration);
+        }
+        '(' _inner_src_context_push kafka_src_options _inner_src_context_pop ')'
+        {
+            YYACCEPT;
+        }
+        | LL_CONTEXT_DESTINATION kafka_keyword
+        {
             last_driver = *instance = kafka_dd_new(configuration);
-          }
-          '(' _inner_dest_context_push kafka_options _inner_dest_context_pop ')' { YYACCEPT; }
+        }
+        '(' _inner_dest_context_push kafka_dest_options _inner_dest_context_pop ')'
+        {
+            YYACCEPT;
+        }
         ;
 
-kafka_options
-        : kafka_option kafka_options
+kafka_keyword
+        : KW_KAFKA
+        | KW_KAFKA_C
+        ;
+
+/* TODO: separet options handling use a common options base */
+
+kafka_src_options
+        : kafka_src_option kafka_src_options
         |
         ;
 
-kafka_option
-        : KW_TOPIC '(' template_content ')'
-        {
-            kafka_dd_set_topic(last_driver, $3);
-        }
-        | KW_FALLBACK_TOPIC '(' string ')'
-        {
-            kafka_dd_set_fallback_topic(last_driver, $3);
-            free($3);
-        } 
-        | KW_CONFIG '(' kafka_properties ')'
-        {
-            kafka_dd_merge_config(last_driver, $3);
-        }
-        | KW_KEY '(' template_content ')'
-        {
-            kafka_dd_set_key_ref(last_driver, $3);
-        }
-        | KW_MESSAGE '(' template_name_or_content ')'
-        {
-            kafka_dd_set_message_ref(last_driver, $3);
-        }
-	| KW_FLUSH_TIMEOUT_ON_SHUTDOWN '(' nonnegative_integer ')'    { kafka_dd_set_flush_timeout_on_shutdown(last_driver, $3); }
-	| KW_FLUSH_TIMEOUT_ON_RELOAD '(' nonnegative_integer ')'      { kafka_dd_set_flush_timeout_on_reload(last_driver, $3); }
-        | KW_POLL_TIMEOUT '(' nonnegative_integer ')'                 { kafka_dd_set_poll_timeout(last_driver, $3); }
-	| KW_BOOTSTRAP_SERVERS '(' string ')'                         { kafka_dd_set_bootstrap_servers(last_driver, $3); free($3); }
-	| KW_SYNC_SEND '(' yesno ')'                                  { kafka_dd_set_transaction_commit(last_driver, $3); }
+/* via threaded_source_driver_option this implies msg_format_option, source_driver_option, source_option, inner_source and driver_option */
+kafka_src_option
+        : KW_BOOTSTRAP_SERVERS '(' string ')'                   { kafka_sd_set_bootstrap_servers(last_driver, $3); free($3); }
+        | KW_CONFIG '(' kafka_properties ')'                    { kafka_sd_merge_config(last_driver, $3);  }
+        | KV_KAFKA_LOGGING '(' string ')'                       { CHECK_ERROR(kafka_sd_set_logging(last_driver, $3), @3, "Error parsing logging option %s", $3); free($3); }
+        | KW_TOPIC '(' kafka_properties ')'                     { CHECK_ERROR(kafka_sd_set_topics(last_driver, $3), @3, "Error parsing topic options"); }
+        | KW_STRATEGY_HINT '(' string ')'                       { CHECK_ERROR(kafka_sd_set_strategy_hint(last_driver, $3), @3, "Strategy hint must be either `subscribe` or `assign`, received: %s", $3); free($3); }
+        | KW_LOG_FETCH_DELAY '(' nonnegative_integer ')'        { kafka_sd_set_log_fetch_delay(last_driver, $3); }
+        | KW_LOG_FETCH_RETRY_DELAY '(' nonnegative_integer ')'  { kafka_sd_set_log_fetch_retry_delay(last_driver, $3); }
+        | KW_LOG_FETCH_LIMIT '(' positive_integer ')'           { kafka_sd_set_log_fetch_limit(last_driver, $3); }
+        | KW_LOG_FETCH_QUEUE_FULL_DELAY '(' positive_integer ')'{ kafka_sd_set_log_fetch_queue_full_delay(last_driver, $3); }
+        | KW_POLL_TIMEOUT '(' positive_integer ')'              { kafka_sd_set_poll_timeout(last_driver, $3); }
+        | KW_STATE_UPDATE_TIMEOUT '(' positive_integer ')'      { kafka_sd_set_state_update_timeout(last_driver, $3); }
+        | KW_TIME_REOPEN '(' positive_integer ')'               { kafka_sd_set_time_reopen(last_driver, $3); }
+        | KW_IGNORE_SAVED_BOOKMARKS '(' yesno ')'               { kafka_sd_set_ignore_saved_bookmarks(last_driver, $3); }
+        | KW_DISABLE_BOOKMARKS '(' yesno ')'                    { kafka_sd_set_disable_bookmarks(last_driver, $3); }
+        | KW_SEPARATE_WORKER_QUEUES '(' yesno ')'               { kafka_sd_set_separate_worker_queues(last_driver, $3); }
+        | KW_PERSIST_STORE '(' string ')'                       { CHECK_ERROR(kafka_sd_set_persis_store(last_driver, $3), @3, "Persist store must be either `local` or `remote`, received: %s", $3); free($3); }
+        | KW_STORE_METADATA '(' yesno ')'                       { kafka_sd_set_store_kafka_metadata(last_driver, $3); }
+        | threaded_source_driver_option
+        | threaded_source_driver_workers_option
+        ;
+
+kafka_dest_options
+        : kafka_dest_option kafka_dest_options
+        |
+        ;
+
+kafka_dest_option
+        : KW_BOOTSTRAP_SERVERS '(' string ')'                       { kafka_dd_set_bootstrap_servers(last_driver, $3); free($3); }
+        | KW_CONFIG '(' kafka_properties ')'                        { kafka_dd_merge_config(last_driver, $3); }
+        | KV_KAFKA_LOGGING '(' string ')'                           { CHECK_ERROR(kafka_dd_set_logging(last_driver, $3), @3, "Error parsing logging option %s", $3); free($3); }
+        | KW_TOPIC '(' template_content ')'                         { kafka_dd_set_topic(last_driver, $3); }
+        | KW_FALLBACK_TOPIC '(' string ')'                          { kafka_dd_set_fallback_topic(last_driver, $3); free($3); }
+        | KW_KEY '(' template_content ')'                           { kafka_dd_set_key_ref(last_driver, $3); }
+        | KW_MESSAGE '(' template_name_or_content ')'               { kafka_dd_set_message_ref(last_driver, $3); }
+        | KW_FLUSH_TIMEOUT_ON_SHUTDOWN '(' nonnegative_integer ')'  { kafka_dd_set_flush_timeout_on_shutdown(last_driver, $3); }
+        | KW_FLUSH_TIMEOUT_ON_RELOAD '(' nonnegative_integer ')'    { kafka_dd_set_flush_timeout_on_reload(last_driver, $3); }
+        | KW_POLL_TIMEOUT '(' nonnegative_integer ')'               { kafka_dd_set_poll_timeout(last_driver, $3); }
+        | KW_SYNC_SEND '(' yesno ')'                                { kafka_dd_set_transaction_commit(last_driver, $3); }
         | threaded_dest_driver_general_option
         | threaded_dest_driver_batch_option
         | threaded_dest_driver_workers_option
@@ -114,21 +156,21 @@ kafka_option
         ;
 
 kafka_properties
-	:
-	{
-		static CfgLexerKeyword empty_keywords[] = {{ CFG_KEYWORD_STOP }};
-		cfg_lexer_push_context(lexer, LL_CONTEXT_CONFIG, empty_keywords, "kafka_config_block");
-	}
-	kafka_properties_list
-	{
-		cfg_lexer_pop_context(lexer);
-		$$ = $2;
-	}
-	;
+        :
+        {
+            static CfgLexerKeyword empty_keywords[] = {{ CFG_KEYWORD_STOP }};
+            cfg_lexer_push_context(lexer, LL_CONTEXT_CONFIG, empty_keywords, "kafka_config_block");
+        }
+        kafka_properties_list
+        {
+            cfg_lexer_pop_context(lexer);
+            $$ = $2;
+        }
+        ;
 
 kafka_properties_list
-        : kafka_property kafka_properties_list			{ $$ = g_list_prepend($2, $1); }
-        |							{ $$ = NULL; }
+        : kafka_property kafka_properties_list  { $$ = g_list_prepend($2, $1); }
+        |                                       { $$ = NULL; }
         ;
 
 kafka_property
