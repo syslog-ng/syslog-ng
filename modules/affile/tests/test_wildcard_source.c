@@ -91,7 +91,6 @@ Test(wildcard_source, test_option_inheritance_multiline)
                                                              "recursive(yes)"
                                                              "max-files(100)"
                                                              "follow-freq(10)"
-                                                             "follow-freq(10.0)"
                                                              "multi-line-mode(regexp)"
                                                              "multi-line-prefix('\\d+')"
                                                              "multi-line-garbage(garbage)");
@@ -121,10 +120,14 @@ Test(wildcard_source, test_option_duplication)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/tmp)"
                                                              "filename-pattern(*.txt)"
+                                                             "follow-freq(10)"
                                                              "base-dir(/test_non_existent_dir)"
-                                                             "filename-pattern(*.log)");
+                                                             "filename-pattern(*.log)"
+                                                             "follow-freq(10.5)"
+                                                            );
   cr_assert_str_eq(driver->base_dir, "/test_non_existent_dir");
   cr_assert_str_eq(driver->filename_pattern, "*.log");
+  cr_assert_eq(driver->file_reader_options.follow_freq, 10500);
 }
 
 Test(wildcard_source, test_filename_pattern_required_options)

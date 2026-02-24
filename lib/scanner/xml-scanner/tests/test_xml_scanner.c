@@ -149,7 +149,7 @@ _test_strip(const gchar *name, const gchar *value, gssize value_length, gpointer
   XMLScannerTestOptions *test_options = (XMLScannerTestOptions *) user_data;
   NameValuePair *expected_pairs = test_options->expected.expected_pairs;
 
-  fprintf(stderr, "Name-value pushed!!! name:%s\tvalue:%s (value_len:%ld)\n", name, value, value_length);
+  fprintf(stderr, "Name-value pushed!!! name:%s\tvalue:%s (value_len:%ld)\n", name, value, (long) value_length);
 
   cr_assert_str_eq(name, expected_pairs[times_called].name);
   cr_assert_str_eq(value, expected_pairs[times_called].value);

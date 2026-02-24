@@ -244,7 +244,7 @@ static void
 tf_list_slice(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint64 first_ndx = 0, last_ndx = INT_MAX;
-  const gchar *slice_spec, *first_spec, *last_spec;
+  gchar *slice_spec, *first_spec, *last_spec;
   gchar *colon;
 
   *type = LM_VT_LIST;

@@ -89,6 +89,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 
 %token KW_FSYNC
 %token KW_FOLLOW_FREQ
+%token KW_FOLLOW_ALWAYS_READS
 %token KW_FOLLOW_METHOD
 %token KW_MONITOR_FREQ
 %token KW_OVERWRITE_IF_OLDER
@@ -187,6 +188,7 @@ source_affile_options
 
 source_affile_option
   : KW_FOLLOW_FREQ '(' nonnegative_float ')' { file_reader_options_set_follow_freq(last_file_reader_options, (gint) ($3 * 1000)); }
+  | KW_FOLLOW_ALWAYS_READS '(' yesno ')' { file_reader_options_set_follow_always_reads(last_file_reader_options, $3); }
   | KW_FOLLOW_METHOD '(' string ')' { CHECK_ERROR(file_reader_options_set_follow_method(last_file_reader_options, $3), @3, "Invalid follow-method"); free($3); }
   | KW_PAD_SIZE '(' nonnegative_integer ')' { last_log_proto_options->super.pad_size = $3; }
   | multi_line_option

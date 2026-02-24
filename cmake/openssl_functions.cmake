@@ -58,3 +58,5 @@ function (openssl_set_defines)
     endif()
   endforeach()
 endfunction()
+
+openssl_set_defines()

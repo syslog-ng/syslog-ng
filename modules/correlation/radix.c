@@ -328,7 +328,7 @@ r_parser_email(gchar *str, gint *len, const gchar *param, gpointer state, RParse
   while (g_ascii_isalnum(str[*len]) || (strchr(email, str[*len])))
     (*len)++;
   /* last character of e-mail can not be a period */
-  if (str[*len-1] == '.')
+  if (str[*len - 1] == '.')
     return FALSE;
 
   if (str[*len] == '@' )
@@ -553,12 +553,12 @@ r_parser_ipv6(gchar *str, gint *len, const gchar *param, gpointer state, RParser
       (*len)++;
     }
 
-  if (G_UNLIKELY(*len > 0 && str[*len-1] == '.'))
+  if (G_UNLIKELY(*len > 0 && str[*len - 1] == '.'))
     {
       (*len)--;
       dots--;
     }
-  else if (G_UNLIKELY(*len > 1 && str[*len-1] == ':' && str[*len - 2] != ':'))
+  else if (G_UNLIKELY(*len > 1 && str[*len - 1] == ':' && str[*len - 2] != ':'))
     {
       (*len)--;
       colons--;
@@ -588,7 +588,7 @@ gboolean
 r_parser_float(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   *len = 0;
-  if (str[*len] == '-')
+  if ((str[*len] == '-') || (str[*len] == '+'))
     (*len)++;
 
   _scan_digits(str, len);
@@ -602,7 +602,7 @@ r_parser_float(gchar *str, gint *len, const gchar *param, gpointer state, RParse
     {
       (*len)++;
 
-      if (str[*len] == '-')
+      if ((str[*len] == '-') || (str[*len] == '+'))
         (*len)++;
 
       while (g_ascii_isdigit(str[*len]))
@@ -618,11 +618,18 @@ r_parser_float(gchar *str, gint *len, const gchar *param, gpointer state, RParse
 gboolean
 r_parser_number(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
+  *len = 0;
   gint min_len = 1;
 
-  if (g_str_has_prefix(str, "0x") || g_str_has_prefix(str, "0X"))
+  if ((str[*len] == '-') || (str[*len] == '+'))
     {
-      *len = 2;
+      (*len)++;
+      min_len++;
+    }
+
+  if (g_str_has_prefix(str + *len, "0x") || g_str_has_prefix(str + *len, "0X"))
+    {
+      *len += 2;
       min_len += 2;
 
       while (g_ascii_isxdigit(str[*len]))
@@ -631,14 +638,6 @@ r_parser_number(gchar *str, gint *len, const gchar *param, gpointer state, RPars
     }
   else
     {
-      *len = 0;
-
-      if (str[*len] == '-')
-        {
-          (*len)++;
-          min_len++;
-        }
-
       while (g_ascii_isdigit(str[*len]))
         (*len)++;
     }
@@ -692,7 +691,7 @@ r_new_pnode(gchar *key, const gchar *capture_prefix)
       parser_node->parse = r_parser_number;
       parser_node->parser_type = RPT_NUMBER;
       parser_node->value_type = LM_VT_INTEGER;
-      parser_node->first = '-';
+      parser_node->first = '+';
       parser_node->last = '9';
     }
   else if (strcmp(params[0], "FLOAT") == 0 || strcmp(params[0], "DOUBLE") == 0)
@@ -700,7 +699,7 @@ r_new_pnode(gchar *key, const gchar *capture_prefix)
       /* DOUBLE is a deprecated alias for FLOAT */
       parser_node->parse = r_parser_float;
       parser_node->parser_type = RPT_FLOAT;
-      parser_node->first = '-';
+      parser_node->first = '+';
       parser_node->last = '9';
       parser_node->value_type = LM_VT_DOUBLE;
     }
@@ -1053,7 +1052,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value,
             r_insert_node(node, key + 2, value, capture_prefix, value_func, location);
 
         }
-      else if ((keylen >= 2) && (end = strchr((const gchar *)key + 1, '@')) != NULL)
+      else if ((keylen >= 2) && (end = strchr((gchar *)key + 1, '@')) != NULL)
         {
           /* we are a parser node */
           *end = '\0';

@@ -409,7 +409,7 @@ log_macro_expand_date_time(gint id,
       format_uint32_padded(result, 2, '0', 10, wct.wct_sec);
       break;
     case M_MSEC:
-      format_uint32_padded(result, 3, '0', 10, stamp->ut_usec/1000);
+      format_uint32_padded(result, 3, '0', 10, stamp->ut_usec / 1000);
       break;
     case M_USEC:
       format_uint32_padded(result, 6, '0', 10, stamp->ut_usec);
@@ -793,7 +793,7 @@ log_macro_lookup(const gchar *macro, gint len)
   gint macro_id;
 
   g_assert(macro_hash);
-  g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
+  g_strlcpy(buf, macro, MIN(sizeof(buf), len + 1));
   gpointer hash_key = g_hash_table_lookup(macro_hash, buf);
   macro_id = GPOINTER_TO_INT(hash_key);
 

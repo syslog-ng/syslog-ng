@@ -138,7 +138,7 @@ get_installer_version(gchar **inst_version)
           gchar *pos = strchr(line, '=');
           if (pos)
             {
-              *inst_version = g_strdup(pos+1);
+              *inst_version = g_strdup(pos + 1);
               result = TRUE;
               break;
             }
@@ -161,9 +161,9 @@ version(void)
       installer_version = g_strdup(SYSLOG_NG_VERSION);
     }
   printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION "\n"
-         "Config version: " VERSION_STR_LAST_SEMANTIC_CHANGE "\n"
-         "Installer-Version: %s\n"
-         "Revision: " SYSLOG_NG_SOURCE_REVISION "\n",
+                                "Config version: " VERSION_STR_LAST_SEMANTIC_CHANGE "\n"
+                                "Installer-Version: %s\n"
+                                "Revision: " SYSLOG_NG_SOURCE_REVISION "\n",
          installer_version);
 
 #if SYSLOG_NG_WITH_COMPILE_DATE
@@ -237,6 +237,8 @@ main(int argc, char *argv[])
   gint rc;
   GOptionContext *ctx;
   GError *error = NULL;
+
+  set_thread_name("syslog-ng-main");
 
   console_global_init("syslog-ng");
   MainLoop *main_loop = main_loop_get_instance();
@@ -340,7 +342,7 @@ main(int argc, char *argv[])
   app_post_daemonized();
   app_config_changed();
 
-  if(startup_debug_flag)
+  if (startup_debug_flag)
     {
       debug_flag = FALSE;
       log_stderr = FALSE;

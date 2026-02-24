@@ -75,7 +75,7 @@ log_transport_streams_read(LogTransport *self, void *buf, gsize buflen, GSockAdd
   res = getmsg(self->fd, &ctl, &data, &flags);
   if (res == -1)
     return -1;
-  else if ((res & (MORECTL+MOREDATA)) == 0)
+  else if ((res & (MORECTL + MOREDATA)) == 0)
     {
       len = g_snprintf(buf, buflen, "<%d>%.*s", lc.pri, data.len, data.buf);
       return MIN(len, buflen);

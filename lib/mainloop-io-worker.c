@@ -53,7 +53,7 @@ main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, gpointer arg)
   main_loop_assert_main_thread();
 
   g_assert(self->working == FALSE);
-  if (main_loop_workers_quit)
+  if (main_loop_worker_job_quit())
     return FALSE;
 
   _engage(self);

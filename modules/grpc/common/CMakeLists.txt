@@ -7,6 +7,7 @@ set(GRPC_COMMON_CPP_SOURCES
   ${GRPC_METRICS_SOURCES}
   ${GRPC_SCHEMA_SOURCES}
   grpc-parser.h
+  grpc-signals.h
   grpc-dest.hpp
   grpc-dest.cpp
   grpc-dest.h

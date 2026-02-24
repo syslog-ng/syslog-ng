@@ -114,7 +114,7 @@ mqtt_client_options_set_qos (MQTTClientOptions *self, const gint qos)
 gboolean
 mqtt_client_options_set_client_id(MQTTClientOptions *self, const gchar *client_id)
 {
-  if(strcmp("", client_id) == 0)
+  if (strcmp("", client_id) == 0)
     return FALSE;
 
   g_free(self->client_id);

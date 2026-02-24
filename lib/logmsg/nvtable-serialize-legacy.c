@@ -46,7 +46,7 @@ typedef struct _OldNVEntry
   {
     struct
     {
-      guint8 indirect:1, referenced:1;
+      guint8 indirect: 1, referenced: 1;
     };
     guint8 flags;
   };
@@ -327,7 +327,7 @@ nv_table_deserialize_22(SerializeArchive *sa)
 
   res->size = _calculate_new_size(res);
   res = (NVTable *)g_realloc(res, res->size);
-  if(!res)
+  if (!res)
     return NULL;
 
   res->ref_cnt = 1;
@@ -448,7 +448,7 @@ nv_table_deserialize_legacy(SerializeArchive *sa)
 
   calculated_used_len = tmp->used << NV_TABLE_OLD_SCALE;
   if (calculated_used_len != used_len || calculated_header_len != header_len)
-    swap_bytes=TRUE;
+    swap_bytes = TRUE;
 
   if (swap_bytes)
     _struct_swap_bytes_legacy(tmp);

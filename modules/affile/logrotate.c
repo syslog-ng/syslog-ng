@@ -33,8 +33,8 @@
 
 void logrotate_options_defaults(LogRotateOptions *logrotate_options)
 {
-  logrotate_options->enable=FALSE;
-  logrotate_options->size= LR_DEFAULT_SIZE;
+  logrotate_options->enable = FALSE;
+  logrotate_options->size = LR_DEFAULT_SIZE;
   logrotate_options->max_rotations = LR_DEFAULT_ROTATIONS;
   logrotate_options->pending = FALSE;
 }
@@ -62,7 +62,7 @@ gchar *get_log_file_name(const gchar *filename, gsize rotation_suffix)
     }
   else
     {
-      return g_strdup_printf("%s.%ld", filename, rotation_suffix);
+      return g_strdup_printf("%s.%ld", filename, (long) rotation_suffix);
     }
 }
 
@@ -77,7 +77,7 @@ gsize first_log_file_to_rotate(const gchar *filename, gsize max_rotations)
 
       if (!log_file_exists)
         {
-          return i-1;
+          return i - 1;
         }
     }
 
@@ -106,7 +106,7 @@ gint rotate_log_file(const gchar *filename, gsize roation_suffix, gsize max_rota
         }
       else
         {
-          gchar *rotated_filename = get_log_file_name(filename, roation_suffix+1);
+          gchar *rotated_filename = get_log_file_name(filename, roation_suffix + 1);
           msg_debug("Rotating log file",
                     evt_tag_str("filename", current_filename),
                     evt_tag_str("new_filename", rotated_filename));

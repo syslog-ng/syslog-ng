@@ -327,8 +327,10 @@ _set_KeyValue_log_msg_foreach_fn(NVHandle handle, const gchar *name, const gchar
 static SeverityNumber
 _get_log_msg_severity_number(LogMessage *msg)
 {
-#if (defined(__clang__) && __clang_major__ >= 10)
-# pragma GCC diagnostic ignored "-Wc99-designator"
+#if defined(__clang__)
+# if __has_warning("-Wc99-designator")
+#   pragma clang diagnostic ignored "-Wc99-designator"
+# endif
 #endif
   static SeverityNumber mapping[] =
   {
@@ -499,7 +501,7 @@ _is_number(const char *name)
       if (!g_ascii_isdigit(name[i]))
         break;
 
-      if (name[i+1] == '\0')
+      if (name[i + 1] == '\0')
         return true;
     }
 

@@ -32,7 +32,7 @@ In this section we will install all the dependencies we need, in the following o
 | - | - | - |
 | install_apt_packages | [apt-get](https://en.wikipedia.org/wiki/APT_(Debian)) | See [packages.manifest](/dbld/packages.manifest) |
 | install_pip_packages | [python -m pip](https://packaging.python.org/tutorials/installing-packages/) | See [pip_packages.manifest](/dbld/pip_packages.manifest) |
-| install_criterion | [Criterion](https://github.com/Snaipe/Criterion) | We use criterion for unit testing. |
+| install_criterion_from_source | [Criterion](https://github.com/Snaipe/Criterion) | We use criterion for unit testing. |
 | install_gradle | [Gradle](https://gradle.org/) | We use gradle to build Java based drivers. |
 > Note: These functions can be found in [dbld/builddeps](/dbld/builddeps)
 

@@ -61,7 +61,7 @@ _serialize_message(LogMessageSerializationState *state)
   SerializeArchive *sa = state->sa;
   UnixTime timestamps[LM_TS_MAX];
 
-  memcpy(&timestamps, msg->timestamps, LM_TS_MAX*sizeof(UnixTime));
+  memcpy(&timestamps, msg->timestamps, LM_TS_MAX * sizeof(UnixTime));
   _setup_ts_processed(timestamps, state->processed);
 
   serialize_write_uint8(sa, state->version);
@@ -118,7 +118,7 @@ _deserialize_sdata(LogMessageSerializationState *state)
     return FALSE;
 
   g_assert(!self->sdata);
-  self->sdata = (NVHandle *) g_malloc(sizeof(NVHandle)*self->alloc_sdata);
+  self->sdata = (NVHandle *) g_malloc(sizeof(NVHandle) * self->alloc_sdata);
 
   if (state->version <= LGM_V20)
     return TRUE;
@@ -189,7 +189,7 @@ _deserialize_message_version_2x(LogMessageSerializationState *state)
 
   if (!serialize_read_uint8(sa, &initial_parse))
     return FALSE;
-  msg->initial_parse=initial_parse;
+  msg->initial_parse = initial_parse;
 
   if (!serialize_read_uint8(sa, &msg->num_matches))
     return FALSE;
@@ -243,7 +243,7 @@ log_msg_read_common_values(LogMessage *self, SerializeArchive *sa)
   gchar *host_from = NULL;
   gchar *program = NULL;
   gchar *message = NULL;
-  gsize stored_len=0;
+  gsize stored_len = 0;
   if (!serialize_read_cstring(sa, &host, &stored_len))
     return FALSE;
   log_msg_set_value(self, LM_V_HOST, host, stored_len);
@@ -338,7 +338,7 @@ log_msg_read_sd_param(SerializeArchive *sa, gchar *sd_element_name, LogMessage *
 {
   gchar *name = NULL, *value = NULL;
   gsize name_len, value_len;
-  gchar sd_param_name[256]= {0};
+  gchar sd_param_name[256] = {0};
   gboolean success = FALSE;
 
   if (!serialize_read_cstring(sa, &name, &name_len) ||
@@ -372,7 +372,7 @@ log_msg_read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_mo
 {
   gchar *sd_id = NULL;
   gsize sd_id_len;
-  gchar sd_element_root[66]= {0};
+  gchar sd_element_root[66] = {0};
   gboolean has_more_param = TRUE;
 
   if (!serialize_read_cstring(sa, &sd_id, &sd_id_len))
@@ -380,7 +380,7 @@ log_msg_read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_mo
 
   if (sd_id_len == 0)
     {
-      *has_more=FALSE;
+      *has_more = FALSE;
       g_free(sd_id);
       return TRUE;
     }
@@ -391,7 +391,7 @@ log_msg_read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_mo
     return FALSE;
 
   strncpy(sd_element_root + logmsg_sd_prefix_len, sd_id, sd_id_len);
-  sd_element_root[logmsg_sd_prefix_len + sd_id_len]='.';
+  sd_element_root[logmsg_sd_prefix_len + sd_id_len] = '.';
 
 
   if (!log_msg_read_sd_param(sa, sd_element_root, self, &has_more_param))
@@ -441,7 +441,7 @@ _deserialize_message_version_1x(LogMessageSerializationState *state)
   LogMessage *msg = state->msg;
   SerializeArchive *sa = state->sa;
 
-  if(state->version == LGM_V10)
+  if (state->version == LGM_V10)
     {
       guint16 stored_flags16;
       if (!serialize_read_uint16(sa, &stored_flags16))
@@ -467,12 +467,12 @@ _deserialize_message_version_1x(LogMessageSerializationState *state)
   if (!timestamp_deserialize_legacy(sa, msg->timestamps))
     return FALSE;
 
-  if(state->version == LGM_V12)
+  if (state->version == LGM_V12)
     {
       if (!log_msg_read_tags(msg, sa))
         return FALSE;
     }
-  if(!log_msg_read_common_values(msg, sa))
+  if (!log_msg_read_common_values(msg, sa))
     return FALSE;
   if (!serialize_read_cstring(sa, &pid, &stored_len))
     return FALSE;
@@ -485,7 +485,7 @@ _deserialize_message_version_1x(LogMessageSerializationState *state)
   g_free(msgid);
   if (!serialize_read_uint8(sa, &msg->num_matches))
     return FALSE;
-  if(!log_msg_read_matches_details(msg, sa))
+  if (!log_msg_read_matches_details(msg, sa))
     return FALSE;
   if (!log_msg_read_values(msg, sa) ||
       !log_msg_read_sd_data(msg, sa))

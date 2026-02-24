@@ -46,7 +46,7 @@ CfgParser redis_parser =
 #endif
   .name = "redis",
   .keywords = redis_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) redis_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) redis_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

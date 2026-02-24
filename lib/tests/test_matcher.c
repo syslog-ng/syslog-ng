@@ -55,7 +55,7 @@ _create_log_message(const gchar *log)
 }
 
 static LogMatcher *
-_construct_matcher(gint matcher_flags, LogMatcher *(*construct)(const LogMatcherOptions *options))
+_construct_matcher(gint matcher_flags, LogMatcher * (*construct)(const LogMatcherOptions *options))
 {
   LogMatcherOptions matcher_options;
 
@@ -509,7 +509,7 @@ Test(matcher, test_replace_works_correctly_if_capture_group_overwrites_the_input
   gchar *result = log_matcher_replace(m, msg, input_handle, input, value_len,
                                       replace_template, &result_len);
   nv_table_unref(payload);
-  cr_log_info("replace result value: %s, length(%ld)", result, result_len);
+  cr_log_info("replace result value: %s, length(%ld)", result, (long) result_len);
   cr_assert_arr_eq(result, expected_result, strlen(expected_result),
                    "replace failed; result: %s (length %ld), expected: %s (length %ld)",
                    result, result_len, expected_result, strlen(expected_result));
@@ -546,7 +546,7 @@ Test(matcher, test_replace_works_correctly_if_named_capture_group_overwrites_the
   gchar *result = log_matcher_replace(m, msg, input_handle, input, value_len,
                                       replace_template, &result_len);
   nv_table_unref(payload);
-  cr_log_info("replace result value: %s, length(%ld)", result, result_len);
+  cr_log_info("replace result value: %s, length(%ld)", result, (long) result_len);
   cr_assert_arr_eq(result, expected_result, strlen(expected_result),
                    "replace failed; result: %s (length %ld), expected: %s (length %ld)",
                    result, result_len, expected_result, strlen(expected_result));
@@ -583,7 +583,7 @@ Test(matcher, test_replace_works_correctly_if_input_is_a_match_value_that_gets_t
   gchar *result = log_matcher_replace(m, msg, input_handle, input, value_len,
                                       replace_template, &result_len);
   nv_table_unref(payload);
-  cr_log_info("replace result value: %s, length(%ld)", result, result_len);
+  cr_log_info("replace result value: %s, length(%ld)", result, (long) result_len);
   cr_assert_arr_eq(result, expected_result, strlen(expected_result),
                    "replace failed; result: %s (length %ld), expected: %s (length %ld)",
                    result, result_len, expected_result, strlen(expected_result));

@@ -23,7 +23,7 @@
  *
  */
 #include "kafka-dest-worker.h"
-#include "kafka-dest-driver.h"
+#include "kafka-internal.h"
 #include "str-utils.h"
 #include "timeutils/misc.h"
 #include <zlib.h>
@@ -39,23 +39,23 @@ _format_message_and_key(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
-  log_template_format(owner->message, msg, &options, self->message);
+  LogTemplateEvalOptions options = {&owner->options.template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
+  log_template_format(owner->options.message, msg, &options, self->message);
 
-  if (owner->key)
-    log_template_format(owner->key, msg, &options, self->key);
+  if (owner->options.key)
+    log_template_format(owner->options.key, msg, &options, self->key);
 }
 
 const gchar *
 kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
-  log_template_format(owner->topic_name, msg, &options, self->topic_name_buffer);
+  LogTemplateEvalOptions options = {&owner->options.template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
+  log_template_format(owner->options.topic_name, msg, &options, self->topic_name_buffer);
 
   GError *error = NULL;
 
-  if (kafka_dd_validate_topic_name(self->topic_name_buffer->str, &error))
+  if (kafka_validate_topic_name(self->topic_name_buffer->str, &error))
     {
       return self->topic_name_buffer->str;
     }
@@ -67,7 +67,7 @@ kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage 
 
   g_error_free(error);
 
-  return owner->fallback_topic_name;
+  return owner->options.fallback_topic_name;
 }
 
 rd_kafka_topic_t *
@@ -116,7 +116,7 @@ _handle_transaction_error(KafkaDestWorker *self, rd_kafka_error_t *error)
       if (abort_error)
         {
           msg_error("kafka: Failed to abort transaction",
-                    evt_tag_str("topic", owner->topic_name->template_str),
+                    evt_tag_str("topic", owner->options.topic_name->template_str),
                     evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(abort_error))),
                     log_pipe_location_tag(&owner->super.super.super.super));
           rd_kafka_error_destroy(abort_error);
@@ -152,7 +152,7 @@ _transaction_init(KafkaDestWorker *self)
   if (error)
     {
       msg_error("kafka: init_transactions failed",
-                evt_tag_str("topic", owner->topic_name->template_str),
+                evt_tag_str("topic", owner->options.topic_name->template_str),
                 evt_tag_str("error", rd_kafka_error_string(error)),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
@@ -174,7 +174,7 @@ _transaction_commit(KafkaDestWorker *self)
   if (error)
     {
       msg_error("kafka: Failed to commit transaction",
-                evt_tag_str("topic", owner->topic_name->template_str),
+                evt_tag_str("topic", owner->options.topic_name->template_str),
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
                 log_pipe_location_tag(&owner->super.super.super.super));
 
@@ -195,7 +195,7 @@ _transaction_begin(KafkaDestWorker *self)
   if (error)
     {
       msg_error("kafka: failed to start new transaction",
-                evt_tag_str("topic", owner->topic_name->template_str),
+                evt_tag_str("topic", owner->options.topic_name->template_str),
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
                 log_pipe_location_tag(&owner->super.super.super.super));
       return _handle_transaction_error(self, error);
@@ -228,6 +228,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
       return FALSE;
     }
 
+  log_threaded_dest_worker_written_bytes_add(&self->super, self->message->len);
 
   msg_debug("kafka: message published",
             evt_tag_str("topic", rd_kafka_topic_name(topic)),
@@ -253,7 +254,7 @@ _update_drain_timer(KafkaDestWorker *self)
     iv_timer_unregister(&self->poll_timer);
   iv_validate_now();
   self->poll_timer.expires = iv_now;
-  timespec_add_msec(&self->poll_timer.expires, owner->poll_timeout);
+  timespec_add_msec(&self->poll_timer.expires, owner->options.super.poll_timeout);
   iv_timer_register(&self->poll_timer);
 }
 
@@ -272,9 +273,9 @@ _drain_responses(KafkaDestWorker *self)
   if (count != 0)
     {
       msg_trace("kafka: destination side rd_kafka_poll() processed some responses",
-                kafka_dd_is_topic_name_a_template(owner) ? evt_tag_str("template", owner->topic_name->template_str):
-                evt_tag_str("topic", owner->topic_name->template_str),
-                evt_tag_str("fallback_topic", owner->fallback_topic_name),
+                kafka_dd_is_topic_name_a_template(owner) ? evt_tag_str("template", owner->options.topic_name->template_str) :
+                evt_tag_str("topic", owner->options.topic_name->template_str),
+                evt_tag_str("fallback_topic", owner->options.fallback_topic_name),
                 evt_tag_int("count", count),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
@@ -387,7 +388,7 @@ _init(LogThreadedDestWorker *s)
   if (_is_poller_thread(self))
     {
       KafkaDestDriver *owner = (KafkaDestDriver *) s->owner;
-      s->time_reopen = owner->poll_timeout / 1000;
+      s->time_reopen = owner->options.super.poll_timeout / 1000;
     }
 
   return log_threaded_dest_worker_init_method(s);
@@ -423,7 +424,7 @@ _set_methods(KafkaDestWorker *self)
   self->super.deinit = _deinit;
   self->super.free_fn = kafka_dest_worker_free;
 
-  if (owner->transaction_commit)
+  if (owner->options.transaction_commit)
     {
       self->super.connect = kafka_dest_worker_connect;
       if (owner->super.batch_lines > 0)

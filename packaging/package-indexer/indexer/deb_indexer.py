@@ -28,7 +28,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import List, Optional
 
-from cdn import CDN
 from remote_storage_synchronizer import RemoteStorageSynchronizer
 
 from indexer import Indexer
@@ -45,7 +44,6 @@ class DebIndexer(Indexer):
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
         incoming_sub_dir: Path,
         dist_dir: Path,
-        cdn: CDN,
         apt_conf_file_path: Path,
         gpg_key_path: Path,
         gpg_key_passphrase: Optional[str],
@@ -58,7 +56,6 @@ class DebIndexer(Indexer):
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
             incoming_sub_dir=incoming_sub_dir,
             indexed_sub_dir=Path("apt", "dists", dist_dir),
-            cdn=cdn,
         )
 
     def __move_files_from_incoming_to_indexed(self, incoming_dir: Path, indexed_dir: Path) -> None:
@@ -235,7 +232,6 @@ class StableDebIndexer(DebIndexer):
         incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
         run_id: str,
-        cdn: CDN,
         gpg_key_path: Path,
         gpg_key_passphrase: Optional[str],
     ) -> None:
@@ -244,7 +240,6 @@ class StableDebIndexer(DebIndexer):
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
             incoming_sub_dir=Path("stable", run_id),
             dist_dir=Path("stable"),
-            cdn=cdn,
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "stable.conf"),
             gpg_key_path=gpg_key_path,
             gpg_key_passphrase=gpg_key_passphrase,
@@ -258,7 +253,6 @@ class NightlyDebIndexer(DebIndexer):
         self,
         incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
-        cdn: CDN,
         run_id: str,
         gpg_key_path: Path,
         gpg_key_passphrase: Optional[str],
@@ -268,7 +262,6 @@ class NightlyDebIndexer(DebIndexer):
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
             incoming_sub_dir=Path("nightly", run_id),
             dist_dir=Path("nightly"),
-            cdn=cdn,
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "nightly.conf"),
             gpg_key_path=gpg_key_path,
             gpg_key_passphrase=gpg_key_passphrase,

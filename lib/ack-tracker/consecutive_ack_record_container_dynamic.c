@@ -95,7 +95,7 @@ _drop(ConsecutiveAckRecordContainer *s, gsize n)
     }
 
   GList *delete_head = self->head;
-  GList *last = g_list_nth(self->head, n-1);
+  GList *last = g_list_nth(self->head, n - 1);
 
   self->head = last->next;
   self->head->prev = NULL;

@@ -116,7 +116,7 @@ rate_limit_generate_key(FilterExprNode *s, LogMessage *msg, LogTemplateEvalOptio
 {
   RateLimit *self = (RateLimit *)s;
 
-  if(!self->key_template)
+  if (!self->key_template)
     {
       return "";
     }

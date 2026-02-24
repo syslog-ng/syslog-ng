@@ -98,7 +98,7 @@ _exclude_memory_from_core_dump(gpointer area, gsize len)
 static gpointer
 _mmap(gsize len)
 {
-  gpointer area = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+  gpointer area = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
   if (area == MAP_FAILED)
     {
       logger_fatal("secret storage: cannot mmap buffer",

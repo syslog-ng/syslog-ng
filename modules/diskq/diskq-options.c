@@ -106,7 +106,7 @@ _normalize_path(const gchar *path)
 {
   const int length = strlen(path);
 
-  if ('/' == path[length-1] || '\\' == path[length-1])
+  if ('/' == path[length - 1] || '\\' == path[length - 1])
     return g_path_get_dirname(path);
 
   return g_strdup(path);

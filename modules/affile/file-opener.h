@@ -43,7 +43,7 @@ typedef enum
 typedef struct _FileOpenerOptions
 {
   FilePermOptions file_perm_options;
-  guint needs_privileges:1;
+  guint needs_privileges: 1;
   gint create_dirs;
 } FileOpenerOptions;
 

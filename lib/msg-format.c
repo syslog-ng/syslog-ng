@@ -58,8 +58,8 @@ msg_format_inject_parse_error(MsgFormatOptions *options, LogMessage *msg, const 
   log_msg_set_value(msg, LM_V_HOST, hname, -1);
 
   if (problem_position > 0)
-    g_string_printf(buf, "Error processing log message: %.*s>@<%.*s", (gint) problem_position-1,
-                    data, (gint) (length-problem_position+1), data+problem_position-1);
+    g_string_printf(buf, "Error processing log message: %.*s>@<%.*s", (gint) problem_position - 1,
+                    data, (gint) (length - problem_position + 1), data + problem_position - 1);
   else
     g_string_printf(buf, "Error processing log message: %.*s", (gint) length, data);
 
@@ -193,6 +193,15 @@ msg_format_parse_into(MsgFormatOptions *options, LogMessage *msg,
       gsize len = g_snprintf(buf, sizeof(buf), "%s-error", options->format);
       log_msg_set_value(msg, LM_V_MSGFORMAT, buf, len);
     }
+}
+
+gsize
+msg_format_from_string(MsgFormatOptions *format_options, const char *msg_cstring, LogMessage **out_msg)
+{
+  gsize msg_len = strlen(msg_cstring);
+  *out_msg = msg_format_construct_message(format_options, (const guchar *) msg_cstring, msg_len);
+  msg_format_parse_into(format_options, *out_msg, (const guchar *) msg_cstring, msg_len);
+  return msg_len;
 }
 
 static gsize

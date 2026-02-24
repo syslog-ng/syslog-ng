@@ -29,7 +29,11 @@
 
 #include <sstream>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "clickhouse_grpc.grpc.pb.h"
+#pragma GCC diagnostic pop
 
 namespace syslogng {
 namespace grpc {
@@ -40,8 +44,8 @@ class DestWorker final : public syslogng::grpc::DestWorker
 public:
   DestWorker(GrpcDestWorker *s);
 
-  LogThreadedResult insert(LogMessage *msg);
-  LogThreadedResult flush(LogThreadedFlushMode mode);
+  LogThreadedResult insert(LogMessage *msg) override;
+  LogThreadedResult flush(LogThreadedFlushMode mode) override;
 
 private:
   bool should_initiate_flush();

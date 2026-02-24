@@ -50,7 +50,7 @@ CfgParser afmongodb_parser =
 #endif
   .name = "afmongodb",
   .keywords = afmongodb_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afmongodb_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) afmongodb_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

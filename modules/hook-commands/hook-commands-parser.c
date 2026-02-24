@@ -45,7 +45,7 @@ CfgParser hook_commands_parser =
 #endif
   .name = "hook_commands",
   .keywords = hook_commands_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer arg)) hook_commands_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer arg)) hook_commands_parse,
   .cleanup = (void (*)(gpointer)) log_driver_plugin_free,
 };
 

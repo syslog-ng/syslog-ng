@@ -204,6 +204,7 @@ modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
 modules/darwinosl/darwinosl(|-parser|-plugin|-grammar|-source|-source-oslog|-source-persist)\.(c|h|m|ym)$
+modules/kafka/kafka(|-source-driver|-source-worker|-source-persist)\.(c|h)$
 modules/grpc/otel/otel-(grammar|parser|plugin|source|source-services|servicecall|protobuf-parser|protobuf-formatter|dest|dest-worker|logmsg-handles)\.(c|h|cpp|hpp|ym)$
 modules/grpc/otel/grpc-credentials-builder\.(h|cpp|hpp)$
 modules/grpc/otel/syslog-ng-otlp-(dest|dest-worker)\.(h|cpp|hpp)$
@@ -218,6 +219,7 @@ modules/grpc/protos/apphook\.(cpp|h)$
 modules/cloud-auth/cloud-auth(|-grammar|-parser|-plugin)\.(c|h|cpp|hpp|ym)$
 modules/cloud-auth/google-auth\.(h|cpp|hpp)$
 modules/cloud-auth/azure-auth\.(h|cpp|hpp)$
+modules/cloud-auth/oauth2-auth\.(h|cpp|hpp)$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$

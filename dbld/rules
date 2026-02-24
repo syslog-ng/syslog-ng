@@ -13,6 +13,7 @@ BUILDER_IMAGES=	\
 	debian-bookworm-arm64	\
 	debian-trixie \
 	debian-trixie-arm64 \
+	debian-trixie-i386 \
 	debian-sid	\
 	debian-testing	\
 	opensuse-tumbleweed	\
@@ -41,6 +42,8 @@ DOCKER ?= docker
 CONTAINER_REGISTRY ?= ghcr.io/syslog-ng
 CONTAINER_ARCH ?= amd64
 CONTAINER_NAME_SUFFIX := $(if $(filter-out amd64,$(CONTAINER_ARCH)),-$(CONTAINER_ARCH))
+# Map CONTAINER_ARCH to Docker platform format (i386 -> 386)
+DOCKER_PLATFORM_ARCH := $(if $(filter i386,$(CONTAINER_ARCH)),386,$(CONTAINER_ARCH))
 
 MODE ?= snapshot
 VERSION ?= $(shell MODE=${MODE} scripts/version.sh)
@@ -233,8 +236,11 @@ images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-kira: image-ubuntu-focal
 # devshell is a special case, it is based on the debian stable image
+# TODO: update devshell.dockerfile if these base images change
+# TODO: add this base name as a parameter to the devshell dockerfile instead of hardcoding it
 image-devshell: image-debian-trixie
 image-devshell-arm64: image-debian-trixie-arm64
+image-devshell-i386: image-debian-trixie-i386
 image-tarball: image-debian-trixie
 image-%:
 # NOTE: This dockerfile name magic eliminates usage of separate dockerfiles for each image type
@@ -247,7 +253,7 @@ image-%:
 	DOCKERFILE=$(DBLD_DIR)/images/$${BASE_IMAGE}.dockerfile; \
 	JENKINS_URL=$${JENKINS_URL%-}; \
 	$(DBLD_DIR)/prepare-image-build $*; \
-	$(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=ARG_IMAGE_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --build-arg=CONTAINER_REGISTRY=${CONTAINER_REGISTRY} --build-arg=CONTAINER_ARCH=${CONTAINER_ARCH} --build-arg=CONTAINER_NAME_SUFFIX=${CONTAINER_NAME_SUFFIX} --build-arg=JENKINS_URL=${JENKINS_URL} --network=host -t ${CONTAINER_REGISTRY}/dbld-$* -f $${DOCKERFILE} $(DBLD_DIR)
+	$(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=ARG_IMAGE_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --build-arg=CONTAINER_REGISTRY=${CONTAINER_REGISTRY} --build-arg=CONTAINER_ARCH=${DOCKER_PLATFORM_ARCH} --build-arg=CONTAINER_NAME_SUFFIX=${CONTAINER_NAME_SUFFIX} --build-arg=JENKINS_URL=${JENKINS_URL} --network=host -t ${CONTAINER_REGISTRY}/dbld-$* -f $${DOCKERFILE} $(DBLD_DIR)
 
 push-images: $(foreach image,$(IMAGES), push-image-$(image))
 push-image-%:

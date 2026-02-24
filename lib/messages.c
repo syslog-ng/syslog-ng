@@ -53,7 +53,7 @@ enum
 typedef struct _MsgContext
 {
   guint16 recurse_state;
-  guint recurse_warning:1;
+  guint recurse_warning: 1;
   gchar recurse_trigger[128];
 } MsgContext;
 
@@ -215,7 +215,7 @@ msg_event_send(EVTREC *e)
 void
 msg_event_suppress_recursions_and_send(EVTREC *e)
 {
-  if(G_LIKELY(e != NULL))
+  if (G_LIKELY(e != NULL))
     msg_event_send_with_suppression(e, msg_limit_internal_message);
 }
 
@@ -237,7 +237,7 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
   EVTREC *e;
   va_list va;
 
-  if(G_UNLIKELY(evt_context == NULL))
+  if (G_UNLIKELY(evt_context == NULL))
     {
       return NULL;
     }

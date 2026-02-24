@@ -65,7 +65,7 @@ assert_if_tokenizer_concatenated_result_not_match(STRTOK_R_FUN tokenizer,
 {
   gchar *token;
   gchar *saveptr = NULL;
-  gchar *result = (char *)g_malloc(strlen(input)+1);
+  gchar *result = (char *)g_malloc(strlen(input) + 1);
   gchar *raw_string;
   gchar *result_ref = NULL;
   int result_idx = 0;
@@ -116,7 +116,7 @@ ParameterizedTestParameters(strtok, with_literals)
     { "..*,;- ", ";-*token1...*****token2**,;;;.token3 ", "token1token2token3" }
   };
 
-  return cr_make_param_array(struct strtok_params, params, sizeof(params)/sizeof(params[0]));
+  return cr_make_param_array(struct strtok_params, params, sizeof(params) / sizeof(params[0]));
 }
 
 ParameterizedTest(struct strtok_params *param, strtok, with_literals)

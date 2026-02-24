@@ -642,7 +642,7 @@ ParameterizedTestParameters(basicfuncs, test_map)
     { "$(map \"$(if ('$(echo $_)' eq '1') 'same' 'different')\" 0,1,2)", "different,same,different"},
   };
 
-  return cr_make_param_array(struct test_params, params, sizeof(params)/sizeof(params[0]));
+  return cr_make_param_array(struct test_params, params, sizeof(params) / sizeof(params[0]));
 }
 
 ParameterizedTest(struct test_params *param, basicfuncs, test_map)
@@ -666,7 +666,7 @@ ParameterizedTestParameters(basicfuncs, test_filter)
     { "$(filter ('$YEAR' le '1900') 'doesnotchange')", "" },
   };
 
-  return cr_make_param_array(struct test_params, params, sizeof(params)/sizeof(params[0]));
+  return cr_make_param_array(struct test_params, params, sizeof(params) / sizeof(params[0]));
 }
 
 ParameterizedTest(struct test_params *param, basicfuncs, test_filter)

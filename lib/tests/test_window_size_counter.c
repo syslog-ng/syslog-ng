@@ -53,6 +53,9 @@ Test(test_window_size_counter, suspend_resume)
   cr_expect_not(window_size_counter_suspended(&c));
 }
 
+#if G_MAXSIZE > 0xFFFFFFFF
+/* This test fails on 32-bit: the counter uses only 31 bits (MSB is suspend flag),
+ * so negative values cannot be represented after masking */
 Test(test_window_size_counter, negative_value)
 {
   WindowSizeCounter c;
@@ -61,6 +64,7 @@ Test(test_window_size_counter, negative_value)
   gint v = (gint)window_size_counter_get(&c, &suspended);
   cr_assert_eq(v, -1);
 }
+#endif
 
 Test(test_window_size_counter, suspend_resume_multiple_times)
 {

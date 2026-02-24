@@ -816,7 +816,7 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
       return TRUE;
     }
 
-  switch(type)
+  switch (type)
     {
     case LM_VT_INTEGER:
     {

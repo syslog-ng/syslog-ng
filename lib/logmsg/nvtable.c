@@ -271,7 +271,7 @@ _find_index_entry(NVIndexEntry *index_table, gint index_size, NVHandle handle, N
   h = index_size - 1;
   while (l <= h)
     {
-      m = (l+h) >> 1;
+      m = (l + h) >> 1;
       mv = index_table[m].handle;
       if (mv == handle)
         {
@@ -354,7 +354,7 @@ nv_table_set_table_entry(NVTable *self, NVHandle handle, guint32 ofs, NVIndexEnt
   if (G_LIKELY(nv_table_is_handle_static(self, handle)))
     {
       /* this is a statically allocated value, simply store the offset */
-      self->static_entries[handle-1] = ofs;
+      self->static_entries[handle - 1] = ofs;
     }
   else
     {

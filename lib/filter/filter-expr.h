@@ -36,8 +36,8 @@ typedef struct _FilterExprNode FilterExprNode;
 struct _FilterExprNode
 {
   guint32 ref_cnt;
-  guint32 comp:1,   /* this not is negated */
-          modify:1; /* this filter changes the log message */
+  guint32 comp: 1,  /* this not is negated */
+          modify: 1; /* this filter changes the log message */
   const gchar *type;
   gboolean (*init)(FilterExprNode *self, GlobalConfig *cfg);
   gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg, LogTemplateEvalOptions *options);

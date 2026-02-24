@@ -58,8 +58,8 @@ test_proper_multiline(LogTransportMockConstructor log_transport_mock_new)
               LTM_EOF));
 
   assert_proto_server_fetch(proto, "0\n"
-                            " 1=2\n"
-                            " 3=4", -1);
+                                   " 1=2\n"
+                                   " 3=4", -1);
 
   log_proto_server_free(proto);
 }
@@ -142,8 +142,8 @@ test_multiline_at_eof(LogTransportMockConstructor log_transport_mock_new)
               LTM_EOF));
 
   assert_proto_server_fetch(proto, "01234567\n"
-                            " 01234567\n"
-                            " end", -1);
+                                   " 01234567\n"
+                                   " end", -1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
 
   log_proto_server_free(proto);

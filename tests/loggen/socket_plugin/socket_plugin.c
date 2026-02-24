@@ -261,7 +261,7 @@ idle_thread_func(gpointer user_data)
   else
     fd = connect_ip_socket(sock_type, option->target, option->port, option->use_ipv6);
 
-  if (fd<0)
+  if (fd < 0)
     {
       ERROR("can not connect to %s:%s (%p)\n", option->target, option->port, g_thread_self());
     }
@@ -291,7 +291,7 @@ idle_thread_func(gpointer user_data)
 
   while (fd > 0 && thread_run && active_thread_count > 0)
     {
-      g_usleep(10*1000);
+      g_usleep(10 * 1000);
     }
 
   g_mutex_lock(&thread_lock);
@@ -319,7 +319,7 @@ active_thread_func(gpointer user_data)
   if (sock_type_s)
     sock_type = SOCK_STREAM;
 
-  char *message = g_malloc0(MAX_MESSAGE_LENGTH+1);
+  char *message = g_malloc0(MAX_MESSAGE_LENGTH + 1);
 
   int fd;
   if (unix_socket_x)
@@ -327,7 +327,7 @@ active_thread_func(gpointer user_data)
   else
     fd = connect_ip_socket(sock_type, option->target, option->port, option->use_ipv6);
 
-  if (fd<0)
+  if (fd < 0)
     {
       ERROR("can not connect to %s:%s (%p)\n", option->target, option->port, g_thread_self());
     }
@@ -363,7 +363,7 @@ active_thread_func(gpointer user_data)
 
   gboolean connection_error = FALSE;
 
-  while (fd>0 && thread_run && !connection_error)
+  while (fd > 0 && thread_run && !connection_error)
     {
       if (thread_check_exit_criteria(thread_context))
         break;
@@ -387,13 +387,13 @@ active_thread_func(gpointer user_data)
 
       connection_error = send_msg(fd, message, str_len);
 
-      if(!connection_error)
+      if (!connection_error)
         {
           thread_context->sent_messages++;
           thread_context->buckets--;
         }
 
-      if(connection_error && option->reconnect && thread_run)
+      if (connection_error && option->reconnect && thread_run)
         {
           shutdown(fd, SHUT_RDWR);
           close(fd);
@@ -404,7 +404,7 @@ active_thread_func(gpointer user_data)
           else
             fd = connect_ip_socket(sock_type, option->target, option->port, option->use_ipv6);
 
-          while(fd < 0 && !thread_check_exit_criteria(thread_context))
+          while (fd < 0 && !thread_check_exit_criteria(thread_context))
             {
               ERROR("can not reconnect to %s:%s (%p), try again after %d sec\n", option->target, option->port, g_thread_self(), 1);
               g_usleep(1e6);
@@ -415,7 +415,7 @@ active_thread_func(gpointer user_data)
                 fd = connect_ip_socket(sock_type, option->target, option->port, option->use_ipv6);
             }
 
-          if(fd > 0)
+          if (fd > 0)
             {
               DEBUG("(%d) reconnected to server on socket %d (%p)\n", thread_context->index, fd, g_thread_self());
               connection_error = FALSE;

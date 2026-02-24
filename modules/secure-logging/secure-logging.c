@@ -82,7 +82,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   GOptionContext *ctx;
   GOptionGroup *grp;
 
-  if ((mlock(state->key, KEY_LENGTH)!=0)||(mlock(state->bigMAC, CMAC_LENGTH)!=0))
+  if ((mlock(state->key, KEY_LENGTH) != 0) || (mlock(state->bigMAC, CMAC_LENGTH) != 0))
     {
       msg_warning("[SLOG] WARNING: Unable to acquire memory lock");
     }
@@ -133,7 +133,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   keypathbuffer = options[0].arg;
 
-  if(keypathbuffer == NULL)
+  if (keypathbuffer == NULL)
     {
       state->badKey = TRUE;
 
@@ -143,7 +143,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       return FALSE;
     }
 
-  if(macpathbuffer == NULL)
+  if (macpathbuffer == NULL)
     {
       state->badKey = TRUE;
 
@@ -167,7 +167,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   // Done with argument parsing
   g_option_context_free(ctx);
 
-  int res = readKey((char *)state->key, (guint64 *)&(state->numberOfLogEntries), state->keypath);
+  int res = readKey((char *)state->key, (guint64 *) & (state->numberOfLogEntries), state->keypath);
 
   if (res == 0)
     {
@@ -214,7 +214,7 @@ tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
   guchar outputmacdata[CMAC_LENGTH];
 
   // Empty string received? Parsing error?
-  if(args->argv[0]->len==0)
+  if (args->argv[0]->len == 0)
     {
       msg_error("[SLOG] ERROR: String of length 0 received");
       GString *errorString = g_string_new("[SLOG] ERROR: String of length 0 received");

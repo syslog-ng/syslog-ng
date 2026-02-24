@@ -344,6 +344,8 @@ Test(transport_mapper_inet, test_open_socket_fails_properly_on_socket_failure)
   assert_create_socket_fails();
 }
 
+#if ! defined(__FreeBSD__) // FreeBSD does not validate the matching of socket type and address family in socket() only in bind()
+
 Test(transport_mapper_inet, test_open_socket_fails_properly_on_bind_failure)
 {
   transport_mapper = transport_mapper_tcp_new();
@@ -352,6 +354,7 @@ Test(transport_mapper_inet, test_open_socket_fails_properly_on_bind_failure)
   assert_create_socket_fails_with_address(addr);
   g_sockaddr_unref(addr);
 }
+#endif
 
 static void
 setup(void)

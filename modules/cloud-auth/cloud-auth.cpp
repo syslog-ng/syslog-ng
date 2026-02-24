@@ -60,3 +60,9 @@ cloud_authenticator_handle_http_header_request(CloudAuthenticator *s, HttpHeader
 {
   s->cpp->handle_http_header_request(data);
 }
+
+void
+cloud_authenticator_handle_grpc_metadata_request(CloudAuthenticator *s, GrpcMetadataRequestSignalData *data)
+{
+  s->cpp->handle_grpc_metadata_request(data);
+}

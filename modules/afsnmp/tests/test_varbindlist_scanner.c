@@ -64,7 +64,7 @@ expect_varbindlist(const gchar *input, TestVarBind *expected, gsize number_of_ex
   VarBindListScanner *scanner = create_scanner();
   varbindlist_scanner_input(scanner, input);
 
-  for (int i=0; i < number_of_expected; i++)
+  for (int i = 0; i < number_of_expected; i++)
     _expect_next_key_type_value(scanner, expected[i].key, expected[i].type, expected[i].value);
 
   _expect_no_more_tokens(scanner);

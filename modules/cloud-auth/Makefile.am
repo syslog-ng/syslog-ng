@@ -8,7 +8,9 @@ modules_cloud_auth_libcloud_auth_cpp_la_SOURCES = \
   modules/cloud-auth/google-auth.hpp \
   modules/cloud-auth/google-auth.cpp \
   modules/cloud-auth/azure-auth.hpp \
-  modules/cloud-auth/azure-auth.cpp
+  modules/cloud-auth/azure-auth.cpp \
+  modules/cloud-auth/oauth2-auth.hpp \
+  modules/cloud-auth/oauth2-auth.cpp
 
 modules_cloud_auth_libcloud_auth_cpp_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
@@ -32,7 +34,8 @@ modules_cloud_auth_libcloud_auth_la_SOURCES = \
   modules/cloud-auth/cloud-auth.h \
   modules/cloud-auth/cloud-auth.c \
   modules/cloud-auth/google-auth.h \
-  modules/cloud-auth/azure-auth.h
+  modules/cloud-auth/azure-auth.h \
+  modules/cloud-auth/oauth2-auth.h
 
 modules_cloud_auth_libcloud_auth_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \

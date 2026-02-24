@@ -40,9 +40,9 @@ typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
 struct _AFSocketSourceDriver
 {
   LogSrcDriver super;
-  guint32 connections_kept_alive_across_reloads:1,
-          window_size_initialized:1,
-          activate_listener:1;
+  guint32 connections_kept_alive_across_reloads: 1,
+          window_size_initialized: 1,
+          activate_listener: 1;
   struct iv_fd listen_fd;
   struct iv_timer dynamic_window_timer;
   gsize dynamic_window_size;

@@ -338,9 +338,13 @@ control_connection_reload(ControlConnection *cc, GString *command, gpointer user
   static gpointer args[2];
   GError *error = NULL;
 
+  msg_info("Configuration reload requested over control channel");
 
   if (!main_loop_reload_config_prepare(main_loop, &error))
     {
+      msg_error("Configuration reload failed, previous config remained intact",
+                evt_tag_str("error", error->message));
+
       GString *result = g_string_new("");
       g_string_printf(result, "FAIL %s, previous config remained intact", error->message);
       g_clear_error(&error);

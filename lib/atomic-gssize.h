@@ -123,9 +123,7 @@ atomic_gssize_set_and_get(atomic_gssize *a, gssize value)
 {
   gssize oldval = atomic_gssize_get(a);
 
-  while (!atomic_gssize_compare_and_exchange(a,
-                                             oldval,
-                                             value))
+  while (!atomic_gssize_compare_and_exchange(a, oldval, value))
     {
       oldval = atomic_gssize_get(a);
     }

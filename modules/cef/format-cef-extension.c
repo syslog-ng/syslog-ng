@@ -59,8 +59,8 @@ static gboolean
 tf_cef_is_valid_key(const gchar *str)
 {
   size_t end = strspn(str, "0123456789"
-                      "abcdefghijklmnopqrstuvwxyz"
-                      "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+                           "abcdefghijklmnopqrstuvwxyz"
+                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
   return str[end] == '\0';
 }
 

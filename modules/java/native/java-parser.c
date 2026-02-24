@@ -42,7 +42,7 @@ CfgParser java_parser =
 {
   .name = "java",
   .keywords = java_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) java_parse,
+  .parse = (int (*)(CfgLexer * lexer, gpointer * instance, gpointer)) java_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 

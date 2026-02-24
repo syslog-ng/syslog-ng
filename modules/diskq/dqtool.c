@@ -277,7 +277,7 @@ dqtool_info(int argc, char *argv[])
 static gboolean
 _is_read_writable(const gchar *path)
 {
-  return access(path, R_OK|W_OK) == F_OK;
+  return access(path, R_OK | W_OK) == F_OK;
 }
 
 static gboolean
@@ -590,14 +590,14 @@ static void
 _assign_print_help(void)
 {
   fprintf(stderr, "example:"
-          "   bin/dqtool assign -p var/syslog-ng.persist -n \"afsocket_dd_qfile(stream,localhost:15554)\n"
-          "                    /tmp/syslog-ng-dq/syslog-ng-00000.rqf\n\n"
-          "When only a filename is given for diskq, it will be appended to the current working dir.\n"
-          "One bad thing: user need to figure out the correct persist name.\n\n");
+                  "   bin/dqtool assign -p var/syslog-ng.persist -n \"afsocket_dd_qfile(stream,localhost:15554)\n"
+                  "                    /tmp/syslog-ng-dq/syslog-ng-00000.rqf\n\n"
+                  "When only a filename is given for diskq, it will be appended to the current working dir.\n"
+                  "One bad thing: user need to figure out the correct persist name.\n\n");
   fprintf(stderr, "How it works?\n"
-          "When you know what the persist name for the diskq file is and you want to assign"
-          " an existing queue file to your destination, then with this feature you can set the queue file"
-          " manually (even if you don't have an entry for the diskq file in the persist).\n");
+                  "When you know what the persist name for the diskq file is and you want to assign"
+                  " an existing queue file to your destination, then with this feature you can set the queue file"
+                  " manually (even if you don't have an entry for the diskq file in the persist).\n");
 }
 
 static gint
@@ -695,7 +695,7 @@ dqtool_mode(int *argc, char **argv[])
       if ((*argv)[i][0] != '-')
         {
           mode = (*argv)[i];
-          memmove(&(*argv)[i], &(*argv)[i+1], ((*argc) - i) * sizeof(gchar *));
+          memmove(&(*argv)[i], &(*argv)[i + 1], ((*argc) - i) * sizeof(gchar *));
           (*argc)--;
           return mode;
         }

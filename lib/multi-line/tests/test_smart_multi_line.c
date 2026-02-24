@@ -190,31 +190,31 @@ Test(smart_multi_line, feed_smart_multi_line_with_single_and_multi_line_messages
   cr_assert(_output_equals(1, "again something unrelated"));
   cr_assert(_output_equals(2, "yet again something unrelated, but 3 tracebacks are COMING"));
   cr_assert(_output_equals(3, "Traceback (most recent call last):\n"
-                           "File \"./lib/merge-grammar.py\", line 62, in <module>\n"
-                           "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
-                           "  line = self._readline()\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
-                           "  return self._readline()"),
-            "unexpected_value %s", _output_value(3));
+                              "File \"./lib/merge-grammar.py\", line 62, in <module>\n"
+                              "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
+                              "  line = self._readline()\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
+                              "  return self._readline()"),
+                              "unexpected_value %s", _output_value(3));
 
   cr_assert(_output_equals(4, "Traceback (most recent call last):\n"
-                           "File \"./lib/merge-grammar2.py\", line 62, in <module>\n"
-                           "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
-                           "  line = self._readline()\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
-                           "  return self._readline()"),
-            "unexpected_value %s", _output_value(4));
+                              "File \"./lib/merge-grammar2.py\", line 62, in <module>\n"
+                              "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
+                              "  line = self._readline()\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
+                              "  return self._readline()"),
+                              "unexpected_value %s", _output_value(4));
 
   cr_assert(_output_equals(5, "Traceback (most recent call last):\n"
-                           "File \"./lib/merge-grammar3.py\", line 62, in <module>\n"
-                           "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
-                           "  line = self._readline()\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
-                           "  return self._readline()"),
-            "unexpected_value %s", _output_value(5));
+                              "File \"./lib/merge-grammar3.py\", line 62, in <module>\n"
+                              "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
+                              "  line = self._readline()\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
+                              "  return self._readline()"),
+                              "unexpected_value %s", _output_value(5));
   cr_assert(_output_equals(6, "unrelated line here"));
 
   multi_line_logic_free(mll);
@@ -239,13 +239,13 @@ Test(smart_multi_line, test_python_backtrace)
   _feed_lines(mll, messages);
 
   cr_assert(_output_equals(0, "Traceback (most recent call last):\n"
-                           "File \"./lib/merge-grammar.py\", line 62, in <module>\n"
-                           "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
-                           "  line = self._readline()\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
-                           "  return self._readline()"),
-            "unexpected_value %s", _output_value(0));
+                              "File \"./lib/merge-grammar.py\", line 62, in <module>\n"
+                              "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
+                              "  line = self._readline()\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
+                              "  return self._readline()"),
+                              "unexpected_value %s", _output_value(0));
 
   multi_line_logic_free(mll);
 
@@ -270,14 +270,14 @@ Test(smart_multi_line, test_python_backtrace_with_tailing_exception_text)
   _feed_lines(mll, messages);
 
   cr_assert(_output_equals(0, "Traceback (most recent call last):\n"
-                           "File \"./lib/merge-grammar.py\", line 62, in <module>\n"
-                           "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
-                           "  line = self._readline()\n"
-                           "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
-                           "  return self._readline()\n"
-                           "ValueError: whatever exception that happened"),
-            "unexpected_value %s", _output_value(0));
+                              "File \"./lib/merge-grammar.py\", line 62, in <module>\n"
+                              "  for line in fileinput.input(openhook=fileinput.hook_encoded(\"utf-8\")):\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 248, in __next__\n"
+                              "  line = self._readline()\n"
+                              "File \"/usr/lib/python3.8/fileinput.py\", line 368, in _readline\n"
+                              "  return self._readline()\n"
+                              "ValueError: whatever exception that happened"),
+                              "unexpected_value %s", _output_value(0));
 
   multi_line_logic_free(mll);
 }
@@ -317,29 +317,29 @@ Test(smart_multi_line, test_java_backtrace)
   _feed_lines(mll, messages);
 
   cr_assert(_output_equals(0, "java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n"
-                           "  nested exception is:\n"
-                           "com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"
-                           "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n"
-                           "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n"
-                           "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n"
-                           "	at java.util.Optional.ifPresent(Optional.java:159)\n"
-                           "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n"
-                           "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n"
-                           "	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n"
-                           "	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n"
-                           "	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n"
-                           "	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n"
-                           "	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n"
-                           "	at java.base/java.lang.Thread.run(Thread.java:748)\n"
-                           "Caused by: javax.mail.SendFailedException: Invalid Addresses;\n"
-                           "  nested exception is:\n"
-                           "com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"
-                           "	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n"
-                           "	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n"
-                           "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n"
-                           "	... 12 more\n"
-                           "Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied"),
-            "unexpected_value %s", _output_value(0));
+                              "  nested exception is:\n"
+                              "com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"
+                              "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n"
+                              "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n"
+                              "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n"
+                              "	at java.util.Optional.ifPresent(Optional.java:159)\n"
+                              "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n"
+                              "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n"
+                              "	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n"
+                              "	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n"
+                              "	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n"
+                              "	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n"
+                              "	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n"
+                              "	at java.base/java.lang.Thread.run(Thread.java:748)\n"
+                              "Caused by: javax.mail.SendFailedException: Invalid Addresses;\n"
+                              "  nested exception is:\n"
+                              "com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"
+                              "	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n"
+                              "	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n"
+                              "	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n"
+                              "	... 12 more\n"
+                              "Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied"),
+                              "unexpected_value %s", _output_value(0));
 
 
   multi_line_logic_free(mll);
@@ -413,17 +413,17 @@ Test(smart_multi_line, test_js_backtrace)
   _feed_lines(mll, messages);
 
   cr_assert(_output_equals(0, "ReferenceError: myArray is not defined\n"
-                           "  at next (/app/node_modules/express/lib/router/index.js:256:14)\n"
-                           "  at /app/node_modules/express/lib/router/index.js:615:15\n"
-                           "  at next (/app/node_modules/express/lib/router/index.js:271:10)\n"
-                           "  at Function.process_params (/app/node_modules/express/lib/router/index.js:330:12)\n"
-                           "  at /app/node_modules/express/lib/router/index.js:277:22\n"
-                           "  at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)\n"
-                           "  at Route.dispatch (/app/node_modules/express/lib/router/route.js:112:3)\n"
-                           "  at next (/app/node_modules/express/lib/router/route.js:131:13)\n"
-                           "  at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)\n"
-                           "  at /app/app.js:52:3"),
-            "unexpected_value %s", _output_value(0));
+                              "  at next (/app/node_modules/express/lib/router/index.js:256:14)\n"
+                              "  at /app/node_modules/express/lib/router/index.js:615:15\n"
+                              "  at next (/app/node_modules/express/lib/router/index.js:271:10)\n"
+                              "  at Function.process_params (/app/node_modules/express/lib/router/index.js:330:12)\n"
+                              "  at /app/node_modules/express/lib/router/index.js:277:22\n"
+                              "  at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)\n"
+                              "  at Route.dispatch (/app/node_modules/express/lib/router/route.js:112:3)\n"
+                              "  at next (/app/node_modules/express/lib/router/route.js:131:13)\n"
+                              "  at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)\n"
+                              "  at /app/app.js:52:3"),
+                              "unexpected_value %s", _output_value(0));
 
 
   multi_line_logic_free(mll);
@@ -491,57 +491,57 @@ Test(smart_multi_line, test_go_backtrace)
   _feed_lines(mll, messages);
 
   cr_assert(_output_equals(0, "panic: my panic\n"
-                           "\n"
-                           "goroutine 4 [running]:\n"
-                           "panic(0x45cb40, 0x47ad70)\n"
-                           "	/usr/local/go/src/runtime/panic.go:542 +0x46c fp=0xc42003f7b8 sp=0xc42003f710 pc=0x422f7c\n"
-                           "main.main.func1(0xc420024120)\n"
-                           "	foo.go:6 +0x39 fp=0xc42003f7d8 sp=0xc42003f7b8 pc=0x451339\n"
-                           "runtime.goexit()\n"
-                           "	/usr/local/go/src/runtime/asm_amd64.s:2337 +0x1 fp=0xc42003f7e0 sp=0xc42003f7d8 pc=0x44b4d1\n"
-                           "created by main.main\n"
-                           "	foo.go:5 +0x58\n"
-                           "\n"
-                           "goroutine 1 [chan receive]:\n"
-                           "runtime.gopark(0x4739b8, 0xc420024178, 0x46fcd7, 0xc, 0xc420028e17, 0x3)\n"
-                           "	/usr/local/go/src/runtime/proc.go:280 +0x12c fp=0xc420053e30 sp=0xc420053e00 pc=0x42503c\n"
-                           "runtime.goparkunlock(0xc420024178, 0x46fcd7, 0xc, 0x1000f010040c217, 0x3)\n"
-                           "	/usr/local/go/src/runtime/proc.go:286 +0x5e fp=0xc420053e70 sp=0xc420053e30 pc=0x42512e\n"
-                           "runtime.chanrecv(0xc420024120, 0x0, 0xc420053f01, 0x4512d8)\n"
-                           "	/usr/local/go/src/runtime/chan.go:506 +0x304 fp=0xc420053f20 sp=0xc420053e70 pc=0x4046b4\n"
-                           "runtime.chanrecv1(0xc420024120, 0x0)\n"
-                           "	/usr/local/go/src/runtime/chan.go:388 +0x2b fp=0xc420053f50 sp=0xc420053f20 pc=0x40439b\n"
-                           "main.main()\n"
-                           "	foo.go:9 +0x6f fp=0xc420053f80 sp=0xc420053f50 pc=0x4512ef\n"
-                           "runtime.main()\n"
-                           "	/usr/local/go/src/runtime/proc.go:185 +0x20d fp=0xc420053fe0 sp=0xc420053f80 pc=0x424bad\n"
-                           "runtime.goexit()\n"
-                           "	/usr/local/go/src/runtime/asm_amd64.s:2337 +0x1 fp=0xc420053fe8 sp=0xc420053fe0 pc=0x44b4d1\n"
-                           "\n"
-                           "goroutine 2 [force gc (idle)]:\n"
-                           "runtime.gopark(0x4739b8, 0x4ad720, 0x47001e, 0xf, 0x14, 0x1)\n"
-                           "	/usr/local/go/src/runtime/proc.go:280 +0x12c fp=0xc42003e768 sp=0xc42003e738 pc=0x42503c\n"
-                           "runtime.goparkunlock(0x4ad720, 0x47001e, 0xf, 0xc420000114, 0x1)\n"
-                           "	/usr/local/go/src/runtime/proc.go:286 +0x5e fp=0xc42003e7a8 sp=0xc42003e768 pc=0x42512e\n"
-                           "runtime.forcegchelper()\n"
-                           "	/usr/local/go/src/runtime/proc.go:238 +0xcc fp=0xc42003e7e0 sp=0xc42003e7a8 pc=0x424e5c\n"
-                           "runtime.goexit()\n"
-                           "	/usr/local/go/src/runtime/asm_amd64.s:2337 +0x1 fp=0xc42003e7e8 sp=0xc42003e7e0 pc=0x44b4d1\n"
-                           "created by runtime.init.4\n"
-                           "	/usr/local/go/src/runtime/proc.go:227 +0x35\n"
-                           "\n"
-                           "goroutine 3 [GC sweep wait]:\n"
-                           "runtime.gopark(0x4739b8, 0x4ad7e0, 0x46fdd2, 0xd, 0x419914, 0x1)\n"
-                           "	/usr/local/go/src/runtime/proc.go:280 +0x12c fp=0xc42003ef60 sp=0xc42003ef30 pc=0x42503c\n"
-                           "runtime.goparkunlock(0x4ad7e0, 0x46fdd2, 0xd, 0x14, 0x1)\n"
-                           "	/usr/local/go/src/runtime/proc.go:286 +0x5e fp=0xc42003efa0 sp=0xc42003ef60 pc=0x42512e\n"
-                           "runtime.bgsweep(0xc42001e150)\n"
-                           "	/usr/local/go/src/runtime/mgcsweep.go:52 +0xa3 fp=0xc42003efd8 sp=0xc42003efa0 pc=0x419973\n"
-                           "runtime.goexit()\n"
-                           "	/usr/local/go/src/runtime/asm_amd64.s:2337 +0x1 fp=0xc42003efe0 sp=0xc42003efd8 pc=0x44b4d1\n"
-                           "created by runtime.gcenable\n"
-                           "	/usr/local/go/src/runtime/mgc.go:216 +0x58"),
-            "unexpected_value %s", _output_value(0));
+                              "\n"
+                              "goroutine 4 [running]:\n"
+                              "panic(0x45cb40, 0x47ad70)\n"
+                              "	/usr/local/go/src/runtime/panic.go:542 +0x46c fp=0xc42003f7b8 sp=0xc42003f710 pc=0x422f7c\n"
+                              "main.main.func1(0xc420024120)\n"
+                              "	foo.go:6 +0x39 fp=0xc42003f7d8 sp=0xc42003f7b8 pc=0x451339\n"
+                              "runtime.goexit()\n"
+                              "	/usr/local/go/src/runtime/asm_amd64.s:2337 +0x1 fp=0xc42003f7e0 sp=0xc42003f7d8 pc=0x44b4d1\n"
+                              "created by main.main\n"
+                              "	foo.go:5 +0x58\n"
+                              "\n"
+                              "goroutine 1 [chan receive]:\n"
+                              "runtime.gopark(0x4739b8, 0xc420024178, 0x46fcd7, 0xc, 0xc420028e17, 0x3)\n"
+                              "	/usr/local/go/src/runtime/proc.go:280 +0x12c fp=0xc420053e30 sp=0xc420053e00 pc=0x42503c\n"
+                              "runtime.goparkunlock(0xc420024178, 0x46fcd7, 0xc, 0x1000f010040c217, 0x3)\n"
+                              "	/usr/local/go/src/runtime/proc.go:286 +0x5e fp=0xc420053e70 sp=0xc420053e30 pc=0x42512e\n"
+                              "runtime.chanrecv(0xc420024120, 0x0, 0xc420053f01, 0x4512d8)\n"
+                              "	/usr/local/go/src/runtime/chan.go:506 +0x304 fp=0xc420053f20 sp=0xc420053e70 pc=0x4046b4\n"
+                              "runtime.chanrecv1(0xc420024120, 0x0)\n"
+                              "	/usr/local/go/src/runtime/chan.go:388 +0x2b fp=0xc420053f50 sp=0xc420053f20 pc=0x40439b\n"
+                              "main.main()\n"
+                              "	foo.go:9 +0x6f fp=0xc420053f80 sp=0xc420053f50 pc=0x4512ef\n"
+                              "runtime.main()\n"
+                              "	/usr/local/go/src/runtime/proc.go:185 +0x20d fp=0xc420053fe0 sp=0xc420053f80 pc=0x424bad\n"
+                              "runtime.goexit()\n"
+                              "	/usr/local/go/src/runtime/asm_amd64.s:2337 +0x1 fp=0xc420053fe8 sp=0xc420053fe0 pc=0x44b4d1\n"
+                              "\n"
+                              "goroutine 2 [force gc (idle)]:\n"
+                              "runtime.gopark(0x4739b8, 0x4ad720, 0x47001e, 0xf, 0x14, 0x1)\n"
+                              "	/usr/local/go/src/runtime/proc.go:280 +0x12c fp=0xc42003e768 sp=0xc42003e738 pc=0x42503c\n"
+                              "runtime.goparkunlock(0x4ad720, 0x47001e, 0xf, 0xc420000114, 0x1)\n"
+                              "	/usr/local/go/src/runtime/proc.go:286 +0x5e fp=0xc42003e7a8 sp=0xc42003e768 pc=0x42512e\n"
+                              "runtime.forcegchelper()\n"
+                              "	/usr/local/go/src/runtime/proc.go:238 +0xcc fp=0xc42003e7e0 sp=0xc42003e7a8 pc=0x424e5c\n"
+                              "runtime.goexit()\n"
+                              "	/usr/local/go/src/runtime/asm_amd64.s:2337 +0x1 fp=0xc42003e7e8 sp=0xc42003e7e0 pc=0x44b4d1\n"
+                              "created by runtime.init.4\n"
+                              "	/usr/local/go/src/runtime/proc.go:227 +0x35\n"
+                              "\n"
+                              "goroutine 3 [GC sweep wait]:\n"
+                              "runtime.gopark(0x4739b8, 0x4ad7e0, 0x46fdd2, 0xd, 0x419914, 0x1)\n"
+                              "	/usr/local/go/src/runtime/proc.go:280 +0x12c fp=0xc42003ef60 sp=0xc42003ef30 pc=0x42503c\n"
+                              "runtime.goparkunlock(0x4ad7e0, 0x46fdd2, 0xd, 0x14, 0x1)\n"
+                              "	/usr/local/go/src/runtime/proc.go:286 +0x5e fp=0xc42003efa0 sp=0xc42003ef60 pc=0x42512e\n"
+                              "runtime.bgsweep(0xc42001e150)\n"
+                              "	/usr/local/go/src/runtime/mgcsweep.go:52 +0xa3 fp=0xc42003efd8 sp=0xc42003efa0 pc=0x419973\n"
+                              "runtime.goexit()\n"
+                              "	/usr/local/go/src/runtime/asm_amd64.s:2337 +0x1 fp=0xc42003efe0 sp=0xc42003efd8 pc=0x44b4d1\n"
+                              "created by runtime.gcenable\n"
+                              "	/usr/local/go/src/runtime/mgc.go:216 +0x58"),
+                              "unexpected_value %s", _output_value(0));
 
 
   multi_line_logic_free(mll);
@@ -609,29 +609,29 @@ Test(smart_multi_line, test_ruby_backtrace)
             "unexpected_value %s", _output_value(0));
 
   cr_assert(_output_equals(1, " ActionController::RoutingError (No route matches [GET] \"/settings\"):\n"
-                           "  \n"
-                           "  actionpack (5.1.4) lib/action_dispatch/middleware/debug_exceptions.rb:63:in `call'\n"
-                           "  actionpack (5.1.4) lib/action_dispatch/middleware/show_exceptions.rb:31:in `call'\n"
-                           "  railties (5.1.4) lib/rails/rack/logger.rb:36:in `call_app'\n"
-                           "  railties (5.1.4) lib/rails/rack/logger.rb:24:in `block in call'\n"
-                           "  activesupport (5.1.4) lib/active_support/tagged_logging.rb:69:in `block in tagged'\n"
-                           "  activesupport (5.1.4) lib/active_support/tagged_logging.rb:26:in `tagged'\n"
-                           "  activesupport (5.1.4) lib/active_support/tagged_logging.rb:69:in `tagged'\n"
-                           "  railties (5.1.4) lib/rails/rack/logger.rb:24:in `call'\n"
-                           "  actionpack (5.1.4) lib/action_dispatch/middleware/remote_ip.rb:79:in `call'\n"
-                           "  actionpack (5.1.4) lib/action_dispatch/middleware/request_id.rb:25:in `call'\n"
-                           "  rack (2.0.3) lib/rack/method_override.rb:22:in `call'\n"
-                           "  rack (2.0.3) lib/rack/runtime.rb:22:in `call'\n"
-                           "  activesupport (5.1.4) lib/active_support/cache/strategy/local_cache_middleware.rb:27:in `call'\n"
-                           "  actionpack (5.1.4) lib/action_dispatch/middleware/executor.rb:12:in `call'\n"
-                           "  rack (2.0.3) lib/rack/sendfile.rb:111:in `call'\n"
-                           "  railties (5.1.4) lib/rails/engine.rb:522:in `call'\n"
-                           "  puma (3.10.0) lib/puma/configuration.rb:225:in `call'\n"
-                           "  puma (3.10.0) lib/puma/server.rb:605:in `handle_request'\n"
-                           "  puma (3.10.0) lib/puma/server.rb:437:in `process_client'\n"
-                           "  puma (3.10.0) lib/puma/server.rb:301:in `block in run'\n"
-                           "  puma (3.10.0) lib/puma/thread_pool.rb:120:in `block in spawn_thread'"),
-            "unexpected_value %s", _output_value(1));
+                              "  \n"
+                              "  actionpack (5.1.4) lib/action_dispatch/middleware/debug_exceptions.rb:63:in `call'\n"
+                              "  actionpack (5.1.4) lib/action_dispatch/middleware/show_exceptions.rb:31:in `call'\n"
+                              "  railties (5.1.4) lib/rails/rack/logger.rb:36:in `call_app'\n"
+                              "  railties (5.1.4) lib/rails/rack/logger.rb:24:in `block in call'\n"
+                              "  activesupport (5.1.4) lib/active_support/tagged_logging.rb:69:in `block in tagged'\n"
+                              "  activesupport (5.1.4) lib/active_support/tagged_logging.rb:26:in `tagged'\n"
+                              "  activesupport (5.1.4) lib/active_support/tagged_logging.rb:69:in `tagged'\n"
+                              "  railties (5.1.4) lib/rails/rack/logger.rb:24:in `call'\n"
+                              "  actionpack (5.1.4) lib/action_dispatch/middleware/remote_ip.rb:79:in `call'\n"
+                              "  actionpack (5.1.4) lib/action_dispatch/middleware/request_id.rb:25:in `call'\n"
+                              "  rack (2.0.3) lib/rack/method_override.rb:22:in `call'\n"
+                              "  rack (2.0.3) lib/rack/runtime.rb:22:in `call'\n"
+                              "  activesupport (5.1.4) lib/active_support/cache/strategy/local_cache_middleware.rb:27:in `call'\n"
+                              "  actionpack (5.1.4) lib/action_dispatch/middleware/executor.rb:12:in `call'\n"
+                              "  rack (2.0.3) lib/rack/sendfile.rb:111:in `call'\n"
+                              "  railties (5.1.4) lib/rails/engine.rb:522:in `call'\n"
+                              "  puma (3.10.0) lib/puma/configuration.rb:225:in `call'\n"
+                              "  puma (3.10.0) lib/puma/server.rb:605:in `handle_request'\n"
+                              "  puma (3.10.0) lib/puma/server.rb:437:in `process_client'\n"
+                              "  puma (3.10.0) lib/puma/server.rb:301:in `block in run'\n"
+                              "  puma (3.10.0) lib/puma/thread_pool.rb:120:in `block in spawn_thread'"),
+                              "unexpected_value %s", _output_value(1));
 
 
   multi_line_logic_free(mll);

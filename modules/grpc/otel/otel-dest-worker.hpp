@@ -24,12 +24,16 @@
 #ifndef OTEL_DEST_WORKER_HPP
 #define OTEL_DEST_WORKER_HPP
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "opentelemetry/proto/collector/logs/v1/logs_service.grpc.pb.h"
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.h"
 #include "opentelemetry/proto/collector/trace/v1/trace_service.grpc.pb.h"
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
 #include "opentelemetry/proto/metrics/v1/metrics.pb.h"
 #include "opentelemetry/proto/trace/v1/trace.pb.h"
+#pragma GCC diagnostic pop
 
 #include "grpc-dest-worker.hpp"
 #include "otel-dest.hpp"
@@ -57,8 +61,8 @@ class DestWorker : public syslogng::grpc::DestWorker
 public:
   DestWorker(GrpcDestWorker *s);
 
-  LogThreadedResult insert(LogMessage *msg);
-  LogThreadedResult flush(LogThreadedFlushMode mode);
+  LogThreadedResult insert(LogMessage *msg) override;
+  LogThreadedResult flush(LogThreadedFlushMode mode) override;
 
 protected:
   void clear_current_msg_metadata();

@@ -228,7 +228,7 @@ testcase_with_backref_chk(const gchar *msg,
 
   value_msg = log_msg_get_value_by_name(logmsg, name, &length);
   nv_table_unref(nv_table);
-  if(value == NULL || value[0] == 0)
+  if (value == NULL || value[0] == 0)
     {
       cr_assert_not(value_msg != NULL
                     && value_msg[0] != 0, "Filter test failed (NULL value chk); msg='%s', expected_value='%s', value_in_msg='%s'",

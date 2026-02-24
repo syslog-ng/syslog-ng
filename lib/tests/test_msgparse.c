@@ -1174,7 +1174,7 @@ Test(msgparse, test_ip_in_host)
       .expected_program = "%CRYPTO-4-RECVD_PKT_INV_SPI",
       .expected_host = "mydevice.com",
       .expected_msg =
-      "decaps: rec'd IPSEC packet has invalid spi for destaddr=150.1.1.1, prot=50, spi=0x72662541(1919296833), srcaddr=150.3.1.3"
+        "decaps: rec'd IPSEC packet has invalid spi for destaddr=150.1.1.1, prot=50, spi=0x72662541(1919296833), srcaddr=150.3.1.3"
     },
     {NULL}
   };

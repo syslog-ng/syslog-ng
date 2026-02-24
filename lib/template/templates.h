@@ -52,7 +52,7 @@ struct _LogTemplate
   gchar *template_str;
   GList *compiled_template;
   GlobalConfig *cfg;
-  guint top_level:1, escape:1, def_inline:1, trivial:1, literal:1;
+  guint top_level: 1, escape: 1, def_inline: 1, trivial: 1, literal: 1;
 
   /* This value stores the type-hint the user _explicitly_ specified.  If
    * this is an automatic cast to string (in compat mode), this would be

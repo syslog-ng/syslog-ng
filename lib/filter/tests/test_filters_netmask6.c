@@ -45,8 +45,8 @@ _replace_last_zero_with_wildcard(gchar *ipv6)
   if (!ipv6)
     return;
   gsize n = strlen(ipv6);
-  if ((n >= 2) && (ipv6[n-2] == ':') && (ipv6[n-1] == '0'))
-    ipv6[n-1] = ':';
+  if ((n >= 2) && (ipv6[n - 2] == ':') && (ipv6[n - 1] == '0'))
+    ipv6[n - 1] = ':';
 }
 
 gchar *

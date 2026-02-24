@@ -1,7 +1,10 @@
 ARG CONTAINER_REGISTRY
 ARG CONTAINER_ARCH=amd64
+ARG CONTAINER_BASE_OS=debian
+ARG CONTAINER_BASE_OS_CODE=trixie
+ARG CONTAINER_BASE=$CONTAINER_BASE_OS-$CONTAINER_BASE_OS_CODE
 ARG CONTAINER_NAME_SUFFIX
-FROM --platform=linux/$CONTAINER_ARCH $CONTAINER_REGISTRY/dbld-debian-bookworm$CONTAINER_NAME_SUFFIX:latest
+FROM --platform=linux/$CONTAINER_ARCH $CONTAINER_REGISTRY/dbld-$CONTAINER_BASE$CONTAINER_NAME_SUFFIX:latest
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
 
@@ -15,3 +18,5 @@ RUN /dbld/builddeps enable_dbgsyms
 RUN /dbld/builddeps install_perf
 
 RUN /dbld/builddeps install_apt_packages
+
+RUN /dbld/builddeps install_astyle_from_source

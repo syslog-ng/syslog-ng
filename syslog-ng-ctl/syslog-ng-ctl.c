@@ -87,7 +87,7 @@ get_mode(int *argc, char **argv[])
       if ((*argv)[i][0] != '-')
         {
           mode = (*argv)[i];
-          memmove(&(*argv)[i], &(*argv)[i+1], ((*argc) - i) * sizeof(gchar *));
+          memmove(&(*argv)[i], &(*argv)[i + 1], ((*argc) - i) * sizeof(gchar *));
           (*argc)--;
           return mode;
         }

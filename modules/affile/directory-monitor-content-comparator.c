@@ -93,7 +93,7 @@ directory_monitor_content_comparator_rescan_directory(DirectoryMonitorContentCom
   if (directory)
     {
       const gchar *filename;
-      while((filename = g_dir_read_name(directory)))
+      while ((filename = g_dir_read_name(directory)))
         {
           gchar *full_filename = build_filename(self->super.full_path, filename);
           GStatBuf file_stat;

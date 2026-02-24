@@ -117,7 +117,7 @@ _open_diskq(LogThreadedFetcherDriver *s)
 
   if (self->waiting_for_file_change)
     {
-      if(!_new_diskq_file_exists(self, &new_diskq_file_stat))
+      if (!_new_diskq_file_exists(self, &new_diskq_file_stat))
         {
           msg_debug("Still waiting for new file", evt_tag_str("file", self->filename));
           return FALSE;

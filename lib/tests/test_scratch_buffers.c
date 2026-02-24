@@ -122,7 +122,7 @@ Test(scratch_buffers, local_usage_metrics_measure_allocs)
   cr_assert_not_null(str);
   _do_something_with_a_gstring(str);
   cr_assert_eq(scratch_buffers_get_local_usage_count(), 2);
-  cr_assert_eq(scratch_buffers_get_local_allocation_bytes(), 2*DEFAULT_ALLOC_SIZE);
+  cr_assert_eq(scratch_buffers_get_local_allocation_bytes(), 2 * DEFAULT_ALLOC_SIZE);
 }
 
 /* not published via the header */

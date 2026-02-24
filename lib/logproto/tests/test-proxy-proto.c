@@ -227,7 +227,7 @@ Test(log_proto, test_proxy_protocol_header_partial_read)
   const char *proxy_header_segments[] = {"P", "ROXY TCP4 ", "1.1.1.1 ", "2.2.2.2 3333 ", "4444\r\n"};
   size_t length = G_N_ELEMENTS(proxy_header_segments);
 
-  for(size_t i = 0; i < length; i++)
+  for (size_t i = 0; i < length; i++)
     {
       log_transport_mock_inject_data(transport, proxy_header_segments[i], -1);
       log_transport_mock_inject_data(transport, LTM_INJECT_ERROR(EAGAIN));
@@ -239,7 +239,7 @@ Test(log_proto, test_proxy_protocol_header_partial_read)
                                                             get_inited_proto_server_options());
 
   gboolean handshake_finished = FALSE;
-  for(size_t i = 0; i < length; i++)
+  for (size_t i = 0; i < length; i++)
     {
       cr_assert_eq(log_proto_server_handshake(proto, &handshake_finished), LPS_AGAIN);
       cr_assert(handshake_finished == FALSE);

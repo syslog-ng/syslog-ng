@@ -144,11 +144,11 @@ struct _NVEntry
        * "indirect" and "referenced" in the "flags" member below, which is
        * unioned on the bitfield.
        */
-      guint8 indirect:1,
-             referenced:1,
-             unset:1,
-             type_present:1,
-             __bit_padding:4;
+      guint8 indirect: 1,
+             referenced: 1,
+             unset: 1,
+             type_present: 1,
+             __bit_padding: 4;
     };
     guint8 flags;
   };
@@ -274,8 +274,8 @@ struct _NVTable
    * versions, but index_size is a more descriptive name */
   guint16 index_size;
   guint8 num_static_entries;
-  guint8 ref_cnt:7,
-         borrowed:1; /* specifies if the memory used by NVTable was borrowed from the container struct */
+  guint8 ref_cnt: 7,
+         borrowed: 1; /* specifies if the memory used by NVTable was borrowed from the container struct */
 
   /* variable data, see memory layout in the comment above */
   union
@@ -355,7 +355,7 @@ static inline gchar *
 nv_table_get_ofs_table_top(NVTable *self)
 {
   return (gchar *) &self->data[self->num_static_entries * sizeof(self->static_entries[0]) +
-                                                        self->index_size * sizeof(NVIndexEntry)];
+                               self->index_size * sizeof(NVIndexEntry)];
 }
 
 static inline gboolean
@@ -464,8 +464,8 @@ nv_table_get_ofs_for_an_entry(NVTable *self, NVEntry *entry)
 static inline gssize
 nv_table_get_memory_consumption(NVTable *self)
 {
-  return sizeof(*self)+
-         self->num_static_entries*sizeof(self->static_entries[0])+
+  return sizeof(*self) +
+         self->num_static_entries * sizeof(self->static_entries[0]) +
          self->used;
 }
 

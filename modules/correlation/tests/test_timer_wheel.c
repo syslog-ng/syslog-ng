@@ -42,11 +42,11 @@ timer_callback(TimerWheel *self, guint64 now, gpointer user_data, gpointer calle
   guint64 expires = *(guint64 *) user_data;
 
   cr_assert_eq(now, expires, "Expected time is not matching current time in callback, "
-               "now=%" G_GUINT64_FORMAT ", expires=%" G_GUINT64_FORMAT "\n",
+                             "now=%" G_GUINT64_FORMAT ", expires=%" G_GUINT64_FORMAT "\n",
                now, expires);
 
   cr_expect_leq(prev_now, now, "Callback current time is not monotonically increasing, "
-                "prev_now=%" G_GUINT64_FORMAT ", now=%" G_GUINT64_FORMAT "\n",
+                               "prev_now=%" G_GUINT64_FORMAT ", now=%" G_GUINT64_FORMAT "\n",
                 prev_now, now);
 
   prev_now = now;
@@ -121,7 +121,7 @@ test_wheel(gint seed)
     }
   timer_wheel_set_time(wheel, latest + 1, NULL);
   cr_assert_eq(num_callbacks, expected_callbacks, "Error: not enough callbacks received, "
-               "num_callbacks=%d, expected=%d\n",
+                                                  "num_callbacks=%d, expected=%d\n",
                num_callbacks, expected_callbacks);
 
   timer_wheel_free(wheel);

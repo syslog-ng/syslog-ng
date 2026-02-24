@@ -143,7 +143,7 @@ ParameterizedTestParameters(format_welf, key_and_exclude)
     {"$(format-welf --key prefix.* --exclude prefix.exclude* --exclude prefix.key2)", "prefix.key1=value1"},
   };
 
-  return cr_make_param_array(struct test_params, params, sizeof(params)/sizeof(params[0]));
+  return cr_make_param_array(struct test_params, params, sizeof(params) / sizeof(params[0]));
 }
 
 ParameterizedTest(struct test_params *param, format_welf, key_and_exclude)

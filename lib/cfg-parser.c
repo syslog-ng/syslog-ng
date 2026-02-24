@@ -141,12 +141,16 @@ static CfgLexerKeyword main_keywords[] =
   { "default_facility",   KW_DEFAULT_FACILITY },
   { "sdata_prefix",       KW_SDATA_PREFIX },
   { "threaded",           KW_THREADED },
-  { "use_rcptid",         KW_USE_RCPTID, KWS_OBSOLETE, "This has been deprecated, try use_uniqid() instead" },
+  { "use_rcptid",         KW_USE_RCPTID, KWS_OBSOLETE, "use_uniqid" },
   { "use_uniqid",         KW_USE_UNIQID },
   { "log_level",          KW_LOG_LEVEL },
 
   { "log_fifo_size",      KW_LOG_FIFO_SIZE },
   { "log_fetch_limit",    KW_LOG_FETCH_LIMIT },
+  { "fetch_delay",        KW_LOG_FETCH_DELAY, KWS_OBSOLETE, "log_fetch_delay" },
+  { "log_fetch_delay",    KW_LOG_FETCH_DELAY },
+  { "fetch_retry_delay",  KW_LOG_FETCH_RETRY_DELAY, KWS_OBSOLETE, "log_fetch_retry_delay" },
+  { "log_fetch_retry_delay", KW_LOG_FETCH_RETRY_DELAY },
   { "log_iw_size",        KW_LOG_IW_SIZE },
   { "log_msg_size",       KW_LOG_MSG_SIZE },
   { "trim_large_messages", KW_TRIM_LARGE_MESSAGES },
@@ -181,15 +185,22 @@ static CfgLexerKeyword main_keywords[] =
     "the 'so-passcred()' source option or the 'ignore-aux-data' source flag"
   },
 
-  { "persist_name",            KW_PERSIST_NAME, VERSION_VALUE_3_8 },
+  { "persist_name",       KW_PERSIST_NAME, VERSION_VALUE_3_8 },
 
   { "retries",            KW_RETRIES },
   { "workers",            KW_WORKERS },
   { "worker_partition_key", KW_WORKER_PARTITION_KEY },
+  { "parallelize",        KW_PARALLELIZE },
+  { "partitions",         KW_PARTITIONS, KWS_OBSOLETE, "workers" },
+  { "partition_key",      KW_PARTITION_KEY, KWS_OBSOLETE, "worker_partition_key" },
   { "batch_lines",        KW_BATCH_LINES },
   { "batch_timeout",      KW_BATCH_TIMEOUT },
 
-  { "read_old_records",   KW_READ_OLD_RECORDS},
+  { "read_old_records",       KW_READ_OLD_RECORDS},
+  { "do_not_use_bookmark",    KW_IGNORE_SAVED_BOOKMARKS, KWS_OBSOLETE, "ignore_saved_bookmarks" },
+  { "ignore_saved_bookmarks", KW_IGNORE_SAVED_BOOKMARKS },
+  { "disable_bookmarks",      KW_DISABLE_BOOKMARKS },
+
   { "use_syslogng_pid",   KW_USE_SYSLOGNG_PID },
   { "fetch_no_data_delay", KW_FETCH_NO_DATA_DELAY},
 
@@ -198,9 +209,6 @@ static CfgLexerKeyword main_keywords[] =
   { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
   { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },
   { "multi_line_suffix",  KW_MULTI_LINE_GARBAGE },
-  { "parallelize",        KW_PARALLELIZE },
-  { "partitions",         KW_PARTITIONS },
-  { "partition_key",      KW_PARTITION_KEY },
 
   /* filter items */
   { "type",               KW_TYPE },
@@ -212,6 +220,7 @@ static CfgLexerKeyword main_keywords[] =
   { "no",                 KW_NO },
   { "off",                KW_NO },
   { "auto",               KW_AUTO },
+
   /* rewrite rules */
   { "condition",          KW_CONDITION },
   { "value",              KW_VALUE },
@@ -277,7 +286,7 @@ report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, 
 
   if (in_main_grammar)
     fprintf(stderr, "\nsyslog-ng documentation: %s\n"
-            "contact: %s\n", PRODUCT_DOCUMENTATION, PRODUCT_CONTACT);
+                    "contact: %s\n\n", PRODUCT_DOCUMENTATION, PRODUCT_CONTACT);
 
 }
 

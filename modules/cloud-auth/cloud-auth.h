@@ -31,6 +31,7 @@
 #include "driver.h"
 
 #include "modules/http/http-signals.h"
+#include "modules/grpc/common/grpc-signals.h"
 
 /* Authenticator interface */
 
@@ -40,6 +41,7 @@ gboolean cloud_authenticator_init(CloudAuthenticator *s);
 void cloud_authenticator_deinit(CloudAuthenticator *s);
 void cloud_authenticator_free(CloudAuthenticator *s);
 void cloud_authenticator_handle_http_header_request(CloudAuthenticator *s, HttpHeaderRequestSignalData *data);
+void cloud_authenticator_handle_grpc_metadata_request(CloudAuthenticator *s, GrpcMetadataRequestSignalData *data);
 
 /* Plugins */
 

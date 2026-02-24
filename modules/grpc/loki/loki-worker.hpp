@@ -37,7 +37,11 @@
 #include <string>
 #include <memory>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "push.grpc.pb.h"
+#pragma GCC diagnostic pop
 
 namespace syslogng {
 namespace grpc {
@@ -49,11 +53,11 @@ public:
   DestinationWorker(GrpcDestWorker *s) : syslogng::grpc::DestWorker(s) {};
   ~DestinationWorker() {};
 
-  bool init();
-  bool connect();
-  void disconnect();
-  LogThreadedResult insert(LogMessage *msg);
-  LogThreadedResult flush(LogThreadedFlushMode mode);
+  bool init() override;
+  bool connect() override;
+  void disconnect() override;
+  LogThreadedResult insert(LogMessage *msg) override;
+  LogThreadedResult flush(LogThreadedFlushMode mode) override;
 
 private:
   void prepare_batch();

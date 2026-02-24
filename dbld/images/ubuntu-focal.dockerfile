@@ -22,7 +22,7 @@ RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_debian_build_deps
 
-RUN /dbld/builddeps install_criterion
+RUN /dbld/builddeps install_criterion_from_source
 # bison is too old, at least version 3.7.6 is required
 RUN /dbld/builddeps install_bison_from_source
 

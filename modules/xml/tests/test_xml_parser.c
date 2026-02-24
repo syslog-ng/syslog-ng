@@ -423,7 +423,7 @@ ParameterizedTestParameters(xmlparser, test_prefix)
     {"<top><t1>1</t1><t2><t3>3</t3></t2></top>", "", "top.t2.t3", "3"},
     {"<top><t1>1</t1><t2><t3>3</t3></t2><misc>value</misc></top>", "", "top.misc", "value"},
   };
-  return cr_make_param_array(PrefixTestCase, test_cases, sizeof(test_cases)/sizeof(test_cases[0]));
+  return cr_make_param_array(PrefixTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
 }
 
 ParameterizedTest(PrefixTestCase *test_cases, xmlparser, test_prefix)
