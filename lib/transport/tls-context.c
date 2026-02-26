@@ -651,6 +651,8 @@ tls_context_setup_session(TLSContext *self)
     return NULL;
 
   SSL *ssl = SSL_new(self->ssl_ctx);
+  if (!ssl)
+    return NULL;
 
   if (self->mode == TM_CLIENT)
     SSL_set_connect_state(ssl);
