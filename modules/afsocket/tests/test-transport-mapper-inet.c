@@ -99,6 +99,8 @@ create_socket(gint *sock)
   return success;
 }
 
+#if ! defined(__FreeBSD__) // FreeBSD does not validate the matching of socket type and address family in socket() only in bind()
+
 static void
 assert_create_socket_fails_with_address(GSockAddr *addr)
 {
@@ -107,6 +109,7 @@ assert_create_socket_fails_with_address(GSockAddr *addr)
   cr_assert_not(create_socket_with_address(addr, &sock), "transport_mapper_open_socket() succeeded unexpectedly");
   cr_assert_eq(sock, -1, "failed create_socket returned a non-extremal value on failure");
 }
+#endif
 
 static void
 assert_create_socket_fails(void)
