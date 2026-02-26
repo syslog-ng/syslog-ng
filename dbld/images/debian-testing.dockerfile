@@ -21,9 +21,7 @@ RUN /dbld/builddeps update_packages
 RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_debian_build_deps
-# debian testing does not have criterion in its repo because of continuous regression issues
-# also it has build issues with the latest versions, because of its missing build dependencies
-# so we install from an older version from source
+# from time to time debian testing might not have criterion in its repo because of continuous regression issues
 RUN /dbld/builddeps install_criterion_from_source meson
 
 VOLUME /source
