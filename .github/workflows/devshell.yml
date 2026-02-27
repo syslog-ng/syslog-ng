@@ -213,8 +213,8 @@ jobs:
           CXXFLAGS="${CFLAGS}"
           SYSLOG_NG_INSTALL_DIR=${HOME}/install/syslog-ng
           CONFIGURE_FLAGS="
-            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
             --enable-colored-log
+            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
             --enable-extra-warnings
             --enable-debug
             --prefix=${SYSLOG_NG_INSTALL_DIR}
