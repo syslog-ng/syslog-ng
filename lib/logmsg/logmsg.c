@@ -1362,6 +1362,7 @@ log_msg_clear(LogMessage *self)
   if (log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     nv_table_unref(self->payload);
   self->payload = nv_table_new(LM_V_MAX, 16, 256);
+  log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
 
   if (log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->tags)
     {
