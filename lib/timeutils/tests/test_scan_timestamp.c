@@ -52,7 +52,7 @@ _parse_rfc3164(const gchar *ts, gint len, gchar isotimestamp[32])
   convert_wall_clock_time_to_unix_time(&wct, &stamp);
 
   append_format_unix_time(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
-  strncpy(isotimestamp, result->str, 32);
+  g_strlcpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;
 }
@@ -77,7 +77,7 @@ _parse_rfc5424(const gchar *ts, gint len, gchar isotimestamp[32])
   convert_wall_clock_time_to_unix_time(&wct, &stamp);
 
   append_format_unix_time(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
-  strncpy(isotimestamp, result->str, 32);
+  g_strlcpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;
 }
