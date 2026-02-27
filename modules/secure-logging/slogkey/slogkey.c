@@ -1,6 +1,6 @@
 /*
+ * Copyright (c) 2019-2025 Airbus Commercial Aircraft
  * Copyright (c) 2024 Gergo Ferenc Kovacs
- * Copyright (c) 2019 Airbus Commercial Aircraft
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,6 +49,11 @@ static GOptionEntry entries[] =
   { NULL }
 };
 
+
+
+//
+// main logic: 0 usually indicates success, and non-zero values indicate an error
+//
 int main(int argc, char **argv)
 {
   GError *error = NULL;
@@ -60,7 +65,8 @@ int main(int argc, char **argv)
   g_option_context_add_main_entries (context, entries, NULL);
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-      g_print ("Invalid option: %s\n", error->message);
+      g_print("Invalid option: %s\n", error->message);
+      g_error_free(error);
       exit (1);
     }
 
@@ -68,7 +74,7 @@ int main(int argc, char **argv)
     {
       g_print("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
-      return -1;
+      return -1; //-- ERROR
     }
 
   gboolean ok = TRUE;
@@ -86,16 +92,12 @@ int main(int argc, char **argv)
     {
       ok = FALSE;
     }
-  else if (master && host && counter)
-    {
-      ok = FALSE;
-    }
 
   if (!ok)
     {
       g_print("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
-      return -1;
+      return -1; //-- ERROR
     }
 
   // Master key generation and sequence counter display need one option and a single argument
@@ -103,7 +105,7 @@ int main(int argc, char **argv)
     {
       g_print("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
-      return -1;
+      return -1; //-- ERROR
     }
 
   // Host key derivation needs one option and four arguments
@@ -111,14 +113,14 @@ int main(int argc, char **argv)
     {
       g_print("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
-      return -1;
+      return -1; //-- ERROR
     }
 
   // Option parsing successful -> context can be released
   g_option_context_free(context);
 
   int ret = 0;
-  int success = 0;
+  gboolean success = FALSE;
   int index = 1;
 
   // Initialize internal messaging
@@ -132,16 +134,16 @@ int main(int argc, char **argv)
       success = generateMasterKey(masterkey);
       if (!success)
         {
-          msg_error("Unable to create master key");
-          ret = -1;
+          msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to create master key"));
+          ret = -1; //-- ERROR
         }
       else
         {
-          success = writeKey((gchar *)masterkey, 0, keyfile);
+          success = writeKey(masterkey, 0, keyfile);
           if (!success)
             {
-              msg_error("[SLOG] ERROR: Unable to write master key to file", evt_tag_str("file", keyfile));
-              ret = -1;
+              msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to write master key to file"), evt_tag_str("file", keyfile));
+              ret = -1; //-- ERROR
             }
         }
       return ret;
@@ -149,16 +151,17 @@ int main(int argc, char **argv)
   else if (counter)
     {
       // Display key counter
-      char key[KEY_LENGTH];
+      guchar key[KEY_LENGTH];
       char *keyfile = argv[index];
       guint64 counterValue;
       success = readKey(key, &counterValue, keyfile);
       if (!success)
         {
-          msg_error("[SLOG] ERROR: Unable to read key file", evt_tag_str("file", keyfile));
-          return ret;
+          msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to read key file"), evt_tag_str("file", keyfile));
+          // bug wrong value assigned  return ret;
+          return -1; //-- ERROR
         }
-      printf("counter=%" G_GUINT64_FORMAT "\n", counterValue);
+      g_print("counter=%" G_GUINT64_FORMAT "\n", counterValue);
     }
   else if (host)
     {
@@ -171,33 +174,35 @@ int main(int argc, char **argv)
       index++;
       gchar *hostKeyFileName = argv[index];
 
-      gchar masterKey[KEY_LENGTH] = { 0 };
+      guchar masterKey[KEY_LENGTH] = { 0 };
 
       guint64 counterValue;
 
-      success = readKey((char *)masterKey, &counterValue, masterKeyFileName);
+      success = readKey(masterKey, &counterValue, masterKeyFileName);
       if (!success)
         {
-          msg_error("[SLOG] ERROR: Unable to read master key", evt_tag_str("file", masterKeyFileName));
-          ret = -1;
+          msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Unable to read master key"), evt_tag_str("file",
+                    masterKeyFileName));
+          ret = -1; //-- ERROR
         }
       else
         {
           guchar hostKey[KEY_LENGTH];
-
           success = deriveHostKey((guchar *)masterKey, macAddr, serial, hostKey);
           if (!success)
             {
-              msg_error("[SLOG] ERROR: Unable to derive a host key");
-              ret = -1;
+              msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "deriveHostKey fails"));
+              ret = -1; //-- ERROR
             }
           else
             {
-              success = writeKey((char *)hostKey, 0, hostKeyFileName);
-              if (success == 0)
+              success = writeKey(hostKey, 0, hostKeyFileName);
+              if (!success)
                 {
-                  msg_error("[SLOG] ERROR: Unable to write host key to file", evt_tag_str("file", hostKeyFileName));
-                  ret = -1;
+                  msg_error(SLOG_ERROR_PREFIX,
+                            evt_tag_str("Reason", "Unable to write host key to file"),
+                            evt_tag_str("file", hostKeyFileName));
+                  ret = -1; //-- ERROR
                 }
             }
         }
