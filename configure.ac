@@ -37,16 +37,38 @@ AC_CONFIG_SRCDIR([syslog-ng/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+dnl ============================================================
+dnl Check for tput and if it is working, to be able to use
+dnl colored output in the configure script
+dnl ============================================================
+AC_PATH_PROG([TPUT], [tput])
+AC_MSG_CHECKING([whether tput is available and working])
+if test -n "$TPUT" && "$TPUT" setaf 1 >/dev/null 2>&1; then
+    TPUT_WORKING=yes
+    AC_MSG_RESULT([yes])
+else
+    TPUT_WORKING=no
+    AC_MSG_RESULT([no])
+fi
+
 # ANSI color codes
 AC_CONFIG_COMMANDS_PRE([
+if test "x$TPUT_WORKING" = "xyes"; then
+    color_red=$($TPUT setaf 1 2>/dev/null || true)
+    color_green=$($TPUT setaf 2 2>/dev/null || true)
+    color_yellow=$($TPUT setaf 3 2>/dev/null || true)
+    color_blue=$($TPUT setaf 4 2>/dev/null || true)
+    color_reset=$($TPUT sgr0 2>/dev/null || true)
+else
     ESC=$(printf '\033')          # ASCII ESC
-    LBRACKET=$(printf '\x5B')     # ASCII square bracket
+    LBRACKET=$(printf '\133')     # ASCII square bracket (portable octal)
     color_red="${ESC}${LBRACKET}31m"
     color_green="${ESC}${LBRACKET}32m"
     color_yellow="${ESC}${LBRACKET}33m"
     color_blue="${ESC}${LBRACKET}34m"
     color_reset="${ESC}${LBRACKET}0m"
-    export color_red color_green color_yellow color_blue color_reset
+fi
+export color_red color_green color_yellow color_blue color_reset
 ])
 
 dnl ***************************************************************************
@@ -614,8 +636,7 @@ AC_ARG_ENABLE(afsnmp,
 
 AC_ARG_ENABLE([colored-log],
     AS_HELP_STRING([--enable-colored-log], [Enable colorized output in configure summary (default: no)]),
-    [enable_colored_log=yes],
-    [enable_colored_log=no])
+    , enable_colored_log="no")
 
 AC_ARG_ENABLE(tests,
     AS_HELP_STRING([--enable-tests], [Enable unit tests (default: auto)]),
@@ -2772,6 +2793,7 @@ print_config_line() {
 
     if test "x$enable_colored_log" = "xyes"; then
         local color_code=$color_blue
+
         case "$value" in
             yes*|YES*|true*|TRUE*) color_code=$color_green ;;
             no*|NO*|false*|FALSE*) color_code=$color_red ;;
