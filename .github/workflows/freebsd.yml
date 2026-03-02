@@ -53,9 +53,12 @@ jobs:
           BSDPORTS_PREFIX=/usr/local
           SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
           WARNING_FLAGS="-DNO_PTHREAD_SELF_USAGE_WARNING=1 -Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
-          CFLAGS="-I${BSDPORTS_PREFIX}/include/ ${WARNING_FLAGS}"
+          # All pkgconfig isses are fixed now, we do not have to use the BSDPORTS_PREFIX provided pats to point to the correct include path, but keep it here for reference
+          #CFLAGS="-I${BSDPORTS_PREFIX}/include/ ${WARNING_FLAGS}"
+          CFLAGS="${WARNING_FLAGS}"
           CXXFLAGS="${CFLAGS}"
-          LDFLAGS="-L${BSDPORTS_PREFIX}/lib"
+          # All pkgconfig isses are fixed now, we do not have to use the LDFLAGS to point to the correct library path, but keep it here for reference
+          #LDFLAGS="-L${BSDPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
             --enable-colored-log
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
