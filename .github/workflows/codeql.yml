@@ -104,7 +104,7 @@ jobs:
 
         echo -e "\nBuilding...\n"
         if [[ "${{ matrix.language }}" == "c-cpp" ]]; then
-          cmake -B build . -Wno-dev -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF -DCMAKE_BUILD_TYPE=Release -DIVYKIS_SOURCE=internal -DBUILD_TESTING=ON -DENABLE_FORCE_GNU99=ON -DSUMMARY_LEVEL=0 -DENABLE_EXTRA_WARNINGS=ON -Werror --fresh
+          cmake -B build . -Wno-dev -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF -DCMAKE_BUILD_TYPE=Release -DIVYKIS_SOURCE=internal -DBUILD_TESTING=ON -DENABLE_FORCE_GNU99=ON -DSUMMARY_LEVEL=0 -DENABLE_EXTRA_WARNINGS=ON -DENABLE_WERROR=ON --fresh
         elif [[ "${{ matrix.language }}" == "java-kotlin" ]]; then
           # The CodeQL runner uses its own JDK distribution inside the CodeQL Action environment.
           # That JDK is stricter about module encapsulation, so reflective access to com.sun.tools.javac.api fails unless you explicitly open the module.
@@ -112,7 +112,7 @@ jobs:
           export ORG_GRADLE_PROJECT_org_gradle_jvmargs="--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
             --add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED \
             --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED"
-          cmake -B build . -Wno-dev -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF -DCMAKE_BUILD_TYPE=Release -DIVYKIS_SOURCE=internal -DDISABLE_ALL_MODULES=ON -DENABLE_JAVA=ON -DENABLE_JAVA_MODULES=ON -DENABLE_FORCE_GNU99=ON -DSUMMARY_LEVEL=0 -DENABLE_EXTRA_WARNINGS=ON -Werror --fresh
+          cmake -B build . -Wno-dev -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF -DCMAKE_BUILD_TYPE=Release -DIVYKIS_SOURCE=internal -DDISABLE_ALL_MODULES=ON -DENABLE_JAVA=ON -DENABLE_JAVA_MODULES=ON -DENABLE_FORCE_GNU99=ON -DSUMMARY_LEVEL=0 -DENABLE_EXTRA_WARNINGS=ON -DENABLE_WERROR=ON --fresh
         fi
         cmake --build ./build -j$(nproc) --target all
 

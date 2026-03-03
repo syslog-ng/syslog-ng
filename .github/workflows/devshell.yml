@@ -120,7 +120,8 @@ jobs:
           # --------------------------------------------------------------------
           - name: devshell
             # Now only for devsell we support -Werror, all other none-packaged targets are just best efforts
-            cflags: "-Werror"
+            configure_flags: "--enable-werror"
+            cmake_configure_flags: "-DENABLE_WERROR=ON"
           # --------------------------------------------------------------------
         exclude:
           - platform: ubuntu-24.04-arm
@@ -229,16 +230,17 @@ jobs:
           "
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
-            -DSUMMARY_VERBOSE=ON
+            -DENABLE_EXTRA_WARNINGS=ON
             -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
+            -DSUMMARY_LEVEL=1
             -DBUILD_TESTING=ON
             -DPYTHON_VERSION=3
             -DIVYKIS_SOURCE=internal
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
-            -DENABLE_EBPF=ON
             -DENABLE_STACKDUMP=ON
+            -DENABLE_EBPF=ON
             ${{ matrix.image.cmake_configure_flags }}
           "
           gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CFLAGS CXXFLAGS CONFIGURE_FLAGS CMAKE_CONFIGURE_FLAGS
@@ -365,9 +367,8 @@ jobs:
           . .github/workflows/gh-tools.sh
 
           DISTCHECK_CONFIGURE_FLAGS="
-            CFLAGS=-Werror
-            CXXFLAGS=-Werror
             --prefix=${HOME}/install/syslog-ng
+            --enable-werror
             --with-ivykis=internal
             --with-jsonc=system
             --enable-tcp-wrapper

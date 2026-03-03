@@ -52,7 +52,7 @@ jobs:
           #THREADS=$(sysctl -n hw.ncpu) # TODO: Check how to get it on the FreeBSD VM
           BSDPORTS_PREFIX=/usr/local
           SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
-          WARNING_FLAGS="-DNO_PTHREAD_SELF_USAGE_WARNING=1 -Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
+          WARNING_FLAGS="-DNO_PTHREAD_SELF_USAGE_WARNING=1 -Wno-unused-command-line-argument"
           # All pkgconfig isses are fixed now, we do not have to use the BSDPORTS_PREFIX provided pats to point to the correct include path, but keep it here for reference
           #CFLAGS="-I${BSDPORTS_PREFIX}/include/ ${WARNING_FLAGS}"
           CFLAGS="${WARNING_FLAGS}"
@@ -63,6 +63,7 @@ jobs:
             --enable-colored-log
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
             --enable-extra-warnings
+            --enable-werror
             --enable-debug
             --disable-dependency-tracking
             --prefix=${SYSLOG_NG_INSTALL_DIR}
@@ -77,8 +78,9 @@ jobs:
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
             -DENABLE_EXTRA_WARNINGS=ON
-            -DSUMMARY_LEVEL=1
+            -DENABLE_WERROR=ON
             -DCMAKE_BUILD_TYPE=Debug
+            -DSUMMARY_LEVEL=1
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DBUILD_TESTING=ON
             -DENABLE_STACKDUMP=OFF
