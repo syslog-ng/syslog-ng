@@ -234,7 +234,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DSUMMARY_LEVEL=1
-            -DBUILD_TESTING=ON
+            -DENABLE_TESTING=ON
             -DPYTHON_VERSION=3
             -DIVYKIS_SOURCE=internal
             -DENABLE_JAVA=OFF
