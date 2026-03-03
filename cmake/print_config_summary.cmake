@@ -250,7 +250,12 @@ function(print_config_summary)
   _print_compilers_info("${_variableNames}" "${_compilersInfo}")
 
   _print_separator("Compilation")
-  list(APPEND _compilationOptions "CMAKE_BUILD_TYPE" "CXX_STANDARD_USED" "^ENABLE_CPP" "ENABLE_EXTRA_WARNINGS" "ENABLE_WERROR" "ENABLE_FORCE_GNU99" "ENV_LD_LIBRARY_PATH")
+  list(APPEND _compilationOptions "CMAKE_BUILD_TYPE" "CXX_STANDARD_USED" "^ENABLE_CPP" "ENABLE_EXTRA_WARNINGS" "ENABLE_WERROR" "ENABLE_FORCE_GNU99" "ENV_LD_LIBRARY_PATH" "^CMAKE_C_FLAGS$" "^CMAKE_CXX_FLAGS$" "^CMAKE_EXE_LINKER_FLAGS$" "^CMAKE_SHARED_LINKER_FLAGS$" "^CMAKE_MODULE_LINKER_FLAGS$" "^IMPORTANT_WARNINGS$" "^ACCEPTABLE_WARNINGS$" "^EXTRA_WARNINGS$")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND _compilationOptions " ^CMAKE_C_FLAGS_DEBUG$" "^CMAKE_CXX_FLAGS_DEBUG$ ")
+  else()
+    list(APPEND _compilationOptions " ^CMAKE_C_FLAGS_RELEASE$" "^CMAKE_CXX_FLAGS_RELEASE$ ")
+  endif()
 
   if(APPLE)
     list(APPEND _compilationOptions "FORCE_CLASSIC_LINKING")
