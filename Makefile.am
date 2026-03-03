@@ -78,9 +78,9 @@ AM_CXXFLAGS += \
 
 if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
-	-Wimplicit-function-declaration \
 	$(CFLAGS_W_NO_INITIALIZER_OVERRIDES) \
 	$(CFLAGS_W_OLD_STYLE_DECLARATION) \
+	-Wimplicit-function-declaration \
 	-Wnested-externs \
 	-Wstrict-prototypes \
 	-Wswitch-default \

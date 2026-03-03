@@ -23,6 +23,11 @@
 #
 # ############################################################################
 
+include(CheckCCompilerFlag)
+
+check_c_compiler_flag("-Wno-initializer-overrides" CMAKE_HAVE_W_NO_INITIALIZER_OVERRIDES)
+check_c_compiler_flag("-Wold-style-declaration" CMAKE_HAVE_W_OLD_STYLE_DECLARATION)
+
 set(IMPORTANT_WARNINGS
   -Wshadow)
 
@@ -34,13 +39,47 @@ set(ACCEPTABLE_WARNINGS
 option(ENABLE_EXTRA_WARNINGS "Enable extra warnings" ON)
 option(ENABLE_WERROR "Enable -Werror" OFF)
 
+set(EXTRA_WARNINGS)
+
 if(ENABLE_EXTRA_WARNINGS)
-  set(EXTRA_WARNINGS
-    $<$<COMPILE_LANGUAGE:C>:-Wimplicit-function-declaration>
-    $<$<COMPILE_LANGUAGE:C>:-Wnested-externs>
-    $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
+  set(C_EXTRA_WARNINGS)
+
+  if(CMAKE_HAVE_W_NO_INITIALIZER_OVERRIDES)
+    list(APPEND C_EXTRA_WARNINGS
+      -Wno-initializer-overrides)
+  endif()
+
+  if(CMAKE_HAVE_W_OLD_STYLE_DECLARATION)
+    list(APPEND C_EXTRA_WARNINGS
+      -Wold-style-declaration)
+  endif()
+
+  list(APPEND C_EXTRA_WARNINGS
+    -Wimplicit-function-declaration
+    -Wnested-externs
+    -Wstrict-prototypes
     -Wswitch-default
-    $<$<COMPILE_LANGUAGE:C>:-Wimplicit-int>
+    -Wimplicit-int
+    -Wall
+    -Wuninitialized
+    -Wunused-but-set-parameter
+    -Wdeprecated
+    -Wdeprecated-declarations
+    -Woverflow
+    -Wdouble-promotion
+    -Wfloat-equal
+    -Wpointer-arith
+    -Wpointer-sign
+    -Wmissing-format-attribute
+    -Wold-style-definition
+    -Wundef
+    -Wignored-qualifiers
+    -Woverride-init
+    -Wfloat-conversion
+    -Wbad-function-cast)
+
+  set(CXX_EXTRA_WARNINGS
+    -Wswitch-default
     -Wall
     -Wuninitialized
     -Wdeprecated
@@ -49,26 +88,21 @@ if(ENABLE_EXTRA_WARNINGS)
     -Wdouble-promotion
     -Wfloat-equal
     -Wpointer-arith
-    $<$<COMPILE_LANGUAGE:C>:-Wpointer-sign>
     -Wmissing-format-attribute
-    $<$<COMPILE_LANGUAGE:C>:-Wold-style-definition>
     -Wundef
     -Wignored-qualifiers
     -Wfloat-conversion
-    $<$<COMPILE_LANGUAGE:C>:-Wbad-function-cast>)
+    -Wunused-but-set-parameter)
 
-  if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-    set(EXTRA_WARNINGS
-      ${EXTRA_WARNINGS}
-    )
-  else()
-    set(EXTRA_WARNINGS
-      $<$<COMPILE_LANGUAGE:C>:-Wold-style-declaration>
-      -Wunused-but-set-parameter
-      $<$<COMPILE_LANGUAGE:C>:-Woverride-init>
-      ${EXTRA_WARNINGS}
-    )
-  endif()
+  foreach(flag IN LISTS C_EXTRA_WARNINGS)
+    list(APPEND EXTRA_WARNINGS
+      $<$<COMPILE_LANGUAGE:C>:${flag}>)
+  endforeach()
+
+  foreach(flag IN LISTS CXX_EXTRA_WARNINGS)
+    list(APPEND EXTRA_WARNINGS
+      $<$<COMPILE_LANGUAGE:CXX>:${flag}>)
+  endforeach()
 endif()
 
 if(ENABLE_WERROR)
