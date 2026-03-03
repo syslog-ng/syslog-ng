@@ -1117,7 +1117,13 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                       char *key = g_new0(char, CTR_LEN_SIMPLE + 1);
                       snprintf(key, CTR_LEN_SIMPLE + 1, "%"G_GUINT64_FORMAT, logEntryOnDisk);
 
-                      if (g_hash_table_insert(tab, key, (gpointer)logEntryOnDisk) == FALSE)
+                      if (logEntryOnDisk > G_MAXUINT)
+                        {
+                          msg_error("[SLOG] ERROR: Log entry id does not fit into pointer-sized integer storage", evt_tag_long("entry",
+                                    logEntryOnDisk));
+                          ret = 0;
+                        }
+                      else if (g_hash_table_insert(tab, key, GUINT_TO_POINTER((guint)logEntryOnDisk)) == FALSE)
                         {
                           msg_warning("[SLOG] WARNING: Unable to process hash table while entering decrypted log entry", evt_tag_long("entry",
                                       logEntryOnDisk));
