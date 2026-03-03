@@ -2859,7 +2859,7 @@ print_config_line "compiler options" "$CFLAGS $CPPFLAGS"
 print_config_line "ObjC compiler" "$OBJC - $($OBJC -v 2>&1 | grep -i ' version ') - $(command -v $OBJC)"
 print_config_line "C++ enabled" "${enable_cpp:=no}"
 if test "x$enable_cpp" = "xyes"; then
-    print_config_line "C++ compiler" "$CXX - $($CXX -v 2>&1 | grep -i ' version ') - $(command -v $CXX)"
+    print_config_line "C++ compiler" "$CXX - $($CXX -v 2>&1 | grep -i ' version ') - $(command -v "${CXX%% *}")"
     print_config_line "C++ compiler options" "$CXXFLAGS"
 fi
 print_config_line "linker flags" "$LDFLAGS $LIBS"
