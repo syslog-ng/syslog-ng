@@ -163,7 +163,10 @@ DestinationWorker::insert(LogMessage *msg)
 
   this->batch_size++;
 
-  message->SerializePartialToString(&serialized_row);
+  {
+    bool result = message->SerializePartialToString(&serialized_row);
+    (void) result;
+  }
   row_bytes = serialized_row.size();
   rows->add_serialized_rows(std::move(serialized_row));
 

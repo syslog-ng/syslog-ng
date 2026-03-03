@@ -123,7 +123,8 @@ _serialize_ArrayValue(const AnyValue &value, LogMessageValueType *type, std::str
   if (!is_all_strings)
     {
       *type = LM_VT_PROTOBUF;
-      value.SerializePartialToString(buffer);
+      bool result = value.SerializePartialToString(buffer);
+      (void) result;
       return *buffer;
     }
 
@@ -158,7 +159,10 @@ _serialize_AnyValue(const AnyValue &value, LogMessageValueType *type, std::strin
       return _serialize_ArrayValue(value, type, buffer);
     case AnyValue::kKvlistValue:
       *type = LM_VT_PROTOBUF;
-      value.SerializePartialToString(buffer);
+      {
+        bool result = value.SerializePartialToString(buffer);
+        (void) result;
+      }
       return *buffer;
     case AnyValue::kBytesValue:
       *type = LM_VT_BYTES;
@@ -1126,14 +1130,16 @@ syslogng::grpc::otel::ProtobufParser::store_raw_metadata(LogMessage *msg, const 
   msg->saddr = _extract_saddr(peer);
 
   /* .otel_raw.resource */
-  resource.SerializePartialToString(&serialized);
+  bool result = resource.SerializePartialToString(&serialized);
+  (void) result;
   _set_value(msg, logmsg_handle::RAW_RESOURCE, serialized, LM_VT_PROTOBUF);
 
   /* .otel_raw.resource_schema_url */
   _set_value(msg, logmsg_handle::RAW_RESOURCE_SCHEMA_URL, resource_schema_url, LM_VT_STRING);
 
   /* .otel_raw.scope */
-  scope.SerializePartialToString(&serialized);
+  result = scope.SerializePartialToString(&serialized);
+  (void) result;
   _set_value(msg, logmsg_handle::RAW_SCOPE, serialized, LM_VT_PROTOBUF);
 
   /* .otel_raw.scope_schema_url */

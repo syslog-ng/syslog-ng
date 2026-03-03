@@ -220,8 +220,11 @@ _set_AnyValue(const gchar *value, gssize len, LogMessageValueType type, AnyValue
   switch (type)
     {
     case LM_VT_PROTOBUF:
-      any_value->ParsePartialFromArray(value, len);
+    {
+      bool result = any_value->ParsePartialFromArray(value, len);
+      (void) result;
       break;
+    }
     case LM_VT_BYTES:
       any_value->set_bytes_value(value, len);
       break;
