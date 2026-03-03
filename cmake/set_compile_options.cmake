@@ -32,6 +32,7 @@ set(ACCEPTABLE_WARNINGS
   -Wno-variadic-macros)
 
 option(ENABLE_EXTRA_WARNINGS "Enable extra warnings" ON)
+option(ENABLE_WERROR "Enable -Werror" OFF)
 
 if(ENABLE_EXTRA_WARNINGS)
   set(EXTRA_WARNINGS
@@ -68,6 +69,10 @@ if(ENABLE_EXTRA_WARNINGS)
       ${EXTRA_WARNINGS}
     )
   endif()
+endif()
+
+if(ENABLE_WERROR)
+  set(EXTRA_WARNINGS ${EXTRA_WARNINGS} -Werror)
 endif()
 
 add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})

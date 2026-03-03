@@ -2696,6 +2696,7 @@ AM_CONDITIONAL(ENABLE_MANPAGES_INSTALL, [test "$enable_manpages_install" != "no"
 AM_CONDITIONAL(MANPAGES_REMOTE, [test "x$with_manpages" = "xremote"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
+AM_CONDITIONAL(ENABLE_WERROR, [test "$enable_werror" = "yes"])
 AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
 AM_CONDITIONAL(ENABLE_EXAMPLE_MODULES, [test "$enable_example_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_SANITIZER, [test "$with_sanitizer" != "no"])

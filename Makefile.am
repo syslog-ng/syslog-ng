@@ -120,6 +120,11 @@ AM_CXXFLAGS += \
 	-Wunused-but-set-parameter
 endif
 
+if ENABLE_WERROR
+AM_CFLAGS += -Werror
+AM_CXXFLAGS += -Werror
+endif
+
 if ENABLE_DEBUG
 AM_CFLAGS += -DYYDEBUG=1
 endif
