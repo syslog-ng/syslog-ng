@@ -59,11 +59,13 @@ jobs:
           CXXFLAGS="${CFLAGS}"
           # All pkgconfig isses are fixed now, we do not have to use the LDFLAGS to point to the correct library path, but keep it here for reference
           #LDFLAGS="-L${BSDPORTS_PREFIX}/lib"
+          # FIXME: The autotools used libtool will invoke clang with -Werror even for linking, which causes
+          #        the build to fail when unsupported options passed to the linker (with unused command line arguments, which normally just warnings)
+          #        so, for now not providing --enable-werror for autotools builds
           CONFIGURE_FLAGS="
             --enable-colored-log
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
             --enable-extra-warnings
-            --enable-werror
             --enable-debug
             --disable-dependency-tracking
             --prefix=${SYSLOG_NG_INSTALL_DIR}
