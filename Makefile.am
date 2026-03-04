@@ -78,9 +78,9 @@ AM_CXXFLAGS += \
 
 if ENABLE_EXTRA_WARNINGS
 AM_CFLAGS += \
-	-Wimplicit-function-declaration \
 	$(CFLAGS_W_NO_INITIALIZER_OVERRIDES) \
 	$(CFLAGS_W_OLD_STYLE_DECLARATION) \
+	-Wimplicit-function-declaration \
 	-Wnested-externs \
 	-Wstrict-prototypes \
 	-Wswitch-default \
@@ -118,6 +118,11 @@ AM_CXXFLAGS += \
 	-Wignored-qualifiers \
 	-Wfloat-conversion \
 	-Wunused-but-set-parameter
+endif
+
+if ENABLE_WERROR
+AM_CFLAGS += -Werror
+AM_CXXFLAGS += -Werror
 endif
 
 if ENABLE_DEBUG

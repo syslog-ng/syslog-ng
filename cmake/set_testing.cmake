@@ -23,7 +23,16 @@
 #
 # ############################################################################
 
-option(BUILD_TESTING "Enable unit tests" ON)
+# Support both BUILD_TESTING (CMake standard) and ENABLE_TESTING (autotools naming)
+# If ENABLE_TESTING is set by user, use it as default for BUILD_TESTING
+if(DEFINED ENABLE_TESTING)
+  option(BUILD_TESTING "Enable unit tests" ${ENABLE_TESTING})
+else()
+  option(BUILD_TESTING "Enable unit tests" ON)
+endif()
+
+# Keep both variables in sync
+set(ENABLE_TESTING ${BUILD_TESTING})
 
 if(BUILD_TESTING)
   find_package(criterion)
