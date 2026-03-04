@@ -231,7 +231,7 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
                     }
                 }
             }
-          sk_GENERAL_NAME_free(alt_names);
+          sk_GENERAL_NAME_pop_free(alt_names, GENERAL_NAME_free);
         }
     }
   if (!found)
