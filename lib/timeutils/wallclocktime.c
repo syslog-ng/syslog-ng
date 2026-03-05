@@ -654,12 +654,18 @@ recurse:
             case 'G':
               if (*bp++ != 'M')
                 return NULL;
-            /*FALLTHROUGH*/
+              if (*bp++ != 'T')
+                return NULL;
+              goto utc;
+              break;
             case 'U':
               if (*bp++ != 'T')
                 return NULL;
+              if (*bp == 'C')
+                bp++;
             /*FALLTHROUGH*/
             case 'Z':
+utc:
               wct->tm.tm_isdst = 0;
               wct->wct_gmtoff = 0;
               wct->wct_zone = utc;
