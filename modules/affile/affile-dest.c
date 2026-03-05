@@ -641,7 +641,7 @@ void affile_dd_set_logrotate_rotations(LogDriver *s, gint max_rotations)
   self->logrotate_options.max_rotations = max_rotations;
 }
 
-void affile_dd_set_logrotate_size(LogDriver *s, gint size)
+void affile_dd_set_logrotate_size(LogDriver *s, gsize size)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
 
