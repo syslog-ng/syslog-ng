@@ -87,6 +87,7 @@ void set_reloading_scheduled(gboolean scheduled);
 
 gboolean main_loop_worker_job_quit(void);
 
+gdouble mainloop_sleep_time(const gdouble delay);
 /* NOTE: If any of the threads using these and the return value
 *        (a.k.a the value of main_loop_workers_quit) is TURE,
  *       the callers must ensure that the thread will exit as soon as possible, and

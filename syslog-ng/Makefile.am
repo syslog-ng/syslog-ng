@@ -13,10 +13,8 @@ EXTRA_DIST += syslog-ng/CMakeLists.txt
 # libtool, because in mixed mode libtool is not used for the final linking
 # phase.  See the comment in the configure script for details.
 
-syslog_ng_syslog_ng_LDADD		= -L${top_builddir}/lib/.libs \
-					  -lsyslog-ng @SYSLOGNG_DEPS_LIBS@
+syslog_ng_syslog_ng_LDADD		= lib/libsyslog-ng.la @SYSLOGNG_DEPS_LIBS@
 syslog_ng_syslog_ng_LINK		=  @SYSLOGNG_LINK@
-EXTRA_syslog_ng_syslog_ng_DEPENDENCIES	= lib/libsyslog-ng.la
 
 syslog_ng_syslog_ng_wrapper_SOURCES	= syslog-ng/wrapper.c
 

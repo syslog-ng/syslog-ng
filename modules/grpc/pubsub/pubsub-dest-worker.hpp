@@ -49,8 +49,8 @@ private:
 public:
   DestWorker(GrpcDestWorker *s);
 
-  LogThreadedResult insert(LogMessage *msg);
-  LogThreadedResult flush(LogThreadedFlushMode mode);
+  LogThreadedResult insert(LogMessage *msg) override;
+  LogThreadedResult flush(LogThreadedFlushMode mode) override;
 
 private:
   bool should_initiate_flush();

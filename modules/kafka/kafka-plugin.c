@@ -32,7 +32,17 @@ static Plugin kafka_plugins[] =
 {
   {
     .type = LL_CONTEXT_DESTINATION,
-    .name = "kafka_c",
+    .name = "kafka",
+    .parser = &kafka_parser,
+  },
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "kafka_c", /* for compatibility with old incubator naming */
+    .parser = &kafka_parser,
+  },
+  {
+    .type = LL_CONTEXT_SOURCE,
+    .name = "kafka",
     .parser = &kafka_parser,
   },
 };

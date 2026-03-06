@@ -1,0 +1,681 @@
+/*
+ * Copyright (c) 2025 Hofi <hofione@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+#include "kafka-source-persist.h"
+#include "kafka-internal.h"
+#include "messages.h"
+#include "persistable-state-header.h"
+#include "ack-tracker/ack_tracker.h"
+
+#define KAFKA_SOURCE_PERSIST_VERSION_1 1
+#define MIN_WINDOW_SIZE 2048
+
+typedef struct _OffsetTracker
+{
+  guint64 committed;            // last fully confirmed offset
+  guint64 window_start;         // first bit in bitmap corresponds to this offset
+  guint64 window_size;          // number of bits allocated
+  gboolean offsets_resolved;    // whether the initial offset setup is finished
+  guint8 *bitmap;               // the bit array
+
+  KafkaSourcePersist *owner;    // This is just for easier debugging
+} OffsetTracker;
+
+typedef struct _KafkaSourcePersistData
+{
+  PersistableStateHeader header;
+  int64_t position;
+  gboolean use_offset_tracker;
+  KafkaSrcPersistStore persist_store;
+  KafkaSrcConsumerStrategy consumer_strategy;
+} KafkaSourcePersistData;
+
+struct _KafkaSourcePersist
+{
+  PersistState *persist_state;
+  PersistEntryHandle handle;
+
+  gboolean use_offset_tracker;
+  OffsetTracker *tracker;
+
+  KafkaSourceDriver *owner;
+  gchar topic[MAX_KAFKA_TOPIC_NAME_LEN + 1];
+  int32_t partition;
+  int64_t last_confirmed_offset;
+
+  GMutex mutex;
+  gboolean valid;
+  guint used_count;
+};
+
+typedef struct _KafkaSourceBookmark
+{
+  PersistEntryHandle persist_handle;
+  KafkaSourcePersistData data;
+  KafkaSourcePersist *persist;
+} KafkaSourceBookmark;
+
+
+static OffsetTracker *
+_offset_tracker_new(KafkaSourcePersist *owner, gint64 committed_offset)
+{
+  OffsetTracker *t = g_new0(OffsetTracker, 1);
+
+  t->owner = owner;
+
+  /* If we use the offset tracker, it means a parallel processing mode is used, which means that messages
+   * can be processed out-of-order. In this case, we cannot properly determine how to set up the offset tracker
+   * until we receive the first message, which tells us the actual starting offset.
+   * NOTE: This is possible currently only because we use offsets_resolved/_offset_tracker_is_ready() in
+   *       _run_consumer of kafka-source-worker.c to keep the messages ordered (direct processing instead of queueing)
+   *       until the offset tracker is ready (the first oredered message is received).
+   *       After that point, the offset tracker will be able to handle out-of-order processing and the consumer start using the queues.
+   */
+  t->offsets_resolved = FALSE;
+
+  /* Currently, setting these is meaningless, the first received message will determine the actual starting offset
+   * but can be used to signal if the first message is different than expected (e.g. compared to the earlier stored one) */
+  if (committed_offset < 0)
+    committed_offset = -1;
+  t->committed = committed_offset;
+  t->window_start = t->committed + 1;  // next expected offset
+
+  guint64 new_size = MIN_WINDOW_SIZE;
+  guint64 new_bytes = (new_size + 7) / 8;
+  t->window_size = new_size;
+
+  g_free(t->bitmap);
+  t->bitmap = g_malloc0(new_bytes);
+
+  kafka_msg_deep_trace("kafka: offset_tracker created",
+                       evt_tag_long("window_start", t->window_start),
+                       evt_tag_int("window_size", t->window_size),
+                       evt_tag_str("topic", t->owner->topic),
+                       evt_tag_int("partition", (int) t->owner->partition),
+                       evt_tag_long("committed_offset", t->committed));
+  return t;
+}
+
+/* Search from the end of the bitmap backwards to find the highest set bit */
+static inline guint64
+_offset_tracker_get_highest_tracked(OffsetTracker *t)
+{
+  guint64 total_bytes = (t->window_size + 7) / 8;
+  for (guint64 i = total_bytes; i > 0; i--)
+    {
+      if (t->bitmap[i - 1] != 0)
+        {
+          guint8 byte = t->bitmap[i - 1];
+          guint64 bit_offset = 0;
+
+          for (int bit = 7; bit >= 0; bit--)
+            {
+              if (byte & (1 << bit))
+                {
+                  bit_offset = bit;
+                  break;
+                }
+            }
+
+          guint64 index = (i - 1) * 8 + bit_offset;
+          return t->window_start + index;
+        }
+    }
+
+  /* No bits set, return committed offset */
+  return t->committed;
+}
+
+static void
+_offset_tracker_free(OffsetTracker *t)
+{
+  /* Sanity check: verify all offsets in the window have been committed */
+  int64_t highest_tracked = (int64_t)_offset_tracker_get_highest_tracked(t);
+  gboolean has_uncommitted = (highest_tracked != (gint64)t->committed);
+
+  /* This is acceptable if not all messages are processed yet and e.g. we exit */
+  if (has_uncommitted)
+    kafka_msg_trace("kafka: offset_tracker being freed with uncommitted offsets",
+                    evt_tag_long("window_start", t->window_start),
+                    evt_tag_long("committed", t->committed),
+                    evt_tag_int("window_size", t->window_size),
+                    evt_tag_long("highest_tracked", highest_tracked),
+                    evt_tag_long("dropped", highest_tracked - t->committed),
+                    evt_tag_str("topic", t->owner->topic),
+                    evt_tag_int("partition", (int) t->owner->partition));
+  else
+    kafka_msg_deep_trace("kafka: offset_tracker being freed with all offsets committed",
+                         evt_tag_long("window_start", t->window_start),
+                         evt_tag_long("committed", t->committed),
+                         evt_tag_int("window_size", t->window_size),
+                         evt_tag_long("highest_tracked", highest_tracked),
+                         evt_tag_str("topic", t->owner->topic),
+                         evt_tag_int("partition", (int) t->owner->partition));
+  g_free(t->bitmap);
+  g_free(t);
+}
+
+static inline gboolean
+_offset_tracker_is_ready(OffsetTracker *t)
+{
+  return t->offsets_resolved;
+}
+
+static inline gboolean
+_offset_tracker_try_bitmap_shift(OffsetTracker *t)
+{
+  gboolean advanced = FALSE;
+  while (TRUE)
+    {
+      guint64 next = t->committed + 1;
+      guint64 idx = next - t->window_start;
+      g_assert(idx < t->window_size);
+      const guint64 idx_byte = idx / 8;
+
+      /* exit at the first not set bit */
+      if ((t->bitmap[idx_byte] & (1 << (idx % 8))) == 0)
+        break;
+
+      t->committed++;
+      advanced = TRUE;
+
+      /* clear consumed bit */
+      t->bitmap[idx_byte] &= ~(1 << (idx % 8));
+    }
+
+  /* After advancing committed, check if we should shift the window */
+  if (advanced)
+    {
+      guint64 distance_from_start = t->committed - t->window_start;
+
+      /* Shift if committed is > MIN_WINDOW_SIZE / 2 bits ahead of window_start */
+      if (distance_from_start > MIN_WINDOW_SIZE / 2)
+        {
+          /* Shift to align window_start with committed */
+          guint64 shift_amount = distance_from_start;
+          guint64 shift_bytes = (shift_amount / 8) & ~7;  // round down to multiple of 64 bits for alignment
+
+          if (shift_bytes > 0)
+            {
+              const guint64 total_bytes = (t->window_size + 7) / 8;
+
+              memcpy(t->bitmap, t->bitmap + shift_bytes, total_bytes - shift_bytes);
+              memset(t->bitmap + total_bytes - shift_bytes, 0, shift_bytes);
+
+              t->window_start += shift_bytes * 8;
+
+              // kafka_msg_trace("kafka: offset_tracker shifted window",
+              //                 evt_tag_int("shift_bits", shift_bytes * 8),
+              //                 evt_tag_long("new_window_start", t->window_start),
+              //                 evt_tag_long("committed", t->committed),
+              //                 evt_tag_int("window_size", t->window_size),
+              //                 evt_tag_str("persist_name", t->persist_name));
+
+              /* TODO: add shrinking */
+            }
+        }
+      return TRUE;
+    }
+  return FALSE;
+}
+
+static inline gboolean
+_offset_tracker_bitmap_set(OffsetTracker *t, guint64 offset, gboolean *partitions_changed)
+{
+  /* Handle initial offsets resolution on the first message, see _offset_tracker_new for details */
+  if (G_UNLIKELY(FALSE == _offset_tracker_is_ready(t)))
+    {
+      if (t->window_start != offset)
+        {
+          if (offset < t->window_start)
+            {
+              kafka_msg_debug("kafka: offset_tracker initial offset is behind the committed offset, possible data duplication",
+                              evt_tag_str("topic", t->owner->topic),
+                              evt_tag_int("partition", (int) t->owner->partition),
+                              evt_tag_long("window_start", t->window_start),
+                              evt_tag_long("first_message_offset", offset));
+            }
+          else
+            {
+              kafka_msg_debug("kafka: offset_tracker initial offset is ahead of the committed offset, possible data loss",
+                              evt_tag_str("topic", t->owner->topic),
+                              evt_tag_int("partition", (int) t->owner->partition),
+                              evt_tag_long("window_start", t->window_start),
+                              evt_tag_long("first_message_offset", offset));
+            }
+        }
+      t->offsets_resolved = TRUE;
+
+      t->committed = offset - 1;
+      t->window_start = t->committed + 1;
+
+      kafka_msg_trace("kafka: offset_tracker finished setup",
+                      evt_tag_str("topic", t->owner->topic),
+                      evt_tag_int("partition", (int) t->owner->partition),
+                      evt_tag_long("prev_committed_offset", t->committed),
+                      evt_tag_long("window_start", t->window_start),
+                      evt_tag_int("window_size", t->window_size));
+    }
+
+
+  if (offset < t->window_start)
+    {
+      /* This can happen no matter if we work with assign or subscribe strategy, explicitely assigned partitions which are removed and re-added
+       * will not signal any rebalance event, we have to deal with this case manually */
+      kafka_msg_debug("kafka: offset_tracker detected an offset behind of the committed offset, possible partition reassignment or recreation",
+                      evt_tag_str("topic", t->owner->topic),
+                      evt_tag_int("partition", (int) t->owner->partition),
+                      evt_tag_long("window_start", t->window_start),
+                      evt_tag_long("first_message_offset", offset));
+      /* Instead of manipulating the internal state and offset tracking, signal an error back to the owner (kafka-source-driver)
+       * and let it handle this case like a broker partition reassignment */
+      *partitions_changed = TRUE;
+      return FALSE;
+    }
+
+  guint64 idx = offset - t->window_start;
+  if (idx >= t->window_size)
+    {
+      /* Check if the gap is suspiciously large
+       *   - might indicate a problem in our logic
+       *   - or simply out-of-order messages due to slow processing in the internal queues
+       *  NOTE: differences might come from partition reassignment must already be handled at start
+       */
+      if (idx > t->window_size * 4)
+        kafka_msg_debug("kafka: offset_tracker detected large gap, possible out-of-order or offset jump",
+                        evt_tag_long("offset", offset),
+                        evt_tag_long("window_start", t->window_start),
+                        evt_tag_long("committed", t->committed),
+                        evt_tag_int("current_window_size", t->window_size),
+                        evt_tag_long("gap", idx - t->window_size),
+                        evt_tag_str("topic", t->owner->topic),
+                        evt_tag_int("partition", (int) t->owner->partition));
+
+      guint64 new_size = MAX(idx + 1, t->window_size * 2);
+      guint64 old_bytes = (t->window_size + 7) / 8;
+      guint64 new_bytes = (new_size + 7) / 8;
+
+      if (new_bytes > old_bytes)
+        {
+          t->bitmap = g_realloc(t->bitmap, new_bytes);
+          memset(t->bitmap + old_bytes, 0, new_bytes - old_bytes);
+          kafka_msg_debug("kafka: offset_tracker expanded window",
+                          evt_tag_int("old_size", t->window_size),
+                          evt_tag_int("new_size", new_size),
+                          evt_tag_long("offset", offset),
+                          evt_tag_long("window_start", t->window_start),
+                          evt_tag_long("committed", t->committed),
+                          evt_tag_str("topic", t->owner->topic),
+                          evt_tag_int("partition", (int) t->owner->partition));
+        }
+      t->window_size = new_size;
+    }
+
+  g_assert(offset >= t->window_start);
+  t->bitmap[idx / 8] |= (1 << (idx % 8));
+
+  return _offset_tracker_try_bitmap_shift(t);
+}
+
+static PersistEntryHandle
+_lookup_handle(KafkaSourcePersist *self, const gchar *persist_name)
+{
+  gsize size;
+  guint8 version;
+  return persist_state_lookup_entry(self->persist_state, persist_name, &size, &version);
+}
+
+static gboolean
+_check_version(KafkaSourcePersistData *persist_data, const gchar *persist_name)
+{
+  switch (persist_data->header.version)
+    {
+    case KAFKA_SOURCE_PERSIST_VERSION_1:
+      return TRUE;
+    /* Auto-conversion functions might come here. */
+    default:
+      msg_error("kafka: incompatible kafka-source persist version in persist file",
+                evt_tag_str("persist_name", persist_name),
+                evt_tag_int("version", persist_data->header.version),
+                evt_tag_int("expected_version", KAFKA_SOURCE_PERSIST_VERSION_1));
+      return FALSE;
+    }
+}
+
+static gboolean
+_check_compatibility(KafkaSourcePersist *self, PersistEntryHandle persist_handle, const gchar *persist_name)
+{
+  KafkaSourcePersistData *persist_data = persist_state_map_entry(self->persist_state, persist_handle);
+  g_assert(persist_data);
+
+  if (!_check_version(persist_data, persist_name))
+    {
+      persist_state_unmap_entry(self->persist_state, persist_handle);
+      return FALSE;
+    }
+
+  persist_state_unmap_entry(self->persist_state, persist_handle);
+  return TRUE;
+}
+
+
+static void
+_persist_lock(KafkaSourcePersist *self)
+{
+  g_mutex_lock(&self->mutex);
+}
+
+static void
+_persist_unlock(KafkaSourcePersist *self)
+{
+  g_mutex_unlock(&self->mutex);
+}
+
+static void
+_save_bookmark(Bookmark *bookmark)
+{
+  KafkaSourceBookmark *kafka_source_bookmark = (KafkaSourceBookmark *)(&bookmark->container);
+  KafkaSourcePersist *persist = kafka_source_bookmark->persist;
+  KafkaSourcePersistData *persistable_data = &kafka_source_bookmark->data;
+  int64_t position_to_store = persistable_data->position;
+  gboolean should_store = TRUE;
+  gboolean partitions_changed = FALSE;
+
+  _persist_lock(persist);
+
+  /* Local store can be used to save the bookmark, even if kafka connection and/or the partition assignment is invalidated */
+  if (kafka_source_persist_remote_is_valid(persist) || persistable_data->persist_store == KSPS_LOCAL)
+    {
+      if (persistable_data->use_offset_tracker)
+        {
+          OffsetTracker *tracker = persist->tracker;
+
+          /* Persist only if committed advanced */
+          if ((should_store = _offset_tracker_bitmap_set(tracker, position_to_store, &partitions_changed)))
+            position_to_store = tracker->committed;
+        }
+
+      if (should_store)
+        {
+          gboolean stored = TRUE;
+          if (persistable_data->persist_store == KSPS_REMOTE)
+            stored = kafka_sd_store_persist_offset(persist->owner, persist, position_to_store);
+          else
+            {
+              KafkaSourcePersistData *persist_entry = persist_state_map_entry(bookmark->persist_state,
+                                                      kafka_source_bookmark->persist_handle);
+              persist_entry->position = position_to_store;
+              persist_state_unmap_entry(bookmark->persist_state, kafka_source_bookmark->persist_handle);
+            }
+          if (stored)
+            {
+              persist->last_confirmed_offset = position_to_store;
+              kafka_msg_deep_trace("kafka: bookmark message got confirmed",
+                                   evt_tag_str("topic", persist->topic),
+                                   evt_tag_int("partition", (int) persist->partition),
+                                   evt_tag_long("offset", position_to_store));
+            }
+        }
+      else if (FALSE == partitions_changed)
+        kafka_msg_deep_trace("kafka: bookmark message got tracked but not confirmed yet",
+                             evt_tag_str("topic", persist->topic),
+                             evt_tag_int("partition", (int) persist->partition),
+                             evt_tag_long("offset", position_to_store));
+      else
+        {
+          /* As turned out, we cannot rely on the actual strategy, in either case it can happen that there is no
+           * partition rebalance/reassignment/revocation notification from kafka, and it just simply continues serving
+           * messages from rd_kafka_consumer_poll, even if the consumed partition is changed/recreated externally
+           * (e.g. if a partition which is consumed using subscribe with explicitly assigned partition number - not with
+           * RD_KAFKA_PARTITION_UA - is deleted, but immediately re-created again)
+           * so, signal it to the main consumer that will handle it as described in _run_consumer of kafka-source-worker.c */
+          kafka_sd_signal_assignement_invalidated(persist->owner);
+        }
+    }
+  else
+    kafka_msg_debug("kafka: cannot save bookmark remotely, persist is invalidated",
+                    evt_tag_str("topic", persist->topic),
+                    evt_tag_int("partition", (int) persist->partition),
+                    evt_tag_long("offset", position_to_store));
+
+  _persist_unlock(persist);
+  kafka_source_persist_unref(persist);
+}
+
+void
+kafka_source_persist_fill_bookmark(KafkaSourcePersist *self, Bookmark *bookmark, int64_t offset)
+{
+  KafkaSourceBookmark *kafka_source_bookmark = (KafkaSourceBookmark *)(&bookmark->container);
+  KafkaSourcePersistData *persistable_data = &kafka_source_bookmark->data;
+
+  kafka_source_persist_ref(self);
+  kafka_source_bookmark->persist = self;
+  kafka_source_bookmark->persist_handle = self->handle;
+
+  persistable_data->position = offset;
+  persistable_data->use_offset_tracker = self->use_offset_tracker;
+  persistable_data->persist_store = self->owner->options.persist_store;
+  persistable_data->consumer_strategy = self->owner->strategy;
+
+  bookmark->save = _save_bookmark;
+}
+
+void
+kafka_source_persist_load_position(KafkaSourcePersist *self,
+                                   int64_t *offset)
+{
+  KafkaSourcePersistData *persist_data = persist_state_map_entry(self->persist_state, self->handle);
+  g_assert(persist_data);
+
+  *offset = persist_data->position;
+
+  persist_state_unmap_entry(self->persist_state, self->handle);
+}
+
+static void
+_persist_data_defaults(KafkaSourcePersistData *persist_data)
+{
+  memset(persist_data, 0, sizeof(KafkaSourcePersistData));
+
+  persist_data->header.version = KAFKA_SOURCE_PERSIST_VERSION_1;
+  persist_data->header.big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
+  persist_data->position = RD_KAFKA_OFFSET_INVALID;
+}
+
+static gboolean
+_load_persist_entry(KafkaSourcePersist *self, const gchar *persist_name, int64_t override_position)
+{
+  PersistEntryHandle persist_handle = _lookup_handle(self, persist_name);
+
+  if (!persist_handle)
+    return FALSE;
+
+  g_assert(_check_compatibility(self, persist_handle, persist_name));
+
+  self->handle = persist_handle;
+  if (self->use_offset_tracker)
+    {
+      KafkaSourcePersistData *persist_data = persist_state_map_entry(self->persist_state, persist_handle);
+
+      /* RD_KAFKA_OFFSET_STORED - Means no override, use saved offsets if available, but only if persist_store is local */
+      gboolean use_locally_saved_offset = (override_position == RD_KAFKA_OFFSET_STORED &&
+                                           self->owner->options.persist_store == KSPS_LOCAL);
+      self->tracker = _offset_tracker_new(self,
+                                          use_locally_saved_offset ?
+                                          persist_data->position :
+                                          override_position);
+      persist_state_unmap_entry(self->persist_state, persist_handle);
+    }
+
+  kafka_msg_deep_trace("kafka: kafka-source persist entry loaded",
+                       evt_tag_str("topic", self->topic),
+                       evt_tag_int("partition", (int) self->partition),
+                       evt_tag_str("persist_name", persist_name));
+  return TRUE;
+}
+
+static gboolean
+_create_persist_entry(KafkaSourcePersist *self, const gchar *persist_name, int64_t override_position)
+{
+  PersistEntryHandle persist_handle = persist_state_alloc_entry(self->persist_state, persist_name,
+                                      sizeof(KafkaSourcePersistData));
+  if (!persist_handle)
+    {
+      msg_error("kafka: could not allocate kafka-source persist entry", evt_tag_str("persist_name", persist_name));
+      return FALSE;
+    }
+
+  KafkaSourcePersistData *persist_data = persist_state_map_entry(self->persist_state, persist_handle);
+  if (!persist_data)
+    {
+      msg_error("kafka: could not map kafka-source persist state", evt_tag_str("persist_name", persist_name));
+      return FALSE;
+    }
+
+  _persist_data_defaults(persist_data);
+  if (self->use_offset_tracker)
+    self->tracker = _offset_tracker_new(self, override_position);
+  persist_state_unmap_entry(self->persist_state, persist_handle);
+
+  self->handle = persist_handle;
+
+  kafka_msg_deep_trace("kafka: kafka-source persist entry created",
+                       evt_tag_str("topic", self->topic),
+                       evt_tag_int("partition", (int) self->partition),
+                       evt_tag_str("persist_name", persist_name));
+
+  return TRUE;
+}
+
+gboolean
+kafka_source_persist_init(KafkaSourcePersist *self,
+                          PersistState *persist_state,
+                          const gchar *topic,
+                          int32_t partition,
+                          int64_t override_position,
+                          gboolean use_offset_tracker)
+{
+  self->use_offset_tracker = use_offset_tracker;
+  self->persist_state = persist_state;
+  g_strlcpy(self->topic, topic, sizeof(self->topic));
+  self->partition = partition;
+
+  gchar persist_name[MAX_KAFKA_PARTITION_KEY_NAME_LEN];
+  kafka_format_partition_key(topic, partition, persist_name, sizeof(persist_name));
+  return _load_persist_entry(self, persist_name, override_position) ||
+         _create_persist_entry(self, persist_name, override_position);
+}
+
+
+/* Lock must be held before calling */
+int32_t kafka_source_persist_get_partition(KafkaSourcePersist *self)
+{
+  return self->partition;
+}
+
+/* Lock must be held before calling */
+const gchar *kafka_source_persist_get_topic(KafkaSourcePersist *self)
+{
+  return self->topic;
+}
+
+/* Lock must be held before calling */
+gboolean kafka_source_persist_remote_is_valid(KafkaSourcePersist *self)
+{
+  return self->valid;
+}
+
+void kafka_source_persist_invalidate(KafkaSourcePersist *self)
+{
+  g_mutex_lock(&self->mutex);
+  self->valid = FALSE;
+  g_mutex_unlock(&self->mutex);
+}
+
+inline gboolean
+kafka_source_persist_is_ready(KafkaSourcePersist *self)
+{
+  g_mutex_lock(&self->mutex);
+  gboolean ready = self->use_offset_tracker ? _offset_tracker_is_ready(self->tracker) : TRUE;
+  g_mutex_unlock(&self->mutex);
+  return ready;
+}
+
+inline gboolean
+kafka_source_persist_matching(KafkaSourcePersist *self,
+                              const gchar *topic,
+                              int32_t partition)
+{
+  return (g_strcmp0(self->topic, topic) == 0) && (self->partition == partition);
+}
+
+KafkaSourcePersist *
+kafka_source_persist_new(KafkaSourceDriver *owner)
+{
+  KafkaSourcePersist *self = g_new0(KafkaSourcePersist, 1);
+  g_mutex_init(&self->mutex);
+  self->owner = owner;
+  self->used_count = 1;
+  self->last_confirmed_offset = RD_KAFKA_OFFSET_INVALID;
+  self->valid = TRUE;
+  return self;
+}
+
+/* Lock must be held before calling */
+static void
+_kafka_source_persist_free(KafkaSourcePersist *self)
+{
+  kafka_msg_debug("kafka: deleting persist for partition, the last stored confirmed offset",
+                  evt_tag_str("topic", self->topic),
+                  evt_tag_int("partition", (int) self->partition),
+                  evt_tag_long("offset", self->last_confirmed_offset));
+  self->valid = FALSE;
+
+  if (self->tracker)
+    _offset_tracker_free(self->tracker);
+
+  g_mutex_unlock(&self->mutex);
+  g_mutex_clear(&self->mutex);
+
+  memset(self, 0, sizeof(KafkaSourcePersist));
+  g_free(self);
+}
+
+inline void
+kafka_source_persist_ref(KafkaSourcePersist *self)
+{
+  g_mutex_lock(&self->mutex);
+  self->used_count++;
+  g_mutex_unlock(&self->mutex);
+}
+
+inline void
+kafka_source_persist_unref(KafkaSourcePersist *self)
+{
+  g_mutex_lock(&self->mutex);
+  g_assert(self->used_count > 0);
+  self->used_count--;
+  if (self->used_count == 0)
+    _kafka_source_persist_free(self);
+  else
+    g_mutex_unlock(&self->mutex);
+}

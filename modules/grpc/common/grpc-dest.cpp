@@ -139,7 +139,7 @@ DestDriver::deinit()
 bool
 DestDriver::handle_response(const ::grpc::Status &status, LogThreadedResult *ltr)
 {
-  if ((size_t) status.error_code() >= GRPC_DEST_RESPONSE_ACTIONS_ARRAY_LEN)
+  if (static_cast<int>(status.error_code()) >= GRPC_DEST_RESPONSE_ACTIONS_ARRAY_LEN)
     {
       msg_error("Invalid gRPC status code", evt_tag_int("status_code", status.error_code()));
       return false;
@@ -148,7 +148,7 @@ DestDriver::handle_response(const ::grpc::Status &status, LogThreadedResult *ltr
   const char *action_as_string;
   bool debug_log = false;
 
-  GrpcDestResponseAction action = this->response_actions[status.error_code()];
+  GrpcDestResponseAction action = this->response_actions[static_cast<int>(status.error_code())];
   switch (action)
     {
     case GDRA_UNSET:
@@ -184,7 +184,7 @@ DestDriver::handle_response(const ::grpc::Status &status, LogThreadedResult *ltr
       msg_debug("gRPC: handled by response-action()",
                 evt_tag_str("action", action_as_string),
                 evt_tag_str("url", this->url.c_str()),
-                evt_tag_int("error_code", status.error_code()),
+                evt_tag_int("error_code", static_cast<int>(status.error_code())),
                 evt_tag_str("error_message", status.error_message().c_str()),
                 evt_tag_str("error_details", status.error_details().c_str()),
                 evt_tag_str("driver", this->super->super.super.super.id),
@@ -195,7 +195,7 @@ DestDriver::handle_response(const ::grpc::Status &status, LogThreadedResult *ltr
       msg_notice("gRPC: handled by response-action()",
                  evt_tag_str("action", action_as_string),
                  evt_tag_str("url", this->url.c_str()),
-                 evt_tag_int("error_code", status.error_code()),
+                 evt_tag_int("error_code", static_cast<int>(status.error_code())),
                  evt_tag_str("error_message", status.error_message().c_str()),
                  evt_tag_str("error_details", status.error_details().c_str()),
                  evt_tag_str("driver", this->super->super.super.super.id),

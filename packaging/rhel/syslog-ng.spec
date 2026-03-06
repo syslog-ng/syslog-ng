@@ -1,5 +1,5 @@
 Name: syslog-ng
-Version: 4.10.2
+Version: 4.11.0
 Release: 2%{?dist}
 Summary: Next-generation syslog server
 
@@ -464,7 +464,6 @@ ryslog is not on the system.
     --enable-smtp \
     --enable-shared \
     --disable-static \
-    --enable-dynamic-linking \
     --enable-python \
 %if %{with grpc}
     --enable-cpp --enable-grpc \
@@ -768,6 +767,9 @@ fi
 
 
 %changelog
+* Tue Feb 24 2026 github-actions <41898282+github-actions@users.noreply.github.com> - 4.11.0-1
+- updated to 4.11.0
+
 * Tue Oct 14 2025 github-actions <41898282+github-actions@users.noreply.github.com> - 4.10.2-1
 - updated to 4.10.2
 

@@ -42,7 +42,8 @@ struct _DarwinOSLogSourceOptions
 
   gchar *filter_predicate;
   gboolean go_reverse;
-  gboolean do_not_use_bookmark;
+  gboolean disable_bookmarks;
+  gboolean ignore_saved_bookmarks;
   guint max_bookmark_distance;
   guint fetch_delay;
   guint fetch_limit;
@@ -174,8 +175,8 @@ _log_position_date_from_persist(DarwinOSLogSourceDriver *self, NSDate **startDat
     *startDate = maxBookmarkDistanceDate;
 
   gboolean should_start_from_now = (FALSE == darwinosl_sd_options_get_read_old_records(&self->options) &&
-                                    (self->log_source_position.log_position == 0.0 || self->options.do_not_use_bookmark));
-  if ((FALSE == self->options.do_not_use_bookmark && self->log_source_position.log_position != 0.0)
+                                    (self->log_source_position.log_position == 0.0 || self->options.ignore_saved_bookmarks));
+  if ((FALSE == self->options.ignore_saved_bookmarks && self->log_source_position.log_position != 0.0)
       || should_start_from_now)
     {
       NSDate *savedDate = [NSDate dateWithTimeIntervalSince1970:self->log_source_position.log_position];
@@ -186,15 +187,6 @@ _log_position_date_from_persist(DarwinOSLogSourceDriver *self, NSDate **startDat
       return (FALSE == should_start_from_now);
     }
   return FALSE;
-}
-
-static gsize
-_log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_options, LogMessage **out_msg)
-{
-  gsize msg_len = strlen(msg_cstring);
-  *out_msg = msg_format_construct_message(format_options, (const guchar *) msg_cstring, msg_len);
-  msg_format_parse_into(format_options, *out_msg, (const guchar *) msg_cstring, msg_len);
-  return msg_len;
 }
 
 static gboolean
@@ -256,6 +248,7 @@ _fetch(LogThreadedSourceWorker *worker)
       msg_trace(fetchedEnough ? "darwinosl: Fetch limit reached" : "darwinosl: No more log data currently");
       msg_debug("darwinosl: Fetched logs in this run", evt_tag_long("fetch_count", (long) self->curr_fetch_in_run));
 
+      /* NOTE: This has no effect now till batched_ack_tracker_factory_new support is added*/
       log_threaded_source_worker_close_batch(worker);
       /*
          TODO: Dual return code is needed due to an actual macOS API bug https://openradar.appspot.com/radar?id=5597032077066240, as
@@ -274,6 +267,7 @@ _fetch(LogThreadedSourceWorker *worker)
 
   self->curr_fetch_in_run++;
 
+  /* TODO: Move these to a module MsgFormatHandler (pacct-format.cor linux-kmsg-format.c are good examples */
   NSString *msgString = [self->osLogSource stringFromDarwinOSLogEntry:nextLogEntry];
   const char *log_string = msgString.UTF8String;
   msg_trace("darwinosl: Msg string is composed", evt_tag_str("msg", log_string));
@@ -285,15 +279,19 @@ _fetch(LogThreadedSourceWorker *worker)
   self->log_source_position.log_position = [nextLogEntry.date timeIntervalSince1970];
   self->log_source_position.last_msg_hash = g_str_hash(log_string);
 
-  Bookmark *bookmark = ack_tracker_request_bookmark(worker->super.ack_tracker);
-  darwinosl_source_persist_fill_bookmark(self->log_source_persist, bookmark, self->log_source_position);
-  msg_trace("darwinosl: Bookmark created",
-            evt_tag_printf("position", "%.6f", self->log_source_position.log_position),
-            evt_tag_printf("last message hash", "%u", self->log_source_position.last_msg_hash),
-            evt_tag_printf("filter predicate hash", "%u", self->log_source_position.last_used_filter_predicate_hash));
-
+  if (FALSE == self->options.disable_bookmarks)
+    {
+      Bookmark *bookmark = ack_tracker_request_bookmark(worker->super.ack_tracker);
+      darwinosl_source_persist_fill_bookmark(self->log_source_persist, bookmark, self->log_source_position);
+      msg_trace("darwinosl: Bookmark created",
+                evt_tag_printf("position", "%.6f", self->log_source_position.log_position),
+                evt_tag_printf("last message hash", "%u", self->log_source_position.last_msg_hash),
+                evt_tag_printf("filter predicate hash", "%u", self->log_source_position.last_used_filter_predicate_hash));
+    }
   LogMessage *msg;
-  gsize msg_len = _log_message_from_string(log_string, self->options.format_options, &msg);
+  gsize msg_len = msg_format_from_string(self->options.format_options, log_string, &msg);
+  /* TODO: Move this to a module MsgFormatHandler (pacct-format.cor linux-kmsg-format.c are good examples */
+  log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "darwin:oslog");
   log_msg_set_value_to_string(msg, LM_V_TRANSPORT, "local+darwinoslog");
   LogThreadedFetchResult result = {THREADED_FETCH_SUCCESS, msg};
   _log_reader_insert_msg_length_stats(self, msg_len);
@@ -450,6 +448,7 @@ darwinosl_sd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = _free;
   self->super.super.super.super.generate_persist_name = _get_persist_name;
 
+  /* TODO: Add batched_ack_tracker_factory_new support */
   self->super.worker_options.ack_tracker_factory = consecutive_ack_tracker_factory_new();
   self->super.worker_construct = _construct_worker;
 
@@ -519,10 +518,17 @@ darwinosl_sd_set_go_reverse(LogDriver *s, gboolean new_value)
 }
 
 void
-darwinosl_sd_set_do_not_use_bookmark(LogDriver *s, gboolean new_value)
+darwinosl_sd_set_disable_bookmarks(LogDriver *s, gboolean new_value)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
-  self->options.do_not_use_bookmark = new_value;
+  self->options.disable_bookmarks = new_value;
+}
+
+void
+darwinosl_sd_set_ignore_saved_bookmarks(LogDriver *s, gboolean new_value)
+{
+  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
+  self->options.ignore_saved_bookmarks = new_value;
 }
 
 void
@@ -576,7 +582,8 @@ darwinosl_sd_options_defaults(DarwinOSLogSourceOptions *self,
 
   self->filter_predicate = NULL;
   self->go_reverse = FALSE;
-  self->do_not_use_bookmark = FALSE;
+  self->disable_bookmarks = FALSE;
+  self->ignore_saved_bookmarks = FALSE;
   self->max_bookmark_distance = 0; /* 0 means no limit */
   self->fetch_delay = 10000;
   self->fetch_limit = 0; /* 0 means no limit */

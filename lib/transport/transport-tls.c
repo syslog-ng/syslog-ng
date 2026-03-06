@@ -210,7 +210,6 @@ static gssize
 log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportTLS *self = (LogTransportTLS *) s;
-  gboolean peer_info_added = FALSE;
   gint ssl_error;
   gint rc;
 
@@ -219,30 +218,11 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
   if (G_UNLIKELY(self->sending_shutdown))
     return (log_transport_tls_send_shutdown(self) >= 0) ? 0 : -1;
 
-  if (aux)
-    {
-      peer_info_added = log_transport_tls_aux_data_add_peer_info(self, aux);
-
-      if (self->tls_session->peer_info.fingerprint[0])
-        log_transport_aux_data_add_nv_pair(aux, ".tls.x509_fp", self->tls_session->peer_info.fingerprint);
-
-      /* NOTE: we only support TLS on top of TCP for now.  We could reuse the
-       * proto auto detection code from transport-socket to make this more
-       * accurate.  */
-
-      aux->proto = IPPROTO_TCP;
-    }
   do
     {
       rc = SSL_read(self->tls_session->ssl, buf, buflen);
 
-      if (rc > 0)
-        {
-          /* tls_session_info_callback can make peer info available only after the first SSL_read is successfully finished */
-          if (G_UNLIKELY(aux && FALSE == peer_info_added))
-            peer_info_added = log_transport_tls_aux_data_add_peer_info(self, aux);
-        }
-      else
+      if (rc <= 0)
         {
           ssl_error = SSL_get_error(self->tls_session->ssl, rc);
           switch (ssl_error)
@@ -263,10 +243,10 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
               rc = (log_transport_tls_send_shutdown(self) >= 0) ? 0 : -1;
               break;
             case SSL_ERROR_SYSCALL:
-              // https://github.com/openssl/openssl/pull/11400
-              // There is a known bug in OpenSSL where it reports SSL_ERROR_SYSCALL without setting
-              // the proper errno value. The mentioned PR were reverted because lot of legacy code
-              // were broken by the fix. OpenSSL 3.0.0 will contain it.
+              /* https://github.com/openssl/openssl/pull/11400
+               * There is a known bug in OpenSSL where it reports SSL_ERROR_SYSCALL without setting
+               * the proper errno value. The mentioned PR were reverted because lot of legacy code
+               * were broken by the fix. OpenSSL 3.0.0 will contain it. */
               rc = (errno == 0) ? 0 : -1;
               break;
             default:
@@ -276,9 +256,22 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
     }
   while (rc == -1 && errno == EINTR);
 
-  return rc;
-tls_error:
+  /* NOTE: Peer info might not be presented till SSL_read did not happen */
+  if (aux)
+    {
+      log_transport_tls_aux_data_add_peer_info(self, aux);
 
+      if (self->tls_session->peer_info.fingerprint[0])
+        log_transport_aux_data_add_nv_pair(aux, ".tls.x509_fp", self->tls_session->peer_info.fingerprint);
+
+      /* NOTE: we only support TLS on top of TCP for now.  We could reuse the
+       * proto auto detection code from transport-socket to make this more
+       * accurate.  */
+      aux->proto = IPPROTO_TCP;
+    }
+  return rc;
+
+tls_error:
   msg_error("SSL error while reading stream",
             tls_context_format_tls_error_tag(self->tls_session->ctx),
             tls_context_format_location_tag(self->tls_session->ctx));

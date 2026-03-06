@@ -20,7 +20,7 @@ RUN /dbld/builddeps add_copr_repo
 RUN /dbld/builddeps install_dnf_packages
 RUN /dbld/builddeps install_rpm_build_deps
 
-RUN /dbld/builddeps install_criterion_from_source
+RUN /dbld/builddeps install_criterion_from_source meson
 RUN /dbld/builddeps install_gradle
 
 VOLUME /source

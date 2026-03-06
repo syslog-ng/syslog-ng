@@ -61,8 +61,8 @@ class DestWorker : public syslogng::grpc::DestWorker
 public:
   DestWorker(GrpcDestWorker *s);
 
-  LogThreadedResult insert(LogMessage *msg);
-  LogThreadedResult flush(LogThreadedFlushMode mode);
+  LogThreadedResult insert(LogMessage *msg) override;
+  LogThreadedResult flush(LogThreadedFlushMode mode) override;
 
 protected:
   void clear_current_msg_metadata();

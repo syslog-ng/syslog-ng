@@ -1,3 +1,3 @@
 add_subdirectory(loggen)
-add_subdirectory(functional)
-add_subdirectory(light)
+add_test_subdirectory(functional)
+add_test_subdirectory(light)

@@ -263,7 +263,8 @@
 %token KW_USE_SYSLOGNG_PID            10182
 
 %token KW_READ_OLD_RECORDS            10185
-%token KW_DO_NOT_USE_BOOKMARK         10186
+%token KW_IGNORE_SAVED_BOOKMARKS      10186
+%token KW_DISABLE_BOOKMARKS           10187
 
 /* log statement options */
 %token KW_FLAGS                       10190
@@ -289,9 +290,9 @@
 %token KW_TIME_REAP                   10211
 %token KW_TIME_SLEEP                  10212
 
-%token KW_PARTITIONS                  10213
-%token KW_PARTITION_KEY               10214
 %token KW_PARALLELIZE                 10215
+%token KW_PARTITIONS                  10216
+%token KW_PARTITION_KEY               10217
 
 /* destination options */
 %token KW_TMPL_ESCAPE                 10220
@@ -761,6 +762,14 @@ log_scheduler_option
             last_scheduler_options->num_partitions = $3;
           }
         | KW_PARTITION_KEY '(' template_content ')'
+          {
+            log_scheduler_options_set_partition_key_ref(last_scheduler_options, $3);
+          }
+        | KW_WORKERS '(' nonnegative_integer ')'
+          {
+            last_scheduler_options->num_partitions = $3;
+          }
+        | KW_WORKER_PARTITION_KEY '(' template_content ')'
           {
             log_scheduler_options_set_partition_key_ref(last_scheduler_options, $3);
           }

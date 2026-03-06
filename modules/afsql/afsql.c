@@ -867,6 +867,7 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
           if (fallback)
             afsql_dd_append_quoted_value(self, value, insert_command);
         }
+      break;
     }
     case LM_VT_NULL:
       g_string_append(insert_command, "NULL");

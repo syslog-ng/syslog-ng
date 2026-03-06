@@ -764,6 +764,12 @@ _worker_thread(MainLoopThreadedWorker *s)
 {
   LogThreadedDestWorker *self = (LogThreadedDestWorker *) s->data;
 
+  GString *thread_name = g_string_new(self->owner->super.super.id);
+  if (self->worker_index > 0)
+    g_string_append_printf(thread_name, "[%d]", self->worker_index);
+  set_thread_name(thread_name->str);
+  g_string_free(thread_name, TRUE);
+
   msg_debug("Dedicated worker thread started",
             evt_tag_int("worker_index", self->worker_index),
             evt_tag_str("driver", self->owner->super.super.id),

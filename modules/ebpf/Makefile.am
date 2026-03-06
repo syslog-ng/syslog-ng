@@ -28,6 +28,7 @@ BPF_CFLAGS=-nostdinc -isystem `$(BPF_CC) -print-file-name=include` \
 	$(BPFTOOL) gen skeleton $< > $@
 
 modules/ebpf/vmlinux.h:
+	mkdir -p $(dir $@)
 	$(BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c >$@
 
 CLEANFILES += modules/ebpf/random.skel.c modules/ebpf/vmlinux.h

@@ -99,6 +99,7 @@ gboolean msg_format_try_parse_into(MsgFormatOptions *options, LogMessage *msg,
                                    gsize *problem_position);
 void msg_format_parse_into(MsgFormatOptions *options, LogMessage *msg,
                            const guchar *data, gsize length);
+gsize msg_format_from_string(MsgFormatOptions *format_options, const char *msg_cstring, LogMessage **out_msg);
 
 LogMessage *msg_format_construct_message(MsgFormatOptions *options, const guchar *data, gsize length);
 LogMessage *msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length);

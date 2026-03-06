@@ -220,8 +220,11 @@ _set_AnyValue(const gchar *value, gssize len, LogMessageValueType type, AnyValue
   switch (type)
     {
     case LM_VT_PROTOBUF:
-      any_value->ParsePartialFromArray(value, len);
+    {
+      bool result = any_value->ParsePartialFromArray(value, len);
+      (void) result;
       break;
+    }
     case LM_VT_BYTES:
       any_value->set_bytes_value(value, len);
       break;
@@ -327,8 +330,10 @@ _set_KeyValue_log_msg_foreach_fn(NVHandle handle, const gchar *name, const gchar
 static SeverityNumber
 _get_log_msg_severity_number(LogMessage *msg)
 {
-#if (defined(__clang__) && __clang_major__ >= 10)
-# pragma GCC diagnostic ignored "-Wc99-designator"
+#if defined(__clang__)
+# if __has_warning("-Wc99-designator")
+#   pragma clang diagnostic ignored "-Wc99-designator"
+# endif
 #endif
   static SeverityNumber mapping[] =
   {

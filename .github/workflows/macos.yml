@@ -208,7 +208,7 @@ jobs:
           SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
           PYTHONUSERBASE="${HOME}/python_packages"
           THREADS="$(sysctl -n hw.physicalcpu)"
-          WARNING_FLAGS="-DNO_PTHREAD_SELF_USAGE_WARNING=1 -Wno-unused-command-line-argument -Werror"
+          WARNING_FLAGS="-DNO_PTHREAD_SELF_USAGE_WARNING=1 -Wno-unused-command-line-argument"
           CFLAGS="-I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include ${WARNING_FLAGS}"
           CXXFLAGS="${CFLAGS}"
           # brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
@@ -219,9 +219,10 @@ jobs:
           fi
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
-            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
             --enable-colored-log
+            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
             --enable-extra-warnings
+            --enable-werror
             --enable-debug
             --prefix=${SYSLOG_NG_INSTALL_DIR}
             --enable-tests
@@ -235,10 +236,11 @@ jobs:
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
             -DENABLE_EXTRA_WARNINGS=ON
+            -DENABLE_WERROR=ON
             -DSUMMARY_LEVEL=1
             -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
-            -DBUILD_TESTING=ON
+            -DENABLE_TESTING=ON
             -DPYTHON_VERSION=3
             -DIVYKIS_SOURCE=internal
             -DENABLE_JOURNALD=OFF
@@ -320,6 +322,7 @@ jobs:
 
       - name: cmake check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
+        #        Criterion tests rerquire none PIE binaries, which is not supported on silicon ARM macs anymore
         if: matrix.build-tool == 'cmake' && matrix.version == '15-intel'
         run: |
           cmake --build ./build -j ${THREADS} --target check
@@ -351,6 +354,7 @@ jobs:
 
       - name: make check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
+        #        Criterion tests rerquire none PIE binaries, which is not supported on silicon ARM macs anymore
         if: matrix.build-tool == 'autotools' && matrix.version == '15-intel'
         run: |
           set -e

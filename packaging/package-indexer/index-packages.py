@@ -32,7 +32,6 @@ from typing import List
 from indexer import Indexer, NightlyDebIndexer, StableDebIndexer, NightlyRPMIndexer, StableRPMIndexer
 from config import Config
 
-
 logger = logging.getLogger("index-packages")
 logger.setLevel(logging.INFO)
 

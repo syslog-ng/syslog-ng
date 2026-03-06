@@ -29,8 +29,6 @@
 #include "kafka-props.h"
 #include "kafka-internal.h"
 
-#include <librdkafka/rdkafka.h>
-
 static void
 _setup_topic(LogDriver *driver, const gchar *topic_name)
 {

@@ -159,7 +159,7 @@ poll_multiline_file_changes_new(gint fd, const gchar *follow_filename, gint foll
                                 gint multi_line_timeout, FileReader *reader)
 {
   PollMultilineFileChanges *self = g_new0(PollMultilineFileChanges, 1);
-  poll_file_changes_init_instance(&self->super, fd, follow_filename, follow_freq, &reader->super);
+  poll_file_changes_init_instance(&self->super, fd, follow_filename, follow_freq, reader);
 
   if (multi_line_timeout != 0)
     poll_multiline_file_changes_init_instance(self, fd, follow_filename, follow_freq, multi_line_timeout, reader);

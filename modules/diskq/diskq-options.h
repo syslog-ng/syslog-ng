@@ -27,7 +27,7 @@
 #include "syslog-ng.h"
 #include "logmsg/logmsg-serialize.h"
 
-#define MIN_CAPACITY_BYTES 1024*1024
+#define MIN_CAPACITY_BYTES (1024*1024)
 
 typedef struct _DiskQueueOptions
 {

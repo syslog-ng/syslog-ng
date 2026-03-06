@@ -59,10 +59,10 @@ public:
   DestinationWorker(GrpcDestWorker *s);
   ~DestinationWorker();
 
-  bool connect();
-  void disconnect();
-  LogThreadedResult insert(LogMessage *msg);
-  LogThreadedResult flush(LogThreadedFlushMode mode);
+  bool connect() override;
+  void disconnect() override;
+  LogThreadedResult insert(LogMessage *msg) override;
+  LogThreadedResult flush(LogThreadedFlushMode mode) override;
 
 private:
   std::shared_ptr<::grpc::Channel> create_channel();

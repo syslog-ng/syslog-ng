@@ -87,6 +87,7 @@ echo "***************************************"
 echo " $0 start"
 if [ -z "$skip_submodules" ]; then
 	autogen_submodules
+	echo "---------------------------------------"
 fi
 
 # bootstrap syslog-ng itself

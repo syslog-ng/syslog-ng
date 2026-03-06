@@ -458,7 +458,7 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
             evt_tag_int("fd", self->fd));
 }
 
-#if ! SYSLOG_NG_HAVE_POSIX_FALLOCATE
+#if ! SYSLOG_NG_HAVE_POSIX_FALLOCATE || defined(__FreeBSD__)
 static gint
 _compat_preallocate(int fd, off_t offset, off_t len)
 {
@@ -494,7 +494,8 @@ _preallocate_qdisk_file(QDisk *self, off_t size)
 
   gint result;
 
-#if SYSLOG_NG_HAVE_POSIX_FALLOCATE
+// TODO: review FreeBSD support for fallocate, it seems to have issues depending on the used filesystem
+#if SYSLOG_NG_HAVE_POSIX_FALLOCATE && ! defined(__FreeBSD__)
   result = posix_fallocate(self->fd, QDISK_RESERVED_SPACE, size - QDISK_RESERVED_SPACE);
 #else
   result = _compat_preallocate(self->fd, QDISK_RESERVED_SPACE, size - QDISK_RESERVED_SPACE);

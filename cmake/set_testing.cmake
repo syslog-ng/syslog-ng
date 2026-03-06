@@ -23,7 +23,16 @@
 #
 # ############################################################################
 
-option(BUILD_TESTING "Enable unit tests" ON)
+# Support both BUILD_TESTING (CMake standard) and ENABLE_TESTING (autotools naming)
+# If ENABLE_TESTING is set by user, use it as default for BUILD_TESTING
+if(DEFINED ENABLE_TESTING)
+  option(BUILD_TESTING "Enable unit tests" ${ENABLE_TESTING})
+else()
+  option(BUILD_TESTING "Enable unit tests" ON)
+endif()
+
+# Keep both variables in sync
+set(ENABLE_TESTING ${BUILD_TESTING})
 
 if(BUILD_TESTING)
   find_package(criterion)
@@ -50,8 +59,20 @@ if(BUILD_TESTING)
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-flat_namespace")
   endif()
 
-  add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --output-on-failure)
+  # Determine parallel job count for tests
+  if(NOT DEFINED CTEST_PARALLEL_LEVEL)
+    include(ProcessorCount)
+    ProcessorCount(N)
+
+    if(NOT N EQUAL 0)
+      set(CTEST_PARALLEL_LEVEL ${N})
+    else()
+      set(CTEST_PARALLEL_LEVEL 1)
+    endif()
+  endif()
+
+  add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -j ${CTEST_PARALLEL_LEVEL} --output-on-failure)
 
   # This one is useful to see the failed tests in details
-  add_custom_target(check_failed COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --rerun-failed --output-on-failure)
+  add_custom_target(check_failed COMMAND ${CMAKE_CTEST_COMMAND} -j ${CTEST_PARALLEL_LEVEL} --rerun-failed --output-on-failure)
 endif()

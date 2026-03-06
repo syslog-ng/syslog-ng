@@ -50,13 +50,23 @@ get_decompress_command(GString *command, GString *compression_result, enum CurlC
       g_string_printf(command, "echo %s", compression_result->str);
       break;
     case CURL_COMPRESSION_GZIP:
+    {
+      // NOTE: this requires the `gzip` package to be installed
+      gchar* encoded = g_base64_encode((guchar *)compression_result->str, compression_result->len);
       g_string_printf(command, "echo %s | base64 -d | gzip -dc",
-                      g_base64_encode((guchar *)compression_result->str, compression_result->len));
+                      encoded);
+      g_free(encoded);
       break;
+    }
     case CURL_COMPRESSION_DEFLATE:
+    {
+      // NOTE: this requires the `qpdf` package to be installed
+      gchar* encoded = g_base64_encode((guchar *)compression_result->str, compression_result->len);
       g_string_printf(command, "echo %s | base64 -d | zlib-flate -uncompress",
-                      g_base64_encode((guchar *)compression_result->str, compression_result->len));
+                      encoded);
+      g_free(encoded);
       break;
+    }
     default:
       g_assert_not_reached();
     }
