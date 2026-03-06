@@ -1308,6 +1308,8 @@ gboolean iterateBuffer(
                                   evt_tag_long("Entry: ", logEntryOnDisk));
                       result = FALSE;
                     }
+                  //-- There was an inexplicable merge conflict in GitHub. Fixing this by the web based editor is causing
+                  //   problematic git commit message and can not be used therefore.
 
                   // Update BigHMAC
                   gsize outlen = 0;
