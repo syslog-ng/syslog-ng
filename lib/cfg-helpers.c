@@ -23,6 +23,8 @@
  */
 #include "cfg-helpers.h"
 
+#include <stdio.h>
+
 gboolean
 cfg_check_port(const gchar *port)
 {
@@ -35,4 +37,30 @@ cfg_check_port(const gchar *port)
       return FALSE;
   int port_num = atoi(port);
   return port_num > 0 && port_num <= G_MAXUINT16;
+}
+
+int cfg_get_parser_maximum_stack_depth(void)
+{
+  static int max_depth = -1;
+
+  if (max_depth != -1)
+    return max_depth;
+
+#define SYSLOG_NG_CONFIG_MAX_STACK_DEPTH "SYSLOG_NG_CONFIG_MAX_STACK_DEPTH"
+  const int default_max_depth = 20000; // the old default YYMAXDEPTH value
+  const char *env_value = getenv(SYSLOG_NG_CONFIG_MAX_STACK_DEPTH);
+
+  max_depth = default_max_depth;
+  if (env_value != NULL)
+    {
+      max_depth = atoi(env_value);
+      if (max_depth < default_max_depth)
+        {
+          fprintf(stderr,
+                  SYSLOG_NG_CONFIG_MAX_STACK_DEPTH " is set to %d, but it must be at least %d. Using default value %d.\n", max_depth,
+                  default_max_depth, default_max_depth);
+          max_depth = default_max_depth;
+        }
+    }
+  return max_depth;
 }

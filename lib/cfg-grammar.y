@@ -58,6 +58,8 @@
 
 %code {
 
+#include "cfg-helpers.h"
+
 #pragma GCC diagnostic ignored "-Wswitch-default"
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
@@ -120,8 +122,7 @@
       }                                                                 \
   } while (0)
 
-#define YYMAXDEPTH 20000
-
+#define YYMAXDEPTH cfg_get_parser_maximum_stack_depth()
 
 }
 
