@@ -28,5 +28,6 @@
 #include "syslog-ng.h"
 
 gboolean cfg_check_port(const gchar *port);
+int cfg_get_parser_maximum_stack_depth(void);
 
 #endif
