@@ -2022,6 +2022,7 @@ log_msg_tags_init(void)
   log_tags_register_predefined_tag("syslog.rfc5424_missing_message", LM_T_SYSLOG_RFC5424_MISSING_MESSAGE);
   log_tags_register_predefined_tag("syslog.malformed_json", LM_T_SYSLOG_MALFORMED_JSON);
   log_tags_register_predefined_tag("syslog.malformed_csv", LM_T_SYSLOG_MALFORMED_CSV);
+  log_tags_register_predefined_tag("syslog.malformed_date", LM_T_SYSLOG_MALFORMED_DATE);
 }
 
 void

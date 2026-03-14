@@ -30,10 +30,8 @@
 #include "scratch-buffers.h"
 #include "str-format.h"
 
-enum
-{
-  DPF_GUESS_TIMEZONE = 0x0001,
-};
+#define DPF_GUESS_TIMEZONE (1 << 0)
+#define DPF_DROP_INVALID   (1 << 1)
 
 typedef struct _DateParser
 {
@@ -159,6 +157,12 @@ _store_timestamp(DateParser *self, LogMessage *msg, UnixTime *time_stamp)
   log_msg_set_value_with_type(msg, self->value_handle, time_stamp_repr->str, time_stamp_repr->len, LM_VT_DATETIME);
 }
 
+gboolean
+_should_drop_message(DateParser *self)
+{
+  return (self->flags & DPF_DROP_INVALID);
+}
+
 static gboolean
 date_parser_process(LogParser *s,
                     LogMessage **pmsg,
@@ -185,7 +189,14 @@ date_parser_process(LogParser *s,
                                                 input);
   if (res)
     _store_timestamp(self, msg, &time_stamp);
-
+  else
+    {
+      if (!_should_drop_message(self))
+        {
+          res = TRUE;
+          log_msg_set_tag_by_id(*pmsg, LM_T_SYSLOG_MALFORMED_DATE);
+        }
+    }
 
   return res;
 }
@@ -240,6 +251,7 @@ CfgFlagHandler date_parser_flags[] =
 
   /* LogReaderOptions */
   { "guess-timezone",             CFH_SET, offsetof(DateParser, flags),  DPF_GUESS_TIMEZONE },
+  { "drop-invalid",               CFH_SET, offsetof(DateParser, flags),  DPF_DROP_INVALID },
   { NULL },
 };
 
