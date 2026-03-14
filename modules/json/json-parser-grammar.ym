@@ -87,7 +87,13 @@ parser_json_opt
             json_parser_set_key_delimiter(last_parser, $3[0]);
             free($3);
           }
+	| KW_FLAGS '(' parser_json_flags ')'
 	| parser_opt
+	;
+
+parser_json_flags
+	: string parser_json_flags	{ CHECK_ERROR(json_parser_process_flag(last_parser, $1), @1, "Unknown flag %s", $1); free($1); }
+	|
 	;
 
 /* INCLUDE_RULES */

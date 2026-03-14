@@ -138,6 +138,8 @@ enum
   LM_T_SYSLOG_MISSING_MESSAGE,
   /* invalid program name */
   LM_T_SYSLOG_RFC_3164_INVALID_PROGRAM,
+  /* malformed JSON */
+  LM_T_SYSLOG_MALFORMED_JSON,
 
   LM_T_PREDEFINED_MAX,
 };

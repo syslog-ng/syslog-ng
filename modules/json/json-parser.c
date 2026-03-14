@@ -44,7 +44,10 @@ typedef struct _JSONParser
   gint marker_len;
   gchar *extract_prefix;
   gchar key_delimiter;
+  guint32 flags;
 } JSONParser;
+
+#define JSON_PARSER_DROP_INVALID (1 << 0)
 
 void
 json_parser_set_prefix(LogParser *p, const gchar *prefix)
@@ -80,6 +83,12 @@ json_parser_set_key_delimiter(LogParser *s, gchar delimiter)
   JSONParser *self = (JSONParser *) s;
 
   self->key_delimiter = delimiter;
+}
+
+gboolean
+_should_drop_message(JSONParser *self)
+{
+  return (self->flags & JSON_PARSER_DROP_INVALID);
 }
 
 static void
@@ -337,6 +346,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
             evt_tag_str("input", input),
             evt_tag_str("prefix", self->prefix),
             evt_tag_str("marker", self->marker),
+            evt_tag_int("flags", self->flags),
             evt_tag_msg_reference(*pmsg));
   if (self->marker)
     {
@@ -345,7 +355,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
           msg_debug("json-parser(): no marker at the beginning of the message, skipping JSON parsing ",
                     evt_tag_str("input", input),
                     evt_tag_str("marker", self->marker));
-          return FALSE;
+          goto err;
         }
       input += self->marker_len;
 
@@ -361,7 +371,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
                 evt_tag_str("input", input),
                 tok->err != json_tokener_success ? evt_tag_str ("json_error", json_tokener_error_desc(tok->err)) : NULL);
       json_tokener_free (tok);
-      return FALSE;
+      goto err;
     }
   json_tokener_free(tok);
 
@@ -372,10 +382,16 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
                 evt_tag_str("input", input),
                 evt_tag_str("extract_prefix", self->extract_prefix));
       json_object_put(jso);
-      return FALSE;
+      goto err;
     }
   json_object_put(jso);
 
+  return TRUE;
+err:
+  if (_should_drop_message(self))
+    return FALSE;
+
+  log_msg_set_tag_by_id(*pmsg, LM_T_SYSLOG_MALFORMED_JSON);
   return TRUE;
 }
 
@@ -391,6 +407,7 @@ json_parser_clone(LogPipe *s)
   json_parser_set_marker(cloned, self->marker);
   json_parser_set_extract_prefix(cloned, self->extract_prefix);
   json_parser_set_key_delimiter(cloned, self->key_delimiter);
+  json_parser_set_flags(cloned, self->flags);
 
   return &cloned->super;
 }
@@ -418,4 +435,26 @@ json_parser_new(GlobalConfig *cfg)
   self->key_delimiter = '.';
 
   return &self->super;
+}
+
+void
+json_parser_set_flags(LogParser *s, guint32 flags)
+{
+  JSONParser *self = (JSONParser *) s;
+
+  self->flags = flags;
+}
+
+CfgFlagHandler json_parser_flags[] =
+{
+  { "drop-invalid",               CFH_SET, offsetof(JSONParser, flags),  JSON_PARSER_DROP_INVALID },
+  { NULL },
+};
+
+gboolean
+json_parser_process_flag(LogParser *p, gchar *flag)
+{
+  JSONParser *self = (JSONParser *) p;
+
+  return cfg_process_flag(json_parser_flags, self, flag);
 }

@@ -130,6 +130,7 @@ Test(json_parser, test_json_parser_fails_when_marker_is_not_present)
 {
   LogParser *json_parser = json_parser_new(NULL);
   json_parser_set_marker(json_parser, "@cee:");
+  json_parser_process_flag(json_parser, "drop-invalid");
   assert_json_parser_fails("@cxx: {'foo': 'bar'}", json_parser);
   log_pipe_unref(&json_parser->super);
 }
@@ -137,6 +138,7 @@ Test(json_parser, test_json_parser_fails_when_marker_is_not_present)
 Test(json_parser, test_json_parser_fails_for_invalid_json)
 {
   LogParser *json_parser = json_parser_new(NULL);
+  json_parser_process_flag(json_parser, "drop-invalid");
   assert_json_parser_fails("not-valid-json", json_parser);
   log_pipe_unref(&json_parser->super);
 }
@@ -233,6 +235,7 @@ Test(json_parser, test_json_parser_int64_mid)
 Test(json_parser, test_json_parser_fails_for_non_object_and_non_array_top_element)
 {
   LogParser *json_parser = json_parser_new(NULL);
+  json_parser_process_flag(json_parser, "drop-invalid");
   assert_json_parser_fails("true", json_parser);
   assert_json_parser_fails("null", json_parser);
   assert_json_parser_fails("10", json_parser);
