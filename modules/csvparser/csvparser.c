@@ -294,16 +294,24 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   if (!csv_scanner_is_scan_complete(&scanner))
     result = FALSE;
 
-  if (_should_drop_message(self) && !result && !(self->on_error & ON_ERROR_SILENT))
-    {
-      msg_debug("csv-parser() failed",
-                evt_tag_str("error",
-                            "csv-parser() failed to parse its input and drop-invalid(yes) or on-error(\"drop-message\") was specified"),
-                evt_tag_str("input", input));
-    }
-  else
-    result = TRUE;
   csv_scanner_deinit(&scanner);
+
+  if (!result)
+    {
+      if (!(self->on_error & ON_ERROR_SILENT))
+        {
+          msg_debug("csv-parser() failed",
+                    evt_tag_str("error",
+                                "csv-parser() failed to parse its input and drop-invalid(yes) or on-error(\"drop-message\") was specified"),
+                    evt_tag_str("input", input));
+        }
+
+      if (!_should_drop_message(self))
+        {
+          log_msg_set_tag_by_id(*pmsg, LM_T_SYSLOG_MALFORMED_CSV);
+          result = TRUE;
+        }
+    }
 
   return result;
 }
