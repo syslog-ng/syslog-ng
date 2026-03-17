@@ -2023,6 +2023,7 @@ log_msg_tags_init(void)
   log_tags_register_predefined_tag("syslog.malformed_json", LM_T_SYSLOG_MALFORMED_JSON);
   log_tags_register_predefined_tag("syslog.malformed_csv", LM_T_SYSLOG_MALFORMED_CSV);
   log_tags_register_predefined_tag("syslog.malformed_date", LM_T_SYSLOG_MALFORMED_DATE);
+  log_tags_register_predefined_tag("syslog.malformed_otel_protobuf", LM_T_SYSLOG_MALFORMED_OTEL_PROTOBUF);
 }
 
 void

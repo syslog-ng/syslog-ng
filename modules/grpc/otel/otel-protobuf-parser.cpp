@@ -1421,37 +1421,43 @@ syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
       msg_error("OpenTelemetry: unexpected .otel_raw.type LogMessage type",
                 evt_tag_msg_reference(msg),
                 evt_tag_str("log_msg_type", log_msg_value_type_to_str(log_msg_type)));
-      return false;
+      goto err;
     }
 
   if (!_parse_metadata(msg, this->set_host))
-    return false;
+    goto err;
 
   if (type == "log")
     {
       if (!_parse_log_record(msg))
-        return false;
+        goto err;
     }
   else if (type == "metric")
     {
       if (!_parse_metric(msg))
-        return false;
+        goto err;
     }
   else if (type == "span")
     {
       if (!_parse_span(msg))
-        return false;
+        goto err;
     }
   else
     {
       msg_error("OpenTelemetry: unexpected .otel_raw.type",
                 evt_tag_msg_reference(msg),
                 evt_tag_str("type", type.c_str()));
-      return false;
+      goto err;
     }
 
   _unset_raw_fields(msg);
 
+  return true;
+err:
+  if (drop_invalid)
+    return false;
+
+  log_msg_set_tag_by_id(msg, LM_T_SYSLOG_MALFORMED_OTEL_PROTOBUF);
   return true;
 }
 
@@ -1477,6 +1483,18 @@ void
 otel_protobuf_parser_set_hostname(LogParser *s, gboolean set_hostname)
 {
   get_ProtobufParser(s)->set_hostname(set_hostname);
+}
+
+gboolean
+otel_protobuf_parser_process_flag(LogParser *s, gchar *flag)
+{
+  if (strcmp(flag, "drop-invalid") == 0)
+    {
+      get_ProtobufParser(s)->set_drop_invalid(true);
+      return true;
+    }
+
+  return false;
 }
 
 static void

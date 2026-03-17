@@ -144,6 +144,8 @@ enum
   LM_T_SYSLOG_MALFORMED_CSV,
   /* malformed DATE */
   LM_T_SYSLOG_MALFORMED_DATE,
+  /* malformed OTEL Protobuf */
+  LM_T_SYSLOG_MALFORMED_OTEL_PROTOBUF,
 
   LM_T_PREDEFINED_MAX,
 };
