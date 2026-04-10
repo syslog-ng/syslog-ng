@@ -33,6 +33,7 @@ LABEL org.opencontainers.image.source="https://github.com/syslog-ng/syslog-ng"
 # redeclare ARGs so they are available after FROM
 ARG BASE_IMAGE
 ARG PKG_TYPE=stable
+ARG APT_PACKAGE_VERSION
 ARG CONTAINER_ARCH=amd64
 ARG CONTAINER_NAME_SUFFIX
 
@@ -54,8 +55,17 @@ RUN ARCH=$(arch) && \
   wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor -o /usr/share/keyrings/ose-repo-archive-keyring.gpg && \
   echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg arch=$CONTAINER_ARCH] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} ${DISTRO}-${CODENAME}$CONTAINER_NAME_SUFFIX" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
 
-RUN apt-get update -qq && apt-get install -y \
-    libdbd-mysql libdbd-pgsql libdbd-sqlite3 syslog-ng libjemalloc2 \
+RUN apt-get update -qq && \
+    if [ -n "$APT_PACKAGE_VERSION" ]; then \
+      echo "Installing locked syslog-ng version: $APT_PACKAGE_VERSION"; \
+      SYSLOG_PKG="syslog-ng=${APT_PACKAGE_VERSION}"; \
+    else \
+      echo "Installing latest syslog-ng version"; \
+      SYSLOG_PKG="syslog-ng"; \
+    fi && \
+    apt-get install -y \
+      libdbd-mysql libdbd-pgsql libdbd-sqlite3 libjemalloc2 \
+      ${SYSLOG_PKG} \
     && rm -rf /var/lib/apt/lists/*
 
 ENV DEBIAN_FRONTEND noninteractive

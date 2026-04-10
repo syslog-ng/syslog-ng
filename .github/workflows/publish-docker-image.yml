@@ -1,15 +1,23 @@
 name: Publish Docker image
 
-
 on:
   workflow_call:
     inputs:
       pkg-type:
         required: true
-        type: string  # stable / nightly
+        type: string # stable / nightly
       pkg-version:
         required: false
         type: string # <MAJOR>.<MINOR>.<PATCH>
+      apt-pkg-version:
+        required: false
+        type: string # Exact package version to install (e.g., 4.5.0-1), empty for latest
+        description: "Lock to specific package version for reproducible builds with updated base images"
+      base-image:
+        required: false
+        type: string # Base docker image (e.g., debian:trixie, ubuntu:24.04)
+        default: "debian:trixie"
+        description: "Base OS Docker image - update this to rebuild with latest base image"
       pkg-push:
         required: false
         type: boolean
@@ -19,7 +27,33 @@ on:
         required: true
       dockerhub-password:
         required: true
-
+  workflow_dispatch:
+    inputs:
+      pkg-type:
+        required: true
+        type: choice
+        options:
+          - stable
+          - nightly
+        description: "Package type to publish"
+      pkg-version:
+        required: false
+        type: string
+        description: "syslog-ng version tag (e.g., 4.5.0), empty for current tag"
+      apt-pkg-version:
+        required: false
+        type: string
+        description: "Lock to specific package version (e.g., 4.5.0-1) for reproducible rebuilds"
+      base-image:
+        required: false
+        type: string
+        default: "debian:trixie"
+        description: "Base OS Docker image (e.g., debian:trixie, ubuntu:24.04)"
+      pkg-push:
+        required: true
+        type: boolean
+        default: false
+        description: "Push to Docker Hub (use false for testing)"
 
 env:
   DOCKER_IMAGE_NAME: balabit/syslog-ng
@@ -33,7 +67,6 @@ jobs:
     steps:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v4
-
 
       - name: Set up Docker
         # Build and load multi-platform images
@@ -61,7 +94,7 @@ jobs:
         with:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: type=match,pattern=syslog-ng-(.*),group=1
-          sep-tags: ','
+          sep-tags: ","
 
       - name: Extract metadata (syslog-ng version) from the given version TAG for Docker
         if: inputs.pkg-type == 'stable' && inputs.pkg-version != ''
@@ -70,7 +103,7 @@ jobs:
         with:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: type=match,pattern=syslog-ng-(.*),group=1,value=syslog-ng-${{ inputs.pkg-version }}
-          sep-tags: ','
+          sep-tags: ","
 
       - name: Compose Docker image tags
         id: tags
@@ -127,7 +160,10 @@ jobs:
           # So, as we are lucky, and these required only once, and only in a RUN docker command that can be dynamic
           # now generating these in the ${SRC_ROOT}/docker/Dockerfile based on the runner architecture (platforms: linux/amd64,linux/arm64)
           #build-args: PKG_TYPE=${{ inputs.pkg-type }} BASE_IMAGE=${{ matrix. }} CONTAINER_ARCH=${{ matrix. }} CONTAINER_NAME_SUFFIX=${{ matrix. }}
-          build-args: PKG_TYPE=${{ inputs.pkg-type }}
+          build-args: |
+            PKG_TYPE=${{ inputs.pkg-type }}
+            BASE_IMAGE=${{ inputs.base-image || 'debian:trixie' }}
+            APT_PACKAGE_VERSION=${{ inputs.apt-pkg-version || '' }}
           push: ${{ inputs.pkg-push }}
 
       - name: Scan docker image on CVEs (CRITICAL,HIGH to a sarif file) # https://aquasecurity.github.io/trivy/v0.54/docs/
@@ -135,9 +171,9 @@ jobs:
         with:
           image-ref: ${{ steps.tags.outputs.CVE_INPUT }}
 
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
 
           # DO NOT break the build yet if an issue is detected
           #exit-code: '1'
@@ -147,10 +183,10 @@ jobs:
         with:
           image-ref: ${{ steps.tags.outputs.CVE_INPUT }}
 
-          format: 'table'
+          format: "table"
           # TODO: replaced by https://github.com/aquasecurity/trivy-action/tree/master/?tab=readme-ov-file#using-trivy-to-generate-sbom ?!?
           #dependency-tree: true
-          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+          severity: "CRITICAL,HIGH,MEDIUM,LOW"
         env:
           # Use the most reliable and quicker AWS ECR location for trivy DBs
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
@@ -160,4 +196,4 @@ jobs:
         if: ${{ inputs.pkg-push != false }}
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
