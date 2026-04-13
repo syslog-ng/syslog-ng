@@ -2,6 +2,19 @@
   * Syslog-ng is installed with all of its modules
   * Within the container syslog-ng will start in foreground. This is useful because if there is some error with syslog-ng we can easily check the output console log through the `docker logs [containerID]` command
   * You can use your own `syslog-ng.conf` or fall back to use the default one
+  * Images are automatically rebuilt weekly with the latest security patches
+
+Please check the syslog-ng image tags at the official docker repository: [https://hub.docker.com/r/balabit/syslog-ng](https://hub.docker.com/r/balabit/syslog-ng)
+
+For information on how these images are built and published, see [PUBLISH-DOCKER-IMAGE.md](../.github/workflows/PUBLISH-DOCKER-IMAGE.md)
+
+## Available Image Tags
+
+- `latest` - Latest stable release with current security patches (rebuilt weekly)
+- `X.Y.Z` - Specific version tags (e.g., `4.11.0`)
+- `nightly` - Development builds with cutting-edge features
+
+## Exposed Ports in the default configuration
 
 The following ports are exposed:
  * Syslog UDP: 514,
@@ -11,8 +24,6 @@ The following ports are exposed:
 Syslog-ng will listen on these ports and forwards the logs into the file
 `/var/log/syslog`. You can check the default configuration in the source
 repository of this image.
-
-Please check the syslog-ng image tags at the official docker repository to know what image versions exist  [https://registry.hub.docker.com/u/balabit]
 
 ## Using default configuration
 Assume that the following ports are not used on host machine, because they can conflict: `514`, `601`:
