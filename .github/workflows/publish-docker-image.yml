@@ -37,9 +37,9 @@ on:
           - nightly
         description: "Package type to publish"
       pkg-version:
-        required: false
+        required: true
         type: string
-        description: "syslog-ng version tag (e.g., 4.5.0), empty for current tag"
+        description: "syslog-ng version tag (e.g., 4.5.0)"
       apt-pkg-version:
         required: false
         type: string
@@ -53,11 +53,10 @@ on:
         required: true
         type: boolean
         default: false
-        description: "Push to Docker Hub (use false for testing)"
+        description: "Push to Docker Hub (uncheck (use false) for testing)"
 
 env:
   DOCKER_IMAGE_NAME: balabit/syslog-ng
-
 
 jobs:
   publish-docker-image:
@@ -109,10 +108,10 @@ jobs:
         id: tags
         run: |
           if [[ '${{ inputs.pkg-type }}' = 'stable' ]]; then
-            if [[ '${{ inputs.pkg-version }}' != '' ]]; then
-              TAGS='${{ steps.stable-tags-versioned.outputs.tags }}'
-            else
+            if [[ '${{ inputs.pkg-version }}' == '' ]]; then
               TAGS='${{ steps.stable-tags.outputs.tags }}'
+            else
+              TAGS='${{ steps.stable-tags-versioned.outputs.tags }}'
             fi
           elif [[ '${{ inputs.pkg-type }}' = 'nightly' ]]; then
             TAGS="${DOCKER_IMAGE_NAME}:nightly"
@@ -194,6 +193,6 @@ jobs:
 
       - name: Upload Trivy scan sarif file results to GitHub Security tab
         if: ${{ inputs.pkg-push != false }}
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "trivy-results.sarif"

@@ -6,6 +6,7 @@ name: Weekly Docker Publish
 permissions:
   contents: read
   packages: read
+  security-events: write
 
 on:
   # Run every Sunday at 12:00 UTC
@@ -15,12 +16,52 @@ on:
   # Allow manual triggering
   workflow_dispatch:
 
+env:
+  DOCKER_IMAGE_NAME: balabit/syslog-ng
+
 jobs:
+  get-latest-version:
+    name: Get Latest Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all tags
+
+      - name: Find latest syslog-ng tag
+        id: find-tag
+        run: |
+          # Get the latest syslog-ng-* tag
+          LATEST_TAG=$(git tag -l 'syslog-ng-*' | sort -V | tail -n1)
+          echo "Latest tag: $LATEST_TAG"
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Extract metadata (syslog-ng version) from latest TAG
+        id: stable-tags
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.DOCKER_IMAGE_NAME }}
+          tags: type=match,pattern=syslog-ng-(.*),group=1,value=${{ steps.find-tag.outputs.tag }}
+          sep-tags: ","
+
+      - name: Extract version number
+        id: extract-version
+        run: |
+          # Get first tag from comma-separated list, then extract version after colon
+          VERSION=$(echo "${{ steps.stable-tags.outputs.tags }}" | cut -d',' -f1 | cut -d':' -f2)
+          echo "Extracted version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
   publish-latest:
     name: Publish Latest
+    needs: get-latest-version
     uses: ./.github/workflows/publish-docker-image.yml
     with:
       pkg-type: stable
+      pkg-version: ${{ needs.get-latest-version.outputs.version }}
       base-image: "debian:trixie"
       pkg-push: true
     secrets:
