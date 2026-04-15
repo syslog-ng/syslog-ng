@@ -37,7 +37,7 @@ ARG APT_PACKAGE_VERSION
 ARG CONTAINER_ARCH=amd64
 ARG CONTAINER_NAME_SUFFIX
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq && \
     apt-get upgrade -y && \
     apt-get install -y \
@@ -57,7 +57,7 @@ RUN ARCH=$(arch) && \
   CODENAME=${BASE_IMAGE#*:} && \
   set -o pipefail && \
   wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor -o /usr/share/keyrings/ose-repo-archive-keyring.gpg && \
-  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg arch=$CONTAINER_ARCH] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} ${DISTRO}-${CODENAME}$CONTAINER_NAME_SUFFIX" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list \
+  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg arch=$CONTAINER_ARCH] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} ${DISTRO}-${CODENAME}$CONTAINER_NAME_SUFFIX" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list && \
   apt-get update -qq && \
   if [ -n "$APT_PACKAGE_VERSION" ]; then \
     echo "Installing locked syslog-ng version: $APT_PACKAGE_VERSION"; \
