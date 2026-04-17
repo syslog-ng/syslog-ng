@@ -48,6 +48,7 @@ enum
   /* string flags */
   LMF_SUBSTRING = 0x0080,
   LMF_PREFIX = 0x0100,
+  LMF_DROP_INVALID = 0x0200,
 
   /*  advanced LIBPCRE flags */
   LMF_DUPNAMES = 0x00080000,

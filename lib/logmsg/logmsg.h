@@ -146,6 +146,8 @@ enum
   LM_T_SYSLOG_MALFORMED_DATE,
   /* malformed OTEL Protobuf */
   LM_T_SYSLOG_MALFORMED_OTEL_PROTOBUF,
+  /* unmatched regular expression */
+  LM_T_SYSLOG_UNMATCHED_REGEXP,
 
   LM_T_PREDEFINED_MAX,
 };

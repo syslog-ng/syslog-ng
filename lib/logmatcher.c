@@ -873,6 +873,7 @@ CfgFlagHandler log_matcher_flag_handlers[] =
   { "prefix",          CFH_SET, offsetof(LogMatcherOptions, flags), LMF_PREFIX        },
   { "disable-jit",     CFH_SET, offsetof(LogMatcherOptions, flags), LMF_DISABLE_JIT   },
   { "dupnames",        CFH_SET, offsetof(LogMatcherOptions, flags), LMF_DUPNAMES      },
+  { "drop-invalid",    CFH_SET, offsetof(LogMatcherOptions, flags), LMF_DROP_INVALID  },
 
   { NULL },
 };
