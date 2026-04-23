@@ -31,7 +31,7 @@ G_STATIC_ASSERT(sizeof(gssize) == sizeof(gpointer));
 
 typedef struct
 {
-  gssize value;
+  gpointer value;
 } atomic_gssize;
 
 static inline gssize
@@ -67,7 +67,7 @@ atomic_gssize_get(atomic_gssize *a)
 static inline void
 atomic_gssize_set(atomic_gssize *a, gssize value)
 {
-  g_atomic_pointer_set(&a->value, value);
+  g_atomic_pointer_set(&a->value, (gpointer)(gintptr) value);
 }
 
 static inline gsize
@@ -79,19 +79,19 @@ atomic_gssize_get_unsigned(atomic_gssize *a)
 static inline gssize
 atomic_gssize_racy_get(atomic_gssize *a)
 {
-  return a->value;
+  return (gssize)(gintptr) a->value;
 }
 
 static inline gsize
 atomic_gssize_racy_get_unsigned(atomic_gssize *a)
 {
-  return (gsize)a->value;
+  return (gsize)(guintptr) a->value;
 }
 
 static inline void
 atomic_gssize_racy_set(atomic_gssize *a, gssize value)
 {
-  a->value = value;
+  a->value = (gpointer)(gintptr) value;
 }
 
 static inline gsize
@@ -115,7 +115,7 @@ atomic_gssize_and(atomic_gssize *a, gsize value)
 static inline gboolean
 atomic_gssize_compare_and_exchange(atomic_gssize *a, gssize oldval, gssize newval)
 {
-  return g_atomic_pointer_compare_and_exchange(&a->value, oldval, newval);
+  return g_atomic_pointer_compare_and_exchange(&a->value, (gpointer)(gintptr) oldval, (gpointer)(gintptr) newval);
 }
 
 static inline gssize
