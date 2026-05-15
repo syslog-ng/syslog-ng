@@ -94,6 +94,12 @@ regexp_parser_compile(LogParser *s, GError **error)
   return result;
 }
 
+gboolean
+_should_drop_message(RegexpParser *self)
+{
+  return (self->matcher_options.flags & LMF_DROP_INVALID);
+}
+
 static gboolean
 regexp_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
                       gsize input_len)
@@ -124,7 +130,15 @@ regexp_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
         }
     }
 
-  return result;
+  if (!result)
+    {
+      if (_should_drop_message(self))
+        return FALSE;
+
+      log_msg_set_tag_by_id(*pmsg, LM_T_SYSLOG_UNMATCHED_REGEXP);
+    }
+
+  return TRUE;
 }
 
 static void

@@ -57,6 +57,7 @@ _construct_parser(gchar *timezone_, gchar *format, gint time_stamp)
   if (timezone_ != NULL)
     date_parser_set_timezone(parser, timezone_);
   date_parser_set_time_stamp(parser, time_stamp);
+  date_parser_process_flag(parser, "drop-invalid");
 
   log_pipe_init(&parser->super);
   return parser;

@@ -30,5 +30,7 @@ void json_parser_set_prefix(LogParser *p, const gchar *prefix);
 void json_parser_set_marker(LogParser *p, const gchar *marker);
 void json_parser_set_key_delimiter(LogParser *p, gchar delimiter);
 LogParser *json_parser_new(GlobalConfig *cfg);
+void json_parser_set_flags(LogParser *p, guint32 flags);
+gboolean json_parser_process_flag(LogParser *p, gchar *flag);
 
 #endif

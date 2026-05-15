@@ -138,6 +138,16 @@ enum
   LM_T_SYSLOG_MISSING_MESSAGE,
   /* invalid program name */
   LM_T_SYSLOG_RFC_3164_INVALID_PROGRAM,
+  /* malformed JSON */
+  LM_T_SYSLOG_MALFORMED_JSON,
+  /* malformed CSV */
+  LM_T_SYSLOG_MALFORMED_CSV,
+  /* malformed DATE */
+  LM_T_SYSLOG_MALFORMED_DATE,
+  /* malformed OTEL Protobuf */
+  LM_T_SYSLOG_MALFORMED_OTEL_PROTOBUF,
+  /* unmatched regular expression */
+  LM_T_SYSLOG_UNMATCHED_REGEXP,
 
   LM_T_PREDEFINED_MAX,
 };

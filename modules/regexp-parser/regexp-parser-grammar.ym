@@ -80,7 +80,7 @@ parser_regexp_opts
 parser_regexp_opt
 	: { last_matcher_options = regexp_parser_get_matcher_options(last_parser); } matcher_option
 	| KW_PREFIX '(' string ')'		{ regexp_parser_set_prefix(last_parser, $3); free($3); }
-    | KW_PATTERNS '(' string_list ')'		{ regexp_parser_set_patterns(last_parser, $3); }
+	| KW_PATTERNS '(' string_list ')'	{ regexp_parser_set_patterns(last_parser, $3); }
 	| parser_opt
 	;
 

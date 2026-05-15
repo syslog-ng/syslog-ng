@@ -82,7 +82,8 @@ ParameterizedTestParameters(regexp_parser, test_regexp_parser)
     {.msg = "foo", .pattern = "(?<key>fo*)", .prefix = ".reg.", .flags = 0, .expected_result = TRUE, .name = ".reg.key", .value = "foo"},
     {.msg = "foo", .pattern = "(?<key>fo*)", .prefix = ".reg.", .flags = 0, .expected_result = TRUE, .name = "key", .value = ""},
     {.msg = "foo", .pattern = "(?<key>foo)|(?<key>bar)", .prefix = ".reg.", .expected_result = TRUE, .flags = LMF_DUPNAMES, .name = ".reg.key", .value = "foo"},
-    {.msg = "abc", .pattern = "Abc", .prefix = "", .flags = 0, .expected_result = FALSE, .name = NULL, .value = NULL},
+    {.msg = "abc", .pattern = "Abc", .prefix = "", .flags = 0, .expected_result = TRUE, .name = NULL, .value = NULL},
+    {.msg = "abc", .pattern = "Abc", .prefix = "", .flags = LMF_DROP_INVALID, .expected_result = FALSE, .name = NULL, .value = NULL},
     {.msg = "abc", .pattern = "(?<key>Abc)", .prefix = "", .flags = LMF_ICASE, .expected_result = TRUE, .name = "key", .value = "abc"},
 
     /* store into a builtin value */

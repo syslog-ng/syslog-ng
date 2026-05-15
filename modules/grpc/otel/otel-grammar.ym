@@ -108,6 +108,12 @@ parser_otel_options
 parser_otel_option
   : parser_opt
   | KW_SET_HOSTNAME '(' yesno ')' { otel_protobuf_parser_set_hostname(last_parser, $3); }
+  | KW_FLAGS '(' parser_otel_flags ')'
+  ;
+
+parser_otel_flags
+  : string parser_otel_flags      { CHECK_ERROR(otel_protobuf_parser_process_flag(last_parser, $1), @1, "Unknown flag %s", $1); free($1); }
+  |
   ;
 
 destination_otel

@@ -64,6 +64,11 @@ public:
     this->set_host = s;
   }
 
+  void set_drop_invalid(bool s)
+  {
+    this->drop_invalid = s;
+  }
+
   static void store_raw_metadata(LogMessage *msg, const ::grpc::string &peer,
                                  const Resource &resource, const std::string &resource_schema_url,
                                  const InstrumentationScope &scope, const std::string &scope_schema_url);
@@ -83,6 +88,7 @@ private:
 
 private:
   bool set_host = true;
+  bool drop_invalid = false;
 };
 
 }
