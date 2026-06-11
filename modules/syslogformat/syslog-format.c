@@ -664,7 +664,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
 
           sd_id_name[pos] = 0;
           sd_id_len = pos;
-          strcpy(sd_value_name, options->sdata_prefix);
+          g_strlcpy(sd_value_name, options->sdata_prefix, sizeof(sd_value_name));
           g_strlcpy(sd_value_name + options->sdata_prefix_len, sd_id_name, sizeof(sd_value_name) - options->sdata_prefix_len);
 
           if (left && *src == ']')
