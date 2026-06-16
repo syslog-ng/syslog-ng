@@ -95,8 +95,8 @@ def create_products_block():
            'and [DEB](https://github.com/syslog-ng/syslog-ng#debianubuntu) package ' \
            'repositories for Ubuntu, Debian, and RHEL, for both amd64 and arm64 architectures.\n' \
            '\n' \
-           'We also provide ready-to-test binaries in [Docker containers](https://hub.docker.com/r/balabit/syslog-ng/tags) ' \
-           'based on the current stable Debian image.\n' \
+           'We also provide ready-to-test binaries in [Docker containers](https://hub.docker.com/u/balabit) ' \
+           'based on the current stable Debian, and AlmaLinux 9 images.\n' \
            '\n' \
            'For more details, visit our [Documentation Center](https://syslog-ng.github.io/)\n' \
            '\n'
