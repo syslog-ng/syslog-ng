@@ -447,8 +447,8 @@ _log_scheduler_readjust_num_partitions(LogSchedulerOptions *options, gint num_pa
 void
 log_scheduler_options_set_num_partitions(LogSchedulerOptions *options, gint num_partitions)
 {
-  /* NOTE: we cannot readjust the number of partitions here as main_loop_worker_get_max_number_of_threads may not be finalized yet */
-  // _log_scheduler_readjust_num_partitions(options, num_partitions);
+  /* NOTE: we cannot readjust the number of partitions here using _log_scheduler_readjust_num_partitions
+   *       as main_loop_worker_get_max_number_of_threads may not be finalized yet */
   options->num_partitions = num_partitions;
 }
 

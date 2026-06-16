@@ -33,6 +33,9 @@ BUILT_SOURCES				+=	\
 	modules/afsql/afsql-grammar.h
 EXTRA_DIST				+= 	\
 	modules/afsql/afsql-grammar.ym	\
-	modules/afsql/CMakeLists.txt
+	modules/afsql/CMakeLists.txt	\
+	modules/afsql/tests/CMakeLists.txt
 
 .PHONY: modules/afsql/ mod-afsql mod-sql
+
+include modules/afsql/tests/Makefile.am
