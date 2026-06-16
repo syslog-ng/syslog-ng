@@ -28,3 +28,5 @@ add_module(
   DEPENDS ${LIBDBI_LIBRARIES} OpenSSL::SSL
   SOURCES ${AFSQL_SOURCES}
 )
+
+add_test_subdirectory(tests)

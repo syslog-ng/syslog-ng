@@ -36,6 +36,8 @@
 
 #include <string.h>
 #include <errno.h>
+#include <utf8utils.h>
+
 #include "compat/openssl_support.h"
 #include <openssl/evp.h>
 
@@ -215,15 +217,16 @@ afsql_dd_set_create_statement_append(LogDriver *s, const gchar *create_statement
  *
  * NOTE: This function can only be called from the database thread.
  **/
-static gboolean
+gboolean
 afsql_dd_run_query(AFSqlDestDriver *self, const gchar *query, gboolean silent, dbi_result *result)
 {
   dbi_result db_res;
+  gchar* escaped_query = convert_unsafe_utf8_to_escaped_text(query, -1, 0);
 
   msg_debug("Running SQL query",
-            evt_tag_str("query", query));
+            evt_tag_str("query", escaped_query));
 
-  db_res = dbi_conn_query(self->dbi_ctx, query);
+  db_res = dbi_conn_query(self->dbi_ctx, escaped_query);
   if (!db_res)
     {
       const gchar *dbi_error;
@@ -238,14 +241,17 @@ afsql_dd_run_query(AFSqlDestDriver *self, const gchar *query, gboolean silent, d
                     evt_tag_str("user", self->user),
                     evt_tag_str("database", self->database),
                     evt_tag_str("error", dbi_error),
-                    evt_tag_str("query", query));
+                    evt_tag_str("query", query),
+                    evt_tag_str("escaped_query", escaped_query));
         }
+      g_free(escaped_query);
       return FALSE;
     }
   if (result)
     *result = db_res;
   else
     dbi_result_free(db_res);
+  g_free(escaped_query);
   return TRUE;
 }
 
@@ -759,13 +765,14 @@ afsql_dd_disconnect(LogThreadedDestDriver *s)
   self->transaction_active = FALSE;
 }
 
-static GString *
+GString *
 afsql_dd_ensure_accessible_database_table(AFSqlDestDriver *self, LogMessage *msg)
 {
   GString *table = g_string_sized_new(32);
 
   LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL, 0, NULL, LM_VT_STRING};
   log_template_format(self->table, msg, &options, table);
+  _sanitize_sql_identifier(table->str);
 
   if (!afsql_dd_ensure_table_is_syslogng_conform(self, table))
     {
@@ -886,9 +893,16 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
   return TRUE;
 }
 
-static GString *
+GString *
 afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *table)
 {
+  if (!_is_sql_identifier_sanitized(table->str))
+    {
+      msg_error("Table name contains invalid characters, dropping message",
+                evt_tag_str("table", table->str));
+      return NULL;
+    }
+
   GString *insert_command = g_string_sized_new(256);
   GString *value = g_string_sized_new(512);
   gint i, j;
