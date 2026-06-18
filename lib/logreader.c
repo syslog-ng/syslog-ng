@@ -138,11 +138,17 @@ log_reader_stop_watches(LogReader *self)
 }
 
 static void
-log_reader_disable_watches(LogReader *self)
+log_reader_disable_watches_keep_idle_timer(LogReader *self)
 {
   g_assert(self->watches_running);
   if (self->poll_events)
     poll_events_suspend_watches(self->poll_events);
+}
+
+static void
+log_reader_disable_watches(LogReader *self)
+{
+  log_reader_disable_watches_keep_idle_timer(self);
   log_reader_stop_idle_timer(self);
 }
 
@@ -154,6 +160,16 @@ static void
 log_reader_suspend_until_awoken(LogReader *self)
 {
   log_reader_disable_watches(self);
+  self->suspended = TRUE;
+}
+
+/* Same as log_reader_suspend_until_awoken() but leaves the idle_timer
+ * registered, so a watchdog timeout passed in via log_proto_server_poll_prepare()
+ * can still wake the reader if no wakeup callback fires within that window. */
+static void
+log_reader_suspend_until_awoken_or_timeout(LogReader *self)
+{
+  log_reader_disable_watches_keep_idle_timer(self);
   self->suspended = TRUE;
 }
 
@@ -327,7 +343,7 @@ log_reader_update_watches(LogReader *self)
       log_reader_force_check_in_next_poll(self);
       break;
     case LPPA_SUSPEND:
-      log_reader_suspend_until_awoken(self);
+      log_reader_suspend_until_awoken_or_timeout(self);
       break;
     default:
       g_assert_not_reached();
