@@ -1676,6 +1676,11 @@ fi
 INTERNAL_IVYKIS_CFLAGS=""
 if test "x$with_ivykis" = "xinternal"; then
     if $IVYKIS_INTERNAL_SOURCE_EXISTS; then
+        # Static-only ivykis sub-configure so libivykis.a is absorbed into
+        # libsyslog-ng (matches the CMake build behaviour). --with-pic so
+        # the static archive can be linked into a shared library.
+        ac_configure_args="$ac_configure_args --disable-shared --enable-static --with-pic"
+
         # these can only be used in lib as it assumes the current directory just one below ivykis
 
         IVYKIS_CFLAGS="-isystem \$(top_srcdir)/lib/ivykis/src/include -isystem \$(top_builddir)/lib/ivykis/src/include"
