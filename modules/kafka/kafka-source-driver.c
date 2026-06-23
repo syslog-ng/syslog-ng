@@ -1379,6 +1379,7 @@ _check_and_sort_partitions(KafkaSourceDriver *self, const gchar *partitions, GLi
         {
           msg_error("kafka: error, 'all partitions' (-1) specified along with other partition numbers",
                     evt_tag_str("partitions", partitions));
+          g_list_free(list);
           return FALSE;
         }
     }
@@ -1586,6 +1587,7 @@ _construct_kafka_client(KafkaSourceDriver *self)
                 evt_tag_str("error", errbuf),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
+      goto err_exit;
     }
   return client;
 
