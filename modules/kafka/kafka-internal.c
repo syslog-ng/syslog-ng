@@ -368,11 +368,13 @@ KafkaLogging
 kafka_string_to_logging(const gchar *logging)
 {
   KafkaLogging kafka_logging = KFL_UNKNOWN;
-  if (g_ascii_strcasecmp(logging, "disabled"))
+  if (logging == NULL)
+    return kafka_logging;
+  if (g_ascii_strcasecmp(logging, "disabled") == 0)
     kafka_logging = KFL_DISABLED;
-  else if (g_ascii_strcasecmp(logging, "kafka"))
+  else if (g_ascii_strcasecmp(logging, "kafka") == 0)
     kafka_logging = KFL_KAFKA_LEVEL;
-  else if (g_ascii_strcasecmp(logging, "trace"))
+  else if (g_ascii_strcasecmp(logging, "trace") == 0)
     kafka_logging = KFL_TRACE_LEVEL;
   return kafka_logging;
 }
