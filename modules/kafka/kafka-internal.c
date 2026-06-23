@@ -53,7 +53,12 @@ gboolean
 kafka_validate_topic_pattern(const char *topic, GError **error)
 {
   if (topic == NULL || *topic == 0)
-    return FALSE;
+    {
+      if (error)
+        g_set_error(error, TOPIC_NAME_ERROR, TOPIC_LENGTH_ZERO,
+                    "kafka: topic pattern is illegal, it can't be empty");
+      return FALSE;
+    }
 
   regex_t re;
   int ret = regcomp(&re, topic, REG_EXTENDED | REG_NOSUB);

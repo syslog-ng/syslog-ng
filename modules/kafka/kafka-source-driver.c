@@ -1419,7 +1419,7 @@ _check_and_apply_topics(KafkaSourceDriver *self, GList *topics, gboolean apply)
             {
               msg_error("kafka: invalid topic name in the requested topics list",
                         evt_tag_str("topic", prop->name),
-                        evt_tag_str("error", err->message),
+                        evt_tag_str("error", err ? err->message : "(unknown)"),
                         evt_tag_str("driver", self->super.super.super.id));
               if (err)
                 g_error_free(err);
