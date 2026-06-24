@@ -280,6 +280,10 @@ kafka_register_counters(KafkaSourceDriver *self,
                         const gchar **counter_names,
                         gint level)
 {
+  /* TODO: stats_table is keyed by label_value, so only one counter per label_value
+   * can be tracked currently; multiple names would all collide on the same key. */
+  g_assert(counter_names && counter_names[0] && counter_names[1] == NULL);
+
   LogThreadedSourceWorker *worker = self->super.workers[0];
   StatsClusterKeyBuilder *kb = worker->super.metrics.stats_kb;
   gchar *stats_id = worker->super.stats_id;
@@ -317,6 +321,9 @@ kafka_unregister_counters(KafkaSourceDriver *self,
                           StatsCounterItem *counter,
                           const gchar **counter_names)
 {
+  /* Symmetric with kafka_register_counters(): single counter per label_value. */
+  g_assert(counter_names && counter_names[0] && counter_names[1] == NULL);
+
   LogThreadedSourceWorker *worker = self->super.workers[0];
   gchar *stats_id = worker->super.stats_id;
   StatsClusterKeyBuilder *kb = worker->super.metrics.stats_kb;
