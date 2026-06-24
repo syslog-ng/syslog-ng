@@ -85,6 +85,18 @@ jobs:
       #       One drawback is the size of the cache image that is ~4GB (not compressed) with the current Brewfile package list.
       - name: Install Homebrew dependencies
         run: |
+          # Recent Homebrew versions require explicit trust for third-party taps.
+          # These taps are pre-installed on the GitHub macOS runner image, so
+          # `brew update --auto-update` fails when trying to refresh them without
+          # prior trust. Trust must be granted before any brew update.
+          brew trust aws/tap || true
+          brew trust azure/bicep || true
+
+          # Disable `brew bundle` parallel installs — concurrent `brew install`
+          # processes can collide on Cellar locks (e.g. binutils vs cmake) on
+          # recent Homebrew versions.
+          export HOMEBREW_BUNDLE_NO_JOBS=1
+
           if [ "${{ runner.arch }}" = "ARM64" ] || [ "${{ github.event_name }}" = "schedule" ]; then
             if [ "${{ github.event_name }}" = "schedule" ]; then
               echo "Scheduled run → forcing brew update"
