@@ -729,10 +729,11 @@ _persist_destroy(gpointer data)
   kafka_source_persist_unref(persist);
 }
 
-static void
+static gboolean
 _partitions_persists_create(KafkaSourceDriver *self)
 {
   g_assert(self->persists == NULL);
+  gboolean success = TRUE;
   gchar key[MAX_KAFKA_PARTITION_KEY_NAME_LEN];
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
 
@@ -753,11 +754,22 @@ _partitions_persists_create(KafkaSourceDriver *self)
       g_assert(FALSE == g_hash_table_contains(self->persists, key));
 
       KafkaSourcePersist *persist = kafka_source_persist_new(self);
-      kafka_source_persist_init(persist, cfg->state, topic, partition_num,
-                                use_kafka_offsets && partition->offset >= 0 ? partition->offset : override_start_offset,
-                                persist_use_offset_tracker);
-      g_hash_table_insert(self->persists, g_strdup(key), persist);
+      if (kafka_source_persist_init(persist, cfg->state, topic, partition_num,
+                                    use_kafka_offsets && partition->offset >= 0 ? partition->offset : override_start_offset,
+                                    persist_use_offset_tracker))
+        g_hash_table_insert(self->persists, g_strdup(key), persist);
+      else
+        {
+          msg_error("kafka: failed to initialize persist for partition",
+                    evt_tag_str("topic", topic),
+                    evt_tag_int("partition", (int) partition_num),
+                    evt_tag_str("driver", self->super.super.super.id));
+          success = FALSE;
+          kafka_source_persist_unref(persist);
+          break;
+        }
     }
+  return success;
 }
 
 static void
@@ -941,6 +953,9 @@ kafka_sd_assignement_invalidated_signaled(KafkaSourceDriver *self)
   return self->assignement_invalidated_signaled;
 }
 
+/* Current policy: any partition's persist init failure fails the whole assignment.
+ * _partitions_persists_create() breaks on the first error, the caller destroys all persists,
+ * and the assignment is rejected. We never operate on a partial set of persists. */
 static gboolean
 _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_list_t *parts)
 {
@@ -968,15 +983,19 @@ _apply_assigned_partitions(KafkaSourceDriver *self, rd_kafka_topic_partition_lis
           self->assigned_partitions = parts;
 
           if (self->options.persist_store == KSPS_LOCAL && FALSE == self->options.disable_bookmarks)
-            _partitions_persists_create(self);
+            result = _partitions_persists_create(self);
 
+          // TODO: We just continue now on offset restoration failure, TBD: how to handle this properly?!
           _restore_msg_offsets(self);
 
           if (self->options.persist_store == KSPS_REMOTE && FALSE == self->options.disable_bookmarks)
-            _partitions_persists_create(self);
+            result = _partitions_persists_create(self);
 
-          kafka_log_partition_list(self, parts);
-          _register_topic_stats(self);
+          if (result)
+            {
+              kafka_log_partition_list(self, parts);
+              _register_topic_stats(self);
+            }
         }
       else
         {
@@ -1336,7 +1355,16 @@ _kafka_rebalance_cb(rd_kafka_t *rk,
                   evt_tag_str("driver", self->super.super.super.id));
 
       /* Broker assigned the partitions → assign to the consumers too */
-      _apply_assigned_partitions(self, rd_kafka_topic_partition_list_copy(partitions));
+      if (FALSE == _apply_assigned_partitions(self, rd_kafka_topic_partition_list_copy(partitions)))
+        {
+          msg_error("kafka: failed to apply assigned partitions on rebalance, dropping assignment",
+                    evt_tag_str("group_id", self->group_id),
+                    evt_tag_str("driver", self->super.super.super.id));
+          /* Clear the broker-side assignment too — without persists we cannot
+           * safely process messages from this assignment. The next rebalance or
+           * the consumer poll loop will surface the failed state. */
+          _apply_assigned_partitions(self, NULL);
+        }
       break;
 
     case RD_KAFKA_RESP_ERR__REVOKE_PARTITIONS:
