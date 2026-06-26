@@ -618,7 +618,8 @@ vp_walker_stack_unwind_containers_until(vp_walk_state_t *state,
     {
       vp_walk_stack_data_t *p;
 
-      if (name && strncmp(name, t->prefix, t->prefix_len) == 0)
+      if (name && strncmp(name, t->prefix, t->prefix_len) == 0 &&
+          (name[t->prefix_len] == state->key_delimiter || name[t->prefix_len] == '\0'))
         {
           /* This one matched, put it back, PUT IT BACK! */
           vp_stack_push(&state->stack, t);
