@@ -26,6 +26,8 @@
 #include "http-loadbalancer.h"
 #include "apphook.h"
 #include "scratch-buffers.h"
+#include "cfg.h"
+#include "plugin.h"
 
 #include <unistd.h>
 
@@ -142,6 +144,52 @@ Test(http_loadbalancer, choose_target_escapes_templated_url)
   log_msg_unref(msg);
   http_lb_client_deinit(&lbc);
   http_load_balancer_free(lb);
+}
+
+Test(http_loadbalancer, url_message_dependence_classification)
+{
+  GError *error = NULL;
+
+  /* Literal URL: not templated, not message-dependent. */
+  {
+    HTTPLoadBalancer *lb = http_load_balancer_new();
+    cr_assert(http_load_balancer_add_target(lb, "http://localhost:8000/path", &error));
+    cr_assert_not(http_load_balancer_is_url_templated(lb));
+    cr_assert_not(http_load_balancer_is_url_message_dependent(lb));
+    http_load_balancer_free(lb);
+  }
+
+  /* Message-dependent macro: both templated and message-dependent. */
+  {
+    HTTPLoadBalancer *lb = http_load_balancer_new();
+    cr_assert(http_load_balancer_add_target(lb, "http://localhost:8000/${HOST}", &error));
+    cr_assert(http_load_balancer_is_url_templated(lb));
+    cr_assert(http_load_balancer_is_url_message_dependent(lb));
+    http_load_balancer_free(lb);
+  }
+
+  /* Pure simple-func with literal argument: templated but NOT message-dependent. This is the case that motivated the
+   * new predicate: $(url-encode literal) inside SCL-wrapped URLs should not require worker-partition-key(). */
+  {
+    HTTPLoadBalancer *lb = http_load_balancer_new();
+    cr_assert(http_load_balancer_add_target(lb,
+                                            "http://localhost:8000/$(url-encode /aws/lambda/fn)",
+                                            &error));
+    cr_assert(http_load_balancer_is_url_templated(lb));
+    cr_assert_not(http_load_balancer_is_url_message_dependent(lb));
+    http_load_balancer_free(lb);
+  }
+
+  /* Simple-func with a message-dependent argument: message-dependent. */
+  {
+    HTTPLoadBalancer *lb = http_load_balancer_new();
+    cr_assert(http_load_balancer_add_target(lb,
+                                            "http://localhost:8000/$(url-encode ${HOST})",
+                                            &error));
+    cr_assert(http_load_balancer_is_url_templated(lb));
+    cr_assert(http_load_balancer_is_url_message_dependent(lb));
+    http_load_balancer_free(lb);
+  }
 }
 
 Test(http_loadbalancer, choose_target_balances_clients_to_targets)
@@ -371,12 +419,17 @@ void
 setup(void)
 {
   app_startup();
+  configuration = cfg_new_snippet();
+  cfg_load_module(configuration, "basicfuncs");
 }
 
 void
 teardown(void)
 {
   scratch_buffers_explicit_gc();
+  if (configuration)
+    cfg_free(configuration);
+  configuration = NULL;
   app_shutdown();
 }
 
