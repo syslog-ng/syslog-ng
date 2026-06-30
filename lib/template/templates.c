@@ -27,6 +27,7 @@
 #include "template/macros.h"
 #include "template/escaping.h"
 #include "template/repr.h"
+#include "template/simple-function.h"
 #include "timeutils/format.h"
 #include "cfg.h"
 
@@ -50,6 +51,53 @@ log_template_get_literal_value(const LogTemplate *self, gssize *value_len)
     *value_len = e->text_len;
 
   return e->text;
+}
+
+static gboolean
+_elem_is_message_independent(const LogTemplateElem *e)
+{
+  if (log_template_elem_is_literal_string(e))
+    return TRUE;
+
+  switch (e->type)
+    {
+    case LTE_MACRO:
+    case LTE_VALUE:
+      /* Any non-literal macro (M_HOST, M_MESSAGE, M_DATE, ...) or NV-pair reference resolves against the current
+       * message and is therefore message-dependent by definition. */
+      return FALSE;
+
+    case LTE_FUNC:
+      /* We can only safely introspect template functions implemented through tf_simple_func_prepare(): their output
+       * is a pure function of the already-compiled argument templates.  For functions with a custom prepare()
+       * (format-date, tags, value-pairs, ...) be conservative — they may read message state, time, or other ambient context. */
+      if (e->func.ops->prepare != tf_simple_func_prepare)
+        return FALSE;
+      {
+        const TFSimpleFuncState *state = (const TFSimpleFuncState *) e->func.state;
+        for (gint i = 0; i < state->argc; i++)
+          {
+            if (!log_template_is_message_independent(state->argv_templates[i]))
+              return FALSE;
+          }
+      }
+      return TRUE;
+
+    default:
+      g_assert_not_reached();
+    }
+}
+
+gboolean
+log_template_is_message_independent(const LogTemplate *self)
+{
+  /* An empty template renders to the empty string regardless of input. */
+  for (GList *p = self->compiled_template; p; p = g_list_next(p))
+    {
+      if (!_elem_is_message_independent((const LogTemplateElem *) p->data))
+        return FALSE;
+    }
+  return TRUE;
 }
 
 gboolean
