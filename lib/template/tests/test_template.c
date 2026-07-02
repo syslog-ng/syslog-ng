@@ -628,6 +628,81 @@ Test(template, test_compile_literal_string)
   log_template_unref(template);
 }
 
+Test(template, test_message_independence_literals)
+{
+  LogTemplate *t = compile_template("");
+  cr_assert(log_template_is_message_independent(t), "Empty template is message-independent");
+  log_template_unref(t);
+
+  t = compile_template("plain literal text");
+  cr_assert(log_template_is_message_independent(t), "Plain literal is message-independent");
+  log_template_unref(t);
+
+  t = compile_template("$$not a macro");
+  cr_assert(log_template_is_message_independent(t), "Escaped '$$' literal is message-independent");
+  log_template_unref(t);
+}
+
+Test(template, test_message_independence_macros_and_values)
+{
+  LogTemplate *t = compile_template("$HOST");
+  cr_assert_not(log_template_is_message_independent(t), "Macros are message-dependent");
+  log_template_unref(t);
+
+  t = compile_template("${MESSAGE}");
+  cr_assert_not(log_template_is_message_independent(t), "Macros are message-dependent");
+  log_template_unref(t);
+
+  t = compile_template("prefix-${my_field}");
+  cr_assert_not(log_template_is_message_independent(t), "NV-pair refs are message-dependent");
+  log_template_unref(t);
+
+  t = compile_template("$DATE");
+  cr_assert_not(log_template_is_message_independent(t), "Timestamp macros are message-dependent");
+  log_template_unref(t);
+}
+
+Test(template, test_message_independence_simple_functions)
+{
+  /* tf_echo is registered with TEMPLATE_FUNCTION_SIMPLE and only depends on its args */
+  LogTemplate *t = compile_template("$(echo literal)");
+  cr_assert(log_template_is_message_independent(t),
+            "Simple func with literal arg is message-independent");
+  log_template_unref(t);
+
+  t = compile_template("prefix-$(echo literal)-suffix");
+  cr_assert(log_template_is_message_independent(t),
+            "Literal text + simple func with literal arg is message-independent");
+  log_template_unref(t);
+
+  /* Nested simple funcs with literal args are still message-independent */
+  t = compile_template("$(echo $(echo literal))");
+  cr_assert(log_template_is_message_independent(t),
+            "Nested simple funcs with literal args are message-independent");
+  log_template_unref(t);
+
+  /* A message-dependent argument poisons the entire expression */
+  t = compile_template("$(echo $HOST)");
+  cr_assert_not(log_template_is_message_independent(t),
+                "Simple func with message-dependent arg is message-dependent");
+  log_template_unref(t);
+
+  t = compile_template("$(echo prefix-${MESSAGE})");
+  cr_assert_not(log_template_is_message_independent(t),
+                "Simple func with NV-pair arg is message-dependent");
+  log_template_unref(t);
+}
+
+Test(template, test_message_independence_non_simple_functions)
+{
+  /* tf_tag uses a custom prepare() — be conservative and treat as message-dependent even with a literal tag name,
+   * because the call() reads ambient message state (the message's tag set). */
+  LogTemplate *t = compile_template("$(tag tagname)");
+  cr_assert_not(log_template_is_message_independent(t),
+                "Functions with custom prepare() are conservatively treated as message-dependent");
+  log_template_unref(t);
+}
+
 Test(template, test_result_of_concatenation_in_templates_are_typed_as_strings)
 {
   assert_template_format_value_and_type("$HOST$PROGRAM", "bzorpsyslog-ng", LM_VT_STRING);
