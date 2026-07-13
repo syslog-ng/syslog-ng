@@ -214,6 +214,35 @@ Test(control_cmds, test_stats)
   g_strfreev(stats_result);
 }
 
+Test(control_cmds, test_stats_crlf)
+{
+  StatsCounterItem *counter = NULL;
+  gchar **stats_result;
+  const gchar *response;
+
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_CENTER, "id", "received" );
+  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);
+  stats_unlock();
+
+  _run_command("STATS CSV\r", &response);
+
+  stats_result = g_strsplit(response, "\n", 2);
+  cr_assert_str_eq(stats_result[0], "SourceName;SourceId;SourceInstance;State;Type;Number",
+                   "Bad reply");
+  g_strfreev(stats_result);
+}
+
+Test(control_cmds, test_stats_invalid_arguments)
+{
+  const gchar *response;
+
+  _run_command("STATS", &response);
+  cr_assert(first_line_eq(response, "FAIL Invalid arguments received"),
+            "Bad reply: [%s]", response);
+}
+
 Test(control_cmds, test_reset_stats)
 {
   StatsCounterItem *counter = NULL;

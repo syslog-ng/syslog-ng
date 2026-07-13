@@ -239,6 +239,8 @@ control_connection_io_input(void *s)
       gint nl_pos = nl - self->input_buffer->str;
       /* command doesn't contain NL, strip it */
       g_string_assign_len(command, self->input_buffer->str, nl_pos);
+      if (command->len > 0 && command->str[command->len - 1] == '\r')
+        g_string_truncate(command, command->len - 1);
       /* cleanup the input buffer */
       secret_storage_wipe(self->input_buffer->str, nl_pos);
       g_string_truncate(self->input_buffer, 0);

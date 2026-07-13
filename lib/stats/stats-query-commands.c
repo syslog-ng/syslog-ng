@@ -225,7 +225,12 @@ stats_execute_query_command(const gchar *command, gpointer user_data, gboolean *
   GString *result = g_string_new("");
   gchar **cmds = g_strsplit(command, " ", 4);
 
-  g_assert(g_str_equal(cmds[CMD_STR], "QUERY"));
+  if (!cmds[CMD_STR] || !g_str_equal(cmds[CMD_STR], "QUERY"))
+    {
+      g_string_assign(result, "FAIL Invalid arguments received");
+      g_strfreev(cmds);
+      return result;
+    }
 
   _dispatch_query(_command_str_to_id(cmds[QUERY_CMD_STR]), cmds[QUERY_OUT_FMT_STR], cmds[QUERY_FILTER_STR], result);
 

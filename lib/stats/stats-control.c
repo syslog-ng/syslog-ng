@@ -79,9 +79,15 @@ control_connection_send_stats(ControlConnection *cc, GString *command, gpointer 
 {
   gchar **cmds = g_strsplit(command->str, " ", 3);
   gsize cmd_ndx = 0;
-  g_assert(g_str_equal(cmds[cmd_ndx], "STATS"));
+
+  if (!cmds[cmd_ndx] || !g_str_equal(cmds[cmd_ndx], "STATS") || !cmds[cmd_ndx + 1])
+    {
+      control_connection_send_reply(cc, g_string_new("FAIL Invalid arguments received"));
+      g_strfreev(cmds);
+      return;
+    }
+
   ++cmd_ndx;
-  g_assert(cmds[cmd_ndx] != NULL && "STATS command must have at least one format argument");
 
   GString *response = NULL;
   gpointer args[] = {cc, &response};
@@ -101,7 +107,15 @@ control_connection_send_stats(ControlConnection *cc, GString *command, gpointer 
   else
     {
       gboolean csv = strcmp(cmds[cmd_ndx], "CSV") == 0;
-      g_assert(csv || strcmp(cmds[cmd_ndx], "KV") == 0);
+      gboolean kv = strcmp(cmds[cmd_ndx], "KV") == 0;
+
+      if (!csv && !kv)
+        {
+          control_connection_send_reply(cc, g_string_new("FAIL Invalid arguments received"));
+          g_strfreev(cmds);
+          return;
+        }
+
       gboolean without_header = g_strcmp0(cmds[cmd_ndx + 1], "WITHOUT_HEADER") == 0;
       if (without_header)
         ++cmd_ndx;
