@@ -981,7 +981,13 @@ case "$ostype" in
 		MODULE_LDFLAGS="-avoid-version -module -no-undefined"
 		;;
 	Darwin)
-		MODULE_LDFLAGS="-avoid-version -dylib -no-undefined"
+		# Note: -no-undefined is intentionally omitted here. syslog-ng modules are
+		# dylibs that reference symbols from libsyslog-ng.dylib, so they legitimately
+		# have undefined symbols that are resolved at load time. Omitting -no-undefined
+		# lets libtool emit -undefined dynamic_lookup -no_fixup_chains, which is
+		# required by the Apple linker (ld-1267+, macOS 26/Xcode 26.5) that no longer
+		# allows undefined symbols in dylibs by default.
+		MODULE_LDFLAGS="-avoid-version -dylib"
         TEST_NO_INSTALL_FLAG="-no-fast-install"
         # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking solution
         if test "x$enable_tests" = "xyes"; then
