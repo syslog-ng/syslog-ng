@@ -78,6 +78,7 @@ jobs:
             --enable-slog
             --disable-java
             --disable-java-modules
+            --disable-mongodb
           "
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
@@ -95,6 +96,7 @@ jobs:
             -DENABLE_JOURNALD=OFF
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
+            -DENABLE_MONGODB=OFF
           "
           PKGCONF_PATH=$(pkgconf --variable pc_path pkgconf)
           export PKG_CONFIG_PATH="${PKGCONF_PATH}:$PKG_CONFIG_PATH"
@@ -154,7 +156,7 @@ jobs:
               echo "pkg catalogue OK; using default repo configuration."
             fi
 
-            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp mongo-c-driver net-snmp openjdk25 rabbitmq-c riemann-c-client
+            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp net-snmp openjdk25 rabbitmq-c riemann-c-client
             # For testing
             pkg install -y criterion libxml2 qpdf
             if  [ "${{ matrix.build-tool }}" = "autotools" ]; then
