@@ -4,7 +4,7 @@ Line 03 (Line 02 is empty)
 Line 04 Hello, World! 🌍, Voilà! Le garçon déçu a mangé un gâteau.
 
 Line 06 (Line 05 is empty)
-Line 07 öäüÖÄÜßi Special chars: !@#€,<£$%^&*\`§©®™) 🤪
+Line 07 öäüÖÄÜß Special chars: !@#€,<£$%^&*\`§©®™) 🤪
 Line 08 last no newline at the end
 
 Line 10

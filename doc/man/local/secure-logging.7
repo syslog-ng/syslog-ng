@@ -1,4 +1,4 @@
-.TH secure\-logging 7 "03 June 2026" 4.10.2 "The secure\-logging manual page"
+.TH secure\-logging 7 "12 June 2026" 4.10.2 "The secure\-logging manual page"
 .SH NAME
 .PP
 secure\-logging \-\-\- Provides forward integrity and confidentiality for system logs.
@@ -6,7 +6,7 @@ secure\-logging \-\-\- Provides forward integrity and confidentiality for system
 .PP
 .RS
 .nf
-$(slog \-\-key\-file <host key file> \-\-mac\-file <MAC file> \-\-logmode <(direct|base64|enc)> ${RAWMSG})
+$(slog \-\-key\-file <host key file> \-\-mac\-file <MAC file> \-\-logmode (direct|base64|enc) ${RAWMSG})
 .fi
 .RE
 .SH DESCRIPTION
@@ -89,7 +89,7 @@ Secure logging is activated by adding the following statement in the configurati
 .PP
 .RS
 .nf
-template("$(slog \-\-key\-file  <host key file> \-\-mac\-file <MAC file> \-\-logmode <(direct|base64|enc)> ${RAWMSG})\\n");
+template("$(slog \-\-key\-file  <host key file> \-\-mac\-file <MAC file> \-\-logmode (direct|base64|enc) ${RAWMSG})\\n");
 .fi
 .RE
 .PP
@@ -105,7 +105,11 @@ The purpose of the elements within the statement:
     The MAC file. \fB\fC<MAC file>\fR is the full path of the MAC file on the log host. The file is automatically created upon the initial start. If the path is not correct, syslog\-ng OSE does not start and a displays a corresponding error message.
 .PP
 \fB\fC\-\-logmode\fR or \fB\fC\-l\fR
-    The logmode. \fB\fC<(direct|base64|enc)>\fR is the way to control how a log message shall be presented - as is in plain text, only Base64 encoded or encrypted and Base64 encoded.
+    The logmode. \fB\fC(direct|base64|enc)\fR is the way to control how log messages shall be presented - as they are in plain text, only Base64 encoded or encrypted and Base64 encoded.
+    Specify log output format:
+    direct  log messages as they are in plain text
+    base64  log messages Base64 encoded but not encrypted
+    enc     log messages encrypted and Base64 encoded
 .PP
 \fB\fC${RAWMSG}\fR
     \fB\fC${RAWMSG}\fR provides access to the original log message received at the source. This macro is only available if the store\-raw\-message flag was set for the source. Otherwise, an empty string is passed to the secure logging template. If access to the original message is not available, for example, if the source does not support the \fB\fCstore\-raw\-message\fR flag, then the \fB\fC${MSG}\fR macro can also be used. In this case, however, the integrity guarantee provided by secure logging is limited to the content that this macro provides and does not protect the complete original message.
@@ -149,7 +153,7 @@ source s_network {
 
 # Secure logging template definition
 template secure_logging { 
-    template("$(slog \-\-key\-file /etc/syslog\-ng/host.key \-\-mac\-file /etc/syslog\-ng/mac.dat \-\-logmode direct ${RAWMSG})\\n");
+    template("$(slog \-\-key\-file /etc/syslog\-ng/host.key \-\-mac\-file /etc/syslog\-ng/mac.dat \-\-logmode enc ${RAWMSG})\\n");
 };
 
 # This configures a secure logging destination
@@ -177,7 +181,7 @@ In normal mode, a complete log archive is verified at once. In a typical environ
 .PP
 .RS
 .nf
-slogverify \-\-key\-file host0.key \-\-mac\-file mac.dat /var/log/messages.slog \-\-logmode direct /var/log/verified/messages.slog  /var/log/verified/messages
+slogverify \-\-key\-file host0.key \-\-mac\-file mac.dat /var/log/messages.slog \-\-logmode enc /var/log/verified/messages.slog  /var/log/verified/messages
 .fi
 .RE
 .PP
@@ -190,7 +194,7 @@ The purpose of the elements within the statement:
     The MAC file from the log host.
 .PP
 \fB\fCenc\fR
-    The logmode (here in this example direct for plain text as is).
+    The logmode (here in this example: enc which means messages will be encrypted).
 .PP
 \fB\fC/var/log/messages.slog\fR
     The file containing the encrypted log entries as retrieved from a log host.
@@ -202,7 +206,7 @@ Log files may become too large and not fit into the system memory. Verification 
 .PP
 .RS
 .nf
-slogverify \-\-key\-file host.key \-\-mac\-file mac.dat \-\-logmode direct /var/log/messages.slog /var/log/verified/messages 8000
+slogverify \-\-key\-file host.key \-\-mac\-file mac.dat \-\-logmode enc /var/log/messages.slog /var/log/verified/messages 8000
 .fi
 .RE
 .PP
@@ -232,7 +236,7 @@ Steps 2\-6 have to repeated each time the log file reaches a size of 50 MB. Assu
 .PP
 .RS
 .nf
-slogverify \-\-iterative \-\-prev\-key\-file host.key.2 \-\-prev\-mac\-file mac.dat.2 \-\-mac\-file mac.dat \-\-logmode direct /var/log/messages.slog.3 /var/log/verified/messages.3
+slogverify \-\-iterative \-\-prev\-key\-file host.key.2 \-\-prev\-mac\-file mac.dat.2 \-\-mac\-file mac.dat \-\-logmode enc /var/log/messages.slog.3 /var/log/verified/messages.3
 .fi
 .RE
 .PP
@@ -263,11 +267,11 @@ The current MAC file from the log host.
 .RE
 .PP
 
-\fB\fCdirect\fR
+\fB\fCenc\fR
 .PP
 .RS
 .nf
-The current logmode, here direct for plain text.
+The current logmode, here encrypted.
 .fi
 .RE
 .PP

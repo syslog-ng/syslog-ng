@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2025 Airbus Commercial Aircraft
+ * Copyright (c) 2019-2026 Airbus Commercial Aircraft
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -157,7 +157,7 @@ enum LogMode convert_str_logmode(const gchar *value)
 }
 
 
-/* Convert enum Logmode intoia string representing syslog-ng.conf logmode.
+/* Convert enum Logmode into a string representing syslog-ng.conf logmode.
  *
  * retrun GString* with logmode like in syslog-ng.conf. To be freed by caller.
  */
@@ -208,15 +208,15 @@ void truncate_utf8_gstring(GString *gslog, gsize max_octet_len)
     {
       return;
     }
-  if (0 == max_octet_len)
+  if (0U == max_octet_len)
     {
       g_string_truncate(gslog, 0);
       return;
     }
-  gsize max_text_len = max_octet_len - 1; //-- reserve one byte for '\n'
+  gsize max_text_len = max_octet_len - 1U; //-- reserve one byte for '\n'
   gsize new_len = max_text_len;
   //--Walk backwards to find a valid UTF-8 character / Symbol (Emoij) boundary.
-  while (new_len > 0 && (gslog->str[new_len] & 0xC0) == 0x80)
+  while ((new_len > 0U) && ((gslog->str[new_len] & 0xC0) == 0x80))
     {
       new_len--;
     }
@@ -237,14 +237,14 @@ void truncate_utf8_gstring(GString *gslog, gsize max_octet_len)
 
 gboolean is_likely_base64(const gchar *str)
 {
-  if (str == NULL || *str == '\0')
+  if ((str == NULL) || (*str == '\0'))
     {
       return FALSE;
     }
 
   //-- Check length (must be multiple of 4 if padded)
   gsize len = strlen(str);
-  if (len % 4 != 0)
+  if ((len % 4U) != 0U)
     {
       return FALSE;
     }
@@ -273,7 +273,7 @@ gsize get_base64_length( gsize uncoded_count )
 {
   // Formula: 4 * ceil(n / 3)
   // In integer arithmetic: ((n + 2) / 3) * 4
-  return ((uncoded_count + 2) / 3) * 4;
+  return ((uncoded_count + 2U) / 3U) * 4U;
 }
 
 //----------------------------------------------------------------------
@@ -288,11 +288,11 @@ gsize get_base64_length( gsize uncoded_count )
 gsize get_decoded_base64_length(const char *encoded_str)
 {
   gsize len = strlen(encoded_str);
-  gsize padding = 0;
+  gsize padding = 0U;
   // Check for padding characters at the end
-  if (len > 0 && encoded_str[len - 1] == '=') padding++;
-  if (len > 1 && encoded_str[len - 2] == '=') padding++;
-  return (len * 3 / 4) - padding;
+  if ((len > 0U) && (encoded_str[len - 1U] == '=')) padding++;
+  if ((len > 1U) && (encoded_str[len - 2U] == '=')) padding++;
+  return (((len * 3U) / 4U) - padding);
 }
 
 //----------------------------------------------------------------------
@@ -313,20 +313,20 @@ gsize get_decoded_base64_length(const char *encoded_str)
 
 void dbg_hexdump(const char *title, const unsigned char *data, unsigned int len)
 {
-  const gint BYTES_PER_LINE = 16;
-  const gint MAX_DBG_LEN = 3072;
+  const guint BYTES_PER_LINE = 16U;
+  const guint MAX_DBG_LEN = 3072U;
 
   // Print a title for the hexdump
   // g_print("\n--- Hexdump: %s (%d bytes) ---\n", title, len);
 
   g_print("%s (%d bytes):\n", title, len);
-  if (data == NULL || len == 0)
+  if ((data == NULL) || (len == 0U))
     {
       g_print("--- dbg_hexdump: empty or NULL pointer\n\n");
       return;
     }
 
-  gint limlen = (gint) len;
+  guint limlen = (guint) len;
   if (limlen > MAX_DBG_LEN)
     {
       limlen = MAX_DBG_LEN;
@@ -334,22 +334,22 @@ void dbg_hexdump(const char *title, const unsigned char *data, unsigned int len)
     }
 
   //-- Iterate over the data in chunks of `BYTES_PER_LINE` ---
-  for (gint i = 0; i < limlen; i += BYTES_PER_LINE)
+  for (guint i = 0U; i < limlen; i += BYTES_PER_LINE)
     {
       // Print the offset for the current line
       g_print("%08d: ", i);
 
       //-- Print the hexadecimal representation of bytes for the current line ---
-      for (gint j = 0; j < BYTES_PER_LINE; ++j)
+      for (guint j = 0U; j < BYTES_PER_LINE; ++j)
         {
           // Add extra space in the middle for readability (after 8 bytes)
-          if (j == 8)
+          if (j == 8U)
             {
               g_print(" ");
             }
 
           // Check if we are still within the bounds of the data
-          if (i + j < limlen)
+          if ((i + j) < limlen)
             {
               // %02x prints a hex value, padded with a zero to 2 characters
               g_print("%02x ", data[i + j]);
@@ -364,9 +364,9 @@ void dbg_hexdump(const char *title, const unsigned char *data, unsigned int len)
       g_print(" |"); // Separator before the character representation
 
       //-- Print the printable character representation ---
-      for (gint j = 0; j < BYTES_PER_LINE; ++j)
+      for (guint j = 0U; j < BYTES_PER_LINE; ++j)
         {
-          if (i + j < limlen)
+          if ((i + j) < limlen)
             {
               guint8 byte = data[i + j];
               // isprint() checks for any printable character including space.
@@ -406,11 +406,11 @@ gboolean is_file_path_safe_and_valid(const gchar *input_path)
   gchar *dir_name = NULL;
   gchar *base_name = NULL;
 
-  if (input_path == NULL || *input_path == '\0')
+  if ((input_path == NULL) || (*input_path == '\0'))
     {
       return FALSE;
     }
-  safe_path = g_strndup(input_path, PATH_MAX - 1);
+  safe_path = g_strndup(input_path, PATH_MAX - 1U);
   dir_name = g_path_get_dirname(safe_path);
   base_name = g_path_get_basename(safe_path);
 
@@ -420,13 +420,13 @@ gboolean is_file_path_safe_and_valid(const gchar *input_path)
       goto CLEANUP_IFPSAV;
     }
 
-  if (g_strcmp0(base_name, ".") == 0 || g_strcmp0(base_name, "..") == 0)
+  if ((g_strcmp0(base_name, ".") == 0) || (g_strcmp0(base_name, "..") == 0))
     {
       g_warning("Invalid filename: %s", base_name);
       goto CLEANUP_IFPSAV;
     }
 
-  if (access(dir_name, W_OK | X_OK) != 0)
+  if (access(dir_name, (W_OK | X_OK)) != 0)
     {
       g_warning("No write permissions in directory: %s", dir_name);
       goto CLEANUP_IFPSAV;

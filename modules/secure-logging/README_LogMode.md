@@ -17,24 +17,27 @@ enum LogMode
    LOGMODE_ENCRYPTED,    //-- enc, do encrypt and provide encrypted log message Base64 encoded
 };
 ```
-In the syslog-ng.conf file the logmode is represented by one of the key words
-(direct | base64 | enc) inside the template slog.
+In the syslog-ng.conf file the logmode is set by --logmode and one of the key words
+(direct|base64|enc) inside the template slog.
+In case it is missing, --logmode enc is automatically used silently which behaves like old
+secure-logging without plain mode.
 
 
 ## LOGMODE_PLAIN_DIRECT
-LOGMODE_PLAIN_DIRECT (--logmode direct in syslog-ng.conf) ensures that a
-log message is not encrypted and provided as plain text.
-Additional line and checksum information is added Base64 encoded to detected manipulation.
+LOGMODE_PLAIN_DIRECT (--logmode direct in syslog-ng.conf) ensures that
+log messages are not encrypted and provided as plain text as they are.
+Additional line and checksum information is added for each message Base64 encoded to detected manipulation.
 
 ## LOGMODE_PLAIN_BASE64
-LOGMODE_PLAIN_BASE64 (--logmode base64 in syslog-ng.conf) ensures that a
-log message is not encrypted but provided encoded in Base64.
-Additional line and checksum information is added Base64 encoded to detected manipulation.
+LOGMODE_PLAIN_BASE64 (--logmode base64 in syslog-ng.conf) ensures that
+log messages are not encrypted but provided encoded in Base64.
+Additional line and checksum information is added for each message Base64 encoded to detected manipulation.
 
 ## LOGMODE_ENCRYPTED
-LOGMODE_ENCRYPTED (--logmode enc in syslog-ng.conf) is the classic way secure logging was intended.
-The log message is fully encrypted and the encrypted message is provided Base64 encoded.
-Additional line and checksum information is added Base64 encoded to detected manipulation.
+LOGMODE_ENCRYPTED (--logmode enc in syslog-ng.conf) is the classic way of secure logging before 
+the logmode was introduced.
+Log message are encrypted and the encrypted messages are provided Base64 encoded.
+Additional line and checksum information is added for each message Base64 encoded to detected manipulation.
 
 
 
@@ -109,7 +112,10 @@ To provide only encrypted log messages, the logmode is to be set to **enc**:
 
 # Configuration Console Tools
 
-The log mode must be provided to console tools slogencrypt and slogverify.
+The log mode can be provided to console tools slogencrypt and slogverify.
+In case the argument --logmode is missing, --logmode enc is used silently
+which provides the same behaviour as in old secure-logging without having
+the plain mode.
 
 ## slogencrypt
 
@@ -122,7 +128,7 @@ Example:
   ./slogencrypt
   --key-file ./current_host.key
   --mac-file ./current_mac.dat
-  --logmode enc
+  --logmode direct
   ./new_host.key
   ./new_mac.dat
   ./input_log.txt
@@ -135,7 +141,7 @@ Help Options:
 Application Options:
   -k, --key-file=FILE       Current host key file
   -m, --mac-file=FILE       Current MAC file
-  -l, --logmode=LOGMODE     Log mode (direct|base64|enc) whether log is expected as is plain text or only encoded in Base64 or encrypted
+  -l, --logmode=LOGMODE     Log mode (direct|base64|enc) whether log messages shall be provided as they are in plain text or only encoded in Base64 or encrypted
 ```
 
 ## slogverify
@@ -175,3 +181,36 @@ Application Options:
   -p, --prev-key-file=FILE     Previous host key file in iterative mode
   -r, --prev-mac-file=FILE     Previous MAC file in iterative mode
 ```
+
+Note: The logmode for verification must fit the one used for slogencrypt.
+
+
+# man pages
+
+```
+doc/man/local/secure-logging.7
+doc/man/local/slogencrypt.1
+doc/man/local/slogverify.1
+```
+
+## Generate manuals by build
+Ensure -DENABLE_MANPAGES=on in the build configuration
+
+## Read manual
+
+```
+m@air:~/Software/install/share/man/man1$ ls
+dqtool.1  loggen.1  pdbtool.1  persist-tool.1  slogencrypt.1  slogkey.1  slogverify.1  syslog-ng-ctl.1  syslog-ng-debun.1
+
+m@air:~/Software/install/share/man/man1$ man ./slogencrypt.1
+
+m@air:~/Software/install/share/man/man1$ man ./slogverify.1
+```
+
+```
+m@air:~/Software/install/share/man$ cd man7
+m@air:~/Software/install/share/man/man7$ ls
+secure-logging.7
+m@air:~/Software/install/share/man/man7$ man ./secure-logging.7
+```
+

@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     { "key-file", 'k', "Current host key file", "FILE", NULL },
     { "mac-file", 'm', "Current MAC file", "FILE", NULL },
     { "logmode",  'l', "Log mode (direct|base64|enc) whether log is expected as is (direct) or plain but encoded as base64 or encrypted", "LOGMODE", NULL },
-    { NULL }
+    { 0 }
   };
 
   GOptionEntry entries[] =
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     { options[0].longname, options[0].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[0].description, options[0].type },
     { options[1].longname, options[1].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArgCheckDirOnly, options[1].description, options[1].type },
     { options[2].longname, options[2].shortname, 0, G_OPTION_ARG_CALLBACK, &validLogModeArg, options[2].description, options[2].type },
-    { NULL }
+    { 0 }
   };
 
   GError *error = NULL;
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
     }
 
   // Note: When all data is provided correctly, argc is 5 or 6 after parsing
-  if (argc < 5 || argc > 6)
+  if ((argc < 5) || (argc > 6))
     {
       g_print("ERROR: Count of arguments is out of range!\n\n");
       (void) slog_usage(context, group, NULL);
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
   gsize nm = G_N_ELEMENTS(mac);
   memset(mac, 0, nm);
 
-  int index = 0;
+  gint optidx = 0;
 
   GString *gstr_path_hostkey = g_string_new(NULL); //-- key-file
   GString *gstr_path_inputMAC = g_string_new(NULL); //-- mac-file
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
   GString *gstr_path_outputlog = g_string_new(NULL); //-- OUTPUTLOG
 
   //-- key-file (hostkey) ---
-  if (NULL == options[index].arg)
+  if (NULL == options[optidx].arg)
     {
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason",
@@ -157,9 +157,9 @@ int main(int argc, char *argv[])
       goto CLEANUP_SLOGENCRYPT;
     }
   {
-    char *p_temp = g_strndup(options[index].arg, PATH_MAX - 1); //-- limit buffer
-    g_free(options[index].arg);
-    options[index++].arg = NULL; //-- inc
+    char *p_temp = g_strndup(options[optidx].arg, PATH_MAX - 1); //-- limit buffer
+    g_free(options[optidx].arg);
+    options[optidx++].arg = NULL; //-- inc
     char *p_canon = g_canonicalize_filename(p_temp, NULL); //-- normalize
     g_string_assign(gstr_path_hostkey, p_canon ? p_canon : "");
     g_free(p_temp);
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 
 
   //-- mac-file (inputMAC) ---
-  if (NULL == options[index].arg)
+  if (NULL == options[optidx].arg)
     {
       msg_error(SLOG_ERROR_PREFIX,
                 evt_tag_str("Reason",
@@ -190,9 +190,9 @@ int main(int argc, char *argv[])
       goto CLEANUP_SLOGENCRYPT;
     }
   {
-    char *p_temp = g_strndup(options[index].arg, PATH_MAX - 1); //-- limit buffer
-    g_free(options[index].arg);
-    options[index++].arg = NULL; //-- inc
+    char *p_temp = g_strndup(options[optidx].arg, PATH_MAX - 1); //-- limit buffer
+    g_free(options[optidx].arg);
+    options[optidx++].arg = NULL; //-- inc
     char *p_canon = g_canonicalize_filename(p_temp, NULL); //-- normalize
     g_string_assign(gstr_path_inputMAC, p_canon ? p_canon : "");
     g_free(p_temp);
@@ -210,17 +210,17 @@ int main(int argc, char *argv[])
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("mac-file", gstr_path_inputMAC->str));
 
   //-- logmode (direct|base64|enc) ---
-  if (NULL == options[index].arg)
+  if (NULL == options[optidx].arg)
     {
       msg_info(SLOG_INFO_PREFIX, evt_tag_str("Reason", "Old configuration without logmode: Use default enc"));
       logmode = LOGMODE_ENCRYPTED;
     }
   else
     {
-      //-- variant --logmode <direct|base64|enc> provided
-      char *str_logmode_arg = g_strndup(options[index].arg, PATH_MAX - 1); //-- limit buffer
-      g_free(options[index].arg);
-      options[index].arg = NULL;
+      //-- variant --logmode (direct|base64|enc) provided
+      char *str_logmode_arg = g_strndup(options[optidx].arg, PATH_MAX - 1); //-- limit buffer
+      g_free(options[optidx].arg);
+      options[optidx].arg = NULL;
       logmode = convert_str_logmode(str_logmode_arg);
       g_free(str_logmode_arg);
       str_logmode_arg = NULL;
@@ -245,8 +245,8 @@ int main(int argc, char *argv[])
   //-- Input and output file arguments -----
 
   //-- NEWKEY (newhostKey) ---
-  index = 1;
-  if (NULL == argv[index])
+  optidx = 1;
+  if (NULL == argv[optidx])
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to NEWKEY is missing!"));
       (void) slog_usage(context, group, NULL);
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
       goto CLEANUP_SLOGENCRYPT;
     }
   {
-    char *p_temp = g_strndup(argv[index++], PATH_MAX - 1); //-- limit buffer, inc
+    char *p_temp = g_strndup(argv[optidx++], PATH_MAX - 1); //-- limit buffer, inc
     char *p_canon = g_canonicalize_filename(p_temp, NULL); //-- normalize
     g_string_assign(gstr_path_newhostKey, p_canon ? p_canon : "");
     g_free(p_temp);
@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("NEWKEY", gstr_path_newhostKey->str));
 
   //-- NEWMAC (outputMAC) ---
-  if (NULL == argv[index])
+  if (NULL == argv[optidx])
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to NEWMAC is missing"));
       (void) slog_usage(context, group, NULL);
@@ -282,7 +282,7 @@ int main(int argc, char *argv[])
       goto CLEANUP_SLOGENCRYPT;
     }
   {
-    char *p_temp = g_strndup(argv[index++], PATH_MAX - 1); //-- limit buffer, inc
+    char *p_temp = g_strndup(argv[optidx++], PATH_MAX - 1); //-- limit buffer, inc
     char *p_canon = g_canonicalize_filename(p_temp, NULL); //-- normalize
     g_string_assign(gstr_path_outputMAC, p_canon ? p_canon : "");
     g_free(p_temp);
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("NEWMAC", gstr_path_outputMAC->str));
 
   //-- INPUTLOG ---
-  if (NULL == argv[index])
+  if (NULL == argv[optidx])
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to INPUTLOG is missing"));
       (void) slog_usage(context, group, NULL);
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
       goto CLEANUP_SLOGENCRYPT;
     }
   {
-    char *p_temp = g_strndup(argv[index++], PATH_MAX - 1); //-- limit buffer, inc
+    char *p_temp = g_strndup(argv[optidx++], PATH_MAX - 1); //-- limit buffer, inc
     char *p_canon = g_canonicalize_filename(p_temp, NULL); //-- normalize
     g_string_assign(gstr_path_inputlog, p_canon ? p_canon : "");
     g_free(p_temp);
@@ -328,7 +328,7 @@ int main(int argc, char *argv[])
   msg_info(SLOG_INFO_PREFIX, evt_tag_str("INPUTLOG", gstr_path_inputlog->str));
 
   //-- OUTPUTLOG ---
-  if (NULL == argv[index])
+  if (NULL == argv[optidx])
     {
       msg_error(SLOG_ERROR_PREFIX, evt_tag_str("Reason", "Path to OUTPUTLOG is missing"));
       (void) slog_usage(context, group, NULL);
@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
       goto CLEANUP_SLOGENCRYPT;
     }
   {
-    char *p_temp = g_strndup(argv[index++], PATH_MAX - 1); //-- limit buffer, inc
+    char *p_temp = g_strndup(argv[optidx++], PATH_MAX - 1); //-- limit buffer, inc
     char *p_canon = g_canonicalize_filename(p_temp, NULL); //-- normalize
     g_string_assign(gstr_path_outputlog, p_canon ? p_canon : "");
     g_free(p_temp);
@@ -369,12 +369,12 @@ int main(int argc, char *argv[])
   // Buffer size arguments if applicable
   if (argc == 6)
     {
-      int result = sscanf(argv[index], "%"G_GUINT64_FORMAT, &bufSize);
-      if (result == EOF || bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
+      int result = sscanf(argv[optidx], "%"G_GUINT64_FORMAT, &bufSize);
+      if ((result == EOF) || (bufSize <= MIN_BUF_SIZE) || (bufSize > MAX_BUF_SIZE))
         {
           msg_error(SLOG_ERROR_PREFIX,
                     evt_tag_str("Reason", "Invalid buffer size."),
-                    evt_tag_int("Size", bufSize),
+                    evt_tag_printf("Size", "%" G_GUINT64_FORMAT, bufSize),
                     evt_tag_int("Minimum buffer size", MIN_BUF_SIZE),
                     evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
           retval = 1; //-- ERROR

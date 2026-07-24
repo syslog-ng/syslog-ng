@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2024 Gergo Ferenc Kovacs
- * Copyright (c) 2025 Airbus Commercial Aircraft
+ * Copyright (c) 2026 Airbus Commercial Aircraft
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,7 +111,7 @@ LogMessage *create_random_sample_message(void)
   for (int i = 0; i < num; i++)
     {
       // 65 to 90 are upper case letters
-      g_string_append_c(msg_str, randomNumber(65, 90));
+      g_string_append_c(msg_str, (gchar) randomNumber(65, 90));
     }
 
   msg = msg_format_parse(&test_parse_options, (const guchar *) msg_str->str, msg_str->len);
@@ -130,7 +130,7 @@ LogMessage *create_random_sample_message(void)
   log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
   msg->timestamps[LM_TS_RECVD].ut_sec = 1139684315;
   msg->timestamps[LM_TS_RECVD].ut_usec = 639000;
-  msg->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(1139684315);
+  msg->timestamps[LM_TS_RECVD].ut_gmtoff = (gint32) get_local_timezone_ofs(1139684315);
 
   g_string_free(msg_str, TRUE);
   return msg;
@@ -152,7 +152,7 @@ LogMessage *create_random_sample_message_with_special_symbols(void)
   for (int i = 0; i < num; i++)
     {
       // 65 to 90 are upper case letters
-      g_string_append_c(msg_gstr, randomNumber(65, 90));
+      g_string_append_c(msg_gstr, (gchar) randomNumber(65, 90));
     }
   GString *utf8_gstr =
     g_string_new(" Hello, World! 🌍, Voilà! Fröhliche Grüße aus Düsseldorf, Straße № 1, ßäöüßÄÖÜ. ¿Qué pasa, señor! (Special chars: !@#$%^&*§©®™) 🤪");
@@ -174,7 +174,7 @@ LogMessage *create_random_sample_message_with_special_symbols(void)
   log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
   msg->timestamps[LM_TS_RECVD].ut_sec = 1139684315;
   msg->timestamps[LM_TS_RECVD].ut_usec = 639000;
-  msg->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(1139684315);
+  msg->timestamps[LM_TS_RECVD].ut_gmtoff = (gint32) get_local_timezone_ofs(1139684315);
 
   g_free(iso_string);
   g_date_time_unref(now);
@@ -288,9 +288,9 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   guchar keyZero[KEY_LENGTH];
   memcpy(keyZero, hostkey, KEY_LENGTH);
 
-  guint64 next = 0;
-  guint64 start = 0;
-  guint64 numberOfLogEntries = 0UL;
+  guint64 next = 0ULL;
+  guint64 start = 0ULL;
+  guint64 numberOfLogEntries = 0ULL;
 
   GString **outputBuffer = g_new0(GString *, totalNumberOfMessages);
 
@@ -320,20 +320,23 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
       g_ptr_array_add(template, templateOutput[i]);
       g_ptr_array_add(output, g_string_new(NULL));
 
-      ret = iterateBuffer(1, template, &next, hostkey, keyZero, 0, output, &numberOfLogEntries, cmac_tag,
+      //-- iterateBuffer returns TRUE in case Success
+      ret = iterateBuffer(1ULL, template, &next, hostkey, keyZero, 0ULL, output, &numberOfLogEntries, cmac_tag,
                           cmac_tag_capacity, tab, logmode);
       if (ret == FALSE)
         {
-          brokenEntries[problemsFound] = i;
+          cr_assert(i <= INT_MAX, "Test data value of i is out of range, must be in range of positive int");
+          brokenEntries[problemsFound] = (int)i;
           problemsFound++;
         }
       g_ptr_array_remove_index(template, 0);
       g_ptr_array_remove_index(output, 0);
     }
 
+  //-- finalizeVerify returns TRUE in case success
   ret = finalizeVerify(start, totalNumberOfMessages, mac, cmac_tag, &tab);
 
-  cr_assert(ret == FALSE, "Aggregated MAC is correct.");
+  cr_assert(ret == FALSE, "Aggregated MAC is not correct.");
 
   g_ptr_array_free(template, FALSE);
   g_ptr_array_free(output, TRUE);
@@ -590,13 +593,13 @@ void corruptKey(TestData *testData)
   // Overwrite the first 8 byte of the key with random values
   for (int i = 0; i < buflen; i++)
     {
-      data[i] = randomNumber(1, 128);
+      data[i] = (gchar) randomNumber(1, 128);
     }
 
   // Overwrite the first 8 byte of the key with random values
   for (int i = 0; i < 8; i++)
     {
-      testData->hostKey[i] = randomNumber(1, 128);
+      testData->hostKey[i] = (guchar) randomNumber(1, 128);
     }
 
   // Copy the corrupted key to the buffer
@@ -734,10 +737,10 @@ void common_slog_verification_bulk(enum LogMode logmode)
   LogTemplate *slog_templ = createTemplate(testData, logmode);
 
   // Create a collection of log messages
-  size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
+  size_t num = (size_t)(unsigned int)randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
   LogMessage **logs = g_new0(LogMessage *, num);
-
-  createLogMessages(num, logs, 0);
+  cr_assert(num <= INT_MAX, "randomNumber out of range, must be less or equal INT_MAX");
+  createLogMessages((gint)num, logs, 0);
 
   // Template output
   GString **output = g_new0(GString *, num);
@@ -801,10 +804,10 @@ void common_slog_corrupted_key(enum LogMode logmode)
   LogTemplate *slog_templ = createTemplate(testData, logmode);
 
   // Create a collection of log messages
-  size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
-
+  size_t num = (size_t) (unsigned int) randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
+  cr_assert(num <= INT_MAX, "randomNumber out of range, must be less or equal INT_MAX");
   LogMessage **logs = g_new0(LogMessage *, num);
-  createLogMessages(num, logs, 0);
+  createLogMessages((gint)num, logs, 0);
 
   GString **output = g_new0(GString *, num);
 
@@ -835,10 +838,10 @@ void common_slog_corrupted_key(enum LogMode logmode)
   slog_templ = createTemplate(testData, logmode);
 
   // Create a collection of log messages
-  num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
+  num = (size_t) (unsigned int) randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
+  cr_assert(num <= INT_MAX, "randomNumber out of range, must be less or equal INT_MAX");
   logs = g_new0(LogMessage *, num);
-  createLogMessages(num, logs, 0);
-
+  createLogMessages((gint)num, logs, 0);
   output = g_new0(GString *, num);
 
   // Apply slog template to each message
@@ -906,11 +909,13 @@ void common_slog_malicious_modifications(enum LogMode logmode)
   LogTemplate *slog_templ = createTemplate(testData, logmode);
 
   // Create a collection of log messages
-  size_t num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
-
+  size_t num = (size_t) (unsigned int) randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
+  cr_assert(num <= INT_MAX, "randomNumber out of range, must be less or equal INT_MAX");
+  cr_assert(num >= MIN_TEST_MESSAGES, "randomNumber out of range, must be equal or greater MIN_TEST_MESSAGES");
+  cr_assert(num <= MAX_TEST_MESSAGES, "randomNumber out of range, must be less or equal MAX_TEST_MESSAGES");
   LogMessage **logs = g_new0(LogMessage *, num);
-  g_print("Num: %lu\n", num);
-  createLogMessages(num, logs, 0);
+  g_print("Num: %d\n", (gint)num);
+  createLogMessages((gint)num, logs, 0);
 
   // Template output
   GString **output = g_new0(GString *, num);
@@ -922,7 +927,8 @@ void common_slog_malicious_modifications(enum LogMode logmode)
     }
 
 
-  int mods = randomNumber(1, num - 1);
+  int mods = randomNumber(1, ((gint)num) - 1);
+  cr_assert(mods > 0, "mods is out of range, must be greater than 0");
   int entriesToModify[mods];
 
   mods = 1;
@@ -930,13 +936,19 @@ void common_slog_malicious_modifications(enum LogMode logmode)
   // We might modify the same entry twice
   for (int i = 0; i < mods; i++)
     {
-      entriesToModify[i] = randomNumber(0, num - 1);
+      entriesToModify[i] = randomNumber(0, ((gint)num) - 1);
       g_print("MODIFYING ENTRY %d\n", entriesToModify[i]);
 
-
       // Overwrite with invalid string (invalid with high probability!)
-      g_string_overwrite(output[entriesToModify[i]], randomNumber(COUNTER_LENGTH + COLON,
-                                                                  (output[entriesToModify[i]]->len) - 1), "999999999999999999999999999999999999999999999999999999999999999");
+      // org: g_string_overwrite(output[entriesToModify[i]], randomNumber(COUNTER_LENGTH + COLON, (output[entriesToModify[i]]->len) - 1), "999999999999999999999999999999999999999999999999999999999999999");
+      gsize curr_str_len = output[entriesToModify[i]]->len;
+      cr_assert(curr_str_len > (gsize) (COUNTER_LENGTH + COLON), "Wrong test string length");
+      cr_assert(curr_str_len > 0U, "Wrong test string length, len must be greater 0");
+      int max_rand = (int)(curr_str_len - 1U);
+      cr_assert((int)(COUNTER_LENGTH + COLON) <= max_rand, "Wrong test precondition");
+      g_string_overwrite(output[entriesToModify[i]], (gsize)(unsigned int)randomNumber((int)(COUNTER_LENGTH + COLON),
+                         max_rand),
+                         "999999999999999999999999999999999999999999999999999999999999999");
     }
 
   // Verify the previously created log
@@ -949,13 +961,13 @@ void common_slog_malicious_modifications(enum LogMode logmode)
 
   for (gsize i = 0; i < num; i++)
     {
-      if (1 == findInArray(i, entriesToModify, mods))
+      if (1 == findInArray((int)i, entriesToModify, mods))
         {
-          cr_assert(1 == findInArray(i, brokenEntries, mods), "Modified entry %lu not detected.", i);
+          cr_assert(1 == findInArray((int)i, brokenEntries, mods), "Modified entry %lu not detected.", i);
         }
       else
         {
-          cr_assert(0 == findInArray(i, brokenEntries, mods), "Unmodified entry %lu detected as modified.", i);
+          cr_assert(0 == findInArray((int)i, brokenEntries, mods), "Unmodified entry %lu detected as modified.", i);
         }
     }
 
@@ -1144,7 +1156,7 @@ void test_slog_base64_helper(void)
   GString *dest = g_string_new("");
   gsize len_bin_part = 28;
   cr_assert(len_bin_data > len_bin_part);
-  gsize textlen = len_bin_data - len_bin_part;
+  gssize textlen = (gssize)(len_bin_data - len_bin_part);
   g_string_append_len(dest, (const char *)(pbin_data + len_bin_part), textlen);
   g_print("cut out: %s\n", dest->str);
   char *search = strstr(dest->str, "Line 07");

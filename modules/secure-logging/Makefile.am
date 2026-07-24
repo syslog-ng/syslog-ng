@@ -1,4 +1,4 @@
-# modules/secure-logging/Makefile.am
+# File: modules/secure-logging/Makefile.am
 
 if ENABLE_SLOG
 
@@ -82,7 +82,6 @@ EXTRA_modules_secure_logging_libsecure_logging_la_DEPENDENCIES = \
 # -- Custom Build Targets ---
 
 # Use a specific alias to avoid directory name conflicts
-.PHONY: mod-secure-logging-all
 mod-secure-logging-all: \
 	modules/secure-logging/libutils_slog.la \
 	modules/secure-logging/libsyslog-ng-secure-logging.la \

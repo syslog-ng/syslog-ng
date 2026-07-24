@@ -25,7 +25,7 @@
 #-----------------------------------------------------------------------
 # File:   run_autotools_rebuild.sh
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
-# Date:   2026-06-02
+# Date:   2026-06-30
 #
 # Helper script to rebuild all from scratch inclusive installation and
 # test.
@@ -43,11 +43,17 @@ set -o pipefail
 : "${MY_MAKE:="make"}"
 : "${IS_PARALLEL_BUILD:="true"}"
 
-#-- user specifc path ---
-PREFIX=${HOME}/Software/install
-LOGS=${HOME}/backup/05_build_log
+#-- installation directory (most likely exported in ~/.bashrc)
+: "${SW_INSTALL_DIR:="$HOME/Software/install"}"
 
+#-- build logs directory (most likely exported in ~/.bashrc)
+: "${BUILD_LOG_DIR:="$HOME/backup/05_build_log"}"
+
+# When user wants to keep installation directory, REMOVE_PREFIX must be set to false
 REMOVE_PREFIX="true"
+
+PREFIX=${SW_INSTALL_DIR}
+LOGS=${BUILD_LOG_DIR}
 
 export AM_COLOR_TESTS=always
 export FORCE_COLOR=1
@@ -78,7 +84,8 @@ CONFIGURATION=(
 )
 
 # export CFLAGS="${CFLAGS} -Wall -Wextra -Wshadow -Wpedantic"
-export CFLAGS="${CFLAGS} -Wall -Wextra -Wshadow"
+# export CFLAGS="${CFLAGS} -Wall -Wextra -Wshadow"
+export CFLAGS="${CFLAGS} -Wall -Wextra -Wshadow -Wconversion"
 
 # current Git branch for build log name
 GIT_BRANCH=""
@@ -350,7 +357,9 @@ perform_complete_rebuild() {
     # -- make ---
     set -e
     JOBS=""
-    [[ ${IS_PARALLEL_BUILD} == "true" ]] && JOBS="-j$(nproc)"
+    if [[ ${IS_PARALLEL_BUILD} == "true" ]]; then
+        JOBS="-j$(nproc)"
+    fi
     cd "${BUILD_DIR}" || {
         echo "${FAIL_CD}"
         cd "${ORIGINAL_DIR}" || echo "${FAIL_CDR} ${ORIGINAL_DIR}" >&2
@@ -362,7 +371,11 @@ perform_complete_rebuild() {
     echo "File: ${CURRENT_LOG_MAKE}" >"${CURRENT_LOG_MAKE}"
 
     set +e
-    ${MY_MAKE} "${JOBS}" VERBOSE=1 2>&1 | tee -a "${CURRENT_LOG_MAKE}"
+    if [[ ${IS_PARALLEL_BUILD} == "true" ]]; then
+        ${MY_MAKE} "${JOBS}" VERBOSE=1 2>&1 | tee -a "${CURRENT_LOG_MAKE}"
+    else
+        ${MY_MAKE} VERBOSE=1 2>&1 | tee -a "${CURRENT_LOG_MAKE}"
+    fi
     # Check PIPESTATUS of the make command (index 0)
     MAKE_RET=${PIPESTATUS[0]}
     set -e # Re-enable exit-on-error

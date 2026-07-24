@@ -25,7 +25,7 @@
 #-----------------------------------------------------------------------
 # File:   run_clean.sh
 # Author: Airbus Commercial Aircraft <secure-logging@airbus.com>
-# Date:   2026-06-02
+# Date:   2026-06-30
 #
 # Helper script to remove build artifact
 
@@ -36,12 +36,14 @@ set -o pipefail
 
 : "${IS_CLANG:="false"}"
 : "${MY_MAKE:="make"}"
+: "${SW_INSTALL_DIR:="$HOME/Software/install"}"
+: "${BUILD_LOG_DIR:="$HOME/backup/05_build_log"}"
 
-#-- user specifc path ---
-PREFIX=${HOME}/Software/install
-LOGS=${HOME}/backup/05_build_log
-
+# When user wants to keep installation directory, REMOVE_PREFIX must be false
 REMOVE_PREFIX="true"
+
+PREFIX=${SW_INSTALL_DIR}
+LOGS=${BUILD_LOG_DIR}
 
 export AM_COLOR_TESTS=always
 export FORCE_COLOR=1

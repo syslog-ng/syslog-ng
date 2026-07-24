@@ -47,10 +47,11 @@ scripts=("./cli11_enc_syslog_verify_n.sh"
     "./cli15_multiline_all_logmodes_crypt_verify_n.sh"
     "./cli15_multiline_all_logmodes_crypt_verify_n_tamper.sh"
     "./cli16_plain_syslog_verify_n.sh"
+    "./cli19_plain_valgrind.sh"
     "./cli27_bin.sh"
     "./cli43_enc_syslog_verify_n_fallback_logmode.sh"
     "./cli44_crypt_verify_i_valgrind_fallback_logmode.sh"
-    "./cli19_plain_valgrind.sh"
+    "./cli45_direct_syslog_verify_n_buffer.sh"
 )
 
 # exit on first error
