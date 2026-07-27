@@ -84,9 +84,9 @@ class MessageSender(object):
         """
         session = get_session_counter()
 
-        self.initSender()
         expected = []
         try:
+            self.initSender()
             for counter in range(1, self.repeat):
                 if self.new_protocol == 0:
                     # RFC3164 format
