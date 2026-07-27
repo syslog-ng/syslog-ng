@@ -67,6 +67,10 @@ class MessageSender(object):
         self.new_protocol = new_protocol
         self.dgram = dgram
 
+    def close(self):
+        """Release sender resources. Subclasses override if cleanup is needed."""
+        pass
+
     def sendMessages(self, msg, pri=7):
         """Send multiple formatted messages.
 
@@ -82,36 +86,38 @@ class MessageSender(object):
 
         self.initSender()
         expected = []
+        try:
+            for counter in range(1, self.repeat):
+                if self.new_protocol == 0:
+                    # RFC3164 format
+                    line = '<%d>%s %s %03d/%05d %s %s' % (
+                        pri,
+                        SYSLOG_PREFIX,
+                        msg,
+                        session,
+                        counter,
+                        str(self),
+                        PADDING,
+                    )
+                else:
+                    # RFC5424 format
+                    line = '<%d>1 %s %s %03d/%05d %s %s' % (
+                        pri,
+                        SYSLOG_NEW_PREFIX,
+                        msg,
+                        session,
+                        counter,
+                        str(self),
+                        PADDING,
+                    )
 
-        for counter in range(1, self.repeat):
-            if self.new_protocol == 0:
-                # RFC3164 format
-                line = '<%d>%s %s %03d/%05d %s %s' % (
-                    pri,
-                    SYSLOG_PREFIX,
-                    msg,
-                    session,
-                    counter,
-                    str(self),
-                    PADDING,
-                )
-            else:
-                # RFC5424 format
-                line = '<%d>1 %s %s %03d/%05d %s %s' % (
-                    pri,
-                    SYSLOG_NEW_PREFIX,
-                    msg,
-                    session,
-                    counter,
-                    str(self),
-                    PADDING,
-                )
+                # Add framing for TCP with new protocol
+                if self.dgram == 0 and self.new_protocol == 1:
+                    line = '%d %s' % (len(line), line)
 
-            # Add framing for TCP with new protocol
-            if self.dgram == 0 and self.new_protocol == 1:
-                line = '%d %s' % (len(line), line)
-
-            self.sendMessage(line)
+                self.sendMessage(line)
+        finally:
+            self.close()
 
         expected.append((msg, session, self.repeat))
         increment_session_counter()
