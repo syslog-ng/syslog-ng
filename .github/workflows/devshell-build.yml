@@ -200,6 +200,29 @@ jobs:
         if: ${{ inputs.image-name == 'devshell' || inputs.use_all }}
         run: ${SYSLOG_NG_INSTALL_DIR}/bin/syslog-ng-update-virtualenv -y
 
+      - name: "Workaround: Prevent librdkafka sasl_client_init() crash before Light tests"
+        # librdkafka (compiled with Cyrus-SASL) calls sasl_client_init(NULL)
+        # unconditionally on the first rd_kafka_new(). On Debian Bullseye, Focal
+        # and Bookworm, libsasl2's internal canonuser registration code
+        # (sasl_canonuser_add_plugin("INTERNAL",...)) corrupts its own function
+        # pointer dispatch table, causing a SIGSEGV. The corruption is in
+        # libsasl2's own initialisation, not in external plugins:
+        # setting SASL_PATH to an empty directory does not prevent the crash
+        # because that only affects external plugin loading.
+        #
+        # The only workaround short of recompiling librdkafka without Cyrus-SASL
+        # is to intercept sasl_client_init() with a no-op via LD_PRELOAD so it
+        # never runs. All light tests use plaintext Kafka connections so no SASL
+        # functionality is needed.
+        if: ${{ inputs.image-name == 'devshell' || inputs.use_all }}
+        run: |
+          printf '%s\n' \
+            'int sasl_client_init(const void *cb) { return 0; }' \
+            'int sasl_done(void) { return 0; }' \
+            > /tmp/sasl_noop.c
+          cc -shared -fPIC -o /tmp/sasl_noop.so /tmp/sasl_noop.c
+          echo "LD_PRELOAD=/tmp/sasl_noop.so" >> $GITHUB_ENV
+
       - name: Light
         # Skip Light testing for now in none-devshell images or if no python support in the image yet
         if: ${{ inputs.image-name == 'devshell' || inputs.use_all }}
