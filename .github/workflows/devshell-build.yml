@@ -219,8 +219,8 @@ jobs:
 
       - name: "Prepare artifact: light-reports"
         id: prepare-light-reports
-        # Handle failures only for devshell images now
-        if: ${{ inputs.image-name == 'devshell' && always() && steps.light.outcome == 'failure' }}
+        # Handle failures for devshell images and non-devshell images when use_all is requested
+        if: ${{ (inputs.image-name == 'devshell' || inputs.use_all) && always() && steps.light.outcome == 'failure' }}
         run: |
           REPORTS_DIR=tests/light/reports
           cp -r ${REPORTS_DIR} /tmp/light-reports
@@ -229,24 +229,24 @@ jobs:
 
       - name: "Artifact: light-reports"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now (exclude i386 reporting for now, actions/upload-artifact@v4 has no i386 support)
-        if: ${{ inputs.image-arch-suffix != '-i386' && inputs.image-name == 'devshell' && always() && steps.prepare-light-reports.outcome == 'success' }}
+        # Handle failures for devshell images and non-devshell images when use_all is requested (exclude i386 reporting for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ inputs.image-arch-suffix != '-i386' && (inputs.image-name == 'devshell' || inputs.use_all) && always() && steps.prepare-light-reports.outcome == 'success' }}
         with:
-          name: light-reports-${{ inputs.build-tool }}-${{ inputs.cc }}
+          name: light-reports-${{ inputs.image-name }}-${{ inputs.build-tool }}-${{ inputs.cc }}
           path: /tmp/light-reports.tar.gz
 
       - name: Dump corefile backtrace
         working-directory: ${{ env.COREFILES_DIR }}
-        # Handle failures only for devshell images now
-        if: ${{ inputs.image-name == 'devshell' && failure() }}
+        # Handle failures for devshell images and non-devshell images when use_all is requested
+        if: ${{ (inputs.image-name == 'devshell' || inputs.use_all) && failure() }}
         run: |
           find -name "core.*syslog-ng*" -exec \
             gdb --ex="thread apply all bt full" --ex="quit" ${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng --core {} \;
 
       - name: "Artifact: corefiles"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now (exclude i386 for now, actions/upload-artifact@v4 has no i386 support)
-        if: ${{ inputs.image-arch-suffix != '-i386' && inputs.image-name == 'devshell' && failure() }}
+        # Handle failures for devshell images and non-devshell images when use_all is requested (exclude i386 for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ inputs.image-arch-suffix != '-i386' && (inputs.image-name == 'devshell' || inputs.use_all) && failure() }}
         with:
-          name: corefiles-${{ inputs.build-tool }}-${{ inputs.cc }}
+          name: corefiles-${{ inputs.image-name }}-${{ inputs.build-tool }}-${{ inputs.cc }}
           path: ${{ env.COREFILES_DIR }}
