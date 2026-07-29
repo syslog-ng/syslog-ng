@@ -64,11 +64,19 @@ class FileSender(MessageSender):
         except OSError:
             self.is_pipe = False
 
+    def close(self):
+        """Flush and close the file handle."""
+        if self.fd:
+            try:
+                self.fd.flush()
+                self.fd.close()
+            except Exception:
+                pass
+            self.fd = None
+
     def __del__(self):
         """Clean up file handle on deletion."""
-        if self.fd:
-            self.fd.flush()
-            self.fd.close()
+        self.close()
 
     def initSender(self):
         """Open file or pipe for writing.

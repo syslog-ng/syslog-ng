@@ -200,6 +200,29 @@ jobs:
         if: ${{ inputs.image-name == 'devshell' || inputs.use_all }}
         run: ${SYSLOG_NG_INSTALL_DIR}/bin/syslog-ng-update-virtualenv -y
 
+      - name: "Workaround: Prevent librdkafka sasl_client_init() crash before Light tests"
+        # librdkafka (compiled with Cyrus-SASL) calls sasl_client_init(NULL)
+        # unconditionally on the first rd_kafka_new(). On Debian Bullseye, Focal
+        # and Bookworm, libsasl2's internal canonuser registration code
+        # (sasl_canonuser_add_plugin("INTERNAL",...)) corrupts its own function
+        # pointer dispatch table, causing a SIGSEGV. The corruption is in
+        # libsasl2's own initialisation, not in external plugins:
+        # setting SASL_PATH to an empty directory does not prevent the crash
+        # because that only affects external plugin loading.
+        #
+        # The only workaround short of recompiling librdkafka without Cyrus-SASL
+        # is to intercept sasl_client_init() with a no-op via LD_PRELOAD so it
+        # never runs. All light tests use plaintext Kafka connections so no SASL
+        # functionality is needed.
+        if: ${{ inputs.image-name == 'devshell' || inputs.use_all }}
+        run: |
+          printf '%s\n' \
+            'int sasl_client_init(const void *cb) { return 0; }' \
+            'int sasl_done(void) { return 0; }' \
+            > /tmp/sasl_noop.c
+          cc -shared -fPIC -o /tmp/sasl_noop.so /tmp/sasl_noop.c
+          echo "LD_PRELOAD=/tmp/sasl_noop.so" >> $GITHUB_ENV
+
       - name: Light
         # Skip Light testing for now in none-devshell images or if no python support in the image yet
         if: ${{ inputs.image-name == 'devshell' || inputs.use_all }}
@@ -219,8 +242,8 @@ jobs:
 
       - name: "Prepare artifact: light-reports"
         id: prepare-light-reports
-        # Handle failures only for devshell images now
-        if: ${{ inputs.image-name == 'devshell' && always() && steps.light.outcome == 'failure' }}
+        # Handle failures for devshell images and non-devshell images when use_all is requested
+        if: ${{ (inputs.image-name == 'devshell' || inputs.use_all) && always() && steps.light.outcome == 'failure' }}
         run: |
           REPORTS_DIR=tests/light/reports
           cp -r ${REPORTS_DIR} /tmp/light-reports
@@ -229,24 +252,24 @@ jobs:
 
       - name: "Artifact: light-reports"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now (exclude i386 reporting for now, actions/upload-artifact@v4 has no i386 support)
-        if: ${{ inputs.image-arch-suffix != '-i386' && inputs.image-name == 'devshell' && always() && steps.prepare-light-reports.outcome == 'success' }}
+        # Handle failures for devshell images and non-devshell images when use_all is requested (exclude i386 reporting for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ inputs.image-arch-suffix != '-i386' && (inputs.image-name == 'devshell' || inputs.use_all) && always() && steps.prepare-light-reports.outcome == 'success' }}
         with:
-          name: light-reports-${{ inputs.build-tool }}-${{ inputs.cc }}
+          name: light-reports-${{ inputs.image-name }}-${{ inputs.build-tool }}-${{ inputs.cc }}
           path: /tmp/light-reports.tar.gz
 
       - name: Dump corefile backtrace
         working-directory: ${{ env.COREFILES_DIR }}
-        # Handle failures only for devshell images now
-        if: ${{ inputs.image-name == 'devshell' && failure() }}
+        # Handle failures for devshell images and non-devshell images when use_all is requested
+        if: ${{ (inputs.image-name == 'devshell' || inputs.use_all) && failure() }}
         run: |
           find -name "core.*syslog-ng*" -exec \
             gdb --ex="thread apply all bt full" --ex="quit" ${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng --core {} \;
 
       - name: "Artifact: corefiles"
         uses: actions/upload-artifact@v4
-        # Handle failures only for devshell images now (exclude i386 for now, actions/upload-artifact@v4 has no i386 support)
-        if: ${{ inputs.image-arch-suffix != '-i386' && inputs.image-name == 'devshell' && failure() }}
+        # Handle failures for devshell images and non-devshell images when use_all is requested (exclude i386 for now, actions/upload-artifact@v4 has no i386 support)
+        if: ${{ inputs.image-arch-suffix != '-i386' && (inputs.image-name == 'devshell' || inputs.use_all) && failure() }}
         with:
-          name: corefiles-${{ inputs.build-tool }}-${{ inputs.cc }}
+          name: corefiles-${{ inputs.image-name }}-${{ inputs.build-tool }}-${{ inputs.cc }}
           path: ${{ env.COREFILES_DIR }}
