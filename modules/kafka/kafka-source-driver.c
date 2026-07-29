@@ -452,6 +452,9 @@ _kafka_log_state_changed(KafkaSourceDriver *self, KafkaConnectedState state, rd_
 rd_kafka_resp_err_t
 kafka_update_state(KafkaSourceDriver *self, gboolean lock)
 {
+  if (self->kafka == NULL)
+    return RD_KAFKA_RESP_ERR__STATE;
+
   if (lock)
     kafka_opaque_state_lock(&self->opaque);
 
@@ -1573,7 +1576,7 @@ _construct_kafka_client(KafkaSourceDriver *self)
    * using our ack and offset tracker, based on the options.persist_store value, if options.persist_store is set to
    *    - KSPS_LOCAL
    *          disable the automatic offset store and commit, everything is handled via our local persist state handler
-   *   - KSPS_REMOTE
+   *    - KSPS_REMOTE
    *          disable the automatic offset store, let the user control the commit via the librdkafka automatic commit mechanism
    *          (enable.auto.commit = true), but we still store the offset manually via the librdkafka API
    *          once the message is fully processed.
