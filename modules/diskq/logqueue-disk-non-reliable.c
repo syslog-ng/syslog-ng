@@ -535,10 +535,13 @@ _stop(LogQueueDisk *s, gboolean *persistent)
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
 
   gboolean result = FALSE;
+  gboolean has_messages = TRUE;
 
-  if (qdisk_stop(s->qdisk, self->front_cache, self->backlog, self->flow_control_window))
+  *persistent = TRUE;
+
+  if (qdisk_stop(s->qdisk, self->front_cache, self->backlog, self->flow_control_window, &has_messages))
     {
-      *persistent = TRUE;
+      *persistent = has_messages;
       result = TRUE;
     }
 
@@ -552,7 +555,7 @@ _stop(LogQueueDisk *s, gboolean *persistent)
 static gboolean
 _stop_corrupted(LogQueueDisk *s)
 {
-  return qdisk_stop(s->qdisk, NULL, NULL, NULL);
+  return qdisk_stop(s->qdisk, NULL, NULL, NULL, NULL);
 }
 
 static inline void

@@ -1745,12 +1745,18 @@ qdisk_start(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_cont
 }
 
 gboolean
-qdisk_stop(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window)
+qdisk_stop(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window,
+           gboolean *has_messages)
 {
   gboolean result = TRUE;
 
   if (!self->options->read_only)
     result = _save_state(self, front_cache, backlog, flow_control_window);
+
+  if (has_messages)
+    {
+      *has_messages = result ? (_number_of_messages(self) != 0) : TRUE;
+    }
 
   _close_file(self);
 

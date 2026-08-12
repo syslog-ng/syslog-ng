@@ -70,7 +70,8 @@ void qdisk_empty_backlog(QDisk *self);
 gint64 qdisk_get_next_tail_position(QDisk *self);
 gint64 qdisk_get_next_head_position(QDisk *self);
 gboolean qdisk_start(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window);
-gboolean qdisk_stop(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window);
+gboolean qdisk_stop(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window,
+                    gboolean *has_messages);
 void qdisk_reset_file_if_empty(QDisk *self);
 gboolean qdisk_started(QDisk *self);
 void qdisk_free(QDisk *self);

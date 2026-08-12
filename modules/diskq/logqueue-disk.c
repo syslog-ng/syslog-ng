@@ -60,7 +60,9 @@ log_queue_disk_stop(LogQueue *s, gboolean *persistent)
 
   if (!qdisk_started(self->qdisk))
     {
-      *persistent = FALSE;
+      /* nothing was measured here and the file may hold messages from an
+       * earlier run, so we report it as one to keep */
+      *persistent = TRUE;
       return TRUE;
     }
 

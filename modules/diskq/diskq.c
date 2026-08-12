@@ -22,6 +22,8 @@
  */
 
 #include <math.h>
+#include <errno.h>
+#include <unistd.h>
 
 #include "diskq.h"
 #include "diskq-config.h"
@@ -173,6 +175,29 @@ exit:
   return queue;
 }
 
+static gboolean
+_discard_empty_queue_file(GlobalConfig *cfg, LogQueue *queue, const gchar *filename)
+{
+  if (!filename)
+    return FALSE;
+
+  if (unlink(filename) < 0 && errno != ENOENT)
+    {
+      msg_error("Failed to remove empty disk-buffer file",
+                evt_tag_str("filename", filename),
+                evt_tag_error(EVT_TAG_OSERROR));
+      return FALSE;
+    }
+
+  if (queue->persist_name && cfg && cfg->state)
+    persist_state_remove_entry(cfg->state, queue->persist_name);
+
+  msg_debug("Removed empty disk-buffer file",
+            evt_tag_str("filename", filename));
+
+  return TRUE;
+}
+
 void
 _release_queue(LogDestDriver *dd, LogQueue *queue)
 {
@@ -180,7 +205,21 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
   gboolean persistent;
 
   log_queue_disk_stop(queue, &persistent);
-  diskq_global_metrics_file_released(log_queue_disk_get_filename(queue));
+
+  const gchar *filename = log_queue_disk_get_filename(queue);
+  diskq_global_metrics_file_released(filename);
+
+  if (!persistent)
+    {
+      /* the file and its persist entry have to go together: an entry naming a
+       * deleted file lets this destination reattach to a filename that another
+       * queue has been given in the meantime */
+      if (_discard_empty_queue_file(cfg, queue, filename))
+        {
+          log_queue_unref(queue);
+          return;
+        }
+    }
 
   if (queue->persist_name)
     {
