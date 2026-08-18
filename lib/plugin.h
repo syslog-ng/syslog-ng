@@ -85,9 +85,11 @@ struct _ModuleInfo
   const gchar *description;
   /* git sha that identifies the core revision that this was compiled for */
   const gchar *core_revision;
+  /* if TRUE, the module is kept resident (g_module_make_resident()) and
+   * never actually unmapped across reloads */
+  gboolean requires_residency;
   Plugin *plugins;
   gint plugins_len;
-  /* the higher the better */
 };
 
 struct _PluginContext

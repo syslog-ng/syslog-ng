@@ -204,6 +204,11 @@ _dlopen_module_as_filename(const gchar *module_file_name, const gchar *module_na
                evt_tag_str("error", g_module_error()));
       return NULL;
     }
+
+  ModuleInfo *module_info = _get_module_info(mod);
+  if (module_info && module_info->requires_residency)
+    g_module_make_resident(mod);
+
   return mod;
 }
 
