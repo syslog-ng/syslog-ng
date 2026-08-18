@@ -47,11 +47,13 @@ debian-sid			python3,nojava
 #   - we start using Python3 at focal onwards.
 #   - libcriterion-dev is available starting with 21.04
 #   - bpf is available correctly from plucky?!
-ubuntu-focal		python3,nocriterion,nomqtt,nogrpc,nobpf,notzdatalegacy
-ubuntu-jammy		python3,nobpf,notzdatalegacy
-ubuntu-noble		python3,nobpf,notzdatalegacy
-ubuntu-plucky		python3,notzdatalegacy
-ubuntu-resolute		python3,notzdatalegacy
+#   - java is disabled: the JVM cannot be safely dlopen()/dlclose()'d
+#     repeatedly, causing a memory leak on config reload
+ubuntu-focal		python3,nojava,nocriterion,nomqtt,nogrpc,nobpf,notzdatalegacy
+ubuntu-jammy		python3,nojava,nobpf,notzdatalegacy
+ubuntu-noble		python3,nojava,nobpf,notzdatalegacy
+ubuntu-plucky		python3,nojava,notzdatalegacy
+ubuntu-resolute		python3,nojava,notzdatalegacy
 
 # fedora-rawhide currently ships a broken riemann-c-client-devel/grpc-devel/protobuf-c-devel set
 # Disable riemann here to unblock the rawhide image build until the packaging chain is consistent again.

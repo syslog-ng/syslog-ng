@@ -1,7 +1,16 @@
 #! /bin/sh
 
 CORE_MODULES="syslog-ng-mod-sql syslog-ng-mod-mongodb"
+
+# Java packages are never built (see dbld/build.manifest), so exclude
+# them from Recommends: too, instead of relying on the package simply
+# not existing in the repo.
+JAVA_DEPENDENT_MODULES="syslog-ng-mod-java syslog-ng-mod-java-common-lib syslog-ng-mod-hdfs"
+
 ALL_MODULES=$(echo $(grep "^Package: syslog-ng-mod-" debian/control | cut -d: -f 2))
+for javamod in ${JAVA_DEPENDENT_MODULES}; do
+	ALL_MODULES=$(echo ${ALL_MODULES} | tr ' ' '\n' | grep -v "^${javamod}$" | tr '\n' ' ')
+done
 
 case "$1" in
         "core")

@@ -44,7 +44,10 @@ Source4:        %{name}-service-prepare
 %bcond_with	geoip
 %else
 %bcond_without  dbi
-%bcond_without	java
+# Java disabled by default: the JVM cannot be safely dlopen()/dlclose()'d
+# repeatedly, causing a memory leak on config reload. Build with
+# --with java to re-enable.
+%bcond_with	java
 %bcond_without	geoip
 %endif
 
