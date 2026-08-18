@@ -6,6 +6,7 @@ EXTRA_DIST += \
 	cmake/enable_caps.cmake \
 	cmake/enable_cpp.cmake \
 	cmake/enable_env_wrap.cmake \
+	cmake/enable_jemalloc.cmake \
 	cmake/enable_objc.cmake \
 	cmake/enable_perf.cmake \
 	cmake/enable_server_mode.cmake \
@@ -19,6 +20,7 @@ EXTRA_DIST += \
 	cmake/find_glib.cmake \
 	cmake/find_inotify.cmake \
 	cmake/find_ivykis.cmake \
+	cmake/find_jemalloc.cmake \
 	cmake/find_python_and_build_venv.cmake \
 	cmake/init_submodules.cmake \
 	cmake/module_switch.cmake \
@@ -50,15 +52,18 @@ EXTRA_DIST += \
 	cmake/Modules/FindInotify.cmake \
 	cmake/Modules/FindIVYKIS.cmake \
 	cmake/Modules/FindJSONC.cmake \
+	cmake/Modules/FindLIBBPF.cmake \
 	cmake/Modules/FindLIBCAP.cmake \
 	cmake/Modules/FindLIBDBI.cmake \
 	cmake/Modules/FindLIBMAXMINDDB.cmake \
 	cmake/Modules/FindLIBNET.cmake \
+	cmake/Modules/FindLIBUNWIND.cmake \
 	cmake/Modules/FindNETSNMP.cmake \
 	cmake/Modules/FindPackageMessage.cmake \
 	cmake/Modules/FindRabbitMQ.cmake \
 	cmake/Modules/Findrdkafka.cmake \
 	cmake/Modules/FindResolv.cmake \
+	cmake/Modules/Finduring.cmake \
 	cmake/Modules/FindRiemannClient.cmake \
 	cmake/Modules/Findsystemd.cmake \
 	cmake/Modules/FindWRAP.cmake \
