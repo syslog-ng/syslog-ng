@@ -32,6 +32,7 @@ add_module(
   DEPENDS clickhouse-cpp grpc-common-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${CLICKHOUSE_SOURCES}
+  LINK_OPTIONS ${MODULE_NODELETE_LINK_OPTIONS}
 )
 
 set_target_properties(clickhouse PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${CMAKE_INSTALL_PREFIX}/lib/syslog-ng")

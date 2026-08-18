@@ -32,6 +32,13 @@ include(enable_cpp)
 module_switch(ENABLE_DARWIN_OSL "Enable OSLog" APPLE)
 include(enable_objc)
 
+# -z,nodelete is a GNU ld/ELF linker option; Apple's ld64 (Darwin) rejects it outright.
+if(APPLE)
+  set(MODULE_NODELETE_LINK_OPTIONS "")
+else()
+  set(MODULE_NODELETE_LINK_OPTIONS "-Wl,-z,nodelete")
+endif()
+
 include(init_submodules)
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/tests/valgrind/unit-test-leak.supp")

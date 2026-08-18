@@ -47,7 +47,8 @@ modules_grpc_bigquery_libbigquery_la_LIBADD = \
 
 nodist_EXTRA_modules_grpc_bigquery_libbigquery_la_SOURCES = force-cpp-linker-with-default-stdlib.cpp
 
-modules_grpc_bigquery_libbigquery_la_LDFLAGS = $(MODULE_LDFLAGS)
+# -z,nodelete: keep the module resident across dlclose().
+modules_grpc_bigquery_libbigquery_la_LDFLAGS = $(MODULE_LDFLAGS) $(MODULE_NODELETE_LDFLAGS)
 EXTRA_modules_grpc_bigquery_libbigquery_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
   $(GRPC_COMMON_LIBS) \

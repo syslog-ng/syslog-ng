@@ -33,6 +33,7 @@ add_module(
   DEPENDS loki-cpp grpc-common-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${LOKI_SOURCES}
+  LINK_OPTIONS ${MODULE_NODELETE_LINK_OPTIONS}
 )
 
 target_compile_options(loki-cpp PRIVATE -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)
