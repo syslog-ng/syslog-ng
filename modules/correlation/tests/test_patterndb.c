@@ -60,13 +60,19 @@ _emit_func(LogMessage *msg, gpointer user_data)
   g_ptr_array_add(messages, log_msg_ref(msg));
 }
 
+static const gchar *
+_get_xsddir_in_build(void)
+{
+  return SYSLOG_NG_PATH_TOPSRC_DIR "/doc/xsd";
+}
+
 static void
 assert_pdb_file_valid(const gchar *filename_)
 {
   GError *error = NULL;
   gboolean success;
 
-  success = pdb_file_validate_in_tests(filename_, &error);
+  success = pdb_file_validate(filename_, &error, _get_xsddir_in_build);
   cr_assert(success, "Error validating patterndb, error=%s\n", error ? error->message : "unknown");
   g_clear_error(&error);
 }

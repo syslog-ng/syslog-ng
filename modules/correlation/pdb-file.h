@@ -26,9 +26,11 @@
 
 #include "syslog-ng.h"
 
+typedef const gchar *(*PdbGetXsdDirFunc) (void);
+
 gint pdb_file_detect_version(const gchar *pdbfile, GError **error);
-gboolean pdb_file_validate(const gchar *filename, GError **error);
-gboolean pdb_file_validate_in_tests(const gchar *filename, GError **error);
+/* get_xsd_dir may be NULL to validate against the installed XSD directory */
+gboolean pdb_file_validate(const gchar *filename, GError **error, PdbGetXsdDirFunc get_xsd_dir);
 GPtrArray *pdb_get_filenames(const gchar *dir_path, gboolean recursive, gchar *pattern, GError **error);
 void pdb_sort_filenames(GPtrArray *filenames);
 
