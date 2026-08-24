@@ -24,10 +24,6 @@ target_link_libraries(
   OpenSSL::SSL
   )
 
-set_target_properties(loggen_helper
-    PROPERTIES VERSION ${SYSLOG_NG_VERSION}
-    SOVERSION ${SYSLOG_NG_VERSION})
-
 install(TARGETS loggen_helper ARCHIVE DESTINATION ${LOGGEN_PLUGIN_INSTALL_DIR})
 
 # ########### loggen_plugin common static lib for plugins #####
@@ -38,10 +34,6 @@ add_library(loggen_plugin STATIC
 )
 
 target_link_libraries(loggen_plugin PUBLIC loggen_helper)
-
-set_target_properties(loggen_plugin
-    PROPERTIES VERSION ${SYSLOG_NG_VERSION}
-    SOVERSION ${SYSLOG_NG_VERSION})
 
 install(TARGETS loggen_plugin ARCHIVE DESTINATION ${LOGGEN_PLUGIN_INSTALL_DIR})
 

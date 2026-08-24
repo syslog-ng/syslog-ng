@@ -23,8 +23,4 @@ target_link_libraries(
   OpenSSL::SSL
   )
 
-set_target_properties(loggen_ssl_plugin
-    PROPERTIES VERSION ${SYSLOG_NG_VERSION}
-    SOVERSION ${SYSLOG_NG_VERSION})
-
 install(TARGETS loggen_ssl_plugin LIBRARY DESTINATION ${LOGGEN_PLUGIN_INSTALL_DIR})
