@@ -397,9 +397,11 @@ if(SYSLOG_NG_ENABLE_LINUX_CAPS)
   target_link_libraries(syslog-ng PUBLIC libcap)
 endif()
 
-set_target_properties(syslog-ng
-    PROPERTIES VERSION ${SYSLOG_NG_VERSION}
-    SOVERSION ${SYSLOG_NG_VERSION})
+# mirrors autotools: -release major.minor -version-info 0:0:0
+set_target_properties(syslog-ng PROPERTIES
+    OUTPUT_NAME "syslog-ng-${LSNG_RELEASE}"
+    VERSION "0.0.0"
+    SOVERSION "0")
 
 gperf_generate(severity-aliases.table ${CMAKE_CURRENT_BINARY_DIR}/severity-aliases.h syslog-ng)
 

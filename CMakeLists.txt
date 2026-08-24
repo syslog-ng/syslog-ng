@@ -40,6 +40,8 @@ set(MEMORYCHECK_COMMAND_OPTIONS "--num-callers=30 --sim-hints=no-nptl-pthread-st
 execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/version.sh SET OUTPUT_VARIABLE SYSLOG_NG_VERSION)
 set(SYSLOG_NG_COMBINED_VERSION ${SYSLOG_NG_VERSION})
 set(SYSLOG_NG_SOURCE_REVISION ${SYSLOG_NG_VERSION})
+# major.minor release tag, mirrors autotools LSNG_RELEASE = $(PACKAGE_VERSION cut -d. -f1,2)
+string(REGEX REPLACE "^([0-9]+\\.[0-9]+).*" "\\1" LSNG_RELEASE "${SYSLOG_NG_VERSION}")
 
 set(SYSLOG_NG_PATH_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(SYSLOG_NG_PATH_SYSCONFDIR "\${prefix}/etc")

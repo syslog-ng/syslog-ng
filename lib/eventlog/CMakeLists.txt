@@ -19,6 +19,12 @@ target_link_libraries(eventlog
     GLib::GLib
 )
 
+# mirrors autotools: -release major.minor -version-info 0:0:0
+set_target_properties(eventlog PROPERTIES
+    OUTPUT_NAME "evtlog-${LSNG_RELEASE}"
+    VERSION "0.0.0"
+    SOVERSION "0")
+
 install(TARGETS eventlog DESTINATION lib)
 
 add_test_subdirectory(tests)
