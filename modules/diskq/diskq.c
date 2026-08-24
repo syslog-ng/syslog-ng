@@ -176,10 +176,17 @@ exit:
 }
 
 static gboolean
+_is_remove_if_empty_enabled(LogQueue *queue)
+{
+  LogQueueDisk *disk_queue = (LogQueueDisk *) queue;
+
+  return qdisk_get_options(disk_queue->qdisk)->remove_if_empty;
+}
+
+static gboolean
 _discard_empty_queue_file(GlobalConfig *cfg, LogQueue *queue, const gchar *filename)
 {
-  if (!filename)
-    return FALSE;
+  g_assert(filename);
 
   if (unlink(filename) < 0 && errno != ENOENT)
     {
@@ -209,7 +216,7 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
   const gchar *filename = log_queue_disk_get_filename(queue);
   diskq_global_metrics_file_released(filename);
 
-  if (!persistent)
+  if (!persistent && _is_remove_if_empty_enabled(queue))
     {
       /* the file and its persist entry have to go together: an entry naming a
        * deleted file lets this destination reattach to a filename that another

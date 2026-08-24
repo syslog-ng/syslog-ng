@@ -1754,9 +1754,7 @@ qdisk_stop(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_contr
     result = _save_state(self, front_cache, backlog, flow_control_window);
 
   if (has_messages)
-    {
-      *has_messages = result ? (_number_of_messages(self) != 0) : TRUE;
-    }
+    *has_messages = result ? (_number_of_messages(self) != 0) : TRUE;
 
   _close_file(self);
 

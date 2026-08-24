@@ -83,6 +83,12 @@ disk_queue_options_set_prealloc(DiskQueueOptions *self, gboolean prealloc)
 }
 
 void
+disk_queue_options_set_remove_if_empty(DiskQueueOptions *self, gboolean remove_if_empty)
+{
+  self->remove_if_empty = remove_if_empty;
+}
+
+void
 disk_queue_options_check_plugin_settings(DiskQueueOptions *self)
 {
   if (self->reliable)
@@ -135,6 +141,7 @@ disk_queue_options_set_default_options(DiskQueueOptions *self)
   self->dir = g_strdup(get_installation_path_for(SYSLOG_NG_PATH_LOCALSTATEDIR));
   self->truncate_size_ratio = -1;
   self->prealloc = -1;
+  self->remove_if_empty = FALSE;
 }
 
 void

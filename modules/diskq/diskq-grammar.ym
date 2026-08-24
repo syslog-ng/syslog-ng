@@ -70,6 +70,7 @@ DiskQueueOptions *last_options;
 %token KW_DIR
 %token KW_TRUNCATE_SIZE_RATIO
 %token KW_PREALLOC
+%token KW_REMOVE_IF_EMPTY
 
 
 %%
@@ -104,6 +105,7 @@ dest_diskq_option
         | KW_DIR '(' string ')'                          { disk_queue_options_set_dir(last_options, $3); free($3); }
         | KW_TRUNCATE_SIZE_RATIO '(' float_between_0_and_1 ')' { disk_queue_options_set_truncate_size_ratio(last_options, $3); }
         | KW_PREALLOC '(' yesno ')'                      { disk_queue_options_set_prealloc(last_options, $3); }
+        | KW_REMOVE_IF_EMPTY '(' yesno ')'               { disk_queue_options_set_remove_if_empty(last_options, $3); }
         ;
 
 diskq_global_options
