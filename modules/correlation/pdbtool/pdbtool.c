@@ -848,7 +848,7 @@ pdbtool_test(int argc, char *argv[])
         {
           GError *error = NULL;
 
-          if (!pdb_file_validate(argv[arg_pos], &error))
+          if (!pdb_file_validate(argv[arg_pos], &error, NULL))
             {
               fprintf(stderr, "%s: error validating pdb file: %s\n", argv[arg_pos], error->message);
               g_clear_error(&error);
