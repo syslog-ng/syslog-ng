@@ -387,15 +387,12 @@ target_link_libraries(syslog-ng
     ${Libsystemd_LIBRARIES}
     ${LIBUNWIND_LIBRARIES}
     resolv
+    ${LIBCAP_LIBRARY}
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads
     secret-storage
 )
-
-if(SYSLOG_NG_ENABLE_LINUX_CAPS)
-  target_link_libraries(syslog-ng PUBLIC libcap)
-endif()
 
 # mirrors autotools: -release major.minor -version-info 0:0:0
 set_target_properties(syslog-ng PROPERTIES
