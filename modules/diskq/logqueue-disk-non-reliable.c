@@ -441,6 +441,8 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
         }
     }
 
+  log_msg_write_protect(msg);
+
   g_mutex_lock(&s->lock);
 
   /* we push messages into queue segments in the following order: flow_control_window, disk, front_cache */
