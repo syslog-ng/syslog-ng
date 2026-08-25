@@ -163,6 +163,7 @@ lib/tests/test_zone\.c
                                                  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
+dev-utils/compare-builds.sh
 configure\.ac$
 Makefile\.am$
 lib/(compat|str-repr|timeutils|control|debugger|filter|logproto|multi-line|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|secret-storage|logthrdest|logthrsource|ack-tracker|signal-slot-connector|[^/]*$)
@@ -291,6 +292,7 @@ tests/light/functional_tests/destination_drivers/file_destination/test_logrotate
 news/create-newsfile.py
 news/next-pr-id.py
 dev-utils/plugin_skeleton_creator/create_plugin.sh
+dev-utils/compare-builds.sh
 tests/unit
 tests/valgrind
 tests/build-log-cflags-propagation.sh
