@@ -409,7 +409,11 @@ if (${IVYKIS_INTERNAL})
    add_dependencies(syslog-ng IVYKIS)
 endif()
 
-install(TARGETS syslog-ng LIBRARY DESTINATION lib)
+# NAMELINK_SKIP suppresses libsyslog-ng-${LSNG_RELEASE}.so; the unversioned
+# linker symlink is added manually to match autotools (-release produces libsyslog-ng.so).
+install(TARGETS syslog-ng LIBRARY DESTINATION lib NAMELINK_SKIP)
+install(CODE "file(CREATE_LINK \"libsyslog-ng-${LSNG_RELEASE}.so.0.0.0\"
+    \"\${CMAKE_INSTALL_PREFIX}/lib/libsyslog-ng.so\" SYMBOLIC)")
 
 install(FILES ${LIB_HEADERS} DESTINATION include/syslog-ng)
 
