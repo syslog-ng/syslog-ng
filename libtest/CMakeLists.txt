@@ -37,4 +37,16 @@ add_library(libtest STATIC ${LIBTEST_SOURCES})
 target_link_libraries(libtest syslog-ng ${CRITERION_LIBRARIES})
 target_include_directories(libtest INTERFACE ${PROJECT_SOURCE_DIR})
 
+set_target_properties(libtest PROPERTIES OUTPUT_NAME "syslog-ng-test")
+install(TARGETS libtest ARCHIVE DESTINATION lib/syslog-ng/libtest)
+install(FILES ${LIBTEST_HEADERS} DESTINATION include/syslog-ng/libtest)
+
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix ${CMAKE_INSTALL_PREFIX})
+set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
+set(includedir ${CMAKE_INSTALL_PREFIX}/include)
+set(PACKAGE_VERSION ${SYSLOG_NG_VERSION})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-test.pc.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-test.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-test.pc DESTINATION lib/pkgconfig)
+
 add_test_subdirectory(tests)
