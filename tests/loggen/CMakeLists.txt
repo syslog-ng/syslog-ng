@@ -7,7 +7,7 @@ set(LOGGEN_HELPER_SOURCE
   ${PROJECT_SOURCE_DIR}/lib/compat/glib.c
   )
 
-add_library(loggen_helper STATIC ${LOGGEN_HELPER_SOURCE})
+add_library(loggen_helper SHARED ${LOGGEN_HELPER_SOURCE})
 
 target_include_directories(loggen_helper PUBLIC
   ${CORE_INCLUDE_DIRS}
@@ -24,18 +24,32 @@ target_link_libraries(
   OpenSSL::SSL
   )
 
-install(TARGETS loggen_helper ARCHIVE DESTINATION ${LOGGEN_PLUGIN_INSTALL_DIR})
+# mirrors autotools: -release major.minor -version-info 0:0:0
+set_target_properties(loggen_helper PROPERTIES
+    OUTPUT_NAME "loggen_helper-${LSNG_RELEASE}"
+    VERSION "0.0.0"
+    SOVERSION "0")
+install(TARGETS loggen_helper LIBRARY DESTINATION lib NAMELINK_SKIP)
+install(CODE "file(CREATE_LINK \"libloggen_helper-${LSNG_RELEASE}.so.0.0.0\"
+    \"\${CMAKE_INSTALL_PREFIX}/lib/libloggen_helper.so\" SYMBOLIC)")
 
 # ########### loggen_plugin common static lib for plugins #####
 
-add_library(loggen_plugin STATIC
+add_library(loggen_plugin SHARED
   loggen_plugin.c
   loggen_plugin.h
 )
 
 target_link_libraries(loggen_plugin PUBLIC loggen_helper)
 
-install(TARGETS loggen_plugin ARCHIVE DESTINATION ${LOGGEN_PLUGIN_INSTALL_DIR})
+# mirrors autotools: -release major.minor -version-info 0:0:0
+set_target_properties(loggen_plugin PROPERTIES
+    OUTPUT_NAME "loggen_plugin-${LSNG_RELEASE}"
+    VERSION "0.0.0"
+    SOVERSION "0")
+install(TARGETS loggen_plugin LIBRARY DESTINATION lib NAMELINK_SKIP)
+install(CODE "file(CREATE_LINK \"libloggen_plugin-${LSNG_RELEASE}.so.0.0.0\"
+    \"\${CMAKE_INSTALL_PREFIX}/lib/libloggen_plugin.so\" SYMBOLIC)")
 
 # ########### loggen binary #################
 set(LOGGEN_SOURCE
