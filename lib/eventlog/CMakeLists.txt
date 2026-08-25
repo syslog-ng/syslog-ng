@@ -30,5 +30,6 @@ set_target_properties(eventlog PROPERTIES
 install(TARGETS eventlog LIBRARY DESTINATION lib NAMELINK_SKIP)
 install(CODE "file(CREATE_LINK \"libevtlog-${LSNG_RELEASE}.so.0.0.0\"
     \"\${CMAKE_INSTALL_PREFIX}/lib/libevtlog.so\" SYMBOLIC)")
+install(FILES src/evtlog.h src/evtmaps.h DESTINATION include/syslog-ng)
 
 add_test_subdirectory(tests)

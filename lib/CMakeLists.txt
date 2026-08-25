@@ -164,14 +164,15 @@ set (LIB_HEADERS
     userdb.h
     utf8utils.h
     versioning.h
+    pe-versioning.h
     ringbuffer.h
     host-id.h
     resolved-configurable-paths.h
     window-size-counter.h
+    misc.h
+    notified-fd-events.h
+    signal-handler.h
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.h
-    ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.h
-    ${PROJECT_BINARY_DIR}/lib/cfg-lex.h
-    ${PROJECT_BINARY_DIR}/lib/pragma-grammar.h
     )
 
 set(LIB_SOURCES
@@ -428,10 +429,21 @@ install(FILES ${STATS_HEADERS} DESTINATION include/syslog-ng/stats)
 install(FILES ${METRICS_HEADERS} DESTINATION include/syslog-ng/metrics)
 install(FILES ${TEMPLATE_HEADERS} DESTINATION include/syslog-ng/template)
 install(FILES ${TRANSPORT_HEADERS} DESTINATION include/syslog-ng/transport)
-install(FILES ${CSV_SCANNER_HEADERS} DESTINATION include/syslog-ng/scanner/csv-scanner)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scanner/csv-scanner/ DESTINATION include/syslog-ng/scanner/csv-scanner FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scanner/kv-scanner/ DESTINATION include/syslog-ng/scanner/kv-scanner FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scanner/list-scanner/ DESTINATION include/syslog-ng/scanner/list-scanner FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scanner/xml-scanner/ DESTINATION include/syslog-ng/scanner/xml-scanner FILES_MATCHING PATTERN "*.h")
+install(FILES ${ACK_TRACKER_HEADERS} DESTINATION include/syslog-ng/ack-tracker)
+install(FILES ${MULTI_LINE_HEADERS} DESTINATION include/syslog-ng/multi-line)
+install(FILES ${STR_REPR_HEADERS} DESTINATION include/syslog-ng/str-repr)
+install(FILES ${TIMEUTILS_HEADERS} DESTINATION include/syslog-ng/timeutils)
 install(FILES ${LOGTHRDEST_HEADERS} DESTINATION include/syslog-ng/logthrdest)
 install(FILES ${LOGTHRSOURCE_HEADERS} DESTINATION include/syslog-ng/logthrsource)
 install(FILES ${SIGNAL_SLOT_CONNECTOR_HEADERS} DESTINATION include/syslog-ng/signal-slot-connector)
+
+if(IVYKIS_SOURCE STREQUAL "internal")
+    install(DIRECTORY ${IVYKIS_INCLUDE_DIR}/ DESTINATION include/syslog-ng/ivykis FILES_MATCHING PATTERN "*.h")
+endif()
 
 set(TOOLS
     merge-grammar.py

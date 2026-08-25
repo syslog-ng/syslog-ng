@@ -7,7 +7,6 @@ set(LIBTEST_HEADERS
     fake-time.h
     mock-transport.h
     mock-cfg-parser.h
-    mock-logpipe.h
     msg_parse_lib.h
     persist_lib.h
     proto_lib.h
