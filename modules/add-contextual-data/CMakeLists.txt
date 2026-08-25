@@ -24,5 +24,6 @@ add_module(
   GRAMMAR add-contextual-data-grammar
   SOURCES ${add_contextual_data_SOURCES}
 )
+set_target_properties(add_contextual_data PROPERTIES OUTPUT_NAME "add-contextual-data")
 
 add_test_subdirectory(tests)

@@ -15,4 +15,5 @@ add_module(
   GRAMMAR map-value-pairs-grammar
   SOURCES ${MAP_VALUE_PAIRS_SOURCES}
 )
+set_target_properties(map_value_pairs PROPERTIES OUTPUT_NAME "map-value-pairs")
 
