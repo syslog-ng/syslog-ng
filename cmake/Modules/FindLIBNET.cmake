@@ -42,7 +42,12 @@ if(LIBNET_CONFIG)
 
   set(LIBNET_FOUND TRUE CACHE BOOL "Libnet found")
 
-  # Get flags from libnet-config
+  # Get flags from libnet-config — mirrors autotools: $LIBNET_CONFIG --defines + --cflags
+  execute_process(
+    COMMAND ${LIBNET_CONFIG} --defines
+    OUTPUT_VARIABLE _LIBNET_DEFINES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
   execute_process(
     COMMAND ${LIBNET_CONFIG} --cflags
     OUTPUT_VARIABLE _LIBNET_CFLAGS
@@ -54,15 +59,16 @@ if(LIBNET_CONFIG)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
+  string(REGEX REPLACE "[\r\n]" " " _LIBNET_DEFINES "${_LIBNET_DEFINES}")
   string(REGEX REPLACE "[\r\n]" " " _LIBNET_CFLAGS "${_LIBNET_CFLAGS}")
   string(REGEX REPLACE "[\r\n]" " " _LIBNET_LIBRARIES "${_LIBNET_LIBRARIES}")
 
-  # This is due to libnet-config provides old fashined defines, which triggers warning on newer systems
-  # for details see: https://github.com/libnet/libnet/pull/71
-  set(LIBNET_CFLAGS "${LIBNET_CFLAGS} -D_DEFAULT_SOURCE")
+  # Combine --defines and --cflags; append _DEFAULT_SOURCE (see https://github.com/libnet/libnet/pull/71)
+  set(_LIBNET_ALL_FLAGS "${_LIBNET_DEFINES} ${_LIBNET_CFLAGS} -D_DEFAULT_SOURCE")
+  set(LIBNET_CFLAGS "${_LIBNET_ALL_FLAGS}")
 
   # Split flags into lists
-  separate_arguments(_LIBNET_CFLAGS_LIST UNIX_COMMAND "${_LIBNET_CFLAGS}")
+  separate_arguments(_LIBNET_CFLAGS_LIST UNIX_COMMAND "${_LIBNET_ALL_FLAGS}")
 
   # Separate include directories and preprocessor definitions
   set(LIBNET_INCLUDE_DIRS "")
@@ -93,7 +99,9 @@ set(LIBNET_CFLAGS "${_LIBNET_CFLAGS}" CACHE STRING "Original cflags from libnet-
 include(FindPackageHandleStandardArgs)
 
 # NOTE: This will reset LIBNET_FOUND if any of the other checked vars is empty
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBNET DEFAULT_MSG LIBNET_LIBRARIES LIBNET_INCLUDE_DIRS LIBNET_FOUND)
+# LIBNET_INCLUDE_DIRS is intentionally not required: libnet-config --cflags may return empty
+# when headers live in the standard system include path (e.g. /usr/include on Debian/Ubuntu).
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBNET DEFAULT_MSG LIBNET_LIBRARIES LIBNET_FOUND)
 
 # Mark advanced variables for GUI
 MARK_AS_ADVANCED(LIBNET_LIBRARIES LIBNET_INCLUDE_DIRS LIBNET_COMPILE_DEFS LIBNET_CFLAGS)
