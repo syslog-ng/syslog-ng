@@ -271,6 +271,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
         qdisk_corrupt = TRUE;
 
       /* push to backlog */
+      log_msg_write_protect(msg);
       log_msg_ref(msg);
       _push_to_memory_queue_tail(self->backlog, position, msg, path_options);
       log_queue_memory_usage_add(s, log_msg_get_size(msg));
