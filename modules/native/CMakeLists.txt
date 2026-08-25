@@ -1,6 +1,6 @@
 module_switch(ENABLE_NATIVE "Enable to build native bindings (for Rust, C++)")
 
-if(ENABLE_NATIVE)
+if(NOT ENABLE_NATIVE)
     return()
 endif()
 
