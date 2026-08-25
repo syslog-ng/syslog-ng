@@ -373,6 +373,8 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 
   scratch_buffers_reclaim_marked(marker);
 
+  log_msg_write_protect(msg);
+
   if (_is_reserved_buffer_size_reached(self))
     {
       /*
