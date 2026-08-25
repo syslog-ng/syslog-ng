@@ -728,6 +728,8 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
     {
       self->payload = nv_table_clone(self->payload, name_len + 1);
       log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
+      self->allocated_bytes += self->payload->size;
+      stats_counter_add(count_allocated_bytes, self->payload->size);
     }
 
   NVReferencedSlice referenced_slice =
@@ -740,6 +742,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
   while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, &referenced_slice, type, &new_entry))
     {
       /* error allocating string in payload, reallocate */
+      guint32 old_size = self->payload->size;
       if (!nv_table_realloc(self->payload, &self->payload))
         {
           /* error growing the payload, skip without storing the value */
@@ -748,6 +751,9 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
                    evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)));
           break;
         }
+      guint32 new_size = self->payload->size;
+      self->allocated_bytes += (new_size - old_size);
+      stats_counter_add(count_allocated_bytes, new_size-old_size);
       stats_counter_inc(count_payload_reallocs);
     }
 
