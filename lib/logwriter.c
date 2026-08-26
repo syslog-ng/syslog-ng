@@ -22,6 +22,8 @@
  *
  */
 
+#define LOGWRITER_TEST_PRIVATE
+
 #include "logwriter.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
@@ -2122,4 +2124,30 @@ gboolean
 log_writer_options_process_flag(LogWriterOptions *options, const gchar *flag)
 {
   return cfg_process_flag(log_writer_flag_handlers, options, flag);
+}
+
+void
+log_writer_test_set_io_job_working(LogWriter *self, gboolean working)
+{
+  self->io_job.working = working;
+}
+
+void
+log_writer_test_call_reopen_deferred(LogWriter *self, LogProtoClient *proto)
+{
+  gpointer args[] = { self, proto };
+  log_writer_reopen_deferred(args);
+}
+
+void
+log_writer_test_simulate_io_job_completion(LogWriter *self, gboolean work_result)
+{
+  self->work_result = work_result;
+  log_writer_work_finished(self, NULL);
+}
+
+gboolean
+log_writer_test_get_watches_running(LogWriter *self)
+{
+  return self->watches_running;
 }
