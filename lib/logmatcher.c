@@ -506,26 +506,25 @@ static gboolean
 log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
-  LogMatcherPcreMatchResult result;
-  gint rc;
-  gboolean res = TRUE;
 
   if (value_len == -1)
     value_len = strlen(value);
 
+  LogMatcherPcreMatchResult result;
   result.match_data = pcre2_match_data_create_from_pattern(self->pattern, NULL);
   result.source_value = value;
   result.source_value_len = value_len;
   result.source_handle = value_handle;
   result.source_handles_value_changed = FALSE;
 
-  rc = pcre2_match(self->pattern,
-                   (PCRE2_SPTR) result.source_value,
-                   (PCRE2_SIZE) result.source_value_len,
-                   (PCRE2_SIZE) 0,
-                   self->match_options,
-                   result.match_data,
-                   NULL);
+  gint rc = pcre2_match(self->pattern,
+                        (PCRE2_SPTR) result.source_value,
+                        (PCRE2_SIZE) result.source_value_len,
+                        (PCRE2_SIZE) 0,
+                        self->match_options,
+                        result.match_data,
+                        NULL);
+  gboolean res = TRUE;
   if (rc < 0)
     {
       switch (rc)
