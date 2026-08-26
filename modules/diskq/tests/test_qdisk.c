@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <glib/gstdio.h>
 
 /* QDisk-internal: the frame is a 4-byte integer */
 #define FRAME_LENGTH 4
@@ -583,6 +584,90 @@ static void
 setup(void)
 {
   app_startup();
+}
+
+static void
+_remove_dir_with_contents(const gchar *dir)
+{
+  GDir *handle = g_dir_open(dir, 0, NULL);
+  cr_assert_not_null(handle, "failed to open %s", dir);
+
+  const gchar *entry;
+  while ((entry = g_dir_read_name(handle)))
+    {
+      gchar *path = g_build_filename(dir, entry, NULL);
+      cr_assert_eq(g_unlink(path), 0, "failed to remove %s, errno: %d", path, errno);
+      g_free(path);
+    }
+  g_dir_close(handle);
+
+  cr_assert_eq(g_rmdir(dir), 0, "failed to remove %s, errno: %d", dir, errno);
+}
+
+/* qdisk.c-internal, and the only thing this test needs from it */
+#define TEST_DIRLOCK_FILENAME "syslog-ng-disk-buffer.dirlock"
+
+/* returns -1 where the descriptor table cannot be read.
+ *
+ * counting only the descriptors that resolve to the dirlock, rather than
+ * comparing descriptor numbers, keeps the measurement free of the descriptors
+ * the test runner itself opens between the two readings */
+static gint
+_count_open_dirlock_fds(void)
+{
+  GDir *fds = g_dir_open("/proc/self/fd", 0, NULL);
+  if (!fds)
+    return -1;
+
+  gint count = 0;
+  const gchar *entry;
+  while ((entry = g_dir_read_name(fds)))
+    {
+      gchar *link = g_build_filename("/proc/self/fd", entry, NULL);
+      gchar *target = g_file_read_link(link, NULL);
+
+      if (target && g_str_has_suffix(target, TEST_DIRLOCK_FILENAME))
+        count++;
+
+      g_free(target);
+      g_free(link);
+    }
+  g_dir_close(fds);
+
+  return count;
+}
+
+/* the dirlock descriptor was left open on every call, which no functional check
+ * can see: every allocation still succeeds until the descriptor table runs out */
+Test(qdisk, get_next_filename_does_not_leak_the_dirlock_descriptor)
+{
+  const gint open_before = _count_open_dirlock_fds();
+  if (open_before < 0)
+    cr_skip_test("counting open dirlock descriptors needs /proc/self/fd");
+
+  cr_assert_eq(open_before, 0, "a dirlock descriptor was already open before the test");
+
+  const gchar *dir = "test_dirlock_fd";
+  cr_assert_eq(g_mkdir_with_parents(dir, 0700), 0, "failed to create %s, errno: %d", dir, errno);
+
+  enum { allocations = 3 };
+  gchar *filenames[allocations];
+
+  for (gint i = 0; i < allocations; i++)
+    {
+      filenames[i] = qdisk_get_next_filename(dir, TRUE);
+      cr_assert_not_null(filenames[i], "failed to allocate a disk-buffer filename");
+    }
+
+  const gint open_after = _count_open_dirlock_fds();
+  cr_assert_eq(open_after, 0,
+               "qdisk_get_next_filename() left %d dirlock descriptor(s) open over %d allocations",
+               open_after, allocations);
+
+  for (gint i = 0; i < allocations; i++)
+    g_free(filenames[i]);
+
+  _remove_dir_with_contents(dir);
 }
 
 static void

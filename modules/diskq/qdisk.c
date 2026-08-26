@@ -246,6 +246,7 @@ static void
 _release_dirlock(gint fd)
 {
   flock(fd, LOCK_UN);
+  close(fd);
   g_mutex_unlock(&filename_lock);
 }
 
