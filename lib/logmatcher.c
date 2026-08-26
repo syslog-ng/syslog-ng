@@ -331,6 +331,7 @@ _compile_pcre2_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
   /* compile the regexp */
   PCRE2_SIZE error_offset;
 
+  pcre2_code_free(self->pattern);
   self->pattern = pcre2_compile((PCRE2_SPTR) re, PCRE2_ZERO_TERMINATED, flags, &rc, &error_offset, NULL);
   if (!self->pattern)
     {
@@ -695,6 +696,7 @@ log_matcher_pcre_re_free(LogMatcher *s)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
   pcre2_code_free(self->pattern);
+  g_free(self->nv_prefix);
   log_matcher_free_method(s);
 }
 
