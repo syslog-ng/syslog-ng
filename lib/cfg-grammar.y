@@ -1596,11 +1596,15 @@ vp_option
           {
             value_pairs_add_pair(last_value_pairs, $3, $5);
             free($3);
+            /* value_pairs_add_pair refs the template internally; release the grammar's ref */
+            log_template_unref($5);
           }
         | KW_PAIR '(' string template_content ')'
           {
             value_pairs_add_pair(last_value_pairs, $3, $4);
             free($3);
+            /* value_pairs_add_pair refs the template internally; release the grammar's ref */
+            log_template_unref($4);
           }
         | KW_KEY '(' string KW_REKEY '('
           {
