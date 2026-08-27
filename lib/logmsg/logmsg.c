@@ -660,6 +660,8 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
     {
       self->payload = nv_table_clone(self->payload, 0);
       log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
+      self->allocated_bytes += self->payload->size;
+      stats_counter_add(count_allocated_bytes, self->payload->size);
     }
 
   while (!nv_table_unset_value(self->payload, handle))
