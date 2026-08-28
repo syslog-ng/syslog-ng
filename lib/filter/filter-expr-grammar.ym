@@ -191,7 +191,7 @@ filter_simple_expr
             free($3);
             free($6);
           }
-	| KW_BLANK '(' string ')' { $$ = filter_blank_new($3); }
+	| KW_BLANK '(' string ')' { $$ = filter_blank_new($3); free($3); }
 	| filter_re
 	| filter_comparison
 	| filter_plugin

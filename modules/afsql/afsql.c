@@ -1302,6 +1302,7 @@ afsql_dd_free(LogPipe *s)
   g_free(self->password);
   g_free(self->database);
   g_free(self->encoding);
+  g_free(self->quote_as_string);
   g_free(self->create_statement_append);
   if (self->null_value)
     g_free(self->null_value);
