@@ -138,3 +138,84 @@ ParameterizedTest(CloneLogMessageParam *param, clone_logmsg, test_cloning_with_l
   log_msg_unref(log_message);
   log_msg_unref(original_log_message);
 }
+
+Test(clone_logmsg, test_unset_value_accounts_for_newly_owned_payload_like_set_value_does)
+{
+  const gchar *msg_str =
+    "<7>1 2006-10-29T01:59:59.156+01:00 mymachine.example.com evntslog - ID47 "
+    "[exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"] BOMAn application event log entry...";
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  LogMessage *original, *clone_for_unset, *clone_for_set;
+  NVHandle handle;
+
+  parse_options.flags = LP_SYSLOG_PROTOCOL;
+  path_options.ack_needed = FALSE;
+
+  handle = log_msg_get_value_handle(".SDATA.exampleSDID@0.iut");
+
+  original = msg_format_parse(&parse_options, (const guchar *) msg_str, strlen(msg_str));
+  clone_for_unset = log_msg_clone_cow(original, &path_options);
+  cr_assert_not((clone_for_unset->flags & LF_STATE_OWN_PAYLOAD),
+                "test precondition: a fresh clone must not yet own its payload");
+
+  gsize allocated_bytes_before_unset = clone_for_unset->allocated_bytes;
+  log_msg_unset_value(clone_for_unset, handle);
+  cr_assert((clone_for_unset->flags & LF_STATE_OWN_PAYLOAD),
+            "test precondition: unset_value() must have taken payload ownership");
+
+  cr_assert_gt(clone_for_unset->allocated_bytes, allocated_bytes_before_unset,
+               "log_msg_unset_value() must add the newly-owned payload's size to allocated_bytes");
+
+  log_msg_unref(clone_for_unset);
+  log_msg_unref(original);
+
+  original = msg_format_parse(&parse_options, (const guchar *) msg_str, strlen(msg_str));
+  clone_for_set = log_msg_clone_cow(original, &path_options);
+  cr_assert_not((clone_for_set->flags & LF_STATE_OWN_PAYLOAD),
+                "test precondition: a fresh clone must not yet own its payload");
+
+  gsize allocated_bytes_before_set = clone_for_set->allocated_bytes;
+  log_msg_set_value(clone_for_set, handle, "5", -1);
+  cr_assert((clone_for_set->flags & LF_STATE_OWN_PAYLOAD),
+            "test precondition: set_value() must have taken payload ownership");
+
+  cr_assert_gt(clone_for_set->allocated_bytes, allocated_bytes_before_set,
+               "sanity check: set_value()'s ownership-transition accounting must work");
+
+  log_msg_unref(clone_for_set);
+  log_msg_unref(original);
+}
+
+Test(clone_logmsg, test_set_value_indirect_accounts_for_newly_owned_payload_like_set_value_does)
+{
+  const gchar *msg_str =
+    "<7>1 2006-10-29T01:59:59.156+01:00 mymachine.example.com evntslog - ID47 "
+    "[exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"] BOMAn application event log entry...";
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  LogMessage *original, *clone;
+  NVHandle ref_handle, indirect_handle;
+
+  parse_options.flags = LP_SYSLOG_PROTOCOL;
+  path_options.ack_needed = FALSE;
+
+  ref_handle = LM_V_MESSAGE;
+  indirect_handle = log_msg_get_value_handle("newindirectvalue");
+
+  original = msg_format_parse(&parse_options, (const guchar *) msg_str, strlen(msg_str));
+  clone = log_msg_clone_cow(original, &path_options);
+  cr_assert_not((clone->flags & LF_STATE_OWN_PAYLOAD),
+                "test precondition: a fresh clone must not yet own its payload");
+
+  gsize allocated_bytes_before = clone->allocated_bytes;
+  log_msg_set_value_indirect(clone, indirect_handle, ref_handle, 0, 3);
+  cr_assert((clone->flags & LF_STATE_OWN_PAYLOAD),
+            "test precondition: set_value_indirect() must have taken payload ownership");
+
+  cr_assert_gt(clone->allocated_bytes, allocated_bytes_before,
+               "log_msg_set_value_indirect_with_type() must add the newly-owned payload's size to allocated_bytes");
+
+  log_msg_unref(clone);
+  log_msg_unref(original);
+}
+  log_msg_unref(original);
+}
