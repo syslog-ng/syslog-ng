@@ -24,6 +24,7 @@
  */
 #include "python-startup.h"
 #include "python-dest.h"
+#include "python-loghandler.h"
 #include "python-source.h"
 #include "python-fetcher.h"
 #include "python-logparser.h"
@@ -416,6 +417,7 @@ _py_initialize_builtin_modules(void)
   py_reloc_global_init();
   py_global_code_loader_global_init();
   py_logger_global_init();
+  py_loghandler_global_init();
 }
 
 gboolean
