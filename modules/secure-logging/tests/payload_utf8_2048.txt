@@ -1,0 +1,15 @@
+<38>1 2025-07-08T11:27:24+02:00 localhost prg00000 1234 ID01 - seq: 0000000040, thread: 01, runid: 42153, stamp: 2025-07-08T11:27:24 Sadly, however, before she could get to a phone to tell anyone about it, a terrible, stupid catastrophe occurred, and the idea was lost for ever.
+<38>1 2025-07-08T11:27:24+02:00 localhost prg00000 1234 ID02 - seq: 0000000041, thread: 02, runid: 42153, stamp: 2025-07-08T11:27:24 This is not her story.
+<38>1 2025-07-08T11:27:24+02:00 localhost prg00000 1234 ID03 - seq: 0000000042, thread: 03, runid: 42153, stamp: 2025-07-08T11:27:24 But it is the story of that terrible, stupid catastrophe and some of its consequences.
+<38>1 2025-07-08T11:27:24+02:00 localhost prg00000 1234 ID04 - seq: 0000000040, thread: 04, runid: 42153, stamp: 2025-07-08T11:27:24 ⭐🎉✅
+<38>1 2025-07-08T11:27:24+02:00 localhost prg00000 1234 ID05 - seq: 0000000040, thread: 05, runid: 42153, stamp: 2025-07-08T11:27:24 Ich weiss nicht, ob es besser wird, wenn es anders wird. Aber es muss anders werden, wenn es besser werden soll.💻⚙️💡
+<38>1 2026-03-16T11:27:24+02:00 localhost prg00000 1234 ID06 - seq: 0000000041, thread: 06, runid: 42153, stamp: 2025-07-08T11:27:24 Angst macht weitsichtig, Helden sterben an Kurzsichtigkeit.
+<38>1 2026-03-16T11:28:24+02:00 localhost prg00000 1234 ID07 - seq: 0000000041, thread: 07, runid: 42153, stamp: 2025-07-08T11:27:24 Dass alle die Wahrheit suchen heißt nicht, dass es sie gibt.
+<38>1 2026-03-16T11:29:24+02:00 localhost prg00000 1234 ID08 - seq: 0000000041, thread: 08, runid: 42153, stamp: 2025-07-08T11:27:24 Auf hohlen Köpfen ist gut trommeln.
+<38>1 2026-03-16T11:30:24+02:00 localhost prg00000 1234 ID09 - seq: 0000000041, thread: 09, runid: 42153, stamp: 2025-07-08T11:27:24 Je größer der Dachschaden, desto schöner der Ausblick zum Himmel.
+<38>1 2026-03-16T11:29:24+02:00 localhost prg00000 1234 ID10 - seq: 0000000041, thread: 10, runid: 42153, stamp: 2025-07-08T11:27:24 Line 10🚀Rocket U+1F680 F0 9F 9A 80
+<38>1 2026-03-16T11:29:24+02:00 localhost prg00000 1234 ID11 - seq: 0000000041, thread: 11, runid: 42153, stamp: 2025-07-08T11:27:24 Line 11⚡High Voltage U+26A1 E2 9A A1
+<38>1 2026-03-16T11:29:24+02:00 localhost prg00000 1234 ID13 - seq: 0000000041, thread: 13, runid: 42153, stamp: 2025-07-08T11:27:24 Line 13♈Aries U+2648 E2 99 88
+<38>1 2026-03-16T11:29:24+02:00 localhost prg00000 1234 ID14 - seq: 0000000041, thread: 14, runid: 42153, stamp: 2025-07-08T11:27:24 Line 14⭐🎉
+<38>1 2026-03-16T11:29:24+02:00 localhost prg00000 1234 ID14 - seq: 0000000041, thread: 15, runid: 42153, stamp: 2025-07-08T11:27:24 Line 15🔥Fire U+1F525 F0 9F 94 A5
+<38>1 2026-03-16T11:29:24+02:00 localhost prg00000 1234 ID15 - seq: 0000000041, thread: 16, runid: 42153, stamp: 2025-07-08T11:27:24 Line 16 Blade Runner unicorn dream proves that Deckard is a Nexus because Gaff knows his implemented memory! 🦄 Unicorn U+1F984 F0 9F A6 84
