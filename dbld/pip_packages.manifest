@@ -1,6 +1,11 @@
 # pip packages for kira tests
-distro                  [kira]                                                 [python2, python3]
-cryptography            [kira]                                                 [python2]
+# TODO: remove the python version column, as it is no longer needed
+aiosmtpd                [kira]                                                 [python3]
+cryptography            [kira]                                                 [python3]
+distro                  [kira]                                                 [python3]
 hy                      [kira]                                                 [python3]
 hyrule                  [kira]                                                 [python3]
-requests                [kira]                                                 [python2, python3]
+pyodbc                  [kira]                                                 [python3]
+redis                   [kira]                                                 [python3]
+requests                [kira]                                                 [python3]
+riemann-client          [kira]                                                 [python3]

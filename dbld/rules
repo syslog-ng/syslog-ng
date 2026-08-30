@@ -241,7 +241,7 @@ shell-%: setup
 
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
-image-kira: image-ubuntu-focal
+image-kira: image-ubuntu-jammy
 # devshell is a special case, it is based on the debian stable image
 # TODO: update devshell.dockerfile if these base images change
 # TODO: add this base name as a parameter to the devshell dockerfile instead of hardcoding it
