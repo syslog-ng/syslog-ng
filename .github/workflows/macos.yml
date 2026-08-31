@@ -109,6 +109,10 @@ jobs:
           fi
           brew bundle --force --file=contrib/Brewfile
 
+          # grpc/mongo-c-driver/qpdf bottles are outdated on x86_64; build from source there.
+          [ "${{ runner.arch }}" = "X64" ] && BREW_INSTALL_FLAGS="--build-from-source" || BREW_INSTALL_FLAGS=""
+          brew install $BREW_INSTALL_FLAGS grpc mongo-c-driver qpdf
+
       # -------------------------------
       # Restore MacPorts user/group info from separate cache
       # The cache update is automatic as a "Post" step at the job end
