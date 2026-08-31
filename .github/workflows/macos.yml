@@ -66,6 +66,12 @@ jobs:
           echo "MACPORTS_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
           echo "MACPORTS_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-" >> $GITHUB_ENV
           echo "MACPORTS_USER_INFO_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-macports-user-info-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
+          if [ "${{ runner.arch }}" = "X64" ]; then
+            BREW_X64_SRC_VERSIONS=$(brew info --json grpc mongo-c-driver qpdf | \
+              jq -r '[.[].versions.stable] | join("-")' 2>/dev/null || echo "unknown")
+            echo "BREW_X64_SRC_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-brew-x64-src-${{ runner.arch }}-${BREW_X64_SRC_VERSIONS}" >> $GITHUB_ENV
+            echo "BREW_X64_SRC_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-brew-x64-src-${{ runner.arch }}-" >> $GITHUB_ENV
+          fi
 
       # -------------------------------
       # Restore Homebrew dependencies from cache
@@ -77,6 +83,22 @@ jobs:
           path: /Users/runner/Library/Caches/Homebrew
           key: ${{ env.HOMEBREW_CACHE_KEY }}
           restore-keys: ${{ env.HOMEBREW_CACHE_RESTORE_KEY }}
+
+      # -------------------------------
+      # Cache source-built Homebrew packages for x86_64 (bottles outdated on Intel runners)
+      - name: Cache X64 source-built Homebrew packages
+        if: runner.arch == 'X64'
+        id: brew-x64-src-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            /usr/local/Cellar/grpc
+            /usr/local/Cellar/mongo-c-driver
+            /usr/local/Cellar/qpdf
+            /usr/local/Cellar/re2
+            /usr/local/Cellar/sphinx-doc
+          key: ${{ env.BREW_X64_SRC_CACHE_KEY }}
+          restore-keys: ${{ env.BREW_X64_SRC_CACHE_RESTORE_KEY }}
 
       # -------------------------------
       # Install Homebrew dependencies
@@ -110,8 +132,18 @@ jobs:
           brew bundle --force --file=contrib/Brewfile
 
           # grpc/mongo-c-driver/qpdf bottles are outdated on x86_64; build from source there.
-          [ "${{ runner.arch }}" = "X64" ] && BREW_INSTALL_FLAGS="--build-from-source" || BREW_INSTALL_FLAGS=""
-          brew install $BREW_INSTALL_FLAGS grpc mongo-c-driver qpdf
+          # On cache hit the Cellar dirs are already restored by the cache step above; just relink them.
+          if [ "${{ runner.arch }}" = "X64" ]; then
+            if [ -d "/usr/local/Cellar/grpc" ] && [ -d "/usr/local/Cellar/mongo-c-driver" ] && [ -d "/usr/local/Cellar/qpdf" ]; then
+              brew link --overwrite grpc mongo-c-driver qpdf re2
+              OUTDATED=$(brew outdated --quiet grpc mongo-c-driver qpdf || true)
+              [ -n "$OUTDATED" ] && brew upgrade --build-from-source $OUTDATED || true
+            else
+              brew install --build-from-source grpc mongo-c-driver qpdf
+            fi
+          else
+            brew install grpc mongo-c-driver qpdf
+          fi
 
       # -------------------------------
       # Restore MacPorts user/group info from separate cache
