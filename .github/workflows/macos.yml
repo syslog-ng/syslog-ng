@@ -78,7 +78,7 @@ jobs:
       # The cache update is automatic as a "Post" step at the job end
       - name: Cache Homebrew dependencies
         if: matrix.use-brew-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /Users/runner/Library/Caches/Homebrew
           key: ${{ env.HOMEBREW_CACHE_KEY }}
@@ -89,7 +89,7 @@ jobs:
       - name: Cache X64 source-built Homebrew packages
         if: runner.arch == 'X64'
         id: brew-x64-src-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             /usr/local/Cellar/grpc
@@ -151,7 +151,7 @@ jobs:
       - name: Cache MacPorts user/group info
         if: matrix.use-ports-cache
         id: macports-user-info-restore
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.MACPORTS_USER_INFO_FILE }}
           key: ${{ env.MACPORTS_USER_INFO_CACHE_KEY }}
@@ -161,7 +161,7 @@ jobs:
       # NOTE: We cannot use the built-in restore, as that can not work as root; we handle extraction manually
       - name: Cache MacPorts archive
         if: matrix.use-ports-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.MACPORTS_ARCHIVE_FILE }}
           key: ${{ env.MACPORTS_CACHE_KEY }}
