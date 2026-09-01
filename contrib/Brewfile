@@ -24,15 +24,16 @@ brew "libmaxminddb"
 brew "libnet"
 brew "libpaho-mqtt"
 brew "librdkafka"
-brew "mongo-c-driver"
 brew "net-snmp"
 brew "python@3", link: true, force: true
 brew "rabbitmq-c"
 brew "riemann-client"
 
-brew "grpc"
+# On X86, bottles are outdated; the workflow installs these from source on X64 runners
+#brew "mongo-c-driver"
+#brew "grpc"
+#brew "qpdf"
 
 brew "criterion"
-brew "qpdf"
 
 brew "libunwind-headers"
