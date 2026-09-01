@@ -70,6 +70,7 @@ _generate_message(HTTPDestinationDriver *dd, const gchar *msg_str)
 }
 
 gboolean signal_slot_executed;
+guint signal_slot_execution_count;
 
 static void
 _sleep_msec(long msec)
@@ -100,6 +101,16 @@ _check(const gchar *expected_body, HttpHeaderRequestSignalData *data)
   cr_assert_str_eq(data->request_body->str, expected_body);
 
   notify_signal_slot_finish();
+}
+
+static void
+_fail_header_request_and_check_retried_body(const gchar *expected_body, HttpHeaderRequestSignalData *data)
+{
+  cr_assert_str_eq(data->request_body->str, expected_body);
+
+  data->result = HTTP_SLOT_CRITICAL_ERROR;
+  if (++signal_slot_execution_count == 2)
+    notify_signal_slot_finish();
 }
 
 Test(test_http_signal_slot, basic)
@@ -146,6 +157,29 @@ Test(test_http_signal_slot, batch_with_prefix_suffix)
   SignalSlotConnector *ssc = driver->super.super.super.signal_slot_connector;
 
   CONNECT(ssc, signal_http_header_request, _check, "[1,2]");
+
+  cr_assert(log_pipe_init((LogPipe *)driver));
+  cr_assert(log_pipe_post_config_init((LogPipe *)driver));
+
+  _generate_message(driver, "1");
+  _generate_message(driver, "2");
+
+  wait_for_signal_slot_to_finish();
+}
+
+Test(test_http_signal_slot, batch_is_reinitialized_after_critical_header_error)
+{
+  http_dd_set_body_prefix((LogDriver *)driver, "[");
+  http_dd_set_body_suffix((LogDriver *)driver, "]");
+  http_dd_set_delimiter((LogDriver *)driver, ",");
+  log_threaded_dest_driver_set_batch_lines((LogDriver *)driver, 2);
+  log_threaded_dest_driver_set_batch_timeout((LogDriver *)driver, 1000);
+  log_threaded_dest_driver_set_time_reopen((LogDriver *)driver, 1);
+
+  SignalSlotConnector *ssc = driver->super.super.super.signal_slot_connector;
+
+  signal_slot_execution_count = 0;
+  CONNECT(ssc, signal_http_header_request, _fail_header_request_and_check_retried_body, "[1,2]");
 
   cr_assert(log_pipe_init((LogPipe *)driver));
   cr_assert(log_pipe_post_config_init((LogPipe *)driver));
