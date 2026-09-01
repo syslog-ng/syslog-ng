@@ -22,6 +22,8 @@
  *
  */
 
+#define LOGWRITER_TEST_PRIVATE
+
 #include "logwriter.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
@@ -237,6 +239,12 @@ log_writer_work_finished(gpointer s, gpointer arg)
   main_loop_assert_main_thread();
   self->waiting_for_throttle = FALSE;
 
+  msg_trace("log_writer_work_finished",
+            evt_tag_int("pending_proto_present", self->pending_proto_present),
+            evt_tag_int("work_result", self->work_result),
+            evt_tag_int("proto_is_set", self->proto != NULL),
+            evt_tag_int("watches_running", self->watches_running));
+
   if (self->pending_proto_present)
     {
       /* pending proto is only set in the main thread, so no need to
@@ -277,6 +285,10 @@ log_writer_work_finished(gpointer s, gpointer arg)
     {
       /* reenable polling the source, but only if we're still initialized */
       log_writer_start_watches(self);
+    }
+  else if ((self->super.flags & PIF_INITIALIZED) && !self->watches_running)
+    {
+      log_pipe_notify(self->control, NC_REOPEN_REQUIRED, self);
     }
 }
 
@@ -1138,6 +1150,10 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
+  msg_trace("log_writer_broken",
+            evt_tag_int("notify_code", notify_code),
+            evt_tag_int("proto_is_set", self->proto != NULL),
+            evt_tag_int("watches_running", self->watches_running));
   log_writer_stop_watches(self);
   log_pipe_notify(self->control, notify_code, self);
 }
@@ -1809,6 +1825,11 @@ log_writer_reopen_deferred(gpointer s)
   LogWriter *self = args[0];
   LogProtoClient *proto = args[1];
 
+  msg_trace("log_writer_reopen_deferred",
+            evt_tag_int("proto_is_set", proto != NULL),
+            evt_tag_int("io_job_working", self->io_job.working),
+            evt_tag_int("watches_running", self->watches_running));
+
   if (!proto)
     {
       iv_validate_now();
@@ -2103,4 +2124,30 @@ gboolean
 log_writer_options_process_flag(LogWriterOptions *options, const gchar *flag)
 {
   return cfg_process_flag(log_writer_flag_handlers, options, flag);
+}
+
+void
+log_writer_test_set_io_job_working(LogWriter *self, gboolean working)
+{
+  self->io_job.working = working;
+}
+
+void
+log_writer_test_call_reopen_deferred(LogWriter *self, LogProtoClient *proto)
+{
+  gpointer args[] = { self, proto };
+  log_writer_reopen_deferred(args);
+}
+
+void
+log_writer_test_simulate_io_job_completion(LogWriter *self, gboolean work_result)
+{
+  self->work_result = work_result;
+  log_writer_work_finished(self, NULL);
+}
+
+gboolean
+log_writer_test_get_watches_running(LogWriter *self)
+{
+  return self->watches_running;
 }

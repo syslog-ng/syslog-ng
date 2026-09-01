@@ -350,6 +350,9 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
 
   main_loop_assert_main_thread();
 
+  msg_trace("afsocket_dd_start_connect",
+            evt_tag_int("log_writer_opened", log_writer_opened(self->writer)));
+
   if (log_writer_opened(self->writer))
     return TRUE;
 
@@ -760,6 +763,9 @@ afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
   gchar buf[MAX_SOCKADDR_STRING];
 
+  msg_trace("afsocket_dd_notify",
+            evt_tag_int("notify_code", notify_code));
+
   switch (notify_code)
     {
     case NC_CLOSE:
@@ -770,6 +776,9 @@ afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
                  evt_tag_int("fd", self->fd),
                  evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                  evt_tag_int("time_reopen", self->writer_options.time_reopen));
+      afsocket_dd_start_reconnect_timer(self);
+      break;
+    case NC_REOPEN_REQUIRED:
       afsocket_dd_start_reconnect_timer(self);
       break;
     default:

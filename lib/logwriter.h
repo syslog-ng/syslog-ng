@@ -98,4 +98,13 @@ void log_writer_options_destroy(LogWriterOptions *options);
 void log_writer_options_set_mark_mode(LogWriterOptions *options, const gchar *mark_mode);
 gboolean log_writer_options_process_flag(LogWriterOptions *options, const gchar *flag);
 
+#ifdef LOGWRITER_TEST_PRIVATE
+
+void log_writer_test_set_io_job_working(LogWriter *self, gboolean working);
+void log_writer_test_call_reopen_deferred(LogWriter *self, LogProtoClient *proto);
+void log_writer_test_simulate_io_job_completion(LogWriter *self, gboolean work_result);
+gboolean log_writer_test_get_watches_running(LogWriter *self);
+
+#endif
+
 #endif

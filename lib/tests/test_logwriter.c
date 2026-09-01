@@ -23,6 +23,8 @@
 
 #include <criterion/criterion.h>
 
+#define LOGWRITER_TEST_PRIVATE
+
 #include "logwriter.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
@@ -228,6 +230,89 @@ Test(logwriter, test_logwriter)
     _assert_logwriter_output(test_cases[i]);
 
   msg_format_options_destroy(&parse_options);
+  app_shutdown();
+  iv_deinit();
+  cfg_free(configuration);
+}
+
+/* Regression test for a reconnect hang: log_writer_reopen_deferred() can
+ * defer applying a NULL LogProtoClient while the writer's I/O job is still
+ * in flight (e.g. a connection break detected concurrently with an
+ * in-progress write). When that job later completes,
+ * log_writer_work_finished() must not silently leave the writer with no
+ * proto and no watches running -- it has to request a reconnect,
+ * otherwise nothing would ever wake the writer up again. */
+
+typedef struct _MockControlPipe
+{
+  LogPipe super;
+  gint notify_count;
+  gint last_notify_code;
+} MockControlPipe;
+
+static gint
+_mock_control_pipe_notify(LogPipe *s, gint notify_code, gpointer user_data)
+{
+  MockControlPipe *self = (MockControlPipe *) s;
+
+  self->notify_count++;
+  self->last_notify_code = notify_code;
+  return NR_OK;
+}
+
+static MockControlPipe *
+_mock_control_pipe_new(GlobalConfig *cfg)
+{
+  MockControlPipe *self = g_new0(MockControlPipe, 1);
+
+  log_pipe_init_instance(&self->super, cfg);
+  self->super.notify = _mock_control_pipe_notify;
+  self->last_notify_code = -1;
+  return self;
+}
+
+Test(logwriter, test_logwriter_requests_reconnect_after_reopen_deferred_during_active_io_job)
+{
+  configuration = cfg_new_snippet();
+  app_startup();
+
+  LogWriterOptions opt = {0};
+  log_writer_options_defaults(&opt);
+  log_writer_options_init(&opt, configuration, LWO_NO_STATS);
+
+  LogQueue *queue = log_queue_fifo_new(1000, NULL, STATS_LEVEL0, NULL, NULL);
+  LogWriter *writer = log_writer_new(0, configuration);
+  MockControlPipe *control = _mock_control_pipe_new(configuration);
+
+  log_writer_set_options(writer, &control->super, &opt, NULL, NULL);
+  log_writer_set_queue(writer, queue);
+  cr_assert(log_pipe_init((LogPipe *) writer), "LogWriter initialization failed");
+
+  /* A connection break arrives while the writer's I/O job is still
+   * considered in flight -- log_writer_reopen_deferred() must take the
+   * deferred branch instead of applying the NULL proto immediately. */
+  log_writer_test_set_io_job_working(writer, TRUE);
+  log_writer_test_call_reopen_deferred(writer, NULL);
+  cr_assert_not(log_writer_test_get_watches_running(writer),
+                "watches must not be running while a reopen is still deferred");
+
+  /* The in-flight job now completes. This applies the deferred NULL proto
+   * and used to leave the writer stuck forever with no proto and no
+   * watches running -- it must request a reconnect instead. */
+  log_writer_test_simulate_io_job_completion(writer, TRUE);
+
+  cr_assert_eq(control->notify_count, 1,
+               "expected exactly one notification requesting a reconnect after the deferred NULL proto was applied");
+  cr_assert_eq(control->last_notify_code, NC_REOPEN_REQUIRED,
+               "log_writer_work_finished() must request a reconnect (NC_REOPEN_REQUIRED) after applying a deferred "
+               "NULL proto, otherwise the writer is left stuck with no fd watch and no timer to wake it up again");
+
+  cr_expect(log_pipe_deinit((LogPipe *) writer));
+  log_pipe_unref((LogPipe *) writer);
+  log_pipe_unref(&control->super);
+  log_queue_unref(queue);
+  log_writer_options_destroy(&opt);
+
   app_shutdown();
   iv_deinit();
   cfg_free(configuration);
