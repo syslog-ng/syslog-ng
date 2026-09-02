@@ -41,6 +41,7 @@ typedef struct _DiskQueueOptions
   gchar *dir;
   gdouble truncate_size_ratio;
   gboolean prealloc;
+  gboolean remove_if_empty;
 } DiskQueueOptions;
 
 void disk_queue_options_front_cache_size_set(DiskQueueOptions *self, gint front_cache_size);
@@ -53,6 +54,7 @@ void disk_queue_options_check_plugin_settings(DiskQueueOptions *self);
 void disk_queue_options_set_dir(DiskQueueOptions *self, const gchar *dir);
 void disk_queue_options_set_truncate_size_ratio(DiskQueueOptions *self, gdouble truncate_size_ratio);
 void disk_queue_options_set_prealloc(DiskQueueOptions *self, gboolean prealloc);
+void disk_queue_options_set_remove_if_empty(DiskQueueOptions *self, gboolean remove_if_empty);
 void disk_queue_options_set_default_options(DiskQueueOptions *self);
 void disk_queue_options_destroy(DiskQueueOptions *self);
 

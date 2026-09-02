@@ -44,6 +44,7 @@ static CfgLexerKeyword diskq_keywords[] =
   { "dir",               KW_DIR },
   { "truncate_size_ratio", KW_TRUNCATE_SIZE_RATIO },
   { "prealloc",          KW_PREALLOC },
+  { "remove_if_empty",   KW_REMOVE_IF_EMPTY },
   { "stats",             KW_STATS },
   { "freq",              KW_FREQ },
   { NULL }

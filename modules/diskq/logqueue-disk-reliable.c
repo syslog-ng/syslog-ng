@@ -447,10 +447,13 @@ _stop(LogQueueDisk *s, gboolean *persistent)
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
 
   gboolean result = FALSE;
+  gboolean has_messages = TRUE;
 
-  if (qdisk_stop(s->qdisk, NULL, NULL, NULL))
+  *persistent = TRUE;
+
+  if (qdisk_stop(s->qdisk, NULL, NULL, NULL, &has_messages))
     {
-      *persistent = TRUE;
+      *persistent = has_messages;
       result = TRUE;
     }
 
