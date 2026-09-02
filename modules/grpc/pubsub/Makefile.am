@@ -46,7 +46,12 @@ modules_grpc_pubsub_libpubsub_la_LIBADD = \
 
 nodist_EXTRA_modules_grpc_pubsub_libpubsub_la_SOURCES = force-cpp-linker-with-default-stdlib.cpp
 
-modules_grpc_pubsub_libpubsub_la_LDFLAGS = $(MODULE_LDFLAGS)
+# gRPC/Abseil/Protobuf use one-shot static initializers that allocate
+# process-lifetime global state and never free it. Repeated dlopen()/
+# dlclose() of this module resets those "once" flags without freeing
+# the prior allocations, leaking memory each time. -z,nodelete keeps
+# the module resident after the first load, avoiding this.
+modules_grpc_pubsub_libpubsub_la_LDFLAGS = $(MODULE_LDFLAGS) -Wl,-z,nodelete
 EXTRA_modules_grpc_pubsub_libpubsub_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
   $(GRPC_COMMON_LIBS) \
