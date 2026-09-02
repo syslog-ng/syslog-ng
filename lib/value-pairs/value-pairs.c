@@ -441,6 +441,21 @@ vp_foreach_helper(const gchar *name, gpointer ndx_as_pointer, gpointer data)
 }
 
 
+static void
+vp_foreach_in_insertion_order(VPResults *results, gpointer helper_args)
+{
+  for (guint i = 0; i < results->values->len; i++)
+    {
+      VPResultValue *rv = &g_array_index(results->values, VPResultValue, i);
+
+      if (GPOINTER_TO_INT(g_tree_lookup(results->result_tree, rv->name->str)) != (gint) i)
+        continue;
+
+      if (vp_foreach_helper(rv->name->str, GINT_TO_POINTER(i), helper_args))
+        break;
+    }
+}
+
 gboolean
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                             GCompareFunc compare_func,
@@ -454,7 +469,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   ScratchBuffersMarker mark;
 
   scratch_buffers_mark(&mark);
-  vp_results_init(&results, compare_func);
+  vp_results_init(&results, compare_func ? compare_func : (GCompareFunc) strcmp);
   args[5] = &results;
 
   /*
@@ -470,7 +485,10 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
 
   /* Aaand we run it through the callback! */
-  g_tree_foreach(results.result_tree, (GTraverseFunc)vp_foreach_helper, helper_args);
+  if (compare_func)
+    g_tree_foreach(results.result_tree, (GTraverseFunc)vp_foreach_helper, helper_args);
+  else
+    vp_foreach_in_insertion_order(&results, helper_args);
   vp_results_deinit(&results);
   scratch_buffers_reclaim_marked(mark);
 
@@ -618,7 +636,8 @@ vp_walker_stack_unwind_containers_until(vp_walk_state_t *state,
     {
       vp_walk_stack_data_t *p;
 
-      if (name && strncmp(name, t->prefix, t->prefix_len) == 0)
+      if (name && strncmp(name, t->prefix, t->prefix_len) == 0 &&
+          (name[t->prefix_len] == state->key_delimiter || name[t->prefix_len] == '\0'))
         {
           /* This one matched, put it back, PUT IT BACK! */
           vp_stack_push(&state->stack, t);
@@ -870,19 +889,152 @@ vp_walk_cmp(const gchar *s1, const gchar *s2)
 }
 
 /*******************************************************************************
+ * vp_order_tree
+ *
+ * Used by the as-written walk: name-value pairs are inserted in their
+ * first-seen order, then replayed depth-first so that keys sharing a prefix
+ * stay contiguous, as the walker requires.
+ *******************************************************************************/
+
+typedef struct _VPOrderNode
+{
+  gchar *key;
+  GHashTable *index;
+  GPtrArray *children;
+  gboolean has_value;
+  LogMessageValueType type;
+  gchar *value;
+  gsize value_len;
+} VPOrderNode;
+
+static VPOrderNode *
+vp_order_node_new(const gchar *key)
+{
+  VPOrderNode *node = g_new0(VPOrderNode, 1);
+  node->key = g_strdup(key);
+  node->children = g_ptr_array_new();
+  return node;
+}
+
+static void
+vp_order_node_free(VPOrderNode *node)
+{
+  for (guint i = 0; i < node->children->len; i++)
+    vp_order_node_free(g_ptr_array_index(node->children, i));
+  g_ptr_array_free(node->children, TRUE);
+  if (node->index)
+    g_hash_table_destroy(node->index);
+  g_free(node->key);
+  g_free(node->value);
+  g_free(node);
+}
+
+static void
+vp_order_tree_insert(VPOrderNode *root, GPtrArray *tokens,
+                     LogMessageValueType type, const gchar *value, gsize value_len)
+{
+  VPOrderNode *node = root;
+
+  for (guint i = 0; i < tokens->len; i++)
+    {
+      const gchar *segment = g_ptr_array_index(tokens, i);
+      VPOrderNode *child = node->index ? g_hash_table_lookup(node->index, segment) : NULL;
+
+      if (!child)
+        {
+          child = vp_order_node_new(segment);
+          if (!node->index)
+            node->index = g_hash_table_new(g_str_hash, g_str_equal);
+          g_hash_table_insert(node->index, child->key, child);
+          g_ptr_array_add(node->children, child);
+        }
+      node = child;
+    }
+
+  node->has_value = TRUE;
+  node->type = type;
+  g_free(node->value);
+  node->value = g_malloc(value_len + 1);
+  memcpy(node->value, value, value_len);
+  node->value[value_len] = '\0';
+  node->value_len = value_len;
+}
+
+static void
+vp_order_tree_emit(VPOrderNode *node, GString *prefix, vp_walk_state_t *state, gboolean *result)
+{
+  for (guint i = 0; i < node->children->len && *result; i++)
+    {
+      VPOrderNode *child = g_ptr_array_index(node->children, i);
+      gsize prefix_len = prefix->len;
+
+      if (prefix_len)
+        g_string_append_c(prefix, state->key_delimiter);
+      g_string_append(prefix, child->key);
+
+      if (child->has_value &&
+          value_pairs_walker(prefix->str, child->type, child->value, child->value_len, state))
+        *result = FALSE;
+
+      if (*result)
+        vp_order_tree_emit(child, prefix, state, result);
+
+      g_string_truncate(prefix, prefix_len);
+    }
+}
+
+typedef struct
+{
+  VPOrderNode *root;
+  vp_walk_state_t *state;
+} VPOrderBuilder;
+
+static gboolean
+vp_order_collect(const gchar *name, LogMessageValueType type,
+                 const gchar *value, gsize value_len, gpointer user_data)
+{
+  VPOrderBuilder *builder = (VPOrderBuilder *) user_data;
+  GPtrArray *tokens = vp_walker_split_name_to_tokens(builder->state, name);
+
+  if (tokens)
+    {
+      vp_order_tree_insert(builder->root, tokens, type, value, value_len);
+      g_ptr_array_foreach(tokens, (GFunc) g_free, NULL);
+      g_ptr_array_free(tokens, TRUE);
+    }
+
+  return FALSE;
+}
+
+/*******************************************************************************
  * Public API
  *******************************************************************************/
 
+static void
+vp_walk_as_written(ValuePairs *vp, vp_walk_state_t *state,
+                   LogMessage *msg, LogTemplateEvalOptions *options, gboolean *result)
+{
+  VPOrderNode *root = vp_order_node_new(NULL);
+  VPOrderBuilder builder = { root, state };
+  GString *prefix = g_string_sized_new(64);
+
+  value_pairs_foreach_sorted(vp, vp_order_collect, NULL, msg, options, &builder);
+  vp_order_tree_emit(root, prefix, state, result);
+
+  g_string_free(prefix, TRUE);
+  vp_order_node_free(root);
+}
+
 gboolean
-value_pairs_walk(ValuePairs *vp,
-                 VPWalkCallbackFunc obj_start_func,
-                 VPWalkValueCallbackFunc process_value_func,
-                 VPWalkCallbackFunc obj_end_func,
-                 LogMessage *msg, LogTemplateEvalOptions *options,
-                 gchar key_delimiter, gpointer user_data)
+value_pairs_walk_ordered(ValuePairs *vp,
+                         VPWalkCallbackFunc obj_start_func,
+                         VPWalkValueCallbackFunc process_value_func,
+                         VPWalkCallbackFunc obj_end_func,
+                         LogMessage *msg, LogTemplateEvalOptions *options,
+                         gchar key_delimiter, ValuePairsOrder order, gpointer user_data)
 {
   vp_walk_state_t state;
-  gboolean result;
+  gboolean result = TRUE;
 
   state.user_data = user_data;
   state.obj_start = obj_start_func;
@@ -892,14 +1044,30 @@ value_pairs_walk(ValuePairs *vp,
   vp_stack_init(&state.stack);
 
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
-  result = value_pairs_foreach_sorted(vp, value_pairs_walker,
-                                      (GCompareFunc)vp_walk_cmp, msg,
-                                      options, &state);
+  if (order == VP_ORDER_AS_WRITTEN)
+    vp_walk_as_written(vp, &state, msg, options, &result);
+  else
+    {
+      GCompareFunc compare_func = order == VP_ORDER_ASCENDING ? (GCompareFunc) strcmp : (GCompareFunc) vp_walk_cmp;
+      result = value_pairs_foreach_sorted(vp, value_pairs_walker, compare_func, msg, options, &state);
+    }
   vp_walker_stack_unwind_all_containers(&state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
   vp_stack_destroy(&state.stack);
 
   return result;
+}
+
+gboolean
+value_pairs_walk(ValuePairs *vp,
+                 VPWalkCallbackFunc obj_start_func,
+                 VPWalkValueCallbackFunc process_value_func,
+                 VPWalkCallbackFunc obj_end_func,
+                 LogMessage *msg, LogTemplateEvalOptions *options,
+                 gchar key_delimiter, gpointer user_data)
+{
+  return value_pairs_walk_ordered(vp, obj_start_func, process_value_func, obj_end_func,
+                                  msg, options, key_delimiter, VP_ORDER_DESCENDING, user_data);
 }
 
 gboolean
