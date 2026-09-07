@@ -81,6 +81,19 @@ _construct_regexp_parser(const gchar *prefix, const gchar *pattern, gint flags)
   return p;
 }
 
+Test(regexp_parser, test_failed_regexp_compilation_can_be_destroyed)
+{
+  LogParser *p = _construct_regexp_parser(NULL, "((", 0);
+  GError *error = NULL;
+
+  cr_assert_not(regexp_parser_compile(p, &error));
+  cr_assert_not_null(error);
+
+  /* A failed compile must not leave matchers to be freed again during cleanup. */
+  g_error_free(error);
+  log_pipe_unref((LogPipe *)p);
+}
+
 ParameterizedTestParameters(regexp_parser, test_regexp_parser)
 {
   static RegexpParserTestParam parser_params[] =
