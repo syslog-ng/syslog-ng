@@ -418,6 +418,12 @@ nv_table_deserialize_22(SerializeArchive *sa)
     }
 
   res->size = _calculate_new_size(res);
+  if (res->size < sizeof(NVTable))
+    {
+      g_free(res);
+      return NULL;
+    }
+
   res = (NVTable *)g_realloc(res, res->size);
   if (!res)
     return NULL;

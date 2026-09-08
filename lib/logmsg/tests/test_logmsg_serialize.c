@@ -49,6 +49,7 @@
 #define TEST_NV_TABLE_USED 8
 #define TEST_INVALID_NV_TABLE_USED (TEST_SMALL_NV_TABLE_SIZE + TEST_ONE)
 #define TEST_INVALID_ENTRY_OFFSET TEST_ONE
+#define TEST_INVALID_NV_TABLE_SIZE (sizeof(NVTable) - TEST_ONE)
 /* v22 sizes are encoded in four-byte units. */
 #define TEST_V22_SIZE 16
 #define TEST_V22_USED 2
@@ -299,6 +300,21 @@ Test(logmsg_serialize, reject_malformed_current_nvtable)
   g_string_free(stream, TRUE);
 }
 
+Test(logmsg_serialize, reject_current_nvtable_smaller_than_header)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_INVALID_NV_TABLE_SIZE);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
 Test(logmsg_serialize, reject_current_nvtable_with_used_outside_allocation)
 {
   GString *stream;
@@ -429,6 +445,23 @@ Test(logmsg_serialize, reject_malformed_v22_nvtable)
   serialize_write_uint16(sa, TEST_NO_ENTRIES);
   serialize_write_uint16(sa, G_MAXUINT16);
   serialize_write_uint8(sa, 0);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_22(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_v22_nvtable_smaller_than_header)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint8(sa, TEST_NO_ENTRIES);
   serialize_string_archive_reset(sa);
 
   cr_assert_null(nv_table_deserialize_22(sa));

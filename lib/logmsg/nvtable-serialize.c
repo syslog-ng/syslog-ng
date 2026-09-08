@@ -207,7 +207,7 @@ _read_header(SerializeArchive *sa, NVTable **nvtable)
   if (!serialize_read_uint32(sa, &size))
     goto error;
 
-  if (size > NV_TABLE_MAX_BYTES)
+  if (size < sizeof(NVTable) || size > NV_TABLE_MAX_BYTES)
     goto error;
 
   res = (NVTable *) g_malloc(size);
