@@ -8,7 +8,6 @@ BUILDER_IMAGES=	\
 	centos-stream10  \
 	fedora-latest	\
 	fedora-rawhide	\
-	debian-bullseye	\
 	debian-bookworm	\
 	debian-bookworm-arm64	\
 	debian-trixie \

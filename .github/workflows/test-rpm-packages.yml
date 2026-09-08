@@ -26,7 +26,6 @@ jobs:
           #
           # NOTE: Commented out variants are DEB based distros, so they are tested in the test-apt-packages.yml workflow
           #
-          # - "debian:bullseye"
           # - "debian:bookworm"
           # - "debian:sid"
           # - "debian:testing"

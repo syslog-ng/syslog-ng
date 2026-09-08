@@ -33,7 +33,6 @@ on:
           # upper block for   dbld docker + binary packages
           # lower block for   dbld docker + binary packages + docker binary
           '[
-            "debian-bullseye",
             "debian-bookworm",
             "debian-sid",
             "debian-testing",
