@@ -17,7 +17,6 @@ on:
           # upper block for   dbld docker + binary packages
           # lower block for   dbld docker + binary packages + docker binary
           '[
-            "debian-bullseye",
             "debian-bookworm",
             "debian-sid",
             "debian-testing",
@@ -49,8 +48,6 @@ jobs:
         distro: ${{ fromJson(inputs.distros) }}
         arch: [amd64, arm64]
         exclude:
-          - distro: debian-bullseye
-            arch: arm64
           - distro: debian-sid
             arch: arm64
           - distro: debian-testing

@@ -46,7 +46,6 @@ jobs:
         # rocky-9             |   x   |           |  x  |   x   |   x    |       |   x   |   x  |     x     |
         # ubuntu-focal        |   x   |           |  x  |   x   |   x    |       |   x   |   x  |     x     |
         # ---------------------------------------------------------------------------------------------------
-        # debian-bullseye     |   x   |           |  x  |   x   |   x    |       |   x   |   x  |     x     |
         # debian-bookworm     |   x   |           |  x  |   x   |   x    |       |   x   |   x  |     x     |
         # debian-testing      |   x   |           |  x  |   x   |   x    |       |   x   |   x  |     x     |
         # debian-sid          |   x   |           |  x  |   x   |   x    |       |   x   |   x  |     x     |
@@ -92,10 +91,6 @@ jobs:
             configure_flags: "--disable-ebpf"
             cmake_configure_flags: "-DENABLE_EBPF=OFF"
           # --------------------------------------------------------------------
-          - name: debian-bullseye
-            # too old ebpf
-            configure_flags: "--disable-ebpf"
-            cmake_configure_flags: "-DENABLE_EBPF=OFF"
           - name: debian-bookworm
           - name: debian-testing
           - name: debian-sid

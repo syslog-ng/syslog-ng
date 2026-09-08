@@ -64,7 +64,6 @@ jobs:
         "rocky-9",
         "ubuntu-focal",
 
-        "debian-bullseye",
         "debian-bookworm",
         "debian-sid",
         "debian-testing",

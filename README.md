@@ -185,7 +185,6 @@ syslog-ng packages are released for the following distribution versions:
 | Debian 13       | debian-trixie-arm64   | arm64  | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-trixie-arm64/binary-arm64/)   | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-trixie-arm64/binary-arm64/) |
 | Debian 12       | debian-bookworm       | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-bookworm/binary-amd64/)       | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-bookworm/binary-amd64/) |
 | Debian 12       | debian-bookworm-arm64 | arm64  | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-bookworm-arm64/binary-arm64/) | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-bookworm-arm64/binary-arm64/) |
-| Debian 11       | debian-bullseye       | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-bullseye/binary-amd64/)       | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-bullseye/binary-amd64/) |
 | Debian Unstable | debian-sid            | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-sid/binary-amd64/)            | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-sid/binary-amd64/) |
 | Debian Testing  | debian-testing        | x86-64 | [stable](https://ose-repo.syslog-ng.com/apt/dists/stable/debian-testing/binary-amd64/)        | [nightly](https://ose-repo.syslog-ng.com/apt/dists/nightly/debian-testing/binary-amd64/) |
 

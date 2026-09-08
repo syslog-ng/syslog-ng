@@ -202,8 +202,8 @@ jobs:
 
       - name: "Workaround: Prevent librdkafka sasl_client_init() crash before Light tests"
         # librdkafka (compiled with Cyrus-SASL) calls sasl_client_init(NULL)
-        # unconditionally on the first rd_kafka_new(). On Debian Bullseye, Focal
-        # and Bookworm, libsasl2's internal canonuser registration code
+        # unconditionally on the first rd_kafka_new(). On Focal and Bookworm,
+        # libsasl2's internal canonuser registration code
         # (sasl_canonuser_add_plugin("INTERNAL",...)) corrupts its own function
         # pointer dispatch table, causing a SIGSEGV. The corruption is in
         # libsasl2's own initialisation, not in external plugins:

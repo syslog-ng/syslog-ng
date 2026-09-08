@@ -57,7 +57,6 @@ jobs:
           - tarball
           - kira
           # dbld docker image + binary packages
-          - debian-bullseye
           - debian-bookworm
           - debian-sid
           - debian-testing
