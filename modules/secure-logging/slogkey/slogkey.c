@@ -47,7 +47,7 @@ static GOptionEntry entries[] =
   { "master-key", 'm', 0, G_OPTION_ARG_NONE, &master, "Generate a master key", NULL },
   { "derive-host-key", 'd', 0, G_OPTION_ARG_NONE, &host, "Derive a host key from an existing master key", NULL },
   { "counter", 'c', 0, G_OPTION_ARG_NONE, &counter, "Display current host key counter", NULL },
-  { NULL }
+  { 0 }
 };
 
 
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 
   int ret = 0;
   gboolean success = FALSE;
-  int index = 1;
+  int optidx = 1;
 
   // Initialize internal messaging
   msg_init(TRUE);
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
   if (master)
     {
       guchar masterkey[KEY_LENGTH];
-      char *keyfile = argv[index];
+      char *keyfile = argv[optidx];
 
       success = generateMasterKey(masterkey);
       if (!success)
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
     {
       // Display key counter
       guchar key[KEY_LENGTH];
-      char *keyfile = argv[index];
+      char *keyfile = argv[optidx];
       guint64 counterValue;
       success = readKey(key, &counterValue, keyfile);
       if (!success)
@@ -172,10 +172,10 @@ int main(int argc, char **argv)
   else if (host)
     {
       // Arguments
-      gchar *masterKeyFileName = argv[index++];
-      gchar *macAddr = argv[index++];
-      gchar *serial = argv[index++];
-      gchar *hostKeyFileName = argv[index];
+      gchar *masterKeyFileName = argv[optidx++];
+      gchar *macAddr = argv[optidx++];
+      gchar *serial = argv[optidx++];
+      gchar *hostKeyFileName = argv[optidx];
 
       guchar masterKey[KEY_LENGTH] = { 0 };
 
