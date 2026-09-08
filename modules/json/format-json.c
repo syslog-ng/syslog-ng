@@ -39,7 +39,31 @@ typedef struct _TFJsonState
   TFSimpleFuncState super;
   ValuePairs *vp;
   gchar key_delimiter;
+  ValuePairsOrder order;
 } TFJsonState;
+
+static gboolean
+_parse_order(const gchar *option_name,
+             const gchar *value,
+             gpointer data,
+             GError **error)
+{
+  TFJsonState *state = (TFJsonState *) data;
+
+  if (strcmp(value, "descending") == 0)
+    state->order = VP_ORDER_DESCENDING;
+  else if (strcmp(value, "ascending") == 0)
+    state->order = VP_ORDER_ASCENDING;
+  else if (strcmp(value, "as-written") == 0)
+    state->order = VP_ORDER_AS_WRITTEN;
+  else
+    {
+      g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
+                  "$(format-json) --order only accepts 'descending', 'ascending' or 'as-written', found: '%s'", value);
+      return FALSE;
+    }
+  return TRUE;
+}
 
 static gboolean
 _parse_key_delimiter(const gchar *option_name,
@@ -70,10 +94,12 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   gboolean transform_initial_dot = TRUE;
 
   state->key_delimiter = '.';
+  state->order = VP_ORDER_DESCENDING;
   GOptionEntry format_json_options[] =
   {
     { "leave-initial-dot", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &transform_initial_dot, NULL, NULL },
     { "key-delimiter", 0, 0, G_OPTION_ARG_CALLBACK, _parse_key_delimiter, NULL, NULL },
+    { "order", 0, 0, G_OPTION_ARG_CALLBACK, _parse_order, NULL, NULL },
     { NULL },
   };
 
@@ -410,9 +436,9 @@ tf_json_append(TFJsonState *state, GString *result, LogMessage *msg, LogTemplate
   invocation_state.buffer = result;
   invocation_state.template_options = options->opts;
 
-  return value_pairs_walk(state->vp,
-                          tf_json_obj_start, tf_json_value, tf_json_obj_end,
-                          msg, options, state->key_delimiter, &invocation_state);
+  return value_pairs_walk_ordered(state->vp,
+                                  tf_json_obj_start, tf_json_value, tf_json_obj_end,
+                                  msg, options, state->key_delimiter, state->order, &invocation_state);
 }
 
 static void
@@ -472,9 +498,15 @@ tf_flat_json_append(TFJsonState *state, GString *result, LogMessage *msg, LogTem
 
   g_string_append_c(invocation_state.buffer, '{');
 
+  GCompareFunc compare_func = (GCompareFunc) tf_flat_value_pairs_sort;
+  if (state->order == VP_ORDER_ASCENDING)
+    compare_func = (GCompareFunc) strcmp;
+  else if (state->order == VP_ORDER_AS_WRITTEN)
+    compare_func = NULL;
+
   gboolean success = value_pairs_foreach_sorted(state->vp,
                                                 tf_flat_json_value,
-                                                (GCompareFunc) tf_flat_value_pairs_sort, msg, options,
+                                                compare_func, msg, options,
                                                 &invocation_state);
 
   g_string_append_c(invocation_state.buffer, '}');

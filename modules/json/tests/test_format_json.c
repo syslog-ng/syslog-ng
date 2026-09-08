@@ -474,3 +474,43 @@ Test(format_json, test_format_json_key_value_with_spaces)
   assert_template_format("$(format-json foo1= alma foo2 =korte foo3 = szilva foo4 = \" meggy \")",
                          "{\"foo4\":\" meggy \",\"foo3\":\"szilva\",\"foo2\":\"korte\",\"foo1\":\"alma\"}");
 }
+
+Test(format_json, test_format_json_order)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  assert_template_format("$(format-json a=1 b=2)",
+                         "{\"b\":\"2\",\"a\":\"1\"}");
+  assert_template_format("$(format-json --order=descending a=1 b=2)",
+                         "{\"b\":\"2\",\"a\":\"1\"}");
+
+  assert_template_format("$(format-json --order=ascending a=1 b=2)",
+                         "{\"a\":\"1\",\"b\":\"2\"}");
+  assert_template_format("$(format-json --order=ascending --scope rfc3164)",
+                         "{\"DATE\":\"Feb 11 10:34:56\",\"FACILITY\":\"local3\",\"HOST\":\"bzorp\",\"MESSAGE\":\"árvíztűrőtükörfúrógép\",\"PID\":\"23323\",\"PRIORITY\":\"err\",\"PROGRAM\":\"syslog-ng\"}");
+
+  assert_template_format("$(format-json --order=as-written b=1 a=2 last=3)",
+                         "{\"b\":\"1\",\"a\":\"2\",\"last\":\"3\"}");
+  assert_template_format("$(format-json --order=as-written msg.b=1 msg.a=2 host=h)",
+                         "{\"msg\":{\"b\":\"1\",\"a\":\"2\"},\"host\":\"h\"}");
+
+  /* a flat key must not be absorbed into a container that is a string prefix of it */
+  assert_template_format("$(format-json --order=ascending msg.a=1 msgx=2)",
+                         "{\"msg\":{\"a\":\"1\"},\"msgx\":\"2\"}");
+  assert_template_format("$(format-json --order=as-written msg.a=1 msgx=2)",
+                         "{\"msg\":{\"a\":\"1\"},\"msgx\":\"2\"}");
+
+  /* multiple nesting levels keep first-seen order at every level */
+  assert_template_format("$(format-json --order=as-written a.b.c=1 a.b.d=2 a.e=3 f=4)",
+                         "{\"a\":{\"b\":{\"c\":\"1\",\"d\":\"2\"},\"e\":\"3\"},\"f\":\"4\"}");
+  assert_template_format("$(format-json --order=ascending a.b.x=1 a.bb=2)",
+                         "{\"a\":{\"b\":{\"x\":\"1\"},\"bb\":\"2\"}}");
+
+  assert_template_format("$(format-flat-json --order=ascending b=1 a=2 c=3)",
+                         "{\"a\":\"2\",\"b\":\"1\",\"c\":\"3\"}");
+  assert_template_format("$(format-flat-json --order=as-written b=1 a=2 c=3)",
+                         "{\"b\":\"1\",\"a\":\"2\",\"c\":\"3\"}");
+
+  assert_template_failure("$(format-json --order=nonsense a=1)",
+                          "--order only accepts");
+}

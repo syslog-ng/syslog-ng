@@ -34,6 +34,13 @@
 
 typedef struct _ValuePairs ValuePairs;
 
+typedef enum
+{
+  VP_ORDER_DESCENDING,
+  VP_ORDER_ASCENDING,
+  VP_ORDER_AS_WRITTEN,
+} ValuePairsOrder;
+
 typedef gboolean
 (*VPForeachFunc) (const gchar *name, LogMessageValueType type, const gchar *value,
                   gsize value_len, gpointer user_data);
@@ -74,6 +81,13 @@ gboolean value_pairs_walk(ValuePairs *vp,
                           LogMessage *msg, LogTemplateEvalOptions *options,
                           gchar key_delimiter,
                           gpointer user_data);
+gboolean value_pairs_walk_ordered(ValuePairs *vp,
+                                  VPWalkCallbackFunc obj_start_func,
+                                  VPWalkValueCallbackFunc process_value_func,
+                                  VPWalkCallbackFunc obj_end_func,
+                                  LogMessage *msg, LogTemplateEvalOptions *options,
+                                  gchar key_delimiter, ValuePairsOrder order,
+                                  gpointer user_data);
 
 ValuePairs *value_pairs_new(GlobalConfig *cfg);
 ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
