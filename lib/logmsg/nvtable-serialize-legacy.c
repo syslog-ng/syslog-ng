@@ -120,6 +120,66 @@ _calculate_new_alloc_len(OldNVEntry *old_entry)
   return (old_entry->alloc_len << NV_TABLE_OLD_SCALE) + SIZE_DIFF_OF_OLD_NVENTRY_AND_NEW_NVENTRY;
 }
 
+static gboolean
+_validate_old_entry(GString *payload, guint32 old_offset, gboolean different_endianness)
+{
+  OldNVEntry *old_entry;
+  guint8 flags;
+  guint16 alloc_len;
+  guint16 value_len;
+  guint16 referenced_ofs;
+  guint16 referenced_len;
+  gsize entry_size;
+  gsize allocated_size;
+
+  if (old_offset < G_STRUCT_OFFSET(OldNVEntry, vdirect.data) || old_offset > payload->len)
+    return FALSE;
+
+  old_entry = (OldNVEntry *) (payload->str + payload->len - old_offset);
+  flags = different_endianness ? reverse(old_entry->flags) : old_entry->flags;
+  alloc_len = different_endianness ? GUINT16_SWAP_LE_BE(old_entry->alloc_len) : old_entry->alloc_len;
+  allocated_size = (gsize) alloc_len << NV_TABLE_OLD_SCALE;
+
+  if (!allocated_size || allocated_size > old_offset)
+    return FALSE;
+
+  if (!(flags & 1))
+    {
+      value_len = different_endianness ? GUINT16_SWAP_LE_BE(old_entry->vdirect.value_len) :
+                  old_entry->vdirect.value_len;
+      entry_size = G_STRUCT_OFFSET(OldNVEntry, vdirect.data) + old_entry->name_len + value_len + 2;
+    }
+  else
+    {
+      if (old_offset < sizeof(OldNVEntry))
+        return FALSE;
+      referenced_ofs = different_endianness ? GUINT16_SWAP_LE_BE(old_entry->vindirect.ofs) :
+                       old_entry->vindirect.ofs;
+      referenced_len = different_endianness ? GUINT16_SWAP_LE_BE(old_entry->vindirect.len) :
+                       old_entry->vindirect.len;
+      if ((gsize) referenced_ofs + referenced_len > payload->len)
+        return FALSE;
+      entry_size = G_STRUCT_OFFSET(OldNVEntry, vindirect.name) + old_entry->name_len;
+    }
+
+  return entry_size <= allocated_size;
+}
+
+static gboolean
+_has_new_entry_room(NVTable *self, gchar *current_payload_pointer, guint16 old_alloc_len,
+                    gboolean different_endianness)
+{
+  if (different_endianness)
+    old_alloc_len = GUINT16_SWAP_LE_BE(old_alloc_len);
+
+  gsize new_alloc_len = ((gsize) old_alloc_len << NV_TABLE_OLD_SCALE) +
+                        SIZE_DIFF_OF_OLD_NVENTRY_AND_NEW_NVENTRY;
+  gchar *payload_bottom = nv_table_get_ofs_table_top(self);
+
+  return current_payload_pointer >= payload_bottom &&
+         new_alloc_len <= (gsize) (current_payload_pointer - payload_bottom);
+}
+
 static inline guint32
 _calculate_new_size(NVTable *self)
 {
@@ -214,6 +274,22 @@ _deserialize_blob_v22(SerializeArchive *sa, NVTable *self, gchar *table_top,
 
       if (old_entry_offset != 0)
         {
+          OldNVEntry *old_entry;
+
+          if (!_validate_old_entry(old_nvtable_payload, old_entry_offset, different_endianness))
+            {
+              g_string_free(old_nvtable_payload, TRUE);
+              return FALSE;
+            }
+
+          old_entry =
+            (OldNVEntry *) (old_nvtable_payload->str + old_nvtable_payload->len - old_entry_offset);
+          if (!_has_new_entry_room(self, current_payload_pointer, old_entry->alloc_len, different_endianness))
+            {
+              g_string_free(old_nvtable_payload, TRUE);
+              return FALSE;
+            }
+
           NVEntry *new_entry =
             _deserialize_old_entry(old_nvtable_payload, old_entry_offset,
                                    current_payload_pointer, different_endianness);
@@ -228,6 +304,22 @@ _deserialize_blob_v22(SerializeArchive *sa, NVTable *self, gchar *table_top,
     {
       NVIndexEntry *dynvalue = &dyn_entries[i];
       guint32 old_entry_offset = dynvalue->ofs;
+      OldNVEntry *old_entry;
+
+      if (!old_entry_offset || !_validate_old_entry(old_nvtable_payload, old_entry_offset, different_endianness))
+        {
+          g_string_free(old_nvtable_payload, TRUE);
+          return FALSE;
+        }
+
+      old_entry =
+        (OldNVEntry *) (old_nvtable_payload->str + old_nvtable_payload->len - old_entry_offset);
+      if (!_has_new_entry_room(self, current_payload_pointer, old_entry->alloc_len, different_endianness))
+        {
+          g_string_free(old_nvtable_payload, TRUE);
+          return FALSE;
+        }
+
       NVEntry *new_entry =
         _deserialize_old_entry(old_nvtable_payload, old_entry_offset,
                                current_payload_pointer, different_endianness);
@@ -330,6 +422,12 @@ nv_table_deserialize_22(SerializeArchive *sa)
   if (!res)
     return NULL;
 
+  if (!nv_table_alloc_check(res, 0, TRUE))
+    {
+      g_free(res);
+      return NULL;
+    }
+
   res->ref_cnt = 1;
   res->borrowed = FALSE;
 
@@ -427,6 +525,9 @@ nv_table_deserialize_legacy(SerializeArchive *sa)
   if (!serialize_read_uint32(sa, &header_len))
     return NULL;
 
+  if (header_len < sizeof(OldNVTable) || header_len > NV_TABLE_MAX_BYTES)
+    return NULL;
+
   tmp = (OldNVTable *)g_try_malloc(header_len);
 
   if (!tmp)
@@ -453,6 +554,17 @@ nv_table_deserialize_legacy(SerializeArchive *sa)
   if (swap_bytes)
     _struct_swap_bytes_legacy(tmp);
 
+  calculated_header_len = sizeof(OldNVTable) +
+                          tmp->num_static_entries * sizeof(tmp->static_entries[0]) +
+                          tmp->num_dyn_entries * sizeof(guint32);
+  calculated_used_len = tmp->used << NV_TABLE_OLD_SCALE;
+  if (tmp->num_static_entries > LM_V_MAX ||
+      calculated_header_len != header_len || calculated_used_len != used_len)
+    {
+      g_free(tmp);
+      return NULL;
+    }
+
   res = _create_new_nvtable_from_legacy_nvtable(tmp);
   if (!res)
     {
@@ -460,6 +572,12 @@ nv_table_deserialize_legacy(SerializeArchive *sa)
       return NULL;
     }
   g_free(tmp);
+
+  if (!nv_table_alloc_check(res, 0, TRUE))
+    {
+      g_free(res);
+      return NULL;
+    }
 
   res = (NVTable *)g_try_realloc(res, res->size);
 

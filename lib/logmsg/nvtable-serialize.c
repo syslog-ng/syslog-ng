@@ -69,6 +69,91 @@ _read_struct(SerializeArchive *sa, NVTable *res)
 }
 
 static gboolean
+_validate_entry_offset(NVTable *self, guint32 ofs, gboolean different_endianness)
+{
+  NVEntry *entry;
+  guint8 flags;
+
+  if (!ofs)
+    return TRUE;
+  if (ofs < NV_ENTRY_DIRECT_HDR || ofs > self->used)
+    return FALSE;
+
+  entry = nv_table_get_entry_at_ofs(self, ofs);
+  flags = different_endianness ? reverse(entry->flags) : entry->flags;
+  return !(flags & 1) || ofs >= sizeof(NVEntry);
+}
+
+static gboolean
+_validate_entry_offsets(NVTable *self, gboolean different_endianness)
+{
+  NVIndexEntry *index_table = nv_table_get_index(self);
+
+  for (guint i = 0; i < self->num_static_entries; i++)
+    {
+      if (!_validate_entry_offset(self, self->static_entries[i], different_endianness))
+        return FALSE;
+    }
+
+  for (guint i = 0; i < self->index_size; i++)
+    {
+      if (!_validate_entry_offset(self, index_table[i].ofs, different_endianness))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_validate_entry(NVTable *self, NVEntry *entry, guint32 ofs)
+{
+  if (!ofs)
+    return TRUE;
+
+  if (entry->alloc_len < NV_ENTRY_DIRECT_HDR || entry->alloc_len > ofs)
+    return FALSE;
+
+  if (!entry->indirect)
+    {
+      guint64 entry_data_size = NV_ENTRY_DIRECT_HDR;
+
+      entry_data_size += entry->name_len;
+      entry_data_size += (guint64) entry->vdirect.value_len + 2;
+      return entry_data_size <= entry->alloc_len;
+    }
+
+  if (entry->alloc_len < sizeof(NVEntry) ||
+      (gsize) sizeof(NVEntry) + entry->name_len + 1 > entry->alloc_len)
+    return FALSE;
+
+  return entry->vindirect.ofs <= self->used && entry->vindirect.len <= self->used - entry->vindirect.ofs;
+}
+
+static gboolean
+_validate_entries(NVTable *self)
+{
+  NVIndexEntry *index_table = nv_table_get_index(self);
+
+  for (guint i = 0; i < self->num_static_entries; i++)
+    {
+      guint32 ofs = self->static_entries[i];
+
+      if (!_validate_entry(self, nv_table_get_entry_at_ofs(self, ofs), ofs))
+        return FALSE;
+    }
+
+  for (guint i = 0; i < self->index_size; i++)
+    {
+      guint32 ofs = index_table[i].ofs;
+
+      if (!_validate_entry(self, nv_table_get_entry_at_ofs(self, ofs), ofs))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
 _has_to_swap_bytes(guint8 flags)
 {
   return !!(flags & NVT_SF_BE) != (G_BYTE_ORDER == G_BIG_ENDIAN);
@@ -145,8 +230,9 @@ _read_header(SerializeArchive *sa, NVTable **nvtable)
   if (res->num_static_entries > LM_V_MAX)
     goto error;
 
-  /* validates self->used and self->index_size value as compared to "size" */
-  if (!nv_table_alloc_check(res, 0))
+  /* Validate the complete in-memory layout before reading attacker-controlled
+   * index and payload data into it. */
+  if (!nv_table_alloc_check(res, 0, TRUE))
     goto error;
 
   res->borrowed = FALSE;
@@ -187,9 +273,16 @@ nv_table_deserialize(LogMessageSerializationState *state)
   if (!_read_payload(sa, res))
     goto error;
 
-  if (_has_to_swap_bytes(meta_data.flags))
-    nv_table_data_swap_bytes(res);
+  if (!_validate_entry_offsets(res, _has_to_swap_bytes(meta_data.flags)))
+    goto error;
 
+  if (_has_to_swap_bytes(meta_data.flags))
+    {
+      nv_table_data_swap_bytes(res);
+    }
+
+  if (!_validate_entries(res))
+    goto error;
 
   return res;
 

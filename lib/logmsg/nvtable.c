@@ -171,7 +171,7 @@ nv_table_alloc_value(NVTable *self, gsize alloc_size)
 
   alloc_size = NV_TABLE_BOUND(alloc_size);
   /* alloc error, NVTable should be realloced */
-  if (!nv_table_alloc_check(self, alloc_size))
+  if (!nv_table_alloc_check(self, alloc_size, FALSE))
     return NULL;
   self->used += alloc_size;
   entry = (NVEntry *) (nv_table_get_top(self) - (self->used));
@@ -327,7 +327,7 @@ _alloc_index_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, N
       /* this is a dynamic value */
       NVIndexEntry *index_table = nv_table_get_index(self);
 
-      if (!nv_table_alloc_check(self, sizeof(index_table[0])))
+      if (!nv_table_alloc_check(self, sizeof(index_table[0]), FALSE))
         return FALSE;
 
       NVIndexEntry *index_top = index_table + self->index_size;

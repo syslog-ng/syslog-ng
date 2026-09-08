@@ -359,9 +359,25 @@ nv_table_get_ofs_table_top(NVTable *self)
 }
 
 static inline gboolean
-nv_table_alloc_check(NVTable *self, gsize alloc_size)
+nv_table_alloc_check(NVTable *self, gsize alloc_size, gboolean detailed_check)
 {
-  if ((gsize)(nv_table_get_bottom(self) - nv_table_get_ofs_table_top(self)) < alloc_size)
+  if (G_LIKELY(!detailed_check))
+    return (gsize) (nv_table_get_bottom(self) - nv_table_get_ofs_table_top(self)) >= alloc_size;
+
+  gsize table_header_size = sizeof(*self);
+
+  if (self->num_static_entries > (G_MAXSIZE - table_header_size) / sizeof(self->static_entries[0]))
+    return FALSE;
+  table_header_size += self->num_static_entries * sizeof(self->static_entries[0]);
+
+  if (self->index_size > (G_MAXSIZE - table_header_size) / sizeof(NVIndexEntry))
+    return FALSE;
+  table_header_size += self->index_size * sizeof(NVIndexEntry);
+
+  if (self->size < table_header_size || self->used > self->size - table_header_size)
+    return FALSE;
+
+  if (self->size - table_header_size - self->used < alloc_size)
     return FALSE;
   return TRUE;
 }
