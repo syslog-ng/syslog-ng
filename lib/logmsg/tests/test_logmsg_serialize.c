@@ -34,10 +34,57 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "logmsg/logmsg-serialize.h"
+#include "logmsg/nvtable.h"
+#include "logmsg/nvtable-serialize.h"
+#include "logmsg/nvtable-serialize-legacy.h"
 
 #define RAW_MSG "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\" eventSource=\"Application\"] An application event log entry..."
 
 #define ERROR_MSG "Failed at %s(%d)", __FILE__, __LINE__
+
+#define TEST_ONE 1
+#define TEST_NO_ENTRIES 0
+#define TEST_NV_TABLE_SIZE (sizeof(NVTable) + sizeof(guint32) + (2 * sizeof(NVEntry)))
+#define TEST_SMALL_NV_TABLE_SIZE 48
+#define TEST_NV_TABLE_USED 8
+#define TEST_INVALID_NV_TABLE_USED (TEST_SMALL_NV_TABLE_SIZE + TEST_ONE)
+#define TEST_INVALID_ENTRY_OFFSET TEST_ONE
+/* v22 sizes are encoded in four-byte units. */
+#define TEST_V22_SIZE 16
+#define TEST_V22_USED 2
+#define TEST_V22_ENTRY_OFFSET 3
+#define TEST_V22_PAYLOAD_SIZE (TEST_V22_USED * sizeof(guint32))
+/* These headers are intentionally truncated malformed records. */
+#define TEST_TRUNCATED_LEGACY_HEADER_SIZE 8
+#define TEST_LEGACY_HEADER_SIZE_WITH_STATIC 10
+#define TEST_LEGACY_HEADER_SIZE_WITH_DYNAMIC (TEST_LEGACY_STATIC_ENTRIES_OFFSET + (2 * sizeof(guint32)))
+#define TEST_LEGACY_PAYLOAD_SIZE TEST_V22_PAYLOAD_SIZE
+#define TEST_LEGACY_TABLE_SIZE (2 * TEST_LEGACY_HEADER_SIZE_WITH_DYNAMIC)
+#define TEST_LEGACY_USED 3
+#define TEST_LEGACY_ENTRY_FLAGS_OFFSET 0
+#define TEST_LEGACY_ENTRY_ALLOC_LEN_OFFSET 2
+#define TEST_LEGACY_ENTRY_VALUE_LEN_OFFSET (TEST_LEGACY_ENTRY_ALLOC_LEN_OFFSET + sizeof(guint16))
+#define TEST_LEGACY_ENTRY_REFERENCE_OFFSET (TEST_LEGACY_ENTRY_VALUE_LEN_OFFSET + sizeof(guint16))
+#define TEST_LEGACY_ENTRY_REFERENCE_LENGTH_OFFSET (TEST_LEGACY_ENTRY_REFERENCE_OFFSET + sizeof(guint16))
+#define TEST_LEGACY_SIZE_OFFSET 0
+#define TEST_LEGACY_USED_OFFSET 2
+#define TEST_LEGACY_DYNAMIC_COUNT_OFFSET 4
+#define TEST_LEGACY_STATIC_COUNT_OFFSET 6
+#define TEST_LEGACY_STATIC_ENTRIES_OFFSET 8
+#define TEST_LEGACY_ENTRY_INDIRECT_FLAG TEST_ONE
+#define TEST_LEGACY_ENTRY_ALLOC_LEN TEST_LEGACY_USED
+#define TEST_LEGACY_HANDLE TEST_ONE
+#define TEST_LEGACY_REFERENCE_OFFSET (TEST_LEGACY_PAYLOAD_SIZE + TEST_V22_USED)
+#define TEST_LEGACY_ENTRY_REFERENCE_LENGTH TEST_LEGACY_REFERENCE_OFFSET
+#define TEST_LEGACY_DYNAMIC_ENTRIES_OFFSET TEST_LEGACY_STATIC_ENTRIES_OFFSET
+#define TEST_BENCHMARK_TABLE_SIZE 4096
+#define TEST_BENCHMARK_ITERATIONS 100000
+#define TEST_BENCHMARK_ENTRY_CAPACITY 16
+#define TEST_BENCHMARK_ENTRY_COUNT (2 * TEST_BENCHMARK_ENTRY_CAPACITY)
+#define TEST_BENCHMARK_NAME_SIZE 32
+#define TEST_BENCHMARK_VALUE_LENGTH (sizeof("value") - TEST_ONE)
+#define TEST_FIRST_HANDLE TEST_ONE
+#define TEST_ZERO_ALLOCATION_SIZE 0
 
 MsgFormatOptions parse_options;
 
@@ -172,6 +219,348 @@ Test(logmsg_serialize, serialize)
   _check_deserialized_message_all_fields(msg);
 
   log_msg_unref(msg);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_invalid_nvtable_layout)
+{
+  NVTable table =
+  {
+    .size = TEST_SMALL_NV_TABLE_SIZE,
+    .used = TEST_NV_TABLE_USED,
+    .index_size = G_MAXUINT16,
+  };
+
+  cr_assert_not(nv_table_alloc_check(&table, TEST_NO_ENTRIES, TRUE));
+
+  table.index_size = TEST_NO_ENTRIES;
+  table.used = table.size;
+  cr_assert_not(nv_table_alloc_check(&table, TEST_NO_ENTRIES, TRUE));
+}
+
+static SerializeArchive *
+_create_nvtable_archive(GString **stream)
+{
+  *stream = g_string_new("");
+  return serialize_string_archive_new(*stream);
+}
+
+static void
+_write_nvtable_metadata(SerializeArchive *sa)
+{
+  guint32 magic;
+
+  memcpy(&magic, NV_TABLE_MAGIC_V2, sizeof(magic));
+  serialize_write_uint32(sa, magic);
+  serialize_write_uint8(sa, G_BYTE_ORDER == G_BIG_ENDIAN ? NVT_SF_BE : TEST_NO_ENTRIES);
+}
+
+static void
+_write_current_nvtable_with_entry(SerializeArchive *sa, guint32 ofs, NVEntry *entry)
+{
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_NV_TABLE_SIZE);
+  serialize_write_uint32(sa, sizeof(NVEntry));
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint8(sa, TEST_ONE);
+  serialize_write_uint32(sa, ofs);
+  serialize_write_blob(sa, entry, sizeof(NVEntry));
+}
+
+static void
+_write_current_nvtable_with_dynamic_entry(SerializeArchive *sa, guint32 ofs, NVEntry *entry)
+{
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_NV_TABLE_SIZE);
+  serialize_write_uint32(sa, sizeof(NVEntry));
+  serialize_write_uint16(sa, TEST_ONE);
+  serialize_write_uint8(sa, TEST_NO_ENTRIES);
+  serialize_write_uint32(sa, TEST_ONE);
+  serialize_write_uint32(sa, ofs);
+  serialize_write_blob(sa, entry, sizeof(NVEntry));
+}
+
+Test(logmsg_serialize, reject_malformed_current_nvtable)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_SMALL_NV_TABLE_SIZE);
+  serialize_write_uint32(sa, TEST_NO_ENTRIES);
+  serialize_write_uint16(sa, G_MAXUINT16);
+  serialize_write_uint8(sa, 0);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_nvtable_with_used_outside_allocation)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_SMALL_NV_TABLE_SIZE);
+  serialize_write_uint32(sa, TEST_INVALID_NV_TABLE_USED);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint8(sa, TEST_NO_ENTRIES);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_nvtable_entry_offset_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry = { .alloc_len = sizeof(NVEntry) };
+
+  _write_current_nvtable_with_entry(sa, TEST_INVALID_ENTRY_OFFSET, &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_nvtable_entry_size_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry = { .alloc_len = sizeof(NVEntry) + TEST_ONE };
+
+  _write_current_nvtable_with_entry(sa, sizeof(NVEntry), &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_dynamic_entry_offset_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry = { .alloc_len = sizeof(NVEntry) };
+
+  _write_current_nvtable_with_dynamic_entry(sa, TEST_INVALID_ENTRY_OFFSET, &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_nvtable_entry_value_outside_allocation)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry =
+  {
+    .alloc_len = sizeof(NVEntry),
+    .vdirect.value_len = G_MAXUINT32,
+  };
+
+  _write_current_nvtable_with_entry(sa, sizeof(NVEntry), &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_indirect_entry_reference_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry =
+  {
+    .indirect = TRUE,
+    .alloc_len = sizeof(NVEntry),
+    .vindirect.ofs = 1,
+    .vindirect.len = G_MAXUINT32,
+  };
+
+  _write_current_nvtable_with_entry(sa, sizeof(NVEntry), &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, accept_valid_current_nvtable_entry)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry = { .alloc_len = sizeof(NVEntry) };
+
+  _write_current_nvtable_with_entry(sa, sizeof(NVEntry), &entry);
+  serialize_string_archive_reset(sa);
+
+  NVTable *table = nv_table_deserialize(&state);
+  cr_assert_not_null(table);
+  g_free(table);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_malformed_v22_nvtable)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint16(sa, TEST_V22_SIZE);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint16(sa, G_MAXUINT16);
+  serialize_write_uint8(sa, 0);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_22(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_v22_nvtable_entry_offset_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint16(sa, TEST_V22_SIZE);
+  serialize_write_uint16(sa, TEST_V22_USED);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint8(sa, TEST_ONE);
+  serialize_write_uint16(sa, TEST_V22_ENTRY_OFFSET);
+  serialize_write_blob(sa, "\0\0\0\0\0\0\0\0", TEST_V22_PAYLOAD_SIZE);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_22(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_malformed_legacy_nvtable_header)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+
+  serialize_write_uint32(sa, TEST_TRUNCATED_LEGACY_HEADER_SIZE);
+  serialize_write_blob(sa, "\0\0\0\0\0\0\0\0", TEST_TRUNCATED_LEGACY_HEADER_SIZE);
+  serialize_write_uint32(sa, TEST_LEGACY_USED + TEST_ONE);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_legacy(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_legacy_nvtable_entry_offset_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  guint8 header[TEST_LEGACY_HEADER_SIZE_WITH_STATIC] = { 0 };
+  guint16 value;
+
+  value = TEST_V22_SIZE;
+  memcpy(&header[TEST_LEGACY_SIZE_OFFSET], &value, sizeof(value));
+  value = TEST_V22_USED;
+  memcpy(&header[TEST_LEGACY_USED_OFFSET], &value, sizeof(value));
+  header[TEST_LEGACY_STATIC_COUNT_OFFSET] = TEST_ONE;
+  value = TEST_V22_ENTRY_OFFSET;
+  memcpy(&header[TEST_LEGACY_STATIC_ENTRIES_OFFSET], &value, sizeof(value));
+
+  serialize_write_uint32(sa, sizeof(header));
+  serialize_write_blob(sa, header, sizeof(header));
+  serialize_write_uint32(sa, TEST_LEGACY_PAYLOAD_SIZE);
+  serialize_write_blob(sa, "\0\0\0\0\0\0\0\0", TEST_LEGACY_PAYLOAD_SIZE);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_legacy(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_legacy_nvtable_entry_length_outside_allocation)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  guint8 header[TEST_LEGACY_HEADER_SIZE_WITH_STATIC] = { 0 };
+  guint8 payload[TEST_LEGACY_PAYLOAD_SIZE] = { 0 };
+  guint16 value;
+
+  value = TEST_V22_SIZE;
+  memcpy(&header[TEST_LEGACY_SIZE_OFFSET], &value, sizeof(value));
+  value = TEST_V22_USED;
+  memcpy(&header[TEST_LEGACY_USED_OFFSET], &value, sizeof(value));
+  header[TEST_LEGACY_STATIC_COUNT_OFFSET] = TEST_ONE;
+  value = TEST_V22_USED;
+  memcpy(&header[TEST_LEGACY_STATIC_ENTRIES_OFFSET], &value, sizeof(value));
+
+  value = TEST_V22_USED;
+  memcpy(&payload[TEST_LEGACY_ENTRY_ALLOC_LEN_OFFSET], &value, sizeof(value));
+  value = G_MAXUINT16;
+  memcpy(&payload[TEST_LEGACY_ENTRY_VALUE_LEN_OFFSET], &value, sizeof(value));
+
+  serialize_write_uint32(sa, sizeof(header));
+  serialize_write_blob(sa, header, sizeof(header));
+  serialize_write_uint32(sa, sizeof(payload));
+  serialize_write_blob(sa, payload, sizeof(payload));
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_legacy(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_legacy_indirect_entry_reference_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  guint8 header[TEST_LEGACY_HEADER_SIZE_WITH_DYNAMIC] = { 0 };
+  guint8 payload[TEST_LEGACY_USED * sizeof(guint32)] = { 0 };
+  guint16 value;
+  guint32 dynamic_entry;
+
+  value = TEST_LEGACY_TABLE_SIZE;
+  memcpy(&header[TEST_LEGACY_SIZE_OFFSET], &value, sizeof(value));
+  value = TEST_LEGACY_USED;
+  memcpy(&header[TEST_LEGACY_USED_OFFSET], &value, sizeof(value));
+  value = TEST_ONE;
+  memcpy(&header[TEST_LEGACY_DYNAMIC_COUNT_OFFSET], &value, sizeof(value));
+  dynamic_entry = ((guint32) TEST_LEGACY_HANDLE << 16) | TEST_V22_ENTRY_OFFSET;
+  memcpy(&header[TEST_LEGACY_DYNAMIC_ENTRIES_OFFSET], &dynamic_entry, sizeof(dynamic_entry));
+
+  payload[TEST_LEGACY_ENTRY_FLAGS_OFFSET] = TEST_LEGACY_ENTRY_INDIRECT_FLAG;
+  value = TEST_LEGACY_ENTRY_ALLOC_LEN;
+  memcpy(&payload[TEST_LEGACY_ENTRY_ALLOC_LEN_OFFSET], &value, sizeof(value));
+  value = TEST_LEGACY_REFERENCE_OFFSET;
+  memcpy(&payload[TEST_LEGACY_ENTRY_REFERENCE_OFFSET], &value, sizeof(value));
+  value = TEST_LEGACY_ENTRY_REFERENCE_LENGTH;
+  memcpy(&payload[TEST_LEGACY_ENTRY_REFERENCE_LENGTH_OFFSET], &value, sizeof(value));
+
+  serialize_write_uint32(sa, sizeof(header));
+  serialize_write_blob(sa, header, sizeof(header));
+  serialize_write_uint32(sa, sizeof(payload));
+  serialize_write_blob(sa, payload, sizeof(payload));
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_legacy(sa));
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
 }
@@ -411,6 +800,65 @@ Test(logmsg_serialize, deserialization_performance)
   stop_stopwatch_and_display_result(iterations, "deserializing %d times took", iterations);
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
+}
+
+static gboolean
+_nv_table_alloc_check_fast(NVTable *self, gsize alloc_size)
+{
+  return nv_table_alloc_check(self, alloc_size, FALSE);
+}
+
+static gboolean
+_nv_table_alloc_check_detailed(NVTable *self, gsize alloc_size)
+{
+  return nv_table_alloc_check(self, alloc_size, TRUE);
+}
+
+static guint64
+_measure_nv_table_alloc_check(NVTable *table, gsize alloc_size, gboolean detailed, gint iterations)
+{
+  volatile gboolean valid = TRUE;
+  guint64 elapsed;
+
+  start_stopwatch();
+  for (gint i = 0; i < iterations; i++)
+    valid &= detailed ? _nv_table_alloc_check_detailed(table, alloc_size) :
+             _nv_table_alloc_check_fast(table, alloc_size);
+  elapsed = stop_stopwatch_and_get_result();
+
+  cr_assert(valid);
+  return elapsed;
+}
+
+Test(logmsg_serialize, nvtable_alloc_check_performance)
+{
+  NVTable *table = nv_table_new(TEST_BENCHMARK_ENTRY_CAPACITY,
+                                TEST_BENCHMARK_ENTRY_CAPACITY,
+                                TEST_BENCHMARK_TABLE_SIZE);
+  const gint iterations = TEST_BENCHMARK_ITERATIONS;
+  const gsize allocation_sizes[] = { TEST_ZERO_ALLOCATION_SIZE, sizeof(NVIndexEntry) };
+
+  for (NVHandle handle = TEST_FIRST_HANDLE; handle <= TEST_BENCHMARK_ENTRY_COUNT; handle++)
+    {
+      gchar name[TEST_BENCHMARK_NAME_SIZE];
+
+      g_snprintf(name, sizeof(name), "benchmark-%u", handle);
+      cr_assert(nv_table_add_value(table, handle, name, strlen(name), "value",
+                                   TEST_BENCHMARK_VALUE_LENGTH, TEST_NO_ENTRIES, NULL));
+    }
+
+  for (guint i = 0; i < G_N_ELEMENTS(allocation_sizes); i++)
+    {
+      guint64 fast_elapsed = _measure_nv_table_alloc_check(table, allocation_sizes[i], FALSE, iterations);
+      guint64 detailed_elapsed = _measure_nv_table_alloc_check(table, allocation_sizes[i], TRUE, iterations);
+
+      g_print("NVTable allocation check (%zu bytes): fast=%" G_GUINT64_FORMAT " us, "
+              "detailed=%" G_GUINT64_FORMAT " us (%.2fx)\n",
+              allocation_sizes[i], fast_elapsed, detailed_elapsed,
+              (gdouble) detailed_elapsed / MAX(fast_elapsed, (guint64) TEST_ONE));
+    }
+
+  nv_table_unref(table);
 }
 
 static void
