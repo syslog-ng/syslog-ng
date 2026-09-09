@@ -221,12 +221,12 @@ gboolean
 afsql_dd_run_query(AFSqlDestDriver *self, const gchar *query, gboolean silent, dbi_result *result)
 {
   dbi_result db_res;
-  gchar* escaped_query = convert_unsafe_utf8_to_escaped_text(query, -1, 0);
+  gchar *escaped_query = convert_unsafe_utf8_to_escaped_text(query, -1, 0);
 
   msg_debug("Running SQL query",
             evt_tag_str("query", escaped_query));
 
-  db_res = dbi_conn_query(self->dbi_ctx, escaped_query);
+  db_res = dbi_conn_query(self->dbi_ctx, query);
   if (!db_res)
     {
       const gchar *dbi_error;
@@ -241,8 +241,7 @@ afsql_dd_run_query(AFSqlDestDriver *self, const gchar *query, gboolean silent, d
                     evt_tag_str("user", self->user),
                     evt_tag_str("database", self->database),
                     evt_tag_str("error", dbi_error),
-                    evt_tag_str("query", query),
-                    evt_tag_str("escaped_query", escaped_query));
+                    evt_tag_str("query", escaped_query));
         }
       g_free(escaped_query);
       return FALSE;

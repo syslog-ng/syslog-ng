@@ -113,68 +113,23 @@ Test(afsql_dd_run_query, silent_mode_suppresses_error_on_failure)
   cr_assert_not(ret, "Expected FALSE on failure regardless of silent flag");
 }
 
-/*
- * Parameterized regression tests for the SQL injection fix (commit e9dbd15bf).
- *
- * Each entry describes a raw query string and the exact string that must
- * arrive at dbi_conn_query after convert_unsafe_utf8_to_escaped_text has
- * processed it.  A NULL expected_query means the input is safe ASCII and
- * must pass through byte-for-byte unchanged.
- */
+/* SQL is already quoted by the selected libdbi backend and must be forwarded unchanged. */
 typedef struct
 {
   gchar description[64];
   gchar raw_query[128];
-  gchar expected_query[128];
-  gboolean expected_query_is_null; /* TRUE → identical to raw_query */
 } QuerySanitizationParam;
 
 ParameterizedTestParameters(afsql_dd_run_query, query_sanitization)
 {
   static QuerySanitizationParam params[] =
   {
-    /* safe inputs — must be forwarded unchanged */
-    { "plain ascii select",                       "SELECT 1",                                       "", TRUE },
-    { "insert with safe string value",            "INSERT INTO logs (msg) VALUES ('hello world')",  "", TRUE },
-    { "query with numbers and underscores",       "SELECT id, log_level FROM events WHERE id = 42", "", TRUE },
-
-    /* control characters that must be escaped */
-    { "bell character \\x07",                     "SELECT '\x07'",                                  "SELECT '\\x07'",                              FALSE },
-    { "newline",                                  "INSERT INTO t (v) VALUES ('line1\nline2')",      "INSERT INTO t (v) VALUES ('line1\\nline2')",  FALSE },
-    { "carriage return",                          "INSERT INTO t (v) VALUES ('a\rb')",              "INSERT INTO t (v) VALUES ('a\\rb')",          FALSE },
-    { "tab",                                      "INSERT INTO t (v) VALUES ('col1\tcol2')",        "INSERT INTO t (v) VALUES ('col1\\tcol2')",    FALSE },
-    { "backspace",                                "INSERT INTO t (v) VALUES ('\b')",                "INSERT INTO t (v) VALUES ('\\b')",            FALSE },
-    { "form feed",                                "INSERT INTO t (v) VALUES ('\f')",                "INSERT INTO t (v) VALUES ('\\f')",            FALSE },
-    { "soh \\x01 unnamed control char",           "SELECT '\x01'",                                  "SELECT '\\x01'",                              FALSE },
-    { "unit separator \\x1f",                     "SELECT '\x1f'",                                  "SELECT '\\x1f'",                              FALSE },
-    { "multiple consecutive control chars",       "\x01\x02\x03",                                   "\\x01\\x02\\x03",                             FALSE },
-    { "backslash is doubled",                     "SELECT '\\'",                                    "SELECT '\\\\'",                               FALSE },
-
-    /* a literal backslash-n in the input (two chars: \ + n) must become \\n,
-     * not be re-interpreted as a newline escape */
-    { "pre-escaped \\n is not re-interpreted",    "SELECT '\\n'",                                   "SELECT '\\\\n'",                              FALSE },
-
-    /* invalid / overlong UTF-8 sequences */
-    { "invalid utf-8 byte \\xad is hex-escaped",  "SELECT '\xad'",                                  "SELECT '\\\\xad'",                            FALSE },
-    { "invalid utf-8 byte surrounded by valid",   "SELECT 'Á\xadÉ'",                                "SELECT 'Á\\\\xadÉ'",                          FALSE },
-    { "truncated 2-byte utf-8 start byte",        "SELECT '\xc3'",                                  "SELECT '\\\\xc3'",                            FALSE },
-    { "multiple consecutive invalid utf-8 bytes", "SELECT '\xad\xae'",                              "SELECT '\\\\xad\\\\xae'",                     FALSE },
-
-    /* SQL metacharacters: quotes and semicolons are NOT escaped
-     * (unsafe_flags=0 — the escaping targets binary/control safety, not SQL) */
-    { "single quote passes through",              "SELECT ''''",                                    "", TRUE },
-    { "double quote passes through",              "SELECT \"val\"",                                 "", TRUE },
-    { "semicolon passes through",                 "SELECT 1; DROP TABLE users",                     "", TRUE },
-
-    /* DEL (0x7f) is >= 32 and not a backslash, so it passes through */
-    { "del character 0x7f passes through",        "SELECT '\x7f'",                                  "", TRUE },
-
-    /* valid multibyte UTF-8 must not be mangled */
-    { "valid utf-8 multibyte passes through",     "SELECT 'árvíztűrőtükörfúrógép'",                 "", TRUE },
-    { "valid utf-8 followed by newline",          "SELECT 'árvíztűrőtükörfúrógép\n'",               "SELECT 'árvíztűrőtükörfúrógép\\n'",           FALSE },
-
-    /* empty query edge case */
-    { "empty query string",                       "",                                               "", TRUE },
+    { "plain ascii select", "SELECT 1" },
+    { "query with newline", "INSERT INTO t (v) VALUES ('line1\nline2')" },
+    { "query with backslash", "SELECT '\\'" },
+    { "invalid utf-8 byte", "SELECT '\xad'" },
+    { "valid utf-8 multibyte", "SELECT 'árvíztűrőtükörfúrógép'" },
+    { "empty query string", "" },
   };
 
   return cr_make_param_array(QuerySanitizationParam, params,
@@ -191,8 +146,28 @@ ParameterizedTest(QuerySanitizationParam *p, afsql_dd_run_query, query_sanitizat
   cr_assert_not_null(mock_dbi_last_query,
                      "[%s] Expected dbi_conn_query to have been called", p->description);
 
-  const gchar *expected = p->expected_query_is_null ? p->raw_query : p->expected_query;
-  cr_assert_str_eq(mock_dbi_last_query, expected,
-                   "[%s] Sanitised query mismatch.\n  got:      %s\n  expected: %s",
-                   p->description, mock_dbi_last_query, expected);
+  cr_assert_str_eq(mock_dbi_last_query, p->raw_query,
+                   "[%s] Query was modified before reaching libdbi.\n  got:      %s\n  expected: %s",
+                   p->description, mock_dbi_last_query, p->raw_query);
+}
+
+Test(afsql_dd_run_query, preserves_mysql_quoted_value)
+{
+  const gchar *columns[] = { "msg" };
+  const gchar *templates[] = { "${MSG}" };
+  _set_fields(driver, columns, templates, 1);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "MSG", "x\\y and z'w", -1);
+  GString *table = _make_table("logs");
+  GString *query = afsql_dd_build_insert_command(driver, msg, table);
+
+  afsql_dd_run_query(driver, query->str, FALSE, NULL);
+
+  cr_assert_str_eq(mock_dbi_last_query,
+                   "INSERT INTO logs (msg) VALUES ('x\\y and z\\'w')");
+
+  g_string_free(query, TRUE);
+  g_string_free(table, TRUE);
+  log_msg_unref(msg);
 }
