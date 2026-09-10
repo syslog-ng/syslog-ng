@@ -578,6 +578,17 @@ _finish_request_body(HTTPDestinationWorker *self)
 }
 
 static void
+_reset_request(HTTPDestinationWorker *self)
+{
+  _reinit_request_headers(self);
+  _reinit_request_body(self);
+  _reinit_response_headers(self);
+
+  log_msg_unref(self->msg_for_templated_url);
+  self->msg_for_templated_url = NULL;
+}
+
+static void
 _debug_response_info(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
@@ -875,7 +886,10 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
   if (!_try_format_request_headers(self, &error))
     {
       if (!_format_request_headers_catch_error(&error))
-        return LTR_NOT_CONNECTED;
+        {
+          _reset_request(self);
+          return LTR_NOT_CONNECTED;
+        }
     }
 
   target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
@@ -918,12 +932,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
       url = alt_url;
     }
 
-  _reinit_request_headers(self);
-  _reinit_request_body(self);
-  _reinit_response_headers(self);
-
-  log_msg_unref(self->msg_for_templated_url);
-  self->msg_for_templated_url = NULL;
+  _reset_request(self);
 
   return retval;
 }
