@@ -1,0 +1,1 @@
+`crypto`: Fixed intermittent crashes during OpenSSL thread cleanup when syslog-ng shut down or restarted.
