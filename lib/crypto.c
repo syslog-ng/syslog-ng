@@ -59,6 +59,14 @@ crypto_deinit(void)
 }
 
 void
+crypto_thread_deinit(void)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+  OPENSSL_thread_stop();
+#endif
+}
+
+void
 crypto_init(void)
 {
   openssl_init();
