@@ -956,6 +956,13 @@ if test "x$enable_tests" != "xno"; then
 fi
 
 AC_DEFINE(HAVE_BROKEN_PREAD, 0, [define if your platform has a broken pread/pwrite (e.g. HP-UX)])
+
+# -z,nodelete is a GNU ld/ELF linker option; Apple's ld64 (Darwin) rejects it outright.
+case "$ostype" in
+	Darwin) MODULE_NODELETE_LDFLAGS="" ;;
+	*) MODULE_NODELETE_LDFLAGS="-Wl,-z,nodelete" ;;
+esac
+
 case "$ostype" in
 	HP-UX)
 		if $CC -v 2>&1 | grep gcc > /dev/null; then
@@ -2828,6 +2835,7 @@ AC_SUBST(TOOL_DEPS_LIBS)
 AC_SUBST(CORE_DEPS_LIBS)
 AC_SUBST(MODULE_DEPS_LIBS)
 AC_SUBST(MODULE_LDFLAGS)
+AC_SUBST(MODULE_NODELETE_LDFLAGS)
 AC_SUBST(BASE_LIBS)
 AC_SUBST(YFLAGS)
 AC_SUBST(LIBNET_LIBS)
