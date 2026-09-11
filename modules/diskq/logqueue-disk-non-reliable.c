@@ -267,6 +267,8 @@ _pop_head_flow_control_window(LogQueueDiskNonReliable *self, LogPathOptions *pat
 static inline void
 _push_tail_backlog(LogQueueDiskNonReliable *self, LogMessage *msg, LogPathOptions *path_options)
 {
+  log_msg_write_protect(msg);
+
   log_msg_ref(msg);
   g_queue_push_tail(self->backlog, msg);
   g_queue_push_tail(self->backlog, LOG_PATH_OPTIONS_TO_POINTER(path_options));
@@ -440,6 +442,8 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
           return;
         }
     }
+
+  log_msg_write_protect(msg);
 
   g_mutex_lock(&s->lock);
 
