@@ -135,6 +135,19 @@ cfg_set_dynamic_nv_name_limit(GlobalConfig *self, guint64 limit)
     }
 
   self->dynamic_nv_name_limit = limit;
+
+  return TRUE;
+}
+
+gboolean
+cfg_set_dynamic_nv_name_overflow(GlobalConfig *self, const gchar *overflow_policy)
+{
+  if (strcmp(overflow_policy, "drop") == 0)
+    self->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_DROP;
+  else if (strcmp(overflow_policy, "reject-message") == 0)
+    self->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE;
+  else
+    return FALSE;
   return TRUE;
 }
 
@@ -494,6 +507,7 @@ cfg_new(gint version)
   self->stack_alloc_limit = 0;
   self->store_debug_macros = TRUE;
   self->dynamic_nv_name_limit = DYNAMIC_NV_NAME_LIMIT_DEFAULT;
+  self->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_DROP;
 
   file_perm_options_global_defaults(&self->file_perm_options);
 

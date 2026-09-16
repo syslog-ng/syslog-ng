@@ -59,6 +59,12 @@ enum
   MM_GLOBAL,
 };
 
+typedef enum
+{
+  DYNAMIC_NV_NAME_OVERFLOW_DROP,
+  DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE,
+} DynamicNVNameOverflowPolicy;
+
 /* configuration data as loaded from the config file */
 struct _GlobalConfig
 {
@@ -102,6 +108,7 @@ struct _GlobalConfig
   gint log_fifo_size;
   gint log_msg_size;
   guint dynamic_nv_name_limit;
+  DynamicNVNameOverflowPolicy dynamic_nv_name_overflow;
   gboolean trim_large_messages;
   gint stack_alloc_limit;
   gboolean store_debug_macros;
@@ -153,6 +160,7 @@ gint cfg_lookup_mark_mode(const gchar *mark_mode);
 void cfg_set_mark_mode(GlobalConfig *self, const gchar *mark_mode);
 gboolean cfg_set_log_level(GlobalConfig *self, const gchar *log_level);
 gboolean cfg_set_dynamic_nv_name_limit(GlobalConfig *self, guint64 limit);
+gboolean cfg_set_dynamic_nv_name_overflow(GlobalConfig *self, const gchar *overflow_policy);
 
 gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);

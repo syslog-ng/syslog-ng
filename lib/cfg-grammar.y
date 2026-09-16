@@ -274,6 +274,7 @@
 
 /* log statement options */
 %token KW_FLAGS                       10190
+%token KW_DYNAMIC_NV_NAME_OVERFLOW    10191
 
 /* reader options */
 %token KW_PAD_SIZE                    10200
@@ -1080,6 +1081,7 @@ options_item
 	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ msg_warning("WARNING: Support for the global log-fetch-limit() option was removed, please use a per-source log-fetch-limit()", cfg_lexer_format_location_tag(lexer, &@1)); }
 	| KW_LOG_MSG_SIZE '(' positive_integer ')'	{ configuration->log_msg_size = $3; }
 	| KW_DYNAMIC_NV_NAME_LIMIT '(' nonnegative_integer64 ')' { CHECK_ERROR(cfg_set_dynamic_nv_name_limit(configuration, $3), @3, "dynamic-nv-name-limit() exceeds the NVHandle range"); }
+	| KW_DYNAMIC_NV_NAME_OVERFLOW '(' string ')' { CHECK_ERROR(cfg_set_dynamic_nv_name_overflow(configuration, $3), @3, "Unknown dynamic-nv-name-overflow() option"); free($3); }
 	| KW_TRIM_LARGE_MESSAGES '(' yesno ')'	{ configuration->trim_large_messages = $3; }
 	| KW_STACK_ALLOC_LIMIT '(' nonnegative_integer ')'	{ configuration->stack_alloc_limit = $3; }
 	| KW_STORE_DEBUG_MACROS '(' yesno ')' { configuration->store_debug_macros = $3; }
