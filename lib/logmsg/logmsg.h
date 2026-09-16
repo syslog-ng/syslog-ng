@@ -529,19 +529,20 @@ log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *valu
   log_msg_set_value_by_name_with_type(self, name, value, length, LM_VT_STRING);
 }
 
-static inline void
+static inline gboolean
 log_msg_set_value_by_dynamic_name_with_type(LogMessage *self,
                                             const gchar *name, const gchar *value, gssize length,
                                             LogMessageValueType type)
 {
   NVHandle handle = log_msg_get_dynamic_value_handle(name);
   log_msg_set_value_with_type(self, handle, value, length, type);
+  return handle != LM_V_NONE;
 }
 
-static inline void
+static inline gboolean
 log_msg_set_value_by_dynamic_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
 {
-  log_msg_set_value_by_dynamic_name_with_type(self, name, value, length, LM_VT_STRING);
+  return log_msg_set_value_by_dynamic_name_with_type(self, name, value, length, LM_VT_STRING);
 }
 
 static inline void

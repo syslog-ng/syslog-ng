@@ -28,6 +28,7 @@
 #include "libtest/grab-logging.h"
 #include "logmsg/logmsg.h"
 #include "logmsg/nvtable.h"
+#include "msg-format.h"
 
 static GlobalConfig *cfg;
 
@@ -105,6 +106,31 @@ Test(dynamic_nv_config, config_reload_applies_dynamic_name_limit_from_new_config
   cr_assert_eq(log_msg_get_dynamic_value_handle("reload-existing-dynamic-name"), existing_handle);
 
   cr_assert(cfg_deinit(new_cfg));
+  cfg_free(new_cfg);
+}
+
+Test(dynamic_nv_config, config_reload_applies_dynamic_overflow_policy_to_msg_format_options)
+{
+  GlobalConfig *new_cfg;
+  MsgFormatOptions old_options = {0};
+  MsgFormatOptions new_options = {0};
+
+  msg_format_options_defaults(&old_options);
+  msg_format_options_defaults(&new_options);
+
+  /* Old config keeps the default drop behavior. */
+  cr_assert(cfg_set_dynamic_nv_name_overflow(cfg, "drop"));
+  msg_format_options_init(&old_options, cfg);
+  cr_assert_not(old_options.reject_dynamic_nv_names);
+  msg_format_options_destroy(&old_options);
+
+  /* Reloaded config switches SDATA parsing to reject messages. */
+  new_cfg = cfg_new_snippet();
+  cr_assert(cfg_set_dynamic_nv_name_overflow(new_cfg, "reject-message"));
+  msg_format_options_init(&new_options, new_cfg);
+  cr_assert(new_options.reject_dynamic_nv_names);
+
+  msg_format_options_destroy(&new_options);
   cfg_free(new_cfg);
 }
 

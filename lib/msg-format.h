@@ -81,6 +81,7 @@ typedef struct _MsgFormatOptions
   gsize sdata_prefix_len;
   gint sdata_param_value_max;
   gboolean use_fqdn;
+  gboolean reject_dynamic_nv_names;
 } MsgFormatOptions;
 
 struct _MsgFormatHandler

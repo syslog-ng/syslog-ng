@@ -668,7 +668,8 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
 
           if (left && *src == ']')
             {
-              log_msg_set_value_by_dynamic_name(msg, sd_value_name, "", 0);
+              if (!log_msg_set_value_by_dynamic_name(msg, sd_value_name, "", 0) && options->reject_dynamic_nv_names)
+                goto error;
             }
           else
             {
@@ -791,7 +792,9 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                   goto error;
                 }
 
-              log_msg_set_value_by_dynamic_name(msg, sd_value_name, sd_param_value, sd_param_value_len);
+              if (!log_msg_set_value_by_dynamic_name(msg, sd_value_name, sd_param_value, sd_param_value_len) &&
+                  options->reject_dynamic_nv_names)
+                goto error;
             }
 
           if (left && *src == ']')
