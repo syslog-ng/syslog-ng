@@ -92,7 +92,11 @@ Test(nvtable, test_nv_registry)
       cr_assert_eq(strlen(name), len);
     }
 
-  for (i = 4; i < TEST_NVHANDLE_MAX_VALUE + 1; i++)
+  handle = nv_registry_alloc_dynamic_handle(reg, "DYNAMIC");
+  cr_assert_eq(handle, 4);
+  cr_assert_eq(nv_registry_alloc_handle(reg, "DYNAMIC"), handle);
+
+  for (i = 5; i < TEST_NVHANDLE_MAX_VALUE + 1; i++)
     {
       gchar dyn_name[16];
 
@@ -116,7 +120,7 @@ Test(nvtable, test_nv_registry)
       g_assert(handle == prev_handle);
     }
 
-  for (i = TEST_NVHANDLE_MAX_VALUE; i >= 4; i--)
+  for (i = TEST_NVHANDLE_MAX_VALUE; i >= 5; i--)
     {
       gchar dyn_name[16];
 

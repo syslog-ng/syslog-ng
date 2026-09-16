@@ -93,6 +93,12 @@ exit:
   return res;
 }
 
+NVHandle
+nv_registry_alloc_dynamic_handle(NVRegistry *self, const gchar *name)
+{
+  return nv_registry_alloc_handle(self, name);
+}
+
 /**
  * nv_registry_add_alias:
  * @handle: a NV handle to be aliased

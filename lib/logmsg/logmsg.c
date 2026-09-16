@@ -417,19 +417,32 @@ log_msg_update_num_matches(LogMessage *self, NVHandle handle)
     }
 }
 
+static inline void
+_set_value_handle_flags_from_name(const gchar *value_name, NVHandle handle)
+{
+  /* check if name starts with sd_prefix and has at least one additional character */
+  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[logmsg_sd_prefix_len])
+    {
+      nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
+    }
+}
+
 NVHandle
 log_msg_get_value_handle(const gchar *value_name)
 {
   NVHandle handle;
 
   handle = nv_registry_alloc_handle(logmsg_registry, value_name);
+  _set_value_handle_flags_from_name(value_name, handle);
 
-  /* check if name starts with sd_prefix and has at least one additional character */
-  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[logmsg_sd_prefix_len])
-    {
-      nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
-    }
+  return handle;
+}
 
+NVHandle
+log_msg_get_dynamic_value_handle(const gchar *value_name)
+{
+  NVHandle handle = nv_registry_alloc_dynamic_handle(logmsg_registry, value_name);
+  _set_value_handle_flags_from_name(value_name, handle);
   return handle;
 }
 

@@ -73,6 +73,7 @@ void nv_registry_add_predefined(NVRegistry *self, NVHandle handle, const gchar *
 void nv_registry_assert_next_handle(NVRegistry *self, NVHandle handle);
 NVHandle nv_registry_get_handle(NVRegistry *self, const gchar *name);
 NVHandle nv_registry_alloc_handle(NVRegistry *self, const gchar *name);
+NVHandle nv_registry_alloc_dynamic_handle(NVRegistry *self, const gchar *name);
 void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags);
 void nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data);
 NVRegistry *nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value);
