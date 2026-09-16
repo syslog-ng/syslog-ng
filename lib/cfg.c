@@ -120,6 +120,24 @@ cfg_set_log_level(GlobalConfig *self, const gchar *log_level)
   return TRUE;
 }
 
+gboolean
+cfg_set_dynamic_nv_name_limit(GlobalConfig *self, guint64 limit)
+{
+  /* Dynamic names consume NVHandle values and cannot exceed the finite handle namespace. */
+  if (limit > NVHANDLE_MAX_VALUE)
+    return FALSE;
+
+  if (limit >= DYNAMIC_NV_NAME_LIMIT_WARNING_THRESHOLD)
+    {
+      msg_warning("dynamic-nv-name-limit() permits substantial permanent memory growth and may cause an OOM kill",
+                  evt_tag_long("limit", limit),
+                  evt_tag_long("estimated_memory_bytes", limit * DYNAMIC_NV_NAME_ESTIMATED_BYTES));
+    }
+
+  self->dynamic_nv_name_limit = limit;
+  return TRUE;
+}
+
 static void
 _invoke_module_init(gchar *key, ModuleConfig *mc, gpointer *args)
 {
@@ -475,6 +493,7 @@ cfg_new(gint version)
   self->log_msg_size = 65536;
   self->stack_alloc_limit = 0;
   self->store_debug_macros = TRUE;
+  self->dynamic_nv_name_limit = DYNAMIC_NV_NAME_LIMIT_DEFAULT;
 
   file_perm_options_global_defaults(&self->file_perm_options);
 
