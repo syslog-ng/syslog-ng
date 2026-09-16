@@ -187,12 +187,12 @@ nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data)
 }
 
 NVRegistry *
-nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value)
+nv_registry_new(const gchar **static_names)
 {
   NVRegistry *self = g_new0(NVRegistry, 1);
   gint i;
 
-  self->nvhandle_max_value = nvhandle_max_value;
+  self->nvhandle_max_value = NVHANDLE_MAX_VALUE;
   self->dynamic_name_limit = NVHANDLE_MAX_VALUE;
   self->name_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->names = nvhandle_desc_array_new(NVHANDLE_DESC_ARRAY_INITIAL_SIZE);

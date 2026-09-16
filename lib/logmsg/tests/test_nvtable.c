@@ -101,7 +101,8 @@ Test(nvtable, test_nv_registry)
   gssize len;
   const gchar *builtins[] = { "BUILTIN1", "BUILTIN2", "BUILTIN3", NULL };
 
-  reg = nv_registry_new(builtins, TEST_NVHANDLE_MAX_VALUE);
+  reg = nv_registry_new(builtins);
+  reg->nvhandle_max_value = TEST_NVHANDLE_MAX_VALUE;
 
   for (i = 0; builtins[i]; i++)
     {
@@ -172,7 +173,8 @@ Test(nvtable, test_dynamic_nv_registry_limit)
   NVHandle first_dynamic_handle;
   NVHandle trusted_handle;
 
-  reg = nv_registry_new(builtins, TEST_NVHANDLE_MAX_VALUE);
+  reg = nv_registry_new(builtins);
+  reg->nvhandle_max_value = TEST_NVHANDLE_MAX_VALUE;
 
   /* Reject all new dynamic names when the limit is zero. */
   nv_registry_set_dynamic_name_limit(reg, 0);
@@ -203,7 +205,8 @@ Test(nvtable, test_dynamic_nv_registry_limit)
 
   nv_registry_free(reg);
 
-  reg = nv_registry_new(builtins, 4);
+  reg = nv_registry_new(builtins);
+  reg->nvhandle_max_value = 4;
 
   /* The absolute NVHandle limit takes precedence over the dynamic limit. */
   nv_registry_set_dynamic_name_limit(reg, 2);
@@ -221,7 +224,7 @@ Test(nvtable, test_dynamic_nv_registry_limit_warning_is_emitted_once)
 
   start_grabbing_messages();
 
-  reg = nv_registry_new(builtins, TEST_NVHANDLE_MAX_VALUE);
+  reg = nv_registry_new(builtins);
   nv_registry_set_dynamic_name_limit(reg, 0);
 
   cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC0"), 0);

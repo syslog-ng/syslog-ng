@@ -81,7 +81,7 @@ NVHandle nv_registry_alloc_dynamic_handle(NVRegistry *self, const gchar *name);
 void nv_registry_set_dynamic_name_limit(NVRegistry *self, guint limit);
 void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags);
 void nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data);
-NVRegistry *nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value);
+NVRegistry *nv_registry_new(const gchar **static_names);
 void nv_registry_free(NVRegistry *self);
 
 static inline guint16
