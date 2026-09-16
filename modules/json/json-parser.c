@@ -95,10 +95,10 @@ json_parser_store_value(JSONParser *self,
     {
       g_string_assign(key, prefix);
       g_string_append(key, obj_key);
-      log_msg_set_value_by_name_with_type(msg, key->str, value->str, value->len, type);
+      log_msg_set_value_by_dynamic_name_with_type(msg, key->str, value->str, value->len, type);
     }
   else
-    log_msg_set_value_by_name_with_type(msg, obj_key, value->str, value->len, type);
+    log_msg_set_value_by_dynamic_name_with_type(msg, obj_key, value->str, value->len, type);
 }
 
 static void
