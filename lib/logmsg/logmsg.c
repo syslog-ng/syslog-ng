@@ -2147,6 +2147,12 @@ log_msg_registry_deinit(void)
 }
 
 void
+log_msg_registry_set_dynamic_name_limit(guint limit)
+{
+  nv_registry_set_dynamic_name_limit(logmsg_registry, limit);
+}
+
+void
 log_msg_registry_foreach(GHFunc func, gpointer user_data)
 {
   nv_registry_foreach(logmsg_registry, func, user_data);

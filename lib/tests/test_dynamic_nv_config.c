@@ -26,6 +26,7 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "libtest/grab-logging.h"
+#include "logmsg/logmsg.h"
 #include "logmsg/nvtable.h"
 
 static GlobalConfig *cfg;
@@ -70,6 +71,41 @@ Test(dynamic_nv_config, validates_overflow_policy)
   cr_assert(cfg_set_dynamic_nv_name_overflow(cfg, "reject-message"));
   cr_assert_eq(cfg->dynamic_nv_name_overflow, DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE);
   cr_assert_not(cfg_set_dynamic_nv_name_overflow(cfg, "invalid"));
+}
+
+Test(dynamic_nv_config, cfg_init_activates_dynamic_name_limit)
+{
+  cr_assert(cfg_set_dynamic_nv_name_limit(cfg, 0));
+  cr_assert(cfg_init(cfg));
+
+  cr_assert_eq(log_msg_get_dynamic_value_handle("cfg-init-limit-probe"), LM_V_NONE);
+
+  log_msg_registry_set_dynamic_name_limit(DYNAMIC_NV_NAME_LIMIT_DEFAULT);
+  cfg_deinit(cfg);
+}
+
+Test(dynamic_nv_config, config_reload_applies_dynamic_name_limit_from_new_config)
+{
+  GlobalConfig *new_cfg;
+  NVHandle existing_handle;
+
+  /* Old config allows registering dynamic names. */
+  cr_assert(cfg_init(cfg));
+  existing_handle = log_msg_get_dynamic_value_handle("reload-existing-dynamic-name");
+  cr_assert_neq(existing_handle, LM_V_NONE);
+  cr_assert(cfg_deinit(cfg));
+
+  /* Reloaded config rejects new dynamic names. */
+  new_cfg = cfg_new_snippet();
+  cr_assert(cfg_set_dynamic_nv_name_limit(new_cfg, 0));
+  cr_assert(cfg_init(new_cfg));
+
+  /* Existing names remain valid, but new names obey the reloaded limit. */
+  cr_assert_eq(log_msg_get_dynamic_value_handle("reload-new-dynamic-name"), LM_V_NONE);
+  cr_assert_eq(log_msg_get_dynamic_value_handle("reload-existing-dynamic-name"), existing_handle);
+
+  cr_assert(cfg_deinit(new_cfg));
+  cfg_free(new_cfg);
 }
 
 Test(dynamic_nv_config, warns_for_large_memory_budget)

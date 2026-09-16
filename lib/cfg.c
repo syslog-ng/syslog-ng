@@ -320,6 +320,7 @@ cfg_is_shutting_down(GlobalConfig *cfg)
 gboolean
 cfg_init(GlobalConfig *cfg)
 {
+  log_msg_registry_set_dynamic_name_limit(cfg->dynamic_nv_name_limit);
   msg_apply_config_log_level(cfg->log_level);
   log_msg_set_store_debug_macros(cfg->store_debug_macros);
   if (cfg->file_template_name && !(cfg->file_template = cfg_tree_lookup_template(&cfg->tree, cfg->file_template_name)))

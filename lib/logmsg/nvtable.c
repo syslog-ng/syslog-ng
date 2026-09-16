@@ -43,8 +43,29 @@ nv_registry_get_handle(NVRegistry *self, const gchar *name)
   return 0;
 }
 
-NVHandle
-nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
+static void
+_log_name_limit_reached(NVRegistry *self, gboolean dynamic)
+{
+  gboolean *reported = dynamic ? &self->dynamic_limit_reached_reported : &self->hard_limit_reached_reported;
+
+  if (*reported)
+    return;
+
+  *reported = TRUE;
+  if (dynamic)
+    {
+      msg_warning("Dynamic name-value pair limit reached, all further dynamic name-value pairs will expand to nothing",
+                  evt_tag_printf("limit", "%u", self->dynamic_name_limit));
+    }
+  else
+    {
+      msg_error("Hard wired limit of name-value pairs have been reached, all further name-value pairs will expand to nothing",
+                evt_tag_printf("limit", "%u", self->nvhandle_max_value));
+    }
+}
+
+static NVHandle
+_nv_registry_alloc_handle(NVRegistry *self, const gchar *name, gboolean dynamic)
 {
   gpointer p;
   NVHandleDesc stored;
@@ -73,10 +94,13 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
 
   if (self->names->len >= self->nvhandle_max_value)
     {
-      msg_error("Hard wired limit of name-value pairs have been reached, "
-                "all further name-value pair will expand to nothing",
-                evt_tag_printf("limit", "%"G_GUINT32_FORMAT, self->nvhandle_max_value),
-                evt_tag_str("value", name));
+      _log_name_limit_reached(self, FALSE);
+      goto exit;
+    }
+
+  if (dynamic && self->dynamic_name_count >= self->dynamic_name_limit)
+    {
+      _log_name_limit_reached(self, TRUE);
       goto exit;
     }
 
@@ -87,6 +111,8 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   stored.name = g_strdup(name);
   nvhandle_desc_array_append(self->names, &stored);
   g_hash_table_insert(self->name_map, g_strdup(name), GUINT_TO_POINTER(self->names->len));
+  if (dynamic)
+    self->dynamic_name_count++;
   res = self->names->len;
 exit:
   g_mutex_unlock(&nv_registry_lock);
@@ -94,9 +120,23 @@ exit:
 }
 
 NVHandle
+nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
+{
+  return _nv_registry_alloc_handle(self, name, FALSE);
+}
+
+NVHandle
 nv_registry_alloc_dynamic_handle(NVRegistry *self, const gchar *name)
 {
-  return nv_registry_alloc_handle(self, name);
+  return _nv_registry_alloc_handle(self, name, TRUE);
+}
+
+void
+nv_registry_set_dynamic_name_limit(NVRegistry *self, guint limit)
+{
+  g_mutex_lock(&nv_registry_lock);
+  self->dynamic_name_limit = limit;
+  g_mutex_unlock(&nv_registry_lock);
 }
 
 /**
@@ -153,6 +193,7 @@ nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value)
   gint i;
 
   self->nvhandle_max_value = nvhandle_max_value;
+  self->dynamic_name_limit = NVHANDLE_MAX_VALUE;
   self->name_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->names = nvhandle_desc_array_new(NVHANDLE_DESC_ARRAY_INITIAL_SIZE);
   for (i = 0; static_names[i]; i++)

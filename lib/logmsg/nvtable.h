@@ -64,6 +64,10 @@ struct _NVRegistry
   NVHandleDescArray *names;
   GHashTable *name_map;
   guint32 nvhandle_max_value;
+  guint dynamic_name_limit;
+  guint dynamic_name_count;
+  gboolean hard_limit_reached_reported;
+  gboolean dynamic_limit_reached_reported;
 };
 
 extern const gchar *null_string;
@@ -74,6 +78,7 @@ void nv_registry_assert_next_handle(NVRegistry *self, NVHandle handle);
 NVHandle nv_registry_get_handle(NVRegistry *self, const gchar *name);
 NVHandle nv_registry_alloc_handle(NVRegistry *self, const gchar *name);
 NVHandle nv_registry_alloc_dynamic_handle(NVRegistry *self, const gchar *name);
+void nv_registry_set_dynamic_name_limit(NVRegistry *self, guint limit);
 void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags);
 void nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data);
 NVRegistry *nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value);

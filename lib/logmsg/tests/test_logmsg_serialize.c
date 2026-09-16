@@ -225,6 +225,41 @@ Test(logmsg_serialize, serialize)
   g_string_free(stream, TRUE);
 }
 
+Test(logmsg_serialize, deserialize_keeps_serialized_dynamic_names_when_dynamic_limit_is_exhausted)
+{
+  const gchar *name = "serialized.dynamic.name";
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+  LogMessage *msg = log_msg_new_empty();
+
+  /* Serialize a message that already contains a dynamic name. */
+  cr_assert(log_msg_set_value_by_dynamic_name(msg, name, "value", -1));
+  cr_assert(log_msg_serialize(msg, sa, 0), ERROR_MSG);
+  serialize_archive_free(sa);
+  log_msg_unref(msg);
+
+  /* Simulate reload with no budget left for new dynamic names. */
+  _reset_log_msg_registry();
+  log_msg_registry_set_dynamic_name_limit(0);
+
+  GString serialized = {0};
+  serialized.str = stream->str;
+  serialized.len = stream->len;
+  sa = serialize_string_archive_new(&serialized);
+  msg = log_msg_new_empty();
+
+  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
+
+  /* Deserialization must restore serialized names despite the runtime limit. */
+  NVHandle handle = nv_registry_get_handle(logmsg_registry, name);
+  cr_assert_neq(handle, LM_V_NONE);
+  assert_log_message_value(msg, handle, "value");
+
+  log_msg_unref(msg);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
 Test(logmsg_serialize, reject_invalid_nvtable_layout)
 {
   NVTable table =
