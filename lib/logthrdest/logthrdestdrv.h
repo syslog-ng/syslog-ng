@@ -90,6 +90,7 @@ struct _LogThreadedDestWorker
   gint worker_index;
   gboolean connected;
   gint batch_size;
+  guint connection_retries_counter;
   gint rewound_batch_size;
   gint retries_on_error_counter;
   guint retries_counter;
@@ -98,6 +99,7 @@ struct _LogThreadedDestWorker
   gboolean enable_batching;
   gboolean suspended;
   time_t time_reopen;
+  time_t time_reopen_max;
 
   struct
   {
@@ -156,6 +158,7 @@ struct _LogThreadedDestDriver
   gint batch_timeout;
   gboolean under_termination;
   time_t time_reopen;
+  time_t time_reopen_max;
   gint retries_on_error_max;
   guint retries_max;
 
@@ -290,6 +293,7 @@ log_threaded_dest_driver_flush(LogThreadedDestDriver *self)
 void log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_size);
 void log_threaded_dest_worker_drop_messages(LogThreadedDestWorker *self, gint batch_size);
 void log_threaded_dest_worker_rewind_messages(LogThreadedDestWorker *self, gint batch_size);
+time_t log_threaded_dest_worker_calculate_reopen_delay(LogThreadedDestWorker *self);
 void log_threaded_dest_worker_wakeup_when_suspended(LogThreadedDestWorker *self);
 gboolean log_threaded_dest_worker_init_method(LogThreadedDestWorker *self);
 void log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self);
@@ -319,6 +323,7 @@ void log_threaded_dest_driver_set_flush_on_worker_key_change(LogDriver *s, gbool
 void log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines);
 void log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout);
 void log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen);
+void log_threaded_dest_driver_set_time_reopen_max(LogDriver *s, time_t time_reopen_max);
 gboolean log_threaded_dest_driver_process_flag(LogDriver *driver, const gchar *flag);
 
 #endif
