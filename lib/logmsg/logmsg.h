@@ -530,6 +530,13 @@ log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *valu
 }
 
 static inline void
+log_msg_set_value_by_dynamic_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
+{
+  NVHandle handle = log_msg_get_dynamic_value_handle(name);
+  log_msg_set_value_with_type(self, handle, value, length, LM_VT_STRING);
+}
+
+static inline void
 log_msg_set_value_to_string(LogMessage *self, NVHandle handle, const gchar *literal_string)
 {
   log_msg_set_value(self, handle, literal_string, strlen(literal_string));
