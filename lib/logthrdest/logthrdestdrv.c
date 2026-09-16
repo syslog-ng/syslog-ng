@@ -35,6 +35,8 @@
 
 #define MAX_RETRIES_ON_ERROR_DEFAULT 3
 #define MAX_RETRIES_BEFORE_SUSPEND_DEFAULT 3
+#define MAX_REOPEN_BACKOFF_SHIFT 10
+#define TIME_REOPEN_MAX_DEFAULT 3600
 
 const gchar *
 log_threaded_result_to_str(LogThreadedResult self)
@@ -79,6 +81,14 @@ log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen)
   self->time_reopen = time_reopen;
 }
 
+void
+log_threaded_dest_driver_set_time_reopen_max(LogDriver *s, time_t time_reopen_max)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  self->time_reopen_max = time_reopen_max;
+}
+
 CfgFlagHandler log_threaded_dest_driver_flag_handlers[] =
 {
   /* seqnum-all turns on seqnums */
@@ -105,6 +115,7 @@ log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_si
   log_queue_ack_backlog(self->queue, batch_size);
   stats_counter_add(self->owner->metrics.written_messages, batch_size);
   self->retries_on_error_counter = 0;
+  self->connection_retries_counter = 0;
   self->batch_size -= batch_size;
 }
 
@@ -114,6 +125,7 @@ log_threaded_dest_worker_drop_messages(LogThreadedDestWorker *self, gint batch_s
   log_queue_ack_backlog(self->queue, batch_size);
   stats_counter_add(self->owner->metrics.dropped_messages, batch_size);
   self->retries_on_error_counter = 0;
+  self->connection_retries_counter = 0;
   self->batch_size -= batch_size;
 }
 
@@ -224,6 +236,7 @@ _connect(LogThreadedDestWorker *self)
 {
   if (!log_threaded_dest_worker_connect(self))
     {
+      self->connection_retries_counter++;
       msg_debug("Error establishing connection to server",
                 evt_tag_str("driver", self->owner->super.super.id),
                 evt_tag_int("worker_index", self->worker_index),
@@ -318,6 +331,7 @@ _process_result_error(LogThreadedDestWorker *self)
 static void
 _process_result_not_connected(LogThreadedDestWorker *self)
 {
+  self->connection_retries_counter++;
   msg_info("Server disconnected while preparing messages for sending, trying again",
            evt_tag_str("driver", self->owner->super.super.id),
            log_expr_node_location_tag(self->owner->super.super.super.expr_node),
@@ -529,13 +543,57 @@ _message_became_available_callback(gpointer user_data)
     iv_event_post(&self->wake_up_event);
 }
 
+static guint
+_get_suspend_retry_attempt(LogThreadedDestWorker *self)
+{
+  return MAX((guint) self->retries_on_error_counter, self->connection_retries_counter);
+}
+
+static time_t
+_calculate_reopen_delay(LogThreadedDestWorker *self)
+{
+  guint attempt, shift;
+  guint64 max_delay, min_delay, jitter = 0;
+
+  if (self->time_reopen <= 0)
+    return self->time_reopen;
+
+  attempt = _get_suspend_retry_attempt(self);
+  if (attempt == 0)
+    attempt = 1;
+
+  shift = MIN(attempt - 1, MAX_REOPEN_BACKOFF_SHIFT);
+  max_delay = ((guint64) self->time_reopen) << shift;
+  if (self->time_reopen_max > 0 && max_delay > (guint64) self->time_reopen_max)
+    max_delay = self->time_reopen_max;
+  if (max_delay > G_MAXINT32)
+    max_delay = G_MAXINT32;
+
+  min_delay = MAX((guint64) 1, max_delay / 2);
+  if (max_delay > min_delay)
+    jitter = g_random_int_range(0, (gint32) (max_delay - min_delay + 1));
+
+  return (time_t) (min_delay + jitter);
+}
+
 static void
 _schedule_restart_on_suspend_timeout(LogThreadedDestWorker *self)
 {
+  time_t reopen_delay = _calculate_reopen_delay(self);
+
   iv_validate_now();
   self->timer_reopen.expires  = iv_now;
-  self->timer_reopen.expires.tv_sec += self->time_reopen;
+  self->timer_reopen.expires.tv_sec += reopen_delay;
   iv_timer_register(&self->timer_reopen);
+
+  msg_info("Destination suspended, scheduling reconnect with backoff",
+           evt_tag_str("driver", self->owner->super.super.id),
+           evt_tag_int("worker_index", self->worker_index),
+           evt_tag_int("time_reopen", self->time_reopen),
+           evt_tag_printf("reopen_delay", "%lds/%lds", (long) reopen_delay, (long) self->time_reopen_max),
+           evt_tag_int("backoff_attempt", _get_suspend_retry_attempt(self)),
+           evt_tag_int("retries", self->owner->retries_on_error_max),
+           log_expr_node_location_tag(self->owner->super.super.super.expr_node));
 }
 
 static void
@@ -966,6 +1024,9 @@ log_threaded_dest_worker_init_method(LogThreadedDestWorker *self)
   if (self->time_reopen == -1)
     self->time_reopen = self->owner->time_reopen;
 
+  if (self->time_reopen_max == -1)
+    self->time_reopen_max = self->owner->time_reopen_max;
+
   if (self->owner->flush_on_key_change)
     self->partitioning.last_key = g_string_sized_new(128);
 
@@ -1000,7 +1061,9 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
   self->deinit = log_threaded_dest_worker_deinit_method;
   self->free_fn = log_threaded_dest_worker_free_method;
   self->owner = owner;
+  self->connection_retries_counter = 0;
   self->time_reopen = -1;
+  self->time_reopen_max = -1;
 
   self->partitioning.last_key = NULL;
 
@@ -1501,6 +1564,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->super.super.super.pre_config_init = log_threaded_dest_driver_pre_config_init;
   self->super.super.super.post_config_init = log_threaded_dest_driver_start_workers;
   self->time_reopen = -1;
+  self->time_reopen_max = TIME_REOPEN_MAX_DEFAULT;
   self->batch_lines = -1;
   self->batch_timeout = -1;
   self->num_workers = 1;
