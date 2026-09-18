@@ -25,6 +25,8 @@
 
 #include "json-parser.h"
 #include "apphook.h"
+#include "cfg.h"
+#include "logmsg/nvtable.h"
 
 static LogMessage *
 parse_json_into_log_message_no_check(const gchar *json, LogParser *json_parser)
@@ -99,6 +101,37 @@ Test(json_parser, test_json_parser_adds_prefix_to_name_value_pairs_when_instruct
   assert_log_message_value(msg, log_msg_get_value_handle(".prefix.foo"), "bar");
   log_msg_unref(msg);
   log_pipe_unref(&json_parser->super);
+}
+
+Test(json_parser, test_dynamic_name_limit_drop)
+{
+  GlobalConfig *cfg = cfg_new_snippet();
+  LogParser *json_parser;
+  LogMessage *msg;
+
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_DROP;
+  log_msg_registry_set_dynamic_name_limit(0);
+  json_parser = json_parser_new(cfg);
+  msg = parse_json_into_log_message("{'foo': 'bar'}", json_parser);
+  assert_log_message_value_unset_by_name(msg, "foo");
+  log_msg_unref(msg);
+  log_pipe_unref(&json_parser->super);
+  cfg_free(cfg);
+  log_msg_registry_set_dynamic_name_limit(DYNAMIC_NV_NAME_LIMIT_DEFAULT);
+}
+
+Test(json_parser, test_dynamic_name_limit_reject_message)
+{
+  GlobalConfig *cfg = cfg_new_snippet();
+  LogParser *json_parser;
+
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE;
+  log_msg_registry_set_dynamic_name_limit(0);
+  json_parser = json_parser_new(cfg);
+  assert_json_parser_fails("{'nested': {'foo': 'bar'}}", json_parser);
+  log_pipe_unref(&json_parser->super);
+  cfg_free(cfg);
+  log_msg_registry_set_dynamic_name_limit(DYNAMIC_NV_NAME_LIMIT_DEFAULT);
 }
 
 Test(json_parser, test_json_parser_uses_key_delimiter_when_its_specified)
