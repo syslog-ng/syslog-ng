@@ -2175,6 +2175,15 @@ log_msg_register_stats(void)
   stats_cluster_single_key_set(&sc_key, "events_allocated_bytes", NULL, 0);
   stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "msg_allocated_bytes", NULL);
   stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
+
+  stats_cluster_single_key_set(&sc_key, "logmsg_nv_registry_size", NULL, 0);
+  stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "logmsg_nv_registry_size", NULL);
+  stats_register_external_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &logmsg_registry->num_registered_names);
+
+  stats_cluster_single_key_set(&sc_key, "logmsg_dynamic_nv_registry_size", NULL, 0);
+  stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "logmsg_dynamic_nv_registry_size", NULL);
+  stats_register_external_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE,
+                                  &logmsg_registry->num_registered_dynamic_names);
   stats_unlock();
 }
 

@@ -29,6 +29,8 @@
 #include "apphook.h"
 #include "libtest/grab-logging.h"
 #include "logmsg/logmsg.h"
+#include "stats/stats-cluster-single.h"
+#include "stats/stats-registry.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -235,6 +237,55 @@ Test(nvtable, test_dynamic_nv_registry_limit_warning_is_emitted_once)
   nv_registry_free(reg);
   stop_grabbing_messages();
   reset_grabbed_messages();
+}
+
+Test(nvtable, test_nv_registry_size_stats_track_allocated_names)
+{
+  NVRegistry *reg;
+  StatsCounterItem *num_registered_names;
+  StatsCounterItem *num_registered_dynamic_names;
+  const gchar *builtins[] = { "BUILTIN1", NULL };
+
+  reg = nv_registry_new(builtins);
+
+  stats_lock();
+  {
+    StatsClusterKey sc_key;
+
+    stats_cluster_single_key_set(&sc_key, "test_logmsg_nv_registry_size", NULL, 0);
+    StatsCluster *sc = stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE,
+                                                       &reg->num_registered_names);
+    num_registered_names = stats_cluster_get_counter(sc, SC_TYPE_SINGLE_VALUE);
+
+    stats_cluster_single_key_set(&sc_key, "test_logmsg_dynamic_nv_registry_size", NULL, 0);
+    sc = stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE,
+                                         &reg->num_registered_dynamic_names);
+    num_registered_dynamic_names = stats_cluster_get_counter(sc, SC_TYPE_SINGLE_VALUE);
+  }
+  stats_unlock();
+
+  /* Construction publishes the initial registry size through stats counters. */
+  cr_assert_eq(stats_counter_get(num_registered_names), 1);
+  cr_assert_eq(stats_counter_get(num_registered_dynamic_names), 0);
+
+  /* Trusted names grow only the total registry size. */
+  cr_assert_neq(nv_registry_alloc_handle(reg, "TRUSTED"), 0);
+  cr_assert_eq(stats_counter_get(num_registered_names), 2);
+  cr_assert_eq(stats_counter_get(num_registered_dynamic_names), 0);
+
+  /* Dynamic names grow both total and dynamic registry sizes. */
+  cr_assert_neq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC"), 0);
+  cr_assert_eq(stats_counter_get(num_registered_names), 3);
+  cr_assert_eq(stats_counter_get(num_registered_dynamic_names), 1);
+
+  /* Existing names and rejected names do not change allocation counters. */
+  nv_registry_set_dynamic_name_limit(reg, 1);
+  cr_assert_neq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC"), 0);
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "REJECTED"), 0);
+  cr_assert_eq(stats_counter_get(num_registered_names), 3);
+  cr_assert_eq(stats_counter_get(num_registered_dynamic_names), 1);
+
+  nv_registry_free(reg);
 }
 
 /*

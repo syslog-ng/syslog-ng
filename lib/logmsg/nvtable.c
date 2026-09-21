@@ -32,6 +32,13 @@ static GMutex nv_registry_lock;
 
 const gchar *null_string = "";
 
+static void
+_update_registry_size_stats(NVRegistry *self)
+{
+  atomic_gssize_set(&self->num_registered_names, self->names->len);
+  atomic_gssize_set(&self->num_registered_dynamic_names, self->dynamic_name_count);
+}
+
 NVHandle
 nv_registry_get_handle(NVRegistry *self, const gchar *name)
 {
@@ -114,6 +121,7 @@ _nv_registry_alloc_handle(NVRegistry *self, const gchar *name, gboolean dynamic)
   if (dynamic)
     self->dynamic_name_count++;
   res = self->names->len;
+  _update_registry_size_stats(self);
 exit:
   g_mutex_unlock(&nv_registry_lock);
   return res;

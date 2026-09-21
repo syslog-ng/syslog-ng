@@ -26,6 +26,7 @@
 #define PAYLOAD_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "atomic-gssize.h"
 #include "nvhandle-descriptors.h"
 
 typedef struct _NVTable NVTable;
@@ -66,6 +67,8 @@ struct _NVRegistry
   guint32 nvhandle_max_value;
   guint dynamic_name_limit;
   guint dynamic_name_count;
+  atomic_gssize num_registered_names;
+  atomic_gssize num_registered_dynamic_names;
   gboolean hard_limit_reached_reported;
   gboolean dynamic_limit_reached_reported;
 };
