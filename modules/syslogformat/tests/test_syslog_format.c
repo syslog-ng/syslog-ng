@@ -503,6 +503,21 @@ Test(syslog_format, test_frame_checking)
   log_msg_unref(msg);
 }
 
+Test(syslog_format, test_frame_checking_does_not_read_past_digit_only_input)
+{
+  const guchar data[] = {'1', '2', '3', '4', '5'};
+  gsize data_length = sizeof(data);
+
+  LogMessage *msg = msg_format_construct_message(&parse_options, data, data_length);
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, data, data_length, &problem_position));
+
+  cr_assert_not(log_msg_is_tag_by_id(msg, LM_T_SYSLOG_UNEXPECTED_FRAMING));
+
+  log_msg_unref(msg);
+}
+
 Test(syslog_format, test_framing_not_detected_when_frame_length_is_too_long)
 {
   const gchar *data = "99999999999 a";
