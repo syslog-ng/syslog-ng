@@ -992,7 +992,7 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
 {
   const guchar *src = *data;
   gint left = *length;
-  gint i = 0;
+  guint i = 0;
 
   while (left > 0 && isdigit(*src))
     {
@@ -1005,7 +1005,7 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
         return;
     }
 
-  if (i == 0 || *src != ' ')
+  if (i == 0 || left <= 0 || *src != ' ')
     return;
 
   /* we did indeed find a series of digits that look like framing, that's
