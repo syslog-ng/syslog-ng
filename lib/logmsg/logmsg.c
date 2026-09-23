@@ -569,6 +569,31 @@ log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to)
   log_msg_unset_value(self, from);
 }
 
+/* clones self->payload if not already privately owned, accounting the
+ * newly-owned payload's size the same way as growth via realloc does */
+static void
+_log_msg_ensure_own_payload(LogMessage *self, gsize additional_space_hint)
+{
+  if (log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
+    return;
+
+  self->payload = nv_table_clone(self->payload, additional_space_hint);
+  log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
+  self->allocated_bytes += self->payload->size;
+  stats_counter_add(count_allocated_bytes, self->payload->size);
+}
+
+/* accounts for self->payload having grown from old_size to its current
+ * size, as a result of a successful nv_table_realloc() */
+static void
+_log_msg_account_payload_growth(LogMessage *self, guint32 old_size)
+{
+  guint32 new_size = self->payload->size;
+  self->allocated_bytes += (new_size - old_size);
+  stats_counter_add(count_allocated_bytes, new_size - old_size);
+  stats_counter_inc(count_payload_reallocs);
+}
+
 void
 log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
                             const gchar *value, gssize value_len,
@@ -599,13 +624,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
                 evt_tag_msg_reference(self));
     }
 
-  if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
-    {
-      self->payload = nv_table_clone(self->payload, name_len + value_len + 2);
-      log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
-      self->allocated_bytes += self->payload->size;
-      stats_counter_add(count_allocated_bytes, self->payload->size);
-    }
+  _log_msg_ensure_own_payload(self, name_len + value_len + 2);
 
   /* we need a loop here as a single realloc may not be enough. Might help
    * if we pass how much bytes we need though. */
@@ -623,10 +642,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
                    evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""));
           break;
         }
-      guint32 new_size = self->payload->size;
-      self->allocated_bytes += (new_size - old_size);
-      stats_counter_add(count_allocated_bytes, new_size - old_size);
-      stats_counter_inc(count_payload_reallocs);
+      _log_msg_account_payload_growth(self, old_size);
     }
 
   if (new_entry)
@@ -656,13 +672,7 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
                 evt_tag_msg_reference(self));
     }
 
-  if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
-    {
-      self->payload = nv_table_clone(self->payload, 0);
-      log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
-      self->allocated_bytes += self->payload->size;
-      stats_counter_add(count_allocated_bytes, self->payload->size);
-    }
+  _log_msg_ensure_own_payload(self, 0);
 
   while (!nv_table_unset_value(self->payload, handle))
     {
@@ -677,10 +687,7 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
                    evt_tag_str("name", name));
           break;
         }
-      guint32 new_size = self->payload->size;
-      self->allocated_bytes += (new_size - old_size);
-      stats_counter_add(count_allocated_bytes, new_size - old_size);
-      stats_counter_inc(count_payload_reallocs);
+      _log_msg_account_payload_growth(self, old_size);
     }
 
   if (_value_invalidates_legacy_header(handle))
@@ -724,13 +731,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
                 evt_tag_msg_reference(self));
     }
 
-  if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
-    {
-      self->payload = nv_table_clone(self->payload, name_len + 1);
-      log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
-      self->allocated_bytes += self->payload->size;
-      stats_counter_add(count_allocated_bytes, self->payload->size);
-    }
+  _log_msg_ensure_own_payload(self, name_len + 1);
 
   NVReferencedSlice referenced_slice =
   {
@@ -751,10 +752,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
                    evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)));
           break;
         }
-      guint32 new_size = self->payload->size;
-      self->allocated_bytes += (new_size - old_size);
-      stats_counter_add(count_allocated_bytes, new_size - old_size);
-      stats_counter_inc(count_payload_reallocs);
+      _log_msg_account_payload_growth(self, old_size);
     }
 
   if (new_entry)
