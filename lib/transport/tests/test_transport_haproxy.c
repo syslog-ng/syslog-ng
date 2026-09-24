@@ -187,3 +187,33 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_transport_proxy, test_pr
 
   log_transport_stack_deinit(&stack);
 }
+
+Test(log_transport_proxy, test_proxy_protocol_v2_rejects_boundary_length)
+{
+  /* 16-byte fixed header + len 1484 = exactly 1500 bytes, which must be rejected. */
+  static const gchar proxy_header[] =
+    "\r\n\r\n\0\r\nQUIT\n"
+    "\x21" /* v2, PROXY command */
+    "\x11" /* AF_INET / STREAM */
+    "\x05\xcc"; /* length = 1484 */
+  LogTransportStack stack;
+  LogTransport *mock = log_transport_mock_stream_new(proxy_header, sizeof(proxy_header) - 1, NULL);
+  LogTransportAuxData aux;
+  gchar buf[1024];
+  gssize rc;
+
+  log_transport_stack_init(&stack, mock);
+  log_transport_stack_add_transport(&stack,
+                                    LOG_TRANSPORT_HAPROXY, log_transport_haproxy_new(LOG_TRANSPORT_INITIAL, LOG_TRANSPORT_INITIAL));
+  log_transport_stack_switch(&stack, LOG_TRANSPORT_HAPROXY);
+
+  log_transport_aux_data_init(&aux);
+  rc = log_transport_stack_read(&stack, buf, sizeof(buf), &aux);
+  log_transport_aux_data_destroy(&aux);
+
+  cr_assert_eq(rc, -1, "PROXYv2 header length 1484 should be rejected without aborting");
+  cr_assert_neq(errno, 0,
+                "exactly full-buffer PROXYv2 length should be rejected with a non-zero errno, got %d", errno);
+
+  log_transport_stack_deinit(&stack);
+}

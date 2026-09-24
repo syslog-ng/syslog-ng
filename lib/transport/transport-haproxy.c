@@ -423,7 +423,7 @@ _fetch_proxy_v2_payload(LogTransportHAProxy *self)
   struct proxy_hdr_v2 *hdr = (struct proxy_hdr_v2 *) self->proxy_header_buff;
   gsize proxy_header_len = sizeof(*hdr) + ntohs(hdr->len);
 
-  if (proxy_header_len > sizeof(self->proxy_header_buff))
+  if (proxy_header_len >= sizeof(self->proxy_header_buff))
     {
       msg_error("PROXYv2 proto header with invalid header length",
                 evt_tag_int("max_parsable_length", sizeof(self->proxy_header_buff)),
