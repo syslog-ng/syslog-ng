@@ -125,6 +125,49 @@ Test(syslog_format, rfc3164_check_program_valid_name)
   log_msg_unref(msg);
 }
 
+Test(syslog_format, freebsd_kernel_message_without_timestamp_keeps_payload)
+{
+  const gchar *data = "<6>em0: link state changed to DOWN";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  parse_options.flags |= LP_LOCAL;
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  cr_assert_eq(msg->pri, 6);
+  assert_log_message_value_by_name(msg, "PROGRAM", "kernel");
+  assert_log_message_value_by_name(msg, "MSG", "em0: link state changed to DOWN");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, rfc3164_no_parse_program_preserves_kernel_payload)
+{
+  const gchar *data = "<13>Jun 25 14:41:47 host (ada4:ahcich5:0:0:0): WRITE_FPDMA_QUEUED";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  parse_options.flags |= LP_NO_PARSE_PROGRAM;
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  cr_assert_eq(msg->pri, 13);
+  assert_log_message_value_by_name(msg, "HOST", "host");
+  assert_log_message_value_by_name(msg, "PROGRAM", "");
+  assert_log_message_value_by_name(msg, "MSG", "(ada4:ahcich5:0:0:0): WRITE_FPDMA_QUEUED");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, no_parse_program_flag_is_registered)
+{
+  cr_assert(msg_format_options_process_flag(&parse_options, "no-parse-program"));
+  cr_assert(parse_options.flags & LP_NO_PARSE_PROGRAM);
+}
+
 Test(syslog_format, rfc3164_check_program_decimal_number)
 {
   const gchar *data = "<189> Feb  3 12:34:56 host 323235243.2354[pid]: message";
