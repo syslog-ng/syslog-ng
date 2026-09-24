@@ -727,7 +727,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
   if (handle == LM_V_NONE || (!store_debug_macros && _log_msg_is_debug_macro(handle)))
     return;
 
-  g_assert(handle >= LM_V_MAX);
+  g_assert(log_msg_is_handle_settable_with_an_indirect_value(handle));
 
   name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
