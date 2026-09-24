@@ -402,13 +402,12 @@ log_msg_is_handle_settable_with_an_indirect_value(NVHandle handle)
   return (handle >= LM_V_MAX);
 }
 
+void log_msg_set_store_debug_macros(gboolean enable);
 const gchar *log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogMessageValueType *type);
 const gchar *log_msg_get_match_with_type(const LogMessage *self, gint index_,
                                          gssize *value_len, LogMessageValueType *type);
 const gchar *log_msg_get_match_if_set_with_type(const LogMessage *self, gint index_,
                                                 gssize *value_len, LogMessageValueType *type);
-
-
 
 static inline const gchar *
 log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,

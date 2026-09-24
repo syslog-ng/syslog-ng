@@ -269,6 +269,7 @@ __free_macro_value(void *val)
 
 static NVHandle match_handles[256];
 NVRegistry *logmsg_registry;
+static gboolean store_debug_macros = TRUE;
 const char logmsg_sd_prefix[] = ".SDATA.";
 const gint logmsg_sd_prefix_len = sizeof(logmsg_sd_prefix) - 1;
 gint logmsg_queue_node_max = 1;
@@ -553,6 +554,18 @@ _value_invalidates_legacy_header(NVHandle handle)
   return handle == LM_V_PROGRAM || handle == LM_V_PID;
 }
 
+static inline gboolean
+_log_msg_is_debug_macro(NVHandle handle)
+{
+  return handle == LM_V_TRANSPORT || handle == LM_V_MSGFORMAT;
+}
+
+void
+log_msg_set_store_debug_macros(gboolean enable)
+{
+  store_debug_macros = enable;
+}
+
 void
 log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to)
 {
@@ -605,7 +618,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
 
   g_assert(!log_msg_is_write_protected(self));
 
-  if (handle == LM_V_NONE)
+  if (handle == LM_V_NONE || (!store_debug_macros && _log_msg_is_debug_macro(handle)))
     return;
 
   name_len = 0;
@@ -711,7 +724,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
 
   g_assert(!log_msg_is_write_protected(self));
 
-  if (handle == LM_V_NONE)
+  if (handle == LM_V_NONE || (!store_debug_macros && _log_msg_is_debug_macro(handle)))
     return;
 
   g_assert(handle >= LM_V_MAX);
