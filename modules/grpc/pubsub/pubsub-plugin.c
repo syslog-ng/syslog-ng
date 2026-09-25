@@ -53,4 +53,5 @@ const ModuleInfo module_info =
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = pubsub_plugins,
   .plugins_len = G_N_ELEMENTS(pubsub_plugins),
+  .requires_residency = TRUE,
 };

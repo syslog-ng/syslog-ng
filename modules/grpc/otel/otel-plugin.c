@@ -77,4 +77,5 @@ const ModuleInfo module_info =
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = otel_plugins,
   .plugins_len = G_N_ELEMENTS(otel_plugins),
+  .requires_residency = TRUE,
 };
