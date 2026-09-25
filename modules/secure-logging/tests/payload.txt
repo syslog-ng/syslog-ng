@@ -1,0 +1,3 @@
+<38>1 2025-07-08T11:27:24+02:00 localhost prg00000 1234 ID01 - seq: 0000000040, thread: 101, runid: 42153, stamp: 2025-07-08T11:27:24 Sadly, however, before she could get to a phone to tell anyone about it, a terrible, stupid catastrophe occurred, and the idea was lost for ever.
+<38>1 2025-07-08T11:27:24+02:00 localhost prg00000 1234 ID02 - seq: 0000000041, thread: 101, runid: 42153, stamp: 2025-07-08T11:27:24 This is not her story.
+<38>1 2025-07-08T11:27:24+02:00 localhost prg00000 1234 ID03 - seq: 0000000042, thread: 101, runid: 42153, stamp: 2025-07-08T11:27:24 But it is the story of that terrible, stupid catastrophe and some of its consequences.
