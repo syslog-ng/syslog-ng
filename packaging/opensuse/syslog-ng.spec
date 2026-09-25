@@ -44,7 +44,8 @@ Source4:        %{name}-service-prepare
 %bcond_with	geoip
 %else
 %bcond_without  dbi
-%bcond_without	java
+# Build with --with java to re-enable.
+%bcond_with	java
 %bcond_without	geoip
 %endif
 

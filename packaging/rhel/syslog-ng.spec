@@ -20,7 +20,8 @@ Source3: syslog-ng.service
 %bcond_without kafka
 %bcond_without afsnmp
 %bcond_without cloudauth
-%bcond_without java
+# Build with --with java to re-enable.
+%bcond_with java
 
 %if 0%{?fedora} >= 36 || 0%{?rhel} < 10
 %bcond_without mqtt
@@ -261,6 +262,7 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 This module supports cloud authentication, currently used
 for Google PubSub.
 
+%if %{with java}
 %package java
 Summary:        Java destination support for syslog-ng
 Group:          System/Libraries
@@ -269,6 +271,7 @@ Requires:       %{name} = %{version}
 %description java
 This package provides java destination support for syslog-ng. It
 only contains the java bindings, no drivers.
+%endif
 
 
 %package geoip
