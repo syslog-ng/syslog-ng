@@ -951,8 +951,9 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
               _skip_chars(&src, &left, " ", -1);
             }
 
-          /* Try to extract a program name */
-          _syslog_format_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
+          /* Try to extract a program name if not explicitly disabled */
+          if ((parse_options->flags & LP_NO_PARSE_PROGRAM) == 0)
+            _syslog_format_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
         }
 
       /* If we did manage to find a hostname, store it. */
@@ -975,8 +976,9 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
       else
         {
           log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC3164_MISSING_HEADER);
-          /* Capture the program name */
-          _syslog_format_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
+          /* Capture the program name if not explicitly disabled */
+          if ((parse_options->flags & LP_NO_PARSE_PROGRAM) == 0)
+            _syslog_format_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
         }
     }
   *data = src;

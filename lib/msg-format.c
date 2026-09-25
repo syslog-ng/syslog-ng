@@ -343,6 +343,7 @@ CfgFlagHandler msg_format_flag_handlers[] =
   { "piggyback-errors",           CFH_SET, offsetof(MsgFormatOptions, flags), LP_PIGGYBACK_ERRORS },
   { "no-piggyback-errors",      CFH_CLEAR, offsetof(MsgFormatOptions, flags), LP_PIGGYBACK_ERRORS },
   { "check-program",              CFH_SET, offsetof(MsgFormatOptions, flags), LP_CHECK_PROGRAM },
+  { "no-parse-program",           CFH_SET, offsetof(MsgFormatOptions, flags), LP_NO_PARSE_PROGRAM },
   { NULL },
 };
 
