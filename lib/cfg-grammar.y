@@ -291,6 +291,7 @@
 %token KW_TIME_REOPEN                 10210
 %token KW_TIME_REAP                   10211
 %token KW_TIME_SLEEP                  10212
+%token KW_TIME_REOPEN_MAX             10213
 
 %token KW_PARALLELIZE                 10215
 %token KW_PARTITIONS                  10216
@@ -1063,6 +1064,7 @@ options_item
 	| KW_CHECK_PROGRAM '(' yesno ')' { configuration->check_program = $3; }
 	| KW_BAD_HOSTNAME '(' string ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
 	| KW_TIME_REOPEN '(' positive_integer ')'		{ configuration->time_reopen = $3; }
+	| KW_TIME_REOPEN_MAX '(' positive_integer ')' { log_threaded_dest_driver_set_time_reopen_max(last_driver, $3); }
 	| KW_TIME_REAP '(' nonnegative_integer ')'		{ configuration->time_reap = $3; }
 	| KW_TIME_SLEEP '(' nonnegative_integer ')'	{}
 	| KW_SUPPRESS '(' nonnegative_integer ')'		{ configuration->suppress = $3; }
