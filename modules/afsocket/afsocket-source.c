@@ -59,6 +59,8 @@ typedef struct _AFSocketSourceConnection
   LogPipe super;
   struct _AFSocketSourceDriver *owner;
   LogReader *reader;
+  gchar *logproto;
+  gchar *transport_name;
   int sock;
   GSockAddr *peer_addr;
   GSockAddr *local_addr;
@@ -259,11 +261,14 @@ afsocket_sc_free(LogPipe *s)
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
   g_sockaddr_unref(self->peer_addr);
   g_sockaddr_unref(self->local_addr);
+  g_free(self->logproto);
+  g_free(self->transport_name);
   log_pipe_free_method(s);
 }
 
 AFSocketSourceConnection *
-afsocket_sc_new(GSockAddr *peer_addr, GSockAddr *local_addr, int fd, GlobalConfig *cfg)
+afsocket_sc_new(GSockAddr *peer_addr, GSockAddr *local_addr, const gchar *logproto, const gchar *transport_name,
+                int fd, GlobalConfig *cfg)
 {
   AFSocketSourceConnection *self = g_new0(AFSocketSourceConnection, 1);
 
@@ -274,6 +279,8 @@ afsocket_sc_new(GSockAddr *peer_addr, GSockAddr *local_addr, int fd, GlobalConfi
   self->super.free_fn = afsocket_sc_free;
   self->peer_addr = g_sockaddr_ref(peer_addr);
   self->local_addr = g_sockaddr_ref(local_addr);
+  self->logproto = g_strdup(logproto);
+  self->transport_name = g_strdup(transport_name);
   self->sock = fd;
   return self;
 }
@@ -468,7 +475,8 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
     {
       AFSocketSourceConnection *conn;
 
-      conn = afsocket_sc_new(client_addr, local_addr, fd, self->super.super.super.cfg);
+      conn = afsocket_sc_new(client_addr, local_addr, self->transport_mapper->logproto,
+                             self->transport_mapper->transport_name, fd, self->super.super.super.cfg);
       afsocket_sc_set_owner(conn, self);
       if (log_pipe_init(&conn->super))
         {
@@ -1018,9 +1026,18 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
                                                       && is_reloading_scheduled() && stored_conn_count > 0))
     {
       _connections_count_set(self, 0);
-      for (GList *p = self->connections; p; p = p->next)
+      for (GList *p = self->connections, *next; p; p = next)
         {
           AFSocketSourceConnection *sc = (AFSocketSourceConnection *)p->data;
+          next = p->next;
+
+          if (g_strcmp0(sc->logproto, self->transport_mapper->logproto) != 0 ||
+              g_strcmp0(sc->transport_name, self->transport_mapper->transport_name) != 0)
+            {
+              self->connections = g_list_delete_link(self->connections, p);
+              afsocket_sd_kill_connection(sc);
+              continue;
+            }
 
           afsocket_sc_set_owner(sc, self);
           if (log_pipe_init((LogPipe *) p->data))
