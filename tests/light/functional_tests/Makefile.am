@@ -7,6 +7,9 @@ EXTRA_DIST += \
 	tests/light/functional_tests/config_change/test_python_custom_options.py \
 	tests/light/functional_tests/conftest.py \
 	tests/light/functional_tests/destination_drivers/example_destination/test_example_destination.py \
+	tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_all_messages_received.py \
+	tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_deleting_log_file.py \
+	tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_rotation_failure.py \
 	tests/light/functional_tests/destination_drivers/network_destination/test_destination_reload_protocol_change.py \
 	tests/light/functional_tests/destination_drivers/network_destination/test_network_destination_transport.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_acceptance.py \
@@ -65,6 +68,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/source_drivers/file_source/test_no_header_flag.py \
 	tests/light/functional_tests/source_drivers/generator_source/test_generator_source.py \
 	tests/light/functional_tests/source_drivers/internal_source/test_internal_acceptance.py \
+	tests/light/functional_tests/source_drivers/kafka_source/test_kafka_source.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_acceptance.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_reload.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_multiple_clients.py \
