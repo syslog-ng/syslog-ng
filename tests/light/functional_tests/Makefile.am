@@ -7,6 +7,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/config_change/test_python_custom_options.py \
 	tests/light/functional_tests/conftest.py \
 	tests/light/functional_tests/destination_drivers/example_destination/test_example_destination.py \
+	tests/light/functional_tests/destination_drivers/network_destination/test_destination_reload_protocol_change.py \
 	tests/light/functional_tests/destination_drivers/network_destination/test_network_destination_transport.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_acceptance.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_missing_snmp_obj.py \
@@ -70,6 +71,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_simple_tcp_connection.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_syslog_proto.py \
 	tests/light/functional_tests/source_drivers/network_source/test_network_transports.py \
+	tests/light/functional_tests/source_drivers/network_source/test_source_reload_protocol_change.py \
 	tests/light/functional_tests/source_drivers/network_source/test_syslog_parser_timestamp_spinning.py \
 	tests/light/functional_tests/source_drivers/network_source/text_with_nuls/test_nul_acceptance.py \
 	tests/light/functional_tests/source_drivers/syslog_source/auto/test_auto_proto.py \
