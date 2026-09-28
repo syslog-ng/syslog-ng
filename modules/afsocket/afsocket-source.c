@@ -1046,8 +1046,7 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
             }
           else
             {
-              /* FIXME: Unlike the earlier g_list_remove, which caused crashes, this works — but I think it’s still leaking. */
-              self->connections = g_list_remove_link(self->connections, p);
+              self->connections = g_list_delete_link(self->connections, p);
               afsocket_sd_kill_connection((AFSocketSourceConnection *)sc);
             }
         }
