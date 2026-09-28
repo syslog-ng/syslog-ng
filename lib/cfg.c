@@ -290,6 +290,7 @@ gboolean
 cfg_init(GlobalConfig *cfg)
 {
   msg_apply_config_log_level(cfg->log_level);
+  log_msg_set_store_debug_macros(cfg->store_debug_macros);
   if (cfg->file_template_name && !(cfg->file_template = cfg_tree_lookup_template(&cfg->tree, cfg->file_template_name)))
     msg_error("Error resolving file template",
               evt_tag_str("name", cfg->file_template_name));
@@ -472,6 +473,7 @@ cfg_new(gint version)
 
   self->log_fifo_size = 10000;
   self->log_msg_size = 65536;
+  self->store_debug_macros = TRUE;
 
   file_perm_options_global_defaults(&self->file_perm_options);
 
