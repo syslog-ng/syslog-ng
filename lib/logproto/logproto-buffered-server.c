@@ -804,14 +804,24 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
        * across a config reload (see log_proto_server_set_options()). */
 
       gsize needed_raw_buffer_size = self->super.options->super.init_buffer_size + sizeof(state->raw_buffer_leftover);
+      gint stack_alloc_limit = self->super.options->super.stack_alloc_limit;
 
-      if (G_UNLIKELY(self->raw_buffer_size < needed_raw_buffer_size))
+      if (G_UNLIKELY(stack_alloc_limit > 0 && needed_raw_buffer_size <= (gsize) stack_alloc_limit))
         {
-          self->raw_buffer = g_realloc(self->raw_buffer, needed_raw_buffer_size);
-          self->raw_buffer_size = needed_raw_buffer_size;
+          /* user opted into stack-alloc-limit(): see its docs for the safety trade-off */
+          raw_buffer = g_alloca(needed_raw_buffer_size);
+        }
+      else
+        {
+          if (G_UNLIKELY(self->raw_buffer_size < needed_raw_buffer_size))
+            {
+              self->raw_buffer = g_realloc(self->raw_buffer, needed_raw_buffer_size);
+              self->raw_buffer_size = needed_raw_buffer_size;
+            }
+
+          raw_buffer = self->raw_buffer;
         }
 
-      raw_buffer = self->raw_buffer;
       memcpy(raw_buffer, state->raw_buffer_leftover, state->raw_buffer_leftover_size);
       avail = self->super.options->super.init_buffer_size;
     }

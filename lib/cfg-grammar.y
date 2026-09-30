@@ -232,6 +232,7 @@
 %token KW_STORE_DEBUG_MACROS          10099
 
 %token KW_KEEP_TIMESTAMP              10100
+%token KW_STACK_ALLOC_LIMIT           10531
 
 %token KW_USE_DNS                     10110
 %token KW_USE_FQDN                    10111
@@ -1078,6 +1079,7 @@ options_item
 	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ msg_warning("WARNING: Support for the global log-fetch-limit() option was removed, please use a per-source log-fetch-limit()", cfg_lexer_format_location_tag(lexer, &@1)); }
 	| KW_LOG_MSG_SIZE '(' positive_integer ')'	{ configuration->log_msg_size = $3; }
 	| KW_TRIM_LARGE_MESSAGES '(' yesno ')'	{ configuration->trim_large_messages = $3; }
+	| KW_STACK_ALLOC_LIMIT '(' nonnegative_integer ')'	{ configuration->stack_alloc_limit = $3; }
 	| KW_STORE_DEBUG_MACROS '(' yesno ')' { configuration->store_debug_macros = $3; }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }

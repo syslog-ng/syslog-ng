@@ -473,6 +473,7 @@ cfg_new(gint version)
 
   self->log_fifo_size = 10000;
   self->log_msg_size = 65536;
+  self->stack_alloc_limit = 0;
   self->store_debug_macros = TRUE;
 
   file_perm_options_global_defaults(&self->file_perm_options);

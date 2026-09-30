@@ -155,6 +155,7 @@ static CfgLexerKeyword main_keywords[] =
   { "log_iw_size",        KW_LOG_IW_SIZE },
   { "log_msg_size",       KW_LOG_MSG_SIZE },
   { "trim_large_messages", KW_TRIM_LARGE_MESSAGES },
+  { "stack_alloc_limit",  KW_STACK_ALLOC_LIMIT },
   { "store_debug_macros",  KW_STORE_DEBUG_MACROS },
   { "idle_timeout",       KW_IDLE_TIMEOUT },
   { "log_prefix",         KW_LOG_PREFIX, KWS_OBSOLETE, "program_override" },

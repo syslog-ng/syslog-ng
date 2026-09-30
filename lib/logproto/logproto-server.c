@@ -176,6 +176,7 @@ log_proto_server_options_defaults(LogProtoServerOptionsStorage *options)
   options->super.trim_large_messages = -1;
   options->super.init_buffer_size = -1;
   options->super.max_buffer_size = -1;
+  options->super.stack_alloc_limit = -1;
   options->super.ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
   multi_line_options_defaults(&options->super.multi_line_options);
 }
@@ -193,6 +194,10 @@ log_proto_server_options_init(LogProtoServerOptionsStorage *options, GlobalConfi
   if (options->super.trim_large_messages == -1)
     {
       options->super.trim_large_messages = cfg->trim_large_messages;
+    }
+  if (options->super.stack_alloc_limit == -1)
+    {
+      options->super.stack_alloc_limit = cfg->stack_alloc_limit;
     }
   if (options->super.max_buffer_size == -1)
     {
