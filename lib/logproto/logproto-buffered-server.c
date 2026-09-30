@@ -784,11 +784,12 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
   gint rc;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
   GIOStatus result = G_IO_STATUS_NORMAL;
+  gboolean needs_conversion = (self->convert != (GIConv) -1);
 
   if (G_UNLIKELY(!self->buffer))
     log_proto_buffered_server_allocate_buffer(self, state);
 
-  if (self->convert == (GIConv) -1)
+  if (!needs_conversion)
     {
       /* no conversion, we read directly into our buffer */
       raw_buffer = self->buffer + state->pending_buffer_end;
@@ -842,7 +843,7 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
       rc += state->raw_buffer_leftover_size;
       state->raw_buffer_leftover_size = 0;
 
-      if (self->convert == (GIConv) -1)
+      if (!needs_conversion)
         {
           state->pending_buffer_end += rc;
         }
