@@ -28,7 +28,6 @@
 #include "plugin-types.h"
 #include "find-crlf.h"
 #include "scratch-buffers.h"
-#include "utf8utils.h"
 #include "hostname.h"
 
 static gsize
@@ -43,8 +42,8 @@ static void
 msg_format_inject_parse_error(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length,
                               gint problem_position)
 {
-  GString *buf = scratch_buffers_alloc();
-
+  ScratchBuffersMarker marker;
+  GString *buf = scratch_buffers_alloc_and_mark(&marker);
 
   /* overwrite the message as if it was coming from syslog-ng */
   log_msg_clear(msg);
@@ -67,6 +66,8 @@ msg_format_inject_parse_error(MsgFormatOptions *options, LogMessage *msg, const 
   log_msg_set_value(msg, LM_V_PROGRAM, "syslog-ng", 9);
   g_string_printf(buf, "%d", (int) getpid());
   log_msg_set_value(msg, LM_V_PID, buf->str, buf->len);
+
+  scratch_buffers_reclaim_marked(marker);
 
   msg->flags |= LF_LOCAL;
   msg->pri = LOG_SYSLOG | LOG_ERR;
@@ -131,12 +132,7 @@ msg_format_process_message(MsgFormatOptions *options, LogMessage *msg,
         {
           if (!g_utf8_validate((gchar *) data, length, NULL))
             {
-              gchar buf[SANITIZE_UTF8_BUFFER_SIZE(length)];
-              gsize sanitized_length;
-              optimized_sanitize_utf8_to_escaped_binary(data, length, &sanitized_length, buf, sizeof(buf));
-              log_msg_set_value(msg, LM_V_MESSAGE, buf, _rstripped_message_length((guchar *) buf, sanitized_length));
-              log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
-              msg->flags |= LF_UTF8;
+              log_msg_set_sanitized_utf8_value(msg, data, length);
               return TRUE;
             }
           else
