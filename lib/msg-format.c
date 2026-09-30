@@ -42,8 +42,8 @@ static void
 msg_format_inject_parse_error(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length,
                               gint problem_position)
 {
-  GString *buf = scratch_buffers_alloc();
-
+  ScratchBuffersMarker marker;
+  GString *buf = scratch_buffers_alloc_and_mark(&marker);
 
   /* overwrite the message as if it was coming from syslog-ng */
   log_msg_clear(msg);
@@ -66,6 +66,8 @@ msg_format_inject_parse_error(MsgFormatOptions *options, LogMessage *msg, const 
   log_msg_set_value(msg, LM_V_PROGRAM, "syslog-ng", 9);
   g_string_printf(buf, "%d", (int) getpid());
   log_msg_set_value(msg, LM_V_PID, buf->str, buf->len);
+
+  scratch_buffers_reclaim_marked(marker);
 
   msg->flags |= LF_LOCAL;
   msg->pri = LOG_SYSLOG | LOG_ERR;
