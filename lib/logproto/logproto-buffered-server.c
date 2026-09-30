@@ -797,10 +797,21 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
     }
   else
     {
-      /* if conversion is needed, we first read into an on-stack
-       * buffer, and then convert it into our internal buffer */
+      /* if conversion is needed, we first read into a raw buffer,
+       * and then convert it into our internal buffer. Grown on
+       * demand, like self->buffer, rather than assumed fixed:
+       * init_buffer_size can change under a kept-alive connection
+       * across a config reload (see log_proto_server_set_options()). */
 
-      raw_buffer = g_alloca(self->super.options->super.init_buffer_size + state->raw_buffer_leftover_size);
+      gsize needed_raw_buffer_size = self->super.options->super.init_buffer_size + sizeof(state->raw_buffer_leftover);
+
+      if (G_UNLIKELY(self->raw_buffer_size < needed_raw_buffer_size))
+        {
+          self->raw_buffer = g_realloc(self->raw_buffer, needed_raw_buffer_size);
+          self->raw_buffer_size = needed_raw_buffer_size;
+        }
+
+      raw_buffer = self->raw_buffer;
       memcpy(raw_buffer, state->raw_buffer_leftover, state->raw_buffer_leftover_size);
       avail = self->super.options->super.init_buffer_size;
     }
@@ -1067,6 +1078,7 @@ log_proto_buffered_server_free_method(LogProtoServer *s)
   log_transport_aux_data_destroy(&self->buffer_aux);
 
   g_free(self->buffer);
+  g_free(self->raw_buffer);
   if (self->state1)
     {
       g_free(self->state1);
