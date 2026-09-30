@@ -1267,3 +1267,45 @@ Test(msgparse, test_sanitize_utf8)
   };
   run_parameterized_test(params);
 }
+
+Test(msgparse, test_sanitize_utf8_large_input)
+{
+  /* GHSA-vmr7-7p76-2pcr regression: the old stack VLA needed ~1,395,480 bytes of invalid input to
+   * overflow a default 8MiB thread stack (len * 6 + 1 buffer). Use a safely larger all-invalid
+   * body (every byte takes the 4-char "\xNN" escape path) across all three sanitize-utf8 routes. */
+  const gsize invalid_len = 2000000;
+  gchar *invalid_body = g_malloc(invalid_len + 1);
+  memset(invalid_body, 0xff, invalid_len);
+  invalid_body[invalid_len] = 0;
+
+  gsize escaped_len = invalid_len * 4;
+  gchar *expected_msg = g_malloc(escaped_len + 1);
+  for (gsize i = 0; i < invalid_len; i++)
+    memcpy(expected_msg + i * 4, "\\xff", 4);
+  expected_msg[escaped_len] = 0;
+
+  struct
+  {
+    const gchar *prefix;
+    gint parse_flags;
+  } routes[] =
+  {
+    { "<189>program ", LP_SANITIZE_UTF8 },                                      /* RFC3164 */
+    { "<7>1 - bzorp openvpn 2499 - - ", LP_SYSLOG_PROTOCOL | LP_SANITIZE_UTF8 }, /* RFC5424 */
+    { "", LP_NOPARSE | LP_SANITIZE_UTF8 },                                      /* no-parse */
+  };
+
+  for (gsize r = 0; r < G_N_ELEMENTS(routes); r++)
+    {
+      gchar *raw = g_strconcat(routes[r].prefix, invalid_body, NULL);
+      LogMessage *parsed_msg = _parse_log_message(raw, routes[r].parse_flags, NULL);
+
+      assert_log_message_value(parsed_msg, LM_V_MESSAGE, expected_msg);
+
+      log_msg_unref(parsed_msg);
+      g_free(raw);
+    }
+
+  g_free(expected_msg);
+  g_free(invalid_body);
+}
