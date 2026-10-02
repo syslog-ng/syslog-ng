@@ -483,6 +483,79 @@ Test(matcher, test_matcher_matches_are_captured_directly_if_source_handle_change
   log_msg_unref(msg);
 }
 
+Test(matcher, test_matcher_captures_named_groups_numbered_above_127)
+{
+  /* a named group number whose low byte is >= 0x80 (e.g. 128, 255) used to sign-extend into a
+   * negative ovector index instead of being captured correctly; 127 is the last unaffected number. */
+  static const guint group_numbers[] = { 127, 128, 255 };
+
+  for (gsize i = 0; i < G_N_ELEMENTS(group_numbers); i++)
+    {
+      guint target_group = group_numbers[i];
+
+      GString *pattern = g_string_new("^");
+      GString *input = g_string_new(NULL);
+      for (guint g = 1; g < target_group; g++)
+        g_string_append(pattern, "(.)");
+      g_string_append(pattern, "(?<TARGET>.)");
+      for (guint g = 1; g < target_group; g++)
+        g_string_append_c(input, 'a');
+      g_string_append_c(input, 'X');
+
+      LogMatcherOptions matcher_options;
+      log_matcher_options_defaults(&matcher_options);
+      matcher_options.flags = LMF_STORE_MATCHES;
+      LogMatcher *m = log_matcher_pcre_re_new(&matcher_options);
+      log_matcher_compile(m, pattern->str, NULL);
+
+      LogMessage *msg = create_empty_message();
+      gboolean result = log_matcher_match_buffer(m, msg, input->str, input->len);
+      cr_assert(result, "pattern with named group #%u failed to match", target_group);
+
+      assert_log_message_value_by_name(msg, "TARGET", "X");
+
+      log_matcher_unref(m);
+      log_msg_unref(msg);
+      g_string_free(pattern, TRUE);
+      g_string_free(input, TRUE);
+    }
+}
+
+Test(matcher, test_matcher_captures_named_group_above_127_when_clobbering_source)
+{
+  /* named group number >= 128 AND same name as the source value: exercises the direct-copy
+   * clobber-avoidance path with a group number that used to decode to a negative index. */
+  guint target_group = 128;
+
+  GString *pattern = g_string_new("^");
+  GString *input = g_string_new(NULL);
+  for (guint g = 1; g < target_group; g++)
+    g_string_append(pattern, "(.)");
+  g_string_append(pattern, "(?<MESSAGE>.)");
+  for (guint g = 1; g < target_group; g++)
+    g_string_append_c(input, 'a');
+  g_string_append_c(input, 'X');
+
+  LogMatcherOptions matcher_options;
+  log_matcher_options_defaults(&matcher_options);
+  matcher_options.flags = LMF_STORE_MATCHES;
+  LogMatcher *m = log_matcher_pcre_re_new(&matcher_options);
+  log_matcher_compile(m, pattern->str, NULL);
+
+  LogMessage *msg = create_empty_message();
+  log_msg_set_value(msg, LM_V_MESSAGE, input->str, input->len);
+
+  gboolean result = log_matcher_match_value(m, msg, LM_V_MESSAGE);
+  cr_assert(result);
+
+  assert_log_message_value_by_name(msg, "MESSAGE", "X");
+
+  log_matcher_unref(m);
+  log_msg_unref(msg);
+  g_string_free(pattern, TRUE);
+  g_string_free(input, TRUE);
+}
+
 Test(matcher, test_replace_works_correctly_if_capture_group_overwrites_the_input_in_a_match_variable)
 {
   gssize value_len;
