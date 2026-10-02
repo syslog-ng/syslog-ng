@@ -324,6 +324,12 @@ nv_table_is_handle_static(NVTable *self, NVHandle handle)
   return (handle <= self->num_static_entries);
 }
 
+static inline gboolean
+nv_table_is_index_full(NVTable *self)
+{
+  return self->index_size >= G_MAXUINT16;
+}
+
 static inline gsize
 nv_table_get_alloc_size(gint num_static_entries, gint index_size_hint, gint init_length)
 {
