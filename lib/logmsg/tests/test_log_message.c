@@ -947,3 +947,38 @@ Test(log_message, test_cow_unset_value)
   log_msg_unref(orig_msg);
   log_msg_unref(msg);
 }
+
+/* GHSA-6gw8-4855-pm4c: once the payload's dynamic index is full, the retry
+ * loop in log_msg_set_value_with_type() must not mistake that for a
+ * byte-space shortage and keep calling nv_table_realloc() up to
+ * NV_TABLE_MAX_BYTES before giving up. */
+Test(log_message, test_set_value_rejects_new_field_once_index_is_full_without_growing_payload_to_max)
+{
+  LogMessage *msg = log_msg_new_empty();
+  NVHandle handle;
+  gchar name[16];
+  gint i;
+  guint32 size_before_overflow;
+
+  /* fill the message's dynamic index to its cap */
+  for (i = 0; i < G_MAXUINT16; i++)
+    {
+      g_snprintf(name, sizeof(name), "f%06d", i);
+      handle = log_msg_get_value_handle(name);
+      log_msg_set_value(msg, handle, "v", -1);
+    }
+  cr_assert_eq((guint) msg->payload->index_size, (guint) G_MAXUINT16);
+
+  size_before_overflow = msg->payload->size;
+
+  /* one more distinct dynamic field must be rejected, without ballooning the payload */
+  handle = log_msg_get_value_handle("overflow-field");
+  log_msg_set_value(msg, handle, "x", -1);
+
+  cr_assert_null(log_msg_get_value_if_set(msg, handle, NULL),
+                 "the overflow field must not have been stored");
+  cr_assert_eq(msg->payload->size, size_before_overflow,
+               "payload must not grow when rejected due to a full index, not a byte-space shortage");
+
+  log_msg_unref(msg);
+}
