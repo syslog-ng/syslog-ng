@@ -86,6 +86,9 @@ nv_registry_get_handle_flags(NVRegistry *self, NVHandle handle)
   if (G_UNLIKELY(!handle))
     return 0;
 
+  if (G_UNLIKELY(handle - 1 >= self->names->len))
+    return 0;
+
   stored = &nvhandle_desc_array_index(self->names, handle - 1);
   return stored->flags;
 }

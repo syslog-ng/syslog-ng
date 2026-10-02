@@ -894,6 +894,32 @@ Test(logmsg_serialize, nvtable_alloc_check_performance)
   nv_table_unref(table);
 }
 
+Test(logmsg_serialize, ignore_unresolvable_sdata_handle_during_formatting)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+  cr_assert(msg->num_sdata > 0, ERROR_MSG);
+  /* simulate a tampered on-disk record: a sdata handle with no matching nvtable entry */
+  msg->sdata[0] = 0xFFFFFFFF;
+
+  log_msg_serialize(msg, sa, 0);
+  log_msg_unref(msg);
+
+  _reset_log_msg_registry();
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert(log_msg_deserialize(msg2, sa), ERROR_MSG);
+
+  GString *result = g_string_new("");
+  log_msg_append_format_sdata(msg2, result, 0);
+
+  g_string_free(result, TRUE);
+  log_msg_unref(msg2);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
 static void
 setup(void)
 {
