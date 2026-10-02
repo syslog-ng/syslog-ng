@@ -1166,3 +1166,49 @@ Test(nvtable, test_nvtable_compact_skips_unset_values)
 
   nv_table_unref(tab2);
 }
+
+/* GHSA-6gw8-4855-pm4c: index_size is guint16, _alloc_index_entry() must cap it
+ * at G_MAXUINT16 instead of silently wrapping back to 0 and losing every
+ * previously indexed dynamic pair. */
+Test(nvtable, test_index_size_is_capped_instead_of_wrapping)
+{
+  NVRegistry *reg;
+  NVTable *tab;
+  NVHandle handle, sentinel_handle, overflow_handle;
+  gchar name[16];
+  gint i;
+  gssize len;
+  const gchar *value;
+  const gchar *builtins[] = { NULL };
+
+  reg = nv_registry_new(builtins, 100000);
+
+  /* sentinel stored first, must stay reachable after the index fills up */
+  sentinel_handle = nv_registry_alloc_handle(reg, "sentinel");
+  tab = nv_table_new(0, 4, 4 * 1024 * 1024);
+  cr_assert(nv_table_add_value(tab, sentinel_handle, "sentinel", strlen("sentinel"), "gotcha", 6, 0, NULL));
+
+  /* 65534 more distinct dynamic entries: 1 + 65534 == G_MAXUINT16, the max allowed */
+  for (i = 0; i < 65534; i++)
+    {
+      g_snprintf(name, sizeof(name), "f%06d", i);
+      handle = nv_registry_alloc_handle(reg, name);
+      cr_assert_neq(handle, 0);
+      cr_assert(nv_table_add_value(tab, handle, name, strlen(name), "v", 1, 0, NULL));
+    }
+  cr_assert_eq((guint) tab->index_size, (guint) G_MAXUINT16);
+
+  /* one more distinct handle must be rejected, not wrap index_size back to 0 */
+  overflow_handle = nv_registry_alloc_handle(reg, "overflow");
+  cr_assert_not(nv_table_add_value(tab, overflow_handle, "overflow", strlen("overflow"), "x", 1, 0, NULL));
+  cr_assert_eq((guint) tab->index_size, (guint) G_MAXUINT16, "index_size must not wrap after a rejected add");
+
+  /* the sentinel (and every earlier entry) must remain reachable */
+  value = nv_table_get_value(tab, sentinel_handle, &len, NULL);
+  cr_assert_not_null(value, "sentinel value must remain reachable after hitting the index cap");
+  cr_assert_eq(len, 6);
+  cr_assert(strncmp(value, "gotcha", 6) == 0);
+
+  nv_table_unref(tab);
+  nv_registry_free(reg);
+}

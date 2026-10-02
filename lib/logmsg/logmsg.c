@@ -631,6 +631,15 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
 
   while (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len, type, &new_entry))
     {
+      if (nv_table_is_index_full(self->payload))
+        {
+          msg_info("Cannot store value for this log message, maximum number of unique dynamic fields reached",
+                   evt_tag_int("maximum_dynamic_fields", G_MAXUINT16),
+                   evt_tag_str("name", name),
+                   evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""));
+          break;
+        }
+
       /* error allocating string in payload, reallocate */
       guint32 old_size = self->payload->size;
       if (!nv_table_realloc(self->payload, &self->payload))
@@ -676,6 +685,14 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
 
   while (!nv_table_unset_value(self->payload, handle))
     {
+      if (nv_table_is_index_full(self->payload))
+        {
+          msg_info("Cannot unset value for this log message, maximum number of unique dynamic fields reached",
+                   evt_tag_int("maximum_dynamic_fields", G_MAXUINT16),
+                   evt_tag_str("name", log_msg_get_value_name(handle, NULL)));
+          break;
+        }
+
       /* error allocating string in payload, reallocate */
       guint32 old_size = self->payload->size;
       if (!nv_table_realloc(self->payload, &self->payload))
@@ -742,6 +759,15 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
 
   while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, &referenced_slice, type, &new_entry))
     {
+      if (nv_table_is_index_full(self->payload))
+        {
+          msg_info("Cannot store indirect value for this log message, maximum number of unique dynamic fields reached",
+                   evt_tag_int("maximum_dynamic_fields", G_MAXUINT16),
+                   evt_tag_str("name", name),
+                   evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)));
+          break;
+        }
+
       /* error allocating string in payload, reallocate */
       guint32 old_size = self->payload->size;
       if (!nv_table_realloc(self->payload, &self->payload))

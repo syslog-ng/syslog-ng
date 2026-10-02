@@ -325,6 +325,11 @@ _alloc_index_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, N
   if (G_UNLIKELY(!(*index_entry) && !nv_table_is_handle_static(self, handle)))
     {
       /* this is a dynamic value */
+
+      /* index_size is guint16, refuse to wrap it back to 0 */
+      if (nv_table_is_index_full(self))
+        return FALSE;
+
       NVIndexEntry *index_table = nv_table_get_index(self);
 
       if (!nv_table_alloc_check(self, sizeof(index_table[0]), FALSE))
