@@ -532,7 +532,9 @@ _save_addresses(LogTransportHAProxy *self)
     }
 #endif
   else
-    g_assert_not_reached();
+    /* e.g. TCP6 announced on a build without IPv6 support: keep the real connection addresses, don't abort */
+    msg_warning("PROXY protocol header announced an address family unsupported by this build",
+                evt_tag_int("ip_version", self->info.ip_version));
 }
 
 static Status
