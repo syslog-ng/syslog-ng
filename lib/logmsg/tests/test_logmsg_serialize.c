@@ -894,6 +894,29 @@ Test(logmsg_serialize, nvtable_alloc_check_performance)
   nv_table_unref(table);
 }
 
+Test(logmsg_serialize, reject_sdata_count_exceeding_allocation)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+  cr_assert(msg->num_sdata > 0, ERROR_MSG);
+  /* simulate a tampered on-disk record: alloc_sdata shrunk below num_sdata.
+   * the real sdata buffer is untouched, so serializing this is itself safe. */
+  msg->alloc_sdata = 0;
+
+  log_msg_serialize(msg, sa, 0);
+  log_msg_unref(msg);
+
+  _reset_log_msg_registry();
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert_not(log_msg_deserialize(msg2, sa), ERROR_MSG);
+
+  log_msg_unref(msg2);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
 Test(logmsg_serialize, ignore_unresolvable_sdata_handle_during_formatting)
 {
   GString *stream = g_string_new("");
