@@ -42,6 +42,7 @@
 #include "apphook.h"
 #include "scratch-buffers.h"
 #include "str-format.h"
+#include "utf8utils.h"
 
 #include <glib/gprintf.h>
 #include <sys/types.h>
@@ -791,6 +792,21 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
                            guint16 ofs, guint16 len)
 {
   log_msg_set_value_indirect_with_type(self, handle, ref_handle, ofs, len, LM_VT_STRING);
+}
+
+void
+log_msg_set_sanitized_utf8_value(LogMessage *self, const guchar *data, gint length)
+{
+  ScratchBuffersMarker marker;
+  GString *sanitized = scratch_buffers_alloc_and_mark(&marker);
+
+  append_unsafe_utf8_as_escaped_binary(sanitized, (const gchar *) data, length, 0);
+  log_msg_set_value(self, LM_V_MESSAGE, sanitized->str, sanitized->len);
+
+  scratch_buffers_reclaim_marked(marker);
+
+  log_msg_set_tag_by_id(self, LM_T_MSG_UTF8_SANITIZED);
+  self->flags |= LF_UTF8;
 }
 
 gboolean

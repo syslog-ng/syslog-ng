@@ -490,6 +490,11 @@ void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_
                                 guint16 ofs, guint16 len);
 void log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle, NVHandle ref_handle,
                                           guint16 ofs, guint16 len, LogMessageValueType type);
+
+/* Sanitizes an untrusted, possibly non-UTF-8 buffer into $MSG, tags the
+ * message and sets LF_UTF8 to indicate it. */
+void log_msg_set_sanitized_utf8_value(LogMessage *self, const guchar *data, gint length);
+
 void log_msg_unset_value(LogMessage *self, NVHandle handle);
 void log_msg_unset_value_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer user_data);

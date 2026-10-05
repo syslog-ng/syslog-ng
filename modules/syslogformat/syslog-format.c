@@ -30,7 +30,6 @@
 #include "find-crlf.h"
 #include "cfg.h"
 #include "str-format.h"
-#include "utf8utils.h"
 #include "str-utils.h"
 #include "syslog-names.h"
 
@@ -880,12 +879,7 @@ _syslog_format_parse_message_column(LogMessage *msg,
         {
           if (!g_utf8_validate((gchar *) src, left, NULL))
             {
-              gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
-              gsize sanitized_length;
-              optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
-              log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
-              log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
-              msg->flags |= LF_UTF8;
+              log_msg_set_sanitized_utf8_value(msg, src, left);
               return TRUE;
             }
           else
@@ -1031,12 +1025,7 @@ _syslog_format_parse_legacy_message(LogMessage *msg,
       if (!g_utf8_validate((gchar *) src, left, NULL))
         {
           /* invalid utf8, sanitize it and then remember it is now utf8 clean */
-          gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
-          gsize sanitized_length;
-          optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
-          log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
-          log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
-          msg->flags |= LF_UTF8;
+          log_msg_set_sanitized_utf8_value(msg, src, left);
           return;
         }
       else
