@@ -92,8 +92,10 @@ ParameterizedTestParameters(log_transport_proxy, test_proxy_protocol_parse_heade
     },
     {
       "PROXY TCP6 ::1 ::2 3333 4444\r\n",                     TRUE,
+#if SYSLOG_NG_ENABLE_IPV6
       .addresses = "source=AF_INET6([::1]:3333) destination=AF_INET6([::2]:4444)",
-      .has_addresses = TRUE
+      .has_addresses = TRUE,
+#endif
     },
 
     /* INVALID PROTO */
@@ -217,3 +219,37 @@ Test(log_transport_proxy, test_proxy_protocol_v2_rejects_boundary_length)
 
   log_transport_stack_deinit(&stack);
 }
+
+#if ! SYSLOG_NG_ENABLE_IPV6
+Test(log_transport_proxy, test_proxy_protocol_tcp6_without_ipv6_support_does_not_abort)
+{
+  /* GHSA-3943-ww42-5qq8: a successfully parsed TCP6 family must not reach g_assert_not_reached()
+   * on a build without IPv6 support; the connection must stay alive without a fabricated address. */
+  static const gchar proxy_header[] = "PROXY TCP6 ::1 ::2 3333 4444\r\n";
+  LogTransportStack stack;
+  LogTransport *mock = log_transport_mock_stream_new(proxy_header, strlen(proxy_header), NULL);
+  LogTransportAuxData aux;
+  gchar buf[1024];
+  gssize rc;
+
+  log_transport_stack_init(&stack, mock);
+  log_transport_stack_add_transport(&stack,
+                                    LOG_TRANSPORT_HAPROXY, log_transport_haproxy_new(LOG_TRANSPORT_INITIAL, LOG_TRANSPORT_INITIAL));
+  log_transport_stack_switch(&stack, LOG_TRANSPORT_HAPROXY);
+
+  do
+    {
+      log_transport_aux_data_init(&aux);
+      rc = log_transport_stack_read(&stack, buf, sizeof(buf), &aux);
+      log_transport_aux_data_destroy(&aux);
+    }
+  while (rc == -1 && errno == EAGAIN);
+
+  cr_assert_eq(rc, 0, "TCP6 header should still be accepted on an IPv6-disabled build (rc=%d, errno=%d)",
+               (gint) rc, errno);
+  cr_assert_null(aux.peer_addr, "an unsupported address family must not get a fabricated peer address");
+  cr_assert_null(aux.local_addr, "an unsupported address family must not get a fabricated local address");
+
+  log_transport_stack_deinit(&stack);
+}
+#endif
