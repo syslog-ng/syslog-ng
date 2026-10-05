@@ -943,6 +943,75 @@ Test(logmsg_serialize, ignore_unresolvable_sdata_handle_during_formatting)
   g_string_free(stream, TRUE);
 }
 
+Test(logmsg_serialize, zero_fill_unresolved_index_slot_after_fixup)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+
+  /* force a value-alloc failure right after a new dynamic index slot is committed:
+   * nv_table_add_value() leaves a "zombie" ofs=0 slot behind in this case (see its
+   * own comment), which the fixup's foreach walk skips just like an unresolvable
+   * sdata handle -- it must rely on the same zero-fill guard, not stack garbage */
+  NVHandle new_handle = log_msg_get_value_handle("oversized_zombie_field");
+  gsize huge_len = 10 * 1024 * 1024;
+  gchar *huge_value = g_malloc0(huge_len);
+  gboolean new_entry = FALSE;
+  guint16 index_size_before = msg->payload->index_size;
+  gboolean added = nv_table_add_value(msg->payload, new_handle, "oversized_zombie_field",
+                                      strlen("oversized_zombie_field"), huge_value, huge_len, LM_VT_STRING, &new_entry);
+  g_free(huge_value);
+  cr_assert_not(added, ERROR_MSG);
+  cr_assert_eq((guint) msg->payload->index_size, (guint) index_size_before + 1,
+               "a zombie index slot must have been committed despite the failed add");
+
+  log_msg_serialize(msg, sa, 0);
+  log_msg_unref(msg);
+
+  _reset_log_msg_registry();
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert(log_msg_deserialize(msg2, sa), ERROR_MSG);
+
+  /* a zero-filled {0,0} entry sorts first (handle 0 is the lowest possible value) */
+  NVIndexEntry *idx = nv_table_get_index(msg2->payload);
+  cr_assert_eq(idx[0].handle, (NVHandle) 0,
+               "unresolved index slot must be zero-filled, not left as stack garbage");
+  cr_assert_eq(idx[0].ofs, (guint32) 0,
+               "unresolved index slot must be zero-filled, not left as stack garbage");
+
+  log_msg_unref(msg2);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, zero_fill_unresolved_sdata_slot_after_fixup)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+  cr_assert(msg->num_sdata > 0, ERROR_MSG);
+  /* a real, static, non-SDATA handle: _fixup_sdata_handle() is only invoked for
+   * SDATA-flagged entries, so this slot can never be matched during the post-restart
+   * handle remap and must rely on the fixup's zero-fill guard instead of stack garbage */
+  msg->sdata[0] = LM_V_HOST;
+
+  log_msg_serialize(msg, sa, 0);
+  log_msg_unref(msg);
+
+  _reset_log_msg_registry();
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert(log_msg_deserialize(msg2, sa), ERROR_MSG);
+
+  cr_assert_eq(msg2->sdata[0], (NVHandle) 0,
+               "unresolved sdata slot must be zero-filled (LM_V_NONE), not left as stack garbage");
+
+  log_msg_unref(msg2);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
 static void
 setup(void)
 {
