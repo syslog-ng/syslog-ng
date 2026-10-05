@@ -90,6 +90,11 @@ typedef union _QDiskFileHeader
 
     guint8 use_v1_wrap_condition;
     gint64 capacity_bytes;
+
+    /* position of a record handed to a reader but not yet fully processed;
+     * 0 means none pending. Used to detect a crash while a record was in flight */
+    gint64 pending_read_head;
+    guint32 pending_read_crash_count;
   };
   gchar _pad2[QDISK_RESERVED_SPACE];
 } QDiskFileHeader;
@@ -1827,6 +1832,42 @@ gint64
 qdisk_get_backlog_count(QDisk *self)
 {
   return self->hdr->backlog_len;
+}
+
+gint64
+qdisk_get_pending_read_head(QDisk *self)
+{
+  return self->hdr->pending_read_head;
+}
+
+void
+qdisk_set_pending_read_head(QDisk *self, gint64 pos)
+{
+  self->hdr->pending_read_head = pos;
+}
+
+void
+qdisk_clear_pending_read_head(QDisk *self)
+{
+  self->hdr->pending_read_head = 0;
+}
+
+guint32
+qdisk_get_pending_read_crash_count(QDisk *self)
+{
+  return self->hdr->pending_read_crash_count;
+}
+
+void
+qdisk_inc_pending_read_crash_count(QDisk *self)
+{
+  self->hdr->pending_read_crash_count++;
+}
+
+void
+qdisk_reset_pending_read_crash_count(QDisk *self)
+{
+  self->hdr->pending_read_crash_count = 0;
 }
 
 gint

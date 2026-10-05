@@ -84,6 +84,13 @@ gint64 qdisk_get_reader_head(QDisk *self);
 gint64 qdisk_get_backlog_head(QDisk *self);
 gint64 qdisk_get_backlog_count(QDisk *self);
 gint qdisk_get_flow_control_window_bytes(QDisk *self);
+
+gint64 qdisk_get_pending_read_head(QDisk *self);
+void qdisk_set_pending_read_head(QDisk *self, gint64 pos);
+void qdisk_clear_pending_read_head(QDisk *self);
+guint32 qdisk_get_pending_read_crash_count(QDisk *self);
+void qdisk_inc_pending_read_crash_count(QDisk *self);
+void qdisk_reset_pending_read_crash_count(QDisk *self);
 gboolean qdisk_is_read_only(QDisk *self);
 const gchar *qdisk_get_filename(QDisk *self);
 gint64 qdisk_get_file_size(QDisk *self);
