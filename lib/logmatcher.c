@@ -461,7 +461,6 @@ static void
 log_matcher_pcre_re_feed_named_substrings(LogMatcherPcreRe *self, LogMessage *msg, LogMatcherPcreMatchResult *result)
 {
   gchar *name_table = NULL;
-  gint i = 0;
   guint32 namecount = 0;
   guint32 name_entry_size = 0;
 
@@ -470,7 +469,6 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcherPcreRe *self, LogMessage *ms
     {
       PCRE2_SIZE *matches = pcre2_get_ovector_pointer(result->match_data);
 
-      gchar *tabptr;
       /* Before we can access the substrings, we must extract the table for
          translating names to numbers, and the size of each entry in the table.
        */
@@ -482,10 +480,11 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcherPcreRe *self, LogMessage *ms
       GString *formatted_name = scratch_buffers_alloc();
       g_string_assign_len(formatted_name, self->nv_prefix, self->nv_prefix_len);
 
-      tabptr = name_table;
-      for (i = 0; i < namecount; i++, tabptr += name_entry_size)
+      gchar *tabptr = name_table;
+      for (guint i = 0; i < namecount; i++, tabptr += name_entry_size)
         {
-          int n = (tabptr[0] << 8) | tabptr[1];
+          /* guchar operands + unsigned n: group numbers >= 128 can no longer sign-extend negative */
+          guint n = ((guchar) tabptr[0] << 8) | (guchar) tabptr[1];
           gint begin_index = matches[2 * n];
           gint end_index = matches[2 * n + 1];
           const gchar *namedgroup_name = tabptr + 2;
