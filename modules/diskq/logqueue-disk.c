@@ -79,15 +79,22 @@ log_queue_disk_start(LogQueue *s)
   g_assert(!qdisk_started(self->qdisk));
   g_assert(self->start);
 
-  if (self->start(self))
+  if (!self->start(self))
+    return FALSE;
+
+  if (qdisk_get_pending_read_crash_count(self->qdisk) >= QDISK_PENDING_READ_CRASH_THRESHOLD)
     {
-      log_queue_queued_messages_add(s, log_queue_get_length(s));
-      log_queue_disk_update_disk_related_counters(self);
-      stats_counter_set(self->metrics.capacity, B_TO_KiB(qdisk_get_max_useful_space(self->qdisk)));
+      msg_warning("Disk-queue quarantined after repeatedly crashing while processing the same record",
+                  evt_tag_str("filename", qdisk_get_filename(self->qdisk)),
+                  evt_tag_int("pending_read_crash_count", qdisk_get_pending_read_crash_count(self->qdisk)));
+      log_queue_disk_restart_corrupted(self);
       return TRUE;
     }
 
-  return FALSE;
+  log_queue_queued_messages_add(s, log_queue_get_length(s));
+  log_queue_disk_update_disk_related_counters(self);
+  stats_counter_set(self->metrics.capacity, B_TO_KiB(qdisk_get_max_useful_space(self->qdisk)));
+  return TRUE;
 }
 
 const gchar *
