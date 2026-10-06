@@ -416,6 +416,204 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   stop_grabbing_messages();
 }
 
+Test(logqueue_disk, pending_read_quarantine_after_repeated_crashes)
+{
+  start_grabbing_messages();
+
+  const gchar *filename = "pending_read_quarantine.rqf";
+  const gchar *corrupted_filename = "pending_read_quarantine.rqf.corrupted";
+
+  DiskQueueOptions options = {0};
+  disk_queue_options_set_default_options(&options);
+  disk_queue_options_reliable_set(&options, TRUE);
+  disk_queue_options_capacity_bytes_set(&options, MIN_CAPACITY_BYTES);
+  disk_queue_options_flow_control_window_bytes_set(&options, 4096);
+  /* force every pop through the real disk-read path, bypassing the in-memory fast paths */
+  disk_queue_options_front_cache_size_set(&options, 0);
+
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *queue = log_queue_disk_reliable_new(&options, filename, "pending_read_quarantine", STATS_LEVEL0,
+                                                driver_sck_builder, queue_sck_builder);
+
+  cr_assert(log_queue_disk_start(queue));
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_queue_push_tail(queue, log_msg_new_empty(), &path_options);
+  _pop_msg(queue);
+  cr_assert_neq(qdisk_get_pending_read_head(((LogQueueDisk *) queue)->qdisk), 0,
+                "%s", "Pop did not mark a pending read position");
+
+  /* simulate repeated crash-restarts without ever acking the popped position */
+  for (guint32 i = 1; i < QDISK_PENDING_READ_CRASH_THRESHOLD; i++)
+    {
+      gboolean persistent;
+      log_queue_disk_stop(queue, &persistent);
+      log_queue_unref(queue);
+      stats_cluster_key_builder_free(queue_sck_builder);
+      queue_sck_builder = stats_cluster_key_builder_new();
+      queue = log_queue_disk_reliable_new(&options, filename, "pending_read_quarantine", STATS_LEVEL0,
+                                          driver_sck_builder, queue_sck_builder);
+      cr_assert(log_queue_disk_start(queue));
+
+      cr_assert_eq(qdisk_get_pending_read_crash_count(((LogQueueDisk *) queue)->qdisk), i,
+                   "%s", "Unexpected pending-read crash count");
+
+      struct stat st;
+      cr_assert_eq(stat(corrupted_filename, &st), -1, "%s", "Quarantine fired before reaching the threshold");
+    }
+
+  /* one more restart reaches the threshold: the file gets quarantined */
+  gboolean persistent;
+  log_queue_disk_stop(queue, &persistent);
+  log_queue_unref(queue);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  queue_sck_builder = stats_cluster_key_builder_new();
+  queue = log_queue_disk_reliable_new(&options, filename, "pending_read_quarantine", STATS_LEVEL0,
+                                      driver_sck_builder, queue_sck_builder);
+  cr_assert(log_queue_disk_start(queue));
+
+  _assert_file_exists(corrupted_filename);
+  cr_assert_eq(qdisk_get_pending_read_crash_count(((LogQueueDisk *) queue)->qdisk), 0,
+               "%s", "Crash count not reset by quarantine");
+  cr_assert_eq(qdisk_get_pending_read_head(((LogQueueDisk *) queue)->qdisk), 0,
+               "%s", "Pending read head not cleared by quarantine");
+
+  log_queue_disk_stop(queue, &persistent);
+  log_queue_unref(queue);
+  stats_cluster_key_builder_free(driver_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  disk_queue_options_destroy(&options);
+  unlink(filename);
+  unlink(corrupted_filename);
+
+  stop_grabbing_messages();
+}
+
+Test(logqueue_disk, pending_read_crash_count_unaffected_by_acked_restart)
+{
+  start_grabbing_messages();
+
+  const gchar *filename = "pending_read_crash_count_acked_restart.rqf";
+
+  DiskQueueOptions options = {0};
+  disk_queue_options_set_default_options(&options);
+  disk_queue_options_reliable_set(&options, TRUE);
+  disk_queue_options_capacity_bytes_set(&options, MIN_CAPACITY_BYTES);
+  disk_queue_options_flow_control_window_bytes_set(&options, 4096);
+  /* force every pop through the real disk-read path, bypassing the in-memory fast paths */
+  disk_queue_options_front_cache_size_set(&options, 0);
+
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *queue = log_queue_disk_reliable_new(&options, filename, "pending_read_crash_count_acked_restart",
+                                                STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
+
+  cr_assert(log_queue_disk_start(queue));
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  for (gint i = 0; i < 5; i++)
+    {
+      log_queue_push_tail(queue, log_msg_new_empty(), &path_options);
+      _pop_msg(queue);
+      log_queue_ack_backlog(queue, 1);
+
+      gboolean persistent;
+      log_queue_disk_stop(queue, &persistent);
+      log_queue_unref(queue);
+      stats_cluster_key_builder_free(queue_sck_builder);
+      queue_sck_builder = stats_cluster_key_builder_new();
+      queue = log_queue_disk_reliable_new(&options, filename, "pending_read_crash_count_acked_restart",
+                                          STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
+      cr_assert(log_queue_disk_start(queue));
+
+      cr_assert_eq(qdisk_get_pending_read_crash_count(((LogQueueDisk *) queue)->qdisk), 0,
+                   "%s", "Crash count must stay 0 after a clean ack");
+    }
+
+  gboolean persistent;
+  log_queue_disk_stop(queue, &persistent);
+  log_queue_unref(queue);
+  stats_cluster_key_builder_free(driver_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  disk_queue_options_destroy(&options);
+  unlink(filename);
+
+  stop_grabbing_messages();
+}
+
+Test(logqueue_disk, pending_read_crash_count_resets_after_recovery_below_threshold)
+{
+  start_grabbing_messages();
+
+  const gchar *filename = "pending_read_crash_count_recovery.rqf";
+  const gchar *corrupted_filename = "pending_read_crash_count_recovery.rqf.corrupted";
+
+  DiskQueueOptions options = {0};
+  disk_queue_options_set_default_options(&options);
+  disk_queue_options_reliable_set(&options, TRUE);
+  disk_queue_options_capacity_bytes_set(&options, MIN_CAPACITY_BYTES);
+  disk_queue_options_flow_control_window_bytes_set(&options, 4096);
+  /* force every pop through the real disk-read path, bypassing the in-memory fast paths */
+  disk_queue_options_front_cache_size_set(&options, 0);
+
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *queue = log_queue_disk_reliable_new(&options, filename, "pending_read_crash_count_recovery", STATS_LEVEL0,
+                                                driver_sck_builder, queue_sck_builder);
+
+  cr_assert(log_queue_disk_start(queue));
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_queue_push_tail(queue, log_msg_new_empty(), &path_options);
+  _pop_msg(queue);
+
+  /* repeated crash-restarts, still below the threshold, without ever acking */
+  for (guint32 i = 1; i < QDISK_PENDING_READ_CRASH_THRESHOLD; i++)
+    {
+      gboolean persistent;
+      log_queue_disk_stop(queue, &persistent);
+      log_queue_unref(queue);
+      stats_cluster_key_builder_free(queue_sck_builder);
+      queue_sck_builder = stats_cluster_key_builder_new();
+      queue = log_queue_disk_reliable_new(&options, filename, "pending_read_crash_count_recovery", STATS_LEVEL0,
+                                          driver_sck_builder, queue_sck_builder);
+      cr_assert(log_queue_disk_start(queue));
+
+      cr_assert_eq(qdisk_get_pending_read_crash_count(((LogQueueDisk *) queue)->qdisk), i,
+                   "%s", "Unexpected pending-read crash count");
+    }
+
+  /* recovery: the position finally gets acked instead of crashing a 3rd time */
+  log_queue_ack_backlog(queue, 1);
+
+  gboolean persistent;
+  log_queue_disk_stop(queue, &persistent);
+  log_queue_unref(queue);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  queue_sck_builder = stats_cluster_key_builder_new();
+  queue = log_queue_disk_reliable_new(&options, filename, "pending_read_crash_count_recovery", STATS_LEVEL0,
+                                      driver_sck_builder, queue_sck_builder);
+  cr_assert(log_queue_disk_start(queue));
+
+  cr_assert_eq(qdisk_get_pending_read_crash_count(((LogQueueDisk *) queue)->qdisk), 0,
+               "%s", "Crash count not reset by a recovery below the threshold");
+  cr_assert_eq(qdisk_get_pending_read_head(((LogQueueDisk *) queue)->qdisk), 0,
+               "%s", "Pending read head not cleared by a recovery below the threshold");
+
+  struct stat st;
+  cr_assert_eq(stat(corrupted_filename, &st), -1, "%s", "A recovered file must not be quarantined");
+
+  log_queue_disk_stop(queue, &persistent);
+  log_queue_unref(queue);
+  stats_cluster_key_builder_free(driver_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  disk_queue_options_destroy(&options);
+  unlink(filename);
+
+  stop_grabbing_messages();
+}
+
 static void
 setup(void)
 {
