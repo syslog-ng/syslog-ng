@@ -174,6 +174,12 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
                 evt_tag_int("read_head", read_head));
       *msg = NULL;
     }
+  else
+    {
+      /* record handed to the caller for actual processing; only the reliable
+       * variant consumes this (on ack and on startup), peeking never sets it */
+      qdisk_set_pending_read_head(self->qdisk, read_head);
+    }
 
   scratch_buffers_reclaim_marked(marker);
 
