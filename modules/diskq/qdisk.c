@@ -890,6 +890,12 @@ qdisk_get_next_head_position(QDisk *self)
 }
 
 gboolean
+qdisk_is_backlog_empty(QDisk *self)
+{
+  return self->hdr->backlog_head == qdisk_get_next_head_position(self);
+}
+
+gboolean
 qdisk_peek_head(QDisk *self, GString *record)
 {
   if (self->hdr->read_head == self->hdr->write_head)

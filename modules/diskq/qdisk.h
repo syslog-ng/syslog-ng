@@ -69,6 +69,7 @@ gboolean qdisk_rewind_backlog(QDisk *self, guint rewind_count);
 void qdisk_empty_backlog(QDisk *self);
 gint64 qdisk_get_next_tail_position(QDisk *self);
 gint64 qdisk_get_next_head_position(QDisk *self);
+gboolean qdisk_is_backlog_empty(QDisk *self);
 gboolean qdisk_start(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window);
 gboolean qdisk_stop(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window,
                     gboolean *has_messages);
