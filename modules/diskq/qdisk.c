@@ -1599,6 +1599,16 @@ _load_state(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_cont
                 evt_tag_long("read_head", self->hdr->read_head),
                 evt_tag_long("write_head", self->hdr->write_head),
                 evt_tag_long("capacity_bytes", self->hdr->capacity_bytes));
+
+      if (self->hdr->pending_read_head != 0)
+        {
+          qdisk_inc_pending_read_crash_count(self);
+          msg_warning("Disk-queue record was still being processed when syslog-ng last stopped, "
+                      "this might indicate a crash caused by this specific record",
+                      evt_tag_str("filename", self->filename),
+                      evt_tag_long("pending_read_head", self->hdr->pending_read_head),
+                      evt_tag_int("pending_read_crash_count", self->hdr->pending_read_crash_count));
+        }
     }
 
   return TRUE;
