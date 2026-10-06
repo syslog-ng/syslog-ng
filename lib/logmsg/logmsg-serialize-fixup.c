@@ -331,6 +331,15 @@ log_msg_fixup_handles_after_deserialization(LogMessageSerializationState *state)
    * we can use some stack space here.  However, num_sdata is guint8,
    * index_size is guint16 */
 
+  /* a wrapped/corrupted on-disk index can leave some sdata slots unwalked below;
+   * zero-fill so any such slot resolves to the already-safe LM_V_NONE instead of stack garbage */
+  memset(_updated_sdata_handles, 0, sizeof(_updated_sdata_handles));
+  /* a dynamic index slot committed right before a failed value allocation (see
+   * nv_table_add_value()) is left with ofs=0 and is never walked below either;
+   * zero-fill so it resolves to the same already-safe "not found" entry instead of
+   * a garbage {handle, ofs} pair ending up in the live index after the bulk copy */
+  memset(_updated_index, 0, sizeof(_updated_index));
+
   state->updated_sdata_handles = _updated_sdata_handles;
   state->updated_index = _updated_index;
   state->handle_changed = FALSE;
