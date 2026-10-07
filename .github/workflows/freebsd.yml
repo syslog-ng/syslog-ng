@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         # https://github.com/marketplace/actions/freebsd-vm
-        release: [ "15.0", "14.2" ]
+        release: [ "15.1", "14.2" ]
         arch: [ aarch64, amd64 ]
         build-tool: [ cmake, autotools ]
         compiler: [ { cpp: clang++, c: clang } ] # , {cpp: g++, c: gcc}
