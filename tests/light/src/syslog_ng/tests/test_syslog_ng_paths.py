@@ -31,7 +31,7 @@ def test_syslog_ng_paths(fake_testcase_parameters):
     syslog_ng_paths = SyslogNgPaths(fake_testcase_parameters)
     syslog_ng_paths.set_syslog_ng_paths(instance_name="server")
     assert set(list(syslog_ng_paths._SyslogNgPaths__syslog_ng_paths)) == {"dirs", "file_paths", "binary_file_paths"}
-    assert set(list(syslog_ng_paths._SyslogNgPaths__syslog_ng_paths["dirs"])) == {"install_dir"}
+    assert set(list(syslog_ng_paths._SyslogNgPaths__syslog_ng_paths["dirs"])) == {"install_dir", "python_source_dir"}
     assert set(list(syslog_ng_paths._SyslogNgPaths__syslog_ng_paths["file_paths"])) == {
         "config_path",
         "persist_path",
