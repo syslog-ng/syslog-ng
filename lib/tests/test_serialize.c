@@ -56,3 +56,25 @@ Test(serialize, test_serialize)
   serialize_read_string(a, value);
   cr_assert_str_eq(value->str, "tarkabarka");
 }
+
+Test(serialize, test_serialize_read_string_rejects_wrapping_length)
+{
+  GString *stream = g_string_new("");
+  GString *value = g_string_new("");
+
+  SerializeArchive *a = serialize_string_archive_new(stream);
+
+  /* G_MAXUINT32 + 1 wraps to 0, which used to turn the realloc() into a free() */
+  serialize_write_uint32(a, G_MAXUINT32);
+  serialize_write_cstring(a, "valid-after-reject", -1);
+
+  serialize_archive_free(a);
+
+  a = serialize_string_archive_new(stream);
+
+  cr_assert_not(serialize_read_string(a, value));
+
+  /* the GString must still be usable afterwards, no corruption should survive the rejected read */
+  cr_assert(serialize_read_string(a, value));
+  cr_assert_str_eq(value->str, "valid-after-reject");
+}
