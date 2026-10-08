@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2017 Balabit
-# Copyright (c) 2016 avcbvamorec
+# Copyright (c) 2026 C3B2W23 <217007207+C3B2W23@users.noreply.github.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,16 +20,28 @@
 # COPYING for details.
 #
 #############################################################################
+import json
 
-@requires json-plugin
+import pytest
 
-template-function "format-gelf" "$(format-json --auto-cast --omit-empty-values version='1.1' host='${HOST:--}' short_message='${MSG:--}' level=int(${LEVEL_NUM}) timestamp=int64(${R_UNIXTIME}) _program='${PROGRAM}' _pid=int($(if (match('^[0-9]{1,18}\\z' value('PID'))) ${PID} '')) _facility='${FACILITY}' _class='${.classifier.class}' --key .* --key _*)$(binary 0x00)";
 
-block destination graylog2(host("127.0.0.1") port(12201) transport(tcp) template("$(format-gelf)") ...) {
-	network("`host`"
-                port(`port`)
-		transport(`transport`)
-		template("`template`")
-		`__VARARGS__`);
-};
+@pytest.mark.parametrize(
+    "pid, expected_pid", [
+        ("1234", 1234),
+        ("worker-3", None),
+    ], ids=["numeric", "non_numeric"],
+)
+def test_format_gelf_pid(config, syslog_ng, pid, expected_pid):
+    config.add_include("scl.conf")
 
+    generator_source = config.create_example_msg_generator_source(num=1, values="PID => {}".format(pid))
+    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify("$(format-gelf)\n"))
+
+    config.create_logpath(statements=[generator_source, file_destination])
+    syslog_ng.start(config)
+    log = file_destination.read_logs(1)[0].rstrip("\n")
+
+    assert log.endswith("\0")
+    gelf = json.loads(log[:-1])
+    assert gelf["short_message"] == "-- Generated message. --"
+    assert gelf.get("_pid") == expected_pid
