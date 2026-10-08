@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         # https://github.com/marketplace/actions/freebsd-vm
-        release: [ "15.0", "14.2" ]
+        release: [ "15.1", "14.2" ]
         arch: [ aarch64, amd64 ]
         build-tool: [ cmake, autotools ]
         compiler: [ { cpp: clang++, c: clang } ] # , {cpp: g++, c: gcc}
@@ -156,7 +156,7 @@ jobs:
               echo "pkg catalogue OK; using default repo configuration."
             fi
 
-            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp net-snmp openjdk25 rabbitmq-c riemann-c-client
+            pkg install -y autoconf autoconf-archive automake bison cmake flex git gperf glib json-c libtool pcre2 pkgconf gradle grpc hiredis libdbi libdbi-drivers libmaxminddb libnet libpaho-mqtt3 librdkafka libesmtp net-snmp openjdk25 rabbitmq-c riemann-c-client rust
             # For testing
             pkg install -y criterion libxml2 qpdf
             if  [ "${{ matrix.build-tool }}" = "autotools" ]; then

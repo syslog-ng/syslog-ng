@@ -208,11 +208,13 @@ def mock_api_response_nginx(mocker):
         ]
     }
 
-    # kubernetes>=33 calls response.getheader("content-type") and decodes response.data.
+    # kubernetes>=33 calls response.getheader("content-type"); kubernetes>=37 instead calls
+    # response.headers.get("content-type"). Mock both to stay agnostic of the installed version.
     mock_response = mocker.Mock(**{
         'status_code': 200,
         'status': 200,
         'data': json.dumps(response_json).encode('utf-8'),
+        'headers': {'content-type': 'application/json'},
     })
     mock_response.getheader = mocker.Mock(return_value='application/json')
     yield mocker.patch('kubernetes.client.rest.RESTClientObject.request', return_value=mock_response)
