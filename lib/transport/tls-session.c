@@ -24,6 +24,7 @@
 #include "transport/tls-context.h"
 #include "str-utils.h"
 #include "string-list.h"
+#include "compat/openssl_support.h"
 
 #include <glib/gstdio.h>
 #include <openssl/x509_vfy.h>
@@ -132,7 +133,7 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
 }
 
 void
-tls_x509_format_dn(X509_NAME *name, GString *dn)
+tls_x509_format_dn(const X509_NAME *name, GString *dn)
 {
   BIO *bio;
   gchar *buf;
@@ -547,11 +548,11 @@ tls_session_info_callback(const SSL *ssl, int where, int ret)
       if (cert)
         {
           self->peer_info.found = 1; /* mark this found so we don't keep checking on every callback */
-          X509_NAME *name = X509_get_subject_name(cert);
+          const X509_NAME *name = X509_get_subject_name(cert);
 
-          X509_NAME_get_text_by_NID(name, NID_commonName, self->peer_info.cn, X509_MAX_CN_LEN);
-          X509_NAME_get_text_by_NID(name, NID_organizationName, self->peer_info.o, X509_MAX_O_LEN);
-          X509_NAME_get_text_by_NID(name, NID_organizationalUnitName, self->peer_info.ou, X509_MAX_OU_LEN);
+          syslog_ng_x509_name_get_text_by_NID(name, NID_commonName, self->peer_info.cn, X509_MAX_CN_LEN);
+          syslog_ng_x509_name_get_text_by_NID(name, NID_organizationName, self->peer_info.o, X509_MAX_O_LEN);
+          syslog_ng_x509_name_get_text_by_NID(name, NID_organizationalUnitName, self->peer_info.ou, X509_MAX_OU_LEN);
 
           X509_free(cert);
         }
