@@ -518,7 +518,7 @@ AC_ARG_ENABLE(stomp,
     , enable_stomp="yes")
 
 AC_ARG_WITH(ivykis,
-    AS_HELP_STRING([--with-ivykis=[system/internal]], [Link against the system supplied or the built-in ivykis library. (default: internal)]),
+    AS_HELP_STRING([--with-ivykis=[internal/system/PATH]], [Link against the built-in ivykis library, the system supplied one, or an install PATH (searched exclusively, bypassing pkg-config's normal search). (default: internal)]),
     , with_ivykis="internal")
 
 AC_ARG_ENABLE(smtp,
@@ -1700,9 +1700,27 @@ if test "x$with_ivykis" = "xinternal"; then
         AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency if --with_ivykis=xinternal option is used, unable to build syslog-ng without them.])
     fi
 else
-    with_ivykis="system"
+    if test "x$with_ivykis" != "xsystem"; then
+        # an explicit install prefix: search ONLY there, bypassing pkg-config's normal
+        # PKG_CONFIG_PATH-based search entirely, so it always wins no matter what else
+        # (incl. other versions) is registered via pkg-config
+        if test ! -d "$with_ivykis"; then
+            AC_MSG_ERROR([--with-ivykis=$with_ivykis: no such directory])
+        fi
+        ivykis_pkg_config_path_save="$PKG_CONFIG_PATH"
+        PKG_CONFIG_PATH="$with_ivykis/lib/pkgconfig"
+        export PKG_CONFIG_PATH
+    else
+        with_ivykis="system"
+    fi
+
     PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION,,)
     PKG_CHECK_MODULES(IVYKIS_VERSION_CHECK, ivykis >= $IVYKIS_UPDATED_VERSION, [IVYKIS_VERSION_UPDATED="yes"], [IVYKIS_VERSION_UPDATED="no"])
+
+    if test "x$with_ivykis" != "xsystem"; then
+        PKG_CONFIG_PATH="$ivykis_pkg_config_path_save"
+        export PKG_CONFIG_PATH
+    fi
 
     dnl check if iv_work_pool_submit_continuation is available in the system ivykis
     LIBS="$LIBS $IVYKIS_LIBS"
