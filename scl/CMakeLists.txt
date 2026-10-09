@@ -5,6 +5,7 @@ set(SCL_DIRS
     cim
     checkpoint
     cisco
+    cloudwatchlogshlc
     collectd
     default-network-drivers
     darwinosl
