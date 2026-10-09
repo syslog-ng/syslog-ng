@@ -33,6 +33,7 @@
 #include "apphook.h"
 #include "mainloop-worker.h"
 #include "str-utils.h"
+#include "crypto-utils.h"
 
 #include <string.h>
 #include <errno.h>
@@ -397,17 +398,22 @@ afsql_dd_create_index(AFSqlDestDriver *self, const gchar *table, const gchar *co
           guchar hash[EVP_MAX_MD_SIZE];
           gchar hash_str[31];
           gchar *cat = g_strjoin("_", table, column, NULL);
-          guint md_len;
+          GString cat_gstr = { .str = cat, .len = strlen(cat) };
+          GString *cat_arg = &cat_gstr;
+          const EVP_MD *md5 = crypto_fetch_digest("md5");
+          guint md_len = md5 ? compose_hash(md5, &cat_arg, 1, hash) : 0;
 
-          const EVP_MD *md5 = EVP_get_digestbyname("md5");
-          DECLARE_EVP_MD_CTX(mdctx);
-          EVP_MD_CTX_init(mdctx);
-          EVP_DigestInit_ex(mdctx, md5, NULL);
-          EVP_DigestUpdate(mdctx, (guchar *) cat, strlen(cat));
-          EVP_DigestFinal_ex(mdctx, hash, &md_len);
-          EVP_MD_CTX_destroy(mdctx);
-
+          crypto_free_digest(md5);
           g_free(cat);
+
+          if (md_len == 0)
+            {
+              msg_error("Error computing the MD5 hash of the Oracle index name",
+                        evt_tag_str("table", table),
+                        evt_tag_str("column", column));
+              g_string_free(query_string, TRUE);
+              return FALSE;
+            }
 
           format_hex_string(hash, md_len, hash_str, sizeof(hash_str));
           hash_str[0] = 'i';
