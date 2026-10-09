@@ -37,6 +37,7 @@
 #include "logmsg/nvtable.h"
 #include "logmsg/nvtable-serialize.h"
 #include "logmsg/nvtable-serialize-legacy.h"
+#include "logmsg/tags-serialize.h"
 
 #define RAW_MSG "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\" eventSource=\"Application\"] An application event log entry..."
 
@@ -1007,6 +1008,36 @@ Test(logmsg_serialize, zero_fill_unresolved_sdata_slot_after_fixup)
   cr_assert_eq(msg2->sdata[0], (NVHandle) 0,
                "unresolved sdata slot must be zero-filled (LM_V_NONE), not left as stack garbage");
 
+  log_msg_unref(msg2);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_tag_name_length_wraparound_and_recover)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  /* G_MAXUINT32 + 1 wraps to 0 inside serialize_read_string(), which used to
+   * turn the realloc() into a free() of the cached scratch buffer. */
+  serialize_write_uint32(sa, G_MAXUINT32);
+
+  LogMessage *tagged_msg = log_msg_new_empty();
+  log_msg_set_tag_by_name(tagged_msg, "some-tag");
+  cr_assert(tags_serialize(tagged_msg, sa), ERROR_MSG);
+  log_msg_unref(tagged_msg);
+
+  LogMessage *msg1 = log_msg_new_empty();
+  cr_assert_not(tags_deserialize(msg1, sa), ERROR_MSG);
+
+  /* the thread-local scratch buffer slot corrupted above must still be usable
+   * for the very next record, exactly as a real disk-buffer replay would
+   * process the next message right after a poisoned one. */
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert(tags_deserialize(msg2, sa), ERROR_MSG);
+  cr_assert(log_msg_is_tag_by_name(msg2, "some-tag"), ERROR_MSG);
+
+  log_msg_unref(msg1);
   log_msg_unref(msg2);
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);

@@ -34,7 +34,10 @@ tags_deserialize(LogMessage *msg, SerializeArchive *sa)
   while (1)
     {
       if (!serialize_read_string(sa, buf))
-        return FALSE;
+        {
+          scratch_buffers_reclaim_marked(marker);
+          return FALSE;
+        }
       if (buf->len == 0)
         {
           /* "" , empty string means: last tag */
