@@ -502,7 +502,7 @@ AC_ARG_ENABLE(mongodb,
     , enable_mongodb="auto")
 
 AC_ARG_WITH(jsonc,
-    AS_HELP_STRING([--with-jsonc=[yes/no]], [Link against the system supplied jsonc library or explicitly disable it. (default: yes)]),
+    AS_HELP_STRING([--with-jsonc=[yes/no/PATH]], [Link against the system supplied jsonc library, explicitly disable it, or use an install PATH (searched exclusively, bypassing pkg-config's normal search). (default: yes)]),
     , with_jsonc="yes")
 
 AC_ARG_ENABLE(json,
@@ -1745,6 +1745,20 @@ if test "x$with_jsonc" = "xinternal"; then
    AC_MSG_ERROR([The internal (bundled) json-c library is no longer supported!])
 fi
 
+jsonc_source_path=""
+if test "x$with_jsonc" != "xyes" && test "x$with_jsonc" != "xno" && test "x$with_jsonc" != "xsystem"; then
+    # an explicit install prefix: search ONLY there, bypassing pkg-config's normal
+    # PKG_CONFIG_PATH-based search entirely, so it always wins no matter what else
+    # (incl. other versions) is registered via pkg-config
+    if test ! -d "$with_jsonc"; then
+        AC_MSG_ERROR([--with-jsonc=$with_jsonc: no such directory])
+    fi
+    jsonc_source_path="$with_jsonc"
+    jsonc_pkg_config_path_save="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$jsonc_source_path/lib/pkgconfig"
+    export PKG_CONFIG_PATH
+fi
+
 # became hard-dependency
 with_jsonc="yes"
 
@@ -1754,6 +1768,11 @@ PKG_CHECK_EXISTS(json, json_module_name="json"))
 PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="yes"], [JSON_LIBS=""; enable_json="no"])
 if test "x$enable_json" = "xno"; then
   AC_MSG_ERROR([json-c library development files cannot be not found on system!])
+fi
+
+if test -n "$jsonc_source_path"; then
+    PKG_CONFIG_PATH="$jsonc_pkg_config_path_save"
+    export PKG_CONFIG_PATH
 fi
 
 dnl ***************************************************************************
