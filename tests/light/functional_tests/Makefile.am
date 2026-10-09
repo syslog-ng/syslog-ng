@@ -75,6 +75,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/source_drivers/syslog_source/auto/test_auto_proto.py \
 	tests/light/functional_tests/source_drivers/syslog_source/test_syslog_transports.py \
 	tests/light/functional_tests/source_options/test_use_syslogng_pid.py \
+	tests/light/functional_tests/template_functions/format-gelf/test_format_gelf.py \
 	tests/light/functional_tests/template_functions/format-gelf/test_format_gelf_pid.py \
 	tests/light/functional_tests/template_functions/graphite-output/test_graphite_output.py \
 	tests/light/functional_tests/template_functions/slog/test_secure_logging.py \
