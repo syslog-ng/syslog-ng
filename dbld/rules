@@ -54,7 +54,7 @@ CONFIGURE_OPTS=$(CONFIGURE_PREFIX_OPT) $(CONFIGURE_SWITCH_OPTS)
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	--network=host \
 	--privileged \
-	--ulimit nofile=1024:1024 \
+	--ulimit nofile=1048576:1048576 \
 	-v $(ROOT_DIR):/source \
 	-v $(DBLD_DIR):/dbld \
 	-v $(DBLD_DIR)/build:/build \
@@ -240,7 +240,7 @@ shell-%: setup
 
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
-image-kira: image-ubuntu-focal
+image-kira: image-ubuntu-jammy
 # devshell is a special case, it is based on the debian stable image
 # TODO: update devshell.dockerfile if these base images change
 # TODO: add this base name as a parameter to the devshell dockerfile instead of hardcoding it
