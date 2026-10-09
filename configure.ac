@@ -521,6 +521,10 @@ AC_ARG_WITH(ivykis,
     AS_HELP_STRING([--with-ivykis=[internal/system/PATH]], [Link against the built-in ivykis library, the system supplied one, or an install PATH (searched exclusively, bypassing pkg-config's normal search). (default: internal)]),
     , with_ivykis="internal")
 
+AC_ARG_WITH(openssl,
+    AS_HELP_STRING([--with-openssl=PATH], [Use the OpenSSL installation found at PATH (searched exclusively, bypassing pkg-config's normal search), instead of auto-detecting it. (default: auto-detect)]),
+    , with_openssl="")
+
 AC_ARG_ENABLE(smtp,
     AS_HELP_STRING([--disable-smtp], [Disable SMTP support (default: auto)]),
     , enable_smtp="auto")
@@ -1558,9 +1562,26 @@ SAFE_C_CHECK_BEGIN
 # openssl is needed for:
 #  * TLS support
 dnl check OpenSSL static linking
+if test -n "$with_openssl"; then
+    # an explicit install prefix: search ONLY there, bypassing pkg-config's normal
+    # PKG_CONFIG_PATH-based search entirely, so it always wins no matter what else
+    # (incl. other versions) is registered via pkg-config
+    if test ! -d "$with_openssl"; then
+        AC_MSG_ERROR([--with-openssl=$with_openssl: no such directory])
+    fi
+    openssl_pkg_config_path_save="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$with_openssl/lib/pkgconfig"
+    export PKG_CONFIG_PATH
+fi
+
 PKG_CHECK_MODULES(OPENSSL,
                 openssl >= $OPENSSL_MIN_VERSION,,
                 AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
+
+if test -n "$with_openssl"; then
+    PKG_CONFIG_PATH="$openssl_pkg_config_path_save"
+    export PKG_CONFIG_PATH
+fi
 
 CPPFLAGS="$CPPFLAGS $OPENSSL_CFLAGS"
 
