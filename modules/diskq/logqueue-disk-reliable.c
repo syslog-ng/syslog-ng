@@ -115,7 +115,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
 
   for (i = 0; i < num_msg_to_ack; i++)
     {
-      if (qdisk_get_backlog_head (self->super.qdisk) == qdisk_get_next_head_position(self->super.qdisk))
+      if (qdisk_is_backlog_empty(self->super.qdisk))
         {
           goto exit_reliable;
         }
@@ -135,6 +135,12 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
       log_queue_disk_update_disk_related_counters(&self->super);
     }
 exit_reliable:
+  if (qdisk_is_backlog_empty(self->super.qdisk))
+    {
+      /* nothing left in flight: no record can crash the daemon on the next start */
+      qdisk_clear_pending_read_head(self->super.qdisk);
+      qdisk_reset_pending_read_crash_count(self->super.qdisk);
+    }
   qdisk_reset_file_if_empty(self->super.qdisk);
   g_mutex_unlock(&s->lock);
 }

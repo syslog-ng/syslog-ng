@@ -90,6 +90,11 @@ typedef union _QDiskFileHeader
 
     guint8 use_v1_wrap_condition;
     gint64 capacity_bytes;
+
+    /* position of a record handed to a reader but not yet fully processed;
+     * 0 means none pending. Used to detect a crash while a record was in flight */
+    gint64 pending_read_head;
+    guint32 pending_read_crash_count;
   };
   gchar _pad2[QDISK_RESERVED_SPACE];
 } QDiskFileHeader;
@@ -885,6 +890,12 @@ qdisk_get_next_head_position(QDisk *self)
 }
 
 gboolean
+qdisk_is_backlog_empty(QDisk *self)
+{
+  return self->hdr->backlog_head == qdisk_get_next_head_position(self);
+}
+
+gboolean
 qdisk_peek_head(QDisk *self, GString *record)
 {
   if (self->hdr->read_head == self->hdr->write_head)
@@ -1588,6 +1599,16 @@ _load_state(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_cont
                 evt_tag_long("read_head", self->hdr->read_head),
                 evt_tag_long("write_head", self->hdr->write_head),
                 evt_tag_long("capacity_bytes", self->hdr->capacity_bytes));
+
+      if (self->hdr->pending_read_head != 0)
+        {
+          qdisk_inc_pending_read_crash_count(self);
+          msg_warning("Disk-queue record was still being processed when syslog-ng last stopped, "
+                      "this might indicate a crash caused by this specific record",
+                      evt_tag_str("filename", self->filename),
+                      evt_tag_long("pending_read_head", self->hdr->pending_read_head),
+                      evt_tag_int("pending_read_crash_count", self->hdr->pending_read_crash_count));
+        }
     }
 
   return TRUE;
@@ -1827,6 +1848,42 @@ gint64
 qdisk_get_backlog_count(QDisk *self)
 {
   return self->hdr->backlog_len;
+}
+
+gint64
+qdisk_get_pending_read_head(QDisk *self)
+{
+  return self->hdr->pending_read_head;
+}
+
+void
+qdisk_set_pending_read_head(QDisk *self, gint64 pos)
+{
+  self->hdr->pending_read_head = pos;
+}
+
+void
+qdisk_clear_pending_read_head(QDisk *self)
+{
+  self->hdr->pending_read_head = 0;
+}
+
+guint32
+qdisk_get_pending_read_crash_count(QDisk *self)
+{
+  return self->hdr->pending_read_crash_count;
+}
+
+void
+qdisk_inc_pending_read_crash_count(QDisk *self)
+{
+  self->hdr->pending_read_crash_count++;
+}
+
+void
+qdisk_reset_pending_read_crash_count(QDisk *self)
+{
+  self->hdr->pending_read_crash_count = 0;
 }
 
 gint
