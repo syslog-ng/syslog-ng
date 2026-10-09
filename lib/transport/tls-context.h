@@ -150,6 +150,6 @@ TLSContext *tls_context_new(TLSMode mode, const gchar *config_location);
 TLSContext *tls_context_ref(TLSContext *self);
 void tls_context_unref(TLSContext *self);
 
-void tls_x509_format_dn(X509_NAME *name, GString *dn);
+void tls_x509_format_dn(const X509_NAME *name, GString *dn);
 
 #endif

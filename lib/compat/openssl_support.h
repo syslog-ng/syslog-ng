@@ -42,6 +42,8 @@ X509 *X509_STORE_CTX_get0_cert(X509_STORE_CTX *ctx);
 uint32_t X509_get_extension_flags(X509 *x);
 #endif
 
+int syslog_ng_x509_name_get_text_by_NID(const X509_NAME *name, int nid, char *buf, int len);
+
 #if SYSLOG_NG_HAVE_DECL_EVP_MD_CTX_RESET
 #include <openssl/evp.h>
 #define EVP_MD_CTX_cleanup EVP_MD_CTX_reset

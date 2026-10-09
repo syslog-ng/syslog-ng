@@ -26,6 +26,7 @@
 #include "thread-utils.h"
 #include <openssl/ssl.h>
 #include <openssl/bn.h>
+#include <string.h>
 
 #if !SYSLOG_NG_HAVE_DECL_SSL_CTX_GET0_PARAM
 X509_VERIFY_PARAM *SSL_CTX_get0_param(SSL_CTX *ctx)
@@ -48,6 +49,35 @@ uint32_t X509_get_extension_flags(X509 *x)
 }
 #endif
 
+/* replacement for the OSSL_DEPRECATEDIN_4_0 X509_NAME_get_text_by_NID() */
+int
+syslog_ng_x509_name_get_text_by_NID(const X509_NAME *name, int nid, char *buf, int len)
+{
+  if (len <= 0)
+    return 0;
+
+  int idx = X509_NAME_get_index_by_NID(name, nid, -1);
+  if (idx < 0)
+    return -1;
+
+  /* casts below: X509_NAME_get_entry()/X509_NAME_ENTRY_get_data() only started
+   * returning const pointers in OpenSSL 4.0; the data is never modified here */
+  X509_NAME_ENTRY *entry = (X509_NAME_ENTRY *) X509_NAME_get_entry(name, idx);
+  if (!entry)
+    return -1;
+
+  ASN1_STRING *data = (ASN1_STRING *) X509_NAME_ENTRY_get_data(entry);
+  if (!data)
+    return -1;
+
+  int data_len = ASN1_STRING_length(data);
+  int copy_len = (data_len < len - 1) ? data_len : (len - 1);
+
+  memcpy(buf, ASN1_STRING_get0_data(data), copy_len);
+  buf[copy_len] = '\0';
+
+  return copy_len;
+}
 
 /* ThreadID callbacks for various OpenSSL versions */
 #if OPENSSL_VERSION_NUMBER < 0x10000000
