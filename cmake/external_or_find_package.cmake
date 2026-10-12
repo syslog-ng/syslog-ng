@@ -72,6 +72,10 @@ function(external_or_find_package LIB_NAME)
     if (${${LIB_NAME}_INTERNAL} AND ((${${LIB_NAME}_SOURCE} STREQUAL "internal") OR ("${${LIB_NAME}_SOURCE}" MATCHES "^(auto|AUTO)$")))
         message(STATUS "Found ${LIB_NAME}: internal")
         set(${LIB_NAME}_FOUND TRUE PARENT_SCOPE)
+        string(TOUPPER "${LIB_NAME}" _EXTERNAL_OR_FIND_PACKAGE_UPPER)
+        if (NOT "${_EXTERNAL_OR_FIND_PACKAGE_UPPER}" STREQUAL "${LIB_NAME}")
+            set(${_EXTERNAL_OR_FIND_PACKAGE_UPPER}_FOUND TRUE PARENT_SCOPE)
+        endif()
         set(${LIB_NAME}_INCLUDE_DIR "${${LIB_NAME}_INTERNAL_INCLUDE_DIR}" CACHE STRING "${LIB_NAME} include path")
         set(${LIB_NAME}_LIBRARY "${${LIB_NAME}_INTERNAL_LIBRARY}" CACHE STRING "${LIB_NAME} library path")
 
@@ -85,6 +89,10 @@ function(external_or_find_package LIB_NAME)
           find_package(${LIB_NAME} )
       endif()
       set(${LIB_NAME}_FOUND "${${LIB_NAME}_FOUND}" PARENT_SCOPE)
+      string(TOUPPER "${LIB_NAME}" _EXTERNAL_OR_FIND_PACKAGE_UPPER)
+      if (NOT "${_EXTERNAL_OR_FIND_PACKAGE_UPPER}" STREQUAL "${LIB_NAME}")
+          set(${_EXTERNAL_OR_FIND_PACKAGE_UPPER}_FOUND "${${LIB_NAME}_FOUND}" PARENT_SCOPE)
+      endif()
       unset(${LIB_NAME}_INTERNAL)
     else()
       if (${EXTERNAL_OR_FIND_PACKAGE_REQUIRED})
@@ -95,8 +103,20 @@ function(external_or_find_package LIB_NAME)
       unset(${LIB_NAME}_INTERNAL)
     endif()
 
+    # find_package()/libfind_process() already leave the plural _LIBRARIES/_INCLUDE_DIRS
+    # (and the "internal" branch above only the singular _LIBRARY/_INCLUDE_DIR) in this
+    # function's own scope, but as plain (non-cache) variables they go out of scope again
+    # once this function returns unless forwarded explicitly, same as _FOUND above.
+    if (NOT ${LIB_NAME}_LIBRARIES AND ${LIB_NAME}_LIBRARY)
+        set(${LIB_NAME}_LIBRARIES "${${LIB_NAME}_LIBRARY}")
+    endif()
+    if (NOT ${LIB_NAME}_INCLUDE_DIRS AND ${LIB_NAME}_INCLUDE_DIR)
+        set(${LIB_NAME}_INCLUDE_DIRS "${${LIB_NAME}_INCLUDE_DIR}")
+    endif()
+    set(${LIB_NAME}_LIBRARIES "${${LIB_NAME}_LIBRARIES}" PARENT_SCOPE)
+    set(${LIB_NAME}_INCLUDE_DIRS "${${LIB_NAME}_INCLUDE_DIRS}" PARENT_SCOPE)
+
     if (${LIB_NAME}_INTERNAL)
        set(${LIB_NAME}_INTERNAL "${${LIB_NAME}_INTERNAL}" PARENT_SCOPE)
     endif()
 endfunction()
-
