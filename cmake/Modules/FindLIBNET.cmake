@@ -33,7 +33,13 @@
 # LIBNET_CFLAGS        - original CFLAGS returned by libnet-config
 # -----------------------------------------------------------------------------
 
-find_program(LIBNET_CONFIG libnet-config)
+if (LIBNET_SOURCE_PATH)
+  # mirrors autotools' --with-libnet=path: AC_PATH_PROG searches only that
+  # prefix's bin/, never falling back to $PATH
+  find_program(LIBNET_CONFIG libnet-config PATHS "${LIBNET_SOURCE_PATH}/bin" NO_DEFAULT_PATH)
+else()
+  find_program(LIBNET_CONFIG libnet-config)
+endif()
 
 add_library(libnet INTERFACE)
 

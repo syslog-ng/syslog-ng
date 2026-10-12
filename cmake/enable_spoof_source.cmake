@@ -33,7 +33,7 @@ if(ENABLE_SPOOF_SOURCE STREQUAL "OFF")
   return()
 endif()
 
-find_package(LIBNET)
+external_or_find_package(LIBNET)
 
 if("${ENABLE_SPOOF_SOURCE}" MATCHES "^(auto|AUTO)$")
   if(LIBNET_FOUND)
