@@ -32,23 +32,29 @@
 
 # use pkg-config to get the directories and then use these values
 # in the FIND_PATH() and FIND_RARY() calls
-FIND_PACKAGE(PkgConfig)
-PKG_SEARCH_MODULE(PC_HIREDIS hiredis)
+if (Hiredis_SOURCE_PATH)
+  # mirrors autotools' --with-libhiredis=DIR: searched exclusively, bypassing pkg-config entirely
+  FIND_PATH(HIREDIS_INCLUDE_DIR NAMES hiredis/hiredis.h PATHS "${Hiredis_SOURCE_PATH}/include" NO_DEFAULT_PATH)
+  FIND_LIBRARY(HIREDIS_LIBRARIES NAMES hiredis PATHS "${Hiredis_SOURCE_PATH}/lib" NO_DEFAULT_PATH)
+else ()
+  FIND_PACKAGE(PkgConfig)
+  PKG_SEARCH_MODULE(PC_HIREDIS hiredis)
 
-SET(HIREDIS_DEFINITIONS ${PC_HIREDIS_CFLAGS_OTHER})
+  SET(HIREDIS_DEFINITIONS ${PC_HIREDIS_CFLAGS_OTHER})
 
-FIND_PATH(HIREDIS_INCLUDE_DIR NAMES hiredis/hiredis.h
-   HINTS
-   ${PC_HIREDIS_INCLUDEDIR}
-   ${PC_HIREDIS_INCLUDE_DIRS}
-   PATH_SUFFIXES hiredis
-   )
+  FIND_PATH(HIREDIS_INCLUDE_DIR NAMES hiredis/hiredis.h
+     HINTS
+     ${PC_HIREDIS_INCLUDEDIR}
+     ${PC_HIREDIS_INCLUDE_DIRS}
+     PATH_SUFFIXES hiredis
+     )
 
-FIND_LIBRARY(HIREDIS_LIBRARIES NAMES hiredis
-   HINTS
-   ${PC_HIREDIS_DIR}
-   ${PC_HIREDIS_LIBRARY_DIRS}
-   )
+  FIND_LIBRARY(HIREDIS_LIBRARIES NAMES hiredis
+     HINTS
+     ${PC_HIREDIS_DIR}
+     ${PC_HIREDIS_LIBRARY_DIRS}
+     )
+endif ()
 
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(Hiredis DEFAULT_MSG HIREDIS_LIBRARIES HIREDIS_INCLUDE_DIR)
