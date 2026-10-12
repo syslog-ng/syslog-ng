@@ -89,12 +89,12 @@ find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(Resolv REQUIRED)
+external_or_find_package(JSONC REQUIRED)
+pkg_check_modules(LIBPCRE REQUIRED IMPORTED_TARGET libpcre2-8)
+include(find_ivykis) # external or internal, but required too
 
 find_package(WRAP)
-external_or_find_package(JSONC REQUIRED)
 include(find_python_and_build_venv)
-include(find_ivykis)
-pkg_check_modules(LIBPCRE REQUIRED IMPORTED_TARGET libpcre2-8)
 
 include(detect_features)
 include(platform_options)
