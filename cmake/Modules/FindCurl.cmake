@@ -24,9 +24,12 @@
 
 include(LibFindMacros)
 
-libfind_pkg_check_modules(Curl_PKGCONF libcurl)
-
-libfind_pkg_detect(Curl libcurl FIND_PATH curl/curl.h FIND_LIBRARY curl)
+if (Curl_SOURCE_PATH)
+  libfind_pkg_detect(Curl libcurl FIND_PATH curl/curl.h FIND_LIBRARY curl EXCLUSIVE_PATH "${Curl_SOURCE_PATH}")
+else()
+  libfind_pkg_check_modules(Curl_PKGCONF libcurl)
+  libfind_pkg_detect(Curl libcurl FIND_PATH curl/curl.h FIND_LIBRARY curl)
+endif()
 set(Curl_PROCESS_INCLUDES Curl_INCLUDE_DIR)
 set(Curl_PROCESS_LIBS Curl_LIBRARY)
 
