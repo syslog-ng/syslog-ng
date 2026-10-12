@@ -1,5 +1,5 @@
 if(NOT DEFINED ENABLE_AFSMTP OR ENABLE_AFSMTP)
-  find_package(ESMTP)
+  external_or_find_package(ESMTP)
 endif()
 
 module_switch(ENABLE_AFSMTP "Enable SMTP destination" ESMTP_FOUND)
