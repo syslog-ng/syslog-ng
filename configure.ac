@@ -615,9 +615,6 @@ AC_ARG_WITH(python3-home,
     AS_HELP_STRING([--with-python3-home=path], [Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable]),
     python3_home_dir=$with_python3_home)
 
-AC_ARG_WITH(pylint,
-    AS_HELP_STRING([--with-pylint=ABSOLUTE_PATH], [Specify pylint location]))
-
 AC_ARG_WITH(manpages,
     AS_HELP_STRING([--with-manpages=[local|remote]], [Use the local or remote manpages for installation, if remote set, it will download the latest manpages from the online documentation https://syslog-ng.github.io/admin-guide/190_The_syslog-ng_manual_pages/README (default: local)]),
     , with_manpages="local")
