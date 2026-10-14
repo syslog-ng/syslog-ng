@@ -67,7 +67,7 @@ set(LIBDIR "\${exec_prefix}/lib")
 set(INCLUDEDIR "\${prefix}/include")
 set(TOOLSDIR "\${datadir}/syslog-ng/tools")
 
-set(LOGGEN_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/syslog-ng/loggen")
+set(LOGGEN_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/syslog-ng/loggen" CACHE PATH "Use path as the directory to install loggen plugins into")
 
 include(set_debug_options)
 
