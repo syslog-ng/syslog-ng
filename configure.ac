@@ -2562,6 +2562,8 @@ fi
 if test "x$enable_systemd" != "xyes"; then
   if test "x$with_systemd_journal" = "xauto"; then
     with_systemd_journal=no
+  elif test "x$with_systemd_journal" != "xno"; then
+    AC_MSG_ERROR([--with-systemd-journal=$with_systemd_journal requires systemd support (--enable-systemd), but systemd support is disabled or unavailable])
   fi
 fi
 
