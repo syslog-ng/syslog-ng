@@ -253,19 +253,19 @@ jobs:
 
           HOMEBREW_PREFIX="$(brew --prefix)"
           MACPORTS_PREFIX=/opt/local
+          HOMEBREW_OPENSSL_PREFIX="${HOMEBREW_PREFIX}/opt/openssl@3"
           SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
           PYTHONUSERBASE="${HOME}/python_packages"
           THREADS="$(sysctl -n hw.physicalcpu)"
           WARNING_FLAGS="-DNO_PTHREAD_SELF_USAGE_WARNING=1 -Wno-unused-command-line-argument"
-          CFLAGS="-I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include ${WARNING_FLAGS}"
+          # openssl is keg-only, so its headers/libs/pkgconfig files aren't under the
+          # generic HOMEBREW_PREFIX paths; CFLAGS, LDFLAGS and PKG_CONFIG_PATH (below) all
+          # explicitly prioritize HOMEBREW_OPENSSL_PREFIX for this reason, to avoid
+          # picking up a differently-versioned MacPorts openssl instead.
+          CFLAGS="-I${HOMEBREW_OPENSSL_PREFIX}/include -I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include ${WARNING_FLAGS}"
           CXXFLAGS="${CFLAGS}"
-          # brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
-          # correctly the c++14 and c++17 support of clang currently, get the latest one from the git repo
-          if [ ${{ matrix.build-tool }} = autotools ] && [ $CC = clang ]; then
-            mkdir -p ./m4 || true
-            wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4
-          fi
-          LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
+          LDFLAGS="-L${HOMEBREW_OPENSSL_PREFIX}/lib -L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
+          PKG_CONFIG_PATH="${HOMEBREW_OPENSSL_PREFIX}/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${MACPORTS_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
           CONFIGURE_FLAGS="
             --enable-colored-log
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
@@ -299,11 +299,17 @@ jobs:
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
           "
-          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${MACPORTS_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
           PATH="${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/sbin:${PYTHONUSERBASE}/bin:${MACPORTS_PREFIX}/bin:${MACPORTS_PREFIX}/sbin:${PATH}"
 
           gh_export HOMEBREW_PREFIX MACPORTS_PREFIX SYSLOG_NG_INSTALL_DIR PYTHONUSERBASE CC CXX PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS CXXFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
           gh_path "${PATH}"
+
+          # brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
+          # correctly the c++14 and c++17 support of clang currently, get the latest one from the git repo
+          if [ ${{ matrix.build-tool }} = autotools ] && [ $CC = clang ]; then
+            mkdir -p ./m4 || true
+            wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4
+          fi
 
           env | sort
           #cat "${GITHUB_ENV}" | sort
