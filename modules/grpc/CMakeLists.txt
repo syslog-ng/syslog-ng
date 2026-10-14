@@ -34,6 +34,7 @@ if ((NOT DEFINED ENABLE_GRPC OR ENABLE_GRPC) AND (NOT DEFINED ENABLE_CPP OR ENAB
   # FIXME: You cannot remove this otherwise unnecessary if condition and the above
   #        set(GRPC_DEPS_FOUND ON), it causes a strange configure error
   if (GRPC_DEPS_FOUND)
+    # Pin a specific protoc/Protobuf install via -DProtobuf_ROOT=<path> (like autotools: --with-protoc).
     find_package(Protobuf 3.6.1 QUIET)
 
     if (NOT Protobuf_FOUND)

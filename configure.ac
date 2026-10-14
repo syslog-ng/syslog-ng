@@ -543,6 +543,7 @@ AC_ARG_ENABLE(grpc,
     AS_HELP_STRING([--enable-grpc], [Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, Pub/Sub, ClickHouse) (requires C++20) (default: auto)]),
     , enable_grpc="auto")
 
+# CMake equivalent: -DProtobuf_ROOT=PATH (CMake builtin FindProtobuf hint variable).
 AC_ARG_WITH(protoc,
     AS_HELP_STRING([--with-protoc=PATH], [use protoc binary at PATH]))
 
