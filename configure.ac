@@ -438,7 +438,7 @@ AC_ARG_ENABLE(memtrace,
     AS_HELP_STRING([--enable-memtrace], [Enable alternative leak debugging code.]))
 
 AC_ARG_WITH(sanitizer,
-    AS_HELP_STRING([--with-sanitizer=[address/undefined/etc...]], [Enables compiler sanitizer supports (default: no)]),
+    AS_HELP_STRING([--with-sanitizer=[address/thread/undefined/etc...]], [Enables compiler sanitizer supports (default: no)]),
     , with_sanitizer="no")
 
 AC_ARG_ENABLE(force-classic-linking,
@@ -2639,7 +2639,14 @@ dnl sanitizer
 dnl ***************************************************************************
 
 if  test "x$with_sanitizer" != "xno"; then
-   CFLAGS="$CFLAGS -O1 -fsanitize=$with_sanitizer -fno-omit-frame-pointer"
+   CFLAGS="$CFLAGS -O1 -fsanitize=$with_sanitizer -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+   CXXFLAGS="$CXXFLAGS -O1 -fsanitize=$with_sanitizer -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+   case "$with_sanitizer" in
+     *address*)
+       CFLAGS="$CFLAGS -fsanitize-address-use-after-scope"
+       CXXFLAGS="$CXXFLAGS -fsanitize-address-use-after-scope"
+       ;;
+   esac
 fi
 
 dnl ***************************************************************************

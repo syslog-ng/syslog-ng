@@ -47,22 +47,19 @@ if(ENABLE_GCOV)
 endif()
 
 # Sanitizer configuration
-set(SANITIZER "OFF" CACHE STRING "Enable clang sanitizer")
+set(SANITIZER "OFF" CACHE STRING "Enables compiler sanitizer supports ([address/thread/undefined/etc...], default: OFF)")
 set_property(CACHE SANITIZER PROPERTY STRINGS OFF address thread undefined)
 
 if(NOT SANITIZER STREQUAL "OFF")
   SET(SANITIZE_MODE "${SANITIZER}")
   message(STATUS "Sanitizer mode: ${SANITIZE_MODE}")
 
-  set(CMAKE_ADD_C_FLAGS "${CMAKE_ADD_C_FLAGS} -O1 -fsanitize=${SANITIZE_MODE} -fno-optimize-sibling-calls")
-  set(CMAKE_ADD_CXX_FLAGS "${CMAKE_ADD_CXX_FLAGS} -O1 -fsanitize=${SANITIZE_MODE} -fno-optimize-sibling-calls")
+  set(CMAKE_ADD_C_FLAGS "${CMAKE_ADD_C_FLAGS} -O1 -fsanitize=${SANITIZE_MODE} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+  set(CMAKE_ADD_CXX_FLAGS "${CMAKE_ADD_CXX_FLAGS} -O1 -fsanitize=${SANITIZE_MODE} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 
   if(SANITIZER MATCHES "address")
     set(CMAKE_ADD_C_FLAGS "${CMAKE_ADD_C_FLAGS} -fsanitize-address-use-after-scope")
-  endif()
-
-  if(APPLE)
-    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=${SANITIZE_MODE}")
+    set(CMAKE_ADD_CXX_FLAGS "${CMAKE_ADD_CXX_FLAGS} -fsanitize-address-use-after-scope")
   endif()
 endif()
 
