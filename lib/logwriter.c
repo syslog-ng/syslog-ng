@@ -154,6 +154,7 @@ struct _LogWriter
 static LogProtoStatus log_writer_process_out(LogWriter *self);
 static LogProtoStatus log_writer_process_in(LogWriter *self);
 static void log_writer_broken(LogWriter *self, gint notify_code);
+static void log_writer_cancel_reopen_timer(LogWriter *self);
 static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
 static void log_writer_stop_idle_timer(LogWriter *self);
@@ -237,6 +238,12 @@ log_writer_work_finished(gpointer s, gpointer arg)
   main_loop_assert_main_thread();
   self->waiting_for_throttle = FALSE;
 
+  msg_trace("log_writer_work_finished",
+            evt_tag_int("pending_proto_present", self->pending_proto_present),
+            evt_tag_int("work_result", self->work_result),
+            evt_tag_int("proto_is_set", self->proto != NULL),
+            evt_tag_int("watches_running", self->watches_running));
+
   if (self->pending_proto_present)
     {
       /* pending proto is only set in the main thread, so no need to
@@ -277,6 +284,11 @@ log_writer_work_finished(gpointer s, gpointer arg)
     {
       /* reenable polling the source, but only if we're still initialized */
       log_writer_start_watches(self);
+    }
+  else if ((self->super.flags & PIF_INITIALIZED) && !self->proto && !self->watches_running)
+    {
+      log_writer_cancel_reopen_timer(self);
+      log_pipe_notify(self->control, NC_REOPEN_REQUIRED, self);
     }
 }
 
@@ -547,12 +559,18 @@ log_writer_start_watches(LogWriter *self)
 }
 
 static void
+log_writer_cancel_reopen_timer(LogWriter *self)
+{
+  if (iv_timer_registered(&self->reopen_timer))
+    iv_timer_unregister(&self->reopen_timer);
+}
+
+static void
 log_writer_stop_watches(LogWriter *self)
 {
   if (self->watches_running)
     {
-      if (iv_timer_registered(&self->reopen_timer))
-        iv_timer_unregister(&self->reopen_timer);
+      log_writer_cancel_reopen_timer(self);
 
       if (iv_fd_registered(&self->fd_watch))
         iv_fd_unregister(&self->fd_watch);
@@ -1138,6 +1156,10 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
+  msg_trace("log_writer_broken",
+            evt_tag_int("notify_code", notify_code),
+            evt_tag_int("proto_is_set", self->proto != NULL),
+            evt_tag_int("watches_running", self->watches_running));
   log_writer_stop_watches(self);
   log_pipe_notify(self->control, notify_code, self);
 }
@@ -1763,6 +1785,8 @@ log_writer_set_proto(LogWriter *self, LogProtoClient *proto)
 
   if (proto)
     {
+      log_writer_cancel_reopen_timer(self);
+
       LogProtoClientFlowControlFuncs flow_control_funcs;
       flow_control_funcs.ack_callback = log_writer_msg_ack;
       flow_control_funcs.rewind_callback = log_writer_msg_rewind_cb;
@@ -1808,6 +1832,11 @@ log_writer_reopen_deferred(gpointer s)
   gpointer *args = (gpointer *) s;
   LogWriter *self = args[0];
   LogProtoClient *proto = args[1];
+
+  msg_trace("log_writer_reopen_deferred",
+            evt_tag_int("proto_is_set", proto != NULL),
+            evt_tag_int("io_job_working", self->io_job.working),
+            evt_tag_int("watches_running", self->watches_running));
 
   if (!proto)
     {
