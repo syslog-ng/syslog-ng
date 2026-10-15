@@ -35,7 +35,7 @@ add_unit_test(CRITERION TARGET test_findcrlf)
 add_unit_test(CRITERION TARGET test_ringbuffer)
 add_unit_test(CRITERION TARGET test_hostid)
 add_unit_test(CRITERION TARGET test_zone)
-add_unit_test(CRITERION TARGET test_logwriter DEPENDS syslogformat)
+add_unit_test(CRITERION LIBTEST TARGET test_logwriter DEPENDS syslogformat)
 add_unit_test(CRITERION TARGET test_thread_wakeup)
 add_unit_test(CRITERION TARGET test_generic_number)
 

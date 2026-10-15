@@ -32,12 +32,15 @@
 #include "logqueue-fifo.h"
 #include "timeutils/cache.h"
 #include "msg-format.h"
+#include "libtest/mock-transport.h"
+#include "logproto/logproto-text-client.h"
 
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <iv.h>
+#include <unistd.h>
 
 MsgFormatOptions parse_options;
 
@@ -228,6 +231,180 @@ Test(logwriter, test_logwriter)
     _assert_logwriter_output(test_cases[i]);
 
   msg_format_options_destroy(&parse_options);
+  app_shutdown();
+  iv_deinit();
+  cfg_free(configuration);
+}
+
+/* Regression tests: a valid proto must cancel any pending reopen_timer,
+ * otherwise it can fire later and trigger a spurious duplicate
+ * reconnect. */
+
+typedef struct _MockControlPipe
+{
+  LogPipe super;
+  gint notify_count;
+  gint last_notify_code;
+} MockControlPipe;
+
+static gint
+_mock_control_pipe_notify(LogPipe *s, gint notify_code, gpointer user_data)
+{
+  MockControlPipe *self = (MockControlPipe *) s;
+
+  self->notify_count++;
+  self->last_notify_code = notify_code;
+  return NR_OK;
+}
+
+static MockControlPipe *
+_mock_control_pipe_new(GlobalConfig *cfg)
+{
+  MockControlPipe *self = g_new0(MockControlPipe, 1);
+
+  log_pipe_init_instance(&self->super, cfg);
+  self->super.notify = _mock_control_pipe_notify;
+  self->last_notify_code = -1;
+  return self;
+}
+
+/* Real LogProtoClient over a LogTransportMock (as in test_file_writer.c).
+ * The pipe's read end is used so the fd never becomes readable/writable,
+ * keeping LogWriter's real fd-watch idle for the test's lifetime. */
+static LogProtoClient *
+_new_mock_proto(LogProtoClientOptionsStorage *proto_options, gint *fds_out)
+{
+  gint fds[2];
+
+  cr_assert_eq(pipe(fds), 0, "failed to create pipe for mock transport");
+
+  LogTransport *transport = log_transport_mock_stream_new(LTM_EOF);
+  transport->fd = fds[0];
+
+  fds_out[0] = fds[0];
+  fds_out[1] = fds[1];
+
+  return log_proto_text_client_new(transport, proto_options);
+}
+
+static LogWriter *
+_construct_writer(GlobalConfig *cfg, LogWriterOptions *opt, MockControlPipe *control, LogQueue *queue)
+{
+  LogWriter *writer = log_writer_new(0, cfg);
+
+  log_writer_set_options(writer, &control->super, opt, NULL, NULL);
+  log_writer_set_queue(writer, queue);
+  cr_assert(log_pipe_init((LogPipe *) writer), "LogWriter initialization failed");
+  return writer;
+}
+
+static void
+_stop_main_loop(gpointer user_data)
+{
+  iv_quit();
+}
+
+/* Runs the real ivykis loop for a bounded time, letting any registered
+ * timer (e.g. reopen_timer) actually fire. */
+static void
+_run_main_loop_for(gint seconds)
+{
+  struct iv_timer stop_timer;
+
+  iv_validate_now();
+  IV_TIMER_INIT(&stop_timer);
+  stop_timer.cookie = NULL;
+  stop_timer.handler = _stop_main_loop;
+  stop_timer.expires = iv_now;
+  stop_timer.expires.tv_sec += seconds;
+
+  iv_timer_register(&stop_timer);
+  iv_main();
+  if (iv_timer_registered(&stop_timer))
+    iv_timer_unregister(&stop_timer);
+}
+
+Test(logwriter,
+     test_logwriter_installing_a_valid_proto_cancels_a_pending_reopen_timer)
+{
+  configuration = cfg_new_snippet();
+  app_startup();
+
+  LogWriterOptions opt = {0};
+  log_writer_options_defaults(&opt);
+  log_writer_options_init(&opt, configuration, LWO_NO_STATS);
+  opt.time_reopen = 1;
+
+  LogQueue *queue = log_queue_fifo_new(1000, NULL, STATS_LEVEL0, NULL, NULL);
+  MockControlPipe *control = _mock_control_pipe_new(configuration);
+  LogWriter *writer = _construct_writer(configuration, &opt, control, queue);
+
+  /* Connection break: arms reopen_timer. */
+  log_writer_reopen(writer, NULL);
+  cr_assert_not(log_writer_opened(writer));
+  cr_assert_eq(control->notify_count, 0,
+               "installing a NULL proto must not notify by itself");
+
+  /* The owner reopens us with a valid proto before the timer fires. */
+  gint fds[2];
+  LogProtoClient *proto = _new_mock_proto(&opt.proto_options, fds);
+  log_writer_reopen(writer, proto);
+  cr_assert(log_writer_opened(writer));
+
+  /* Before the fix, the stale timer would still fire here and notify
+   * again despite the writer already being healthy. */
+  _run_main_loop_for(opt.time_reopen + 1);
+
+  cr_assert_eq(control->notify_count, 0,
+               "a stale reopen_timer fired and requested a duplicate reconnect "
+               "even though a valid proto was already installed");
+
+  cr_expect(log_pipe_deinit((LogPipe *) writer));
+  log_pipe_unref((LogPipe *) writer);
+  log_pipe_unref(&control->super);
+  log_queue_unref(queue);
+  log_writer_options_destroy(&opt);
+  close(fds[0]);
+  close(fds[1]);
+
+  app_shutdown();
+  iv_deinit();
+  cfg_free(configuration);
+}
+
+Test(logwriter,
+     test_logwriter_repeated_failed_reopen_leaves_exactly_one_pending_timer)
+{
+  configuration = cfg_new_snippet();
+  app_startup();
+
+  LogWriterOptions opt = {0};
+  log_writer_options_defaults(&opt);
+  log_writer_options_init(&opt, configuration, LWO_NO_STATS);
+  opt.time_reopen = 1;
+
+  LogQueue *queue = log_queue_fifo_new(1000, NULL, STATS_LEVEL0, NULL, NULL);
+  MockControlPipe *control = _mock_control_pipe_new(configuration);
+  LogWriter *writer = _construct_writer(configuration, &opt, control, queue);
+
+  /* Two failed reopens in a row must leave only one pending timer. */
+  log_writer_reopen(writer, NULL);
+  log_writer_reopen(writer, NULL);
+  cr_assert_not(log_writer_opened(writer));
+  cr_assert_eq(control->notify_count, 0);
+
+  _run_main_loop_for(opt.time_reopen + 1);
+
+  cr_assert_eq(control->notify_count, 1,
+               "expected exactly one reconnect request from the pending reopen timer");
+  cr_assert_eq(control->last_notify_code, NC_REOPEN_REQUIRED);
+
+  cr_expect(log_pipe_deinit((LogPipe *) writer));
+  log_pipe_unref((LogPipe *) writer);
+  log_pipe_unref(&control->super);
+  log_queue_unref(queue);
+  log_writer_options_destroy(&opt);
+
   app_shutdown();
   iv_deinit();
   cfg_free(configuration);
