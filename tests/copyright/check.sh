@@ -394,7 +394,7 @@ is_balabit_copyright() {
  grep -qE "\
 ^\
 (Copyright \(c\) ([0-9, -]+) [^ <][^<]*<br>)*\
-Copyright \(c\) ([0-9, -]+) (Bala[bB]it)|((One Identity)( LLC\.)?)<br>\
+Copyright \(c\) ([0-9, -]+) (Bala[bB]it)|((One Identity)( LLC\.?)?)<br>\
 (Copyright \(c\) ([0-9, -]+) [^ <][^<]*<br>)*\
 $"
  return $?

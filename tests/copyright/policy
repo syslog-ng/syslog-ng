@@ -249,7 +249,8 @@ modules/python-modules/syslogng/modules/kubernetes/.*
 modules/ebpf/.*
 modules/python-modules/syslogng/modules/hypr/.*
 modules/python-modules/syslogng/modules/example/.*
-modules/python-modules/syslogng/modules/s3/.*
+modules/python-modules/syslogng/modules/s3/(__init__|compressable_file_buffer)\.py$
+modules/python-modules/syslogng/modules/s3/scl
 modules/python-modules/syslogng/modules/webhook/scl/.*
 modules/python-modules/syslogng/modules/webhook/__init__.py
 modules/python-modules/setup\.py
