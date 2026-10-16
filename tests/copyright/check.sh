@@ -33,49 +33,63 @@ main() {
   return 1
  fi
 
- REPO="$1"
- BUILDDIR="$2"
- DATADIR="`dirname "$0"`"
+ REPO="$(cd "$1" && pwd)" ||
+  { echo "error: not a dir $1" >&2; return 1; }
+ BUILDDIR="$(cd "$2" && pwd)" ||
+  { echo "error: not a dir $2" >&2; return 1; }
+ DATADIR="$(cd "$(dirname "$0")" && pwd)" ||
+  { echo "error: can't locate license data" >&2; return 1; }
  POLICY="$DATADIR/${3-policy}"
  MAXDEPTH=${MAXDEPTH:=""}
- local WORKDIR="`mktemp -t "cpy-XXXXXXX.check_copyright.tmp"`"
- rm "$WORKDIR" &&
- mkdir "$WORKDIR" ||
-  { echo "error: can't create $WORKDIR"; return 1 ; }
 
- [ -d "$BUILDDIR" ] ||
-  { echo "error: not a dir $BUILDDIR"; return 1 ; }
- [ -d "$DATADIR" ] ||
-  { echo "error: not a dir $DATADIR"; return 1 ; }
  [ -f "$POLICY" ] ||
   { echo "error: not a file $POLICY"; return 1 ; }
+ local WORKDIR
+ WORKDIR="$(mktemp -d "${TMPDIR:-/tmp}/cpy.XXXXXXX")" ||
+  { echo "error: can't create copyright work directory" >&2; return 1; }
  local LOG="$BUILDDIR/copyright-run.log"
  local ERR="$BUILDDIR/copyright-err.log"
 
  echo "debug: more verbose copyright log in $LOG" >&2
 
  local SIGS="2 3 6 7 8 9 11 15"
- trap -- "rm --recursive \"$WORKDIR\" ; exit 1;" $SIGS
+ trap 'rm -rf "$WORKDIR"; exit 1' $SIGS
 
  cd "$REPO" ||
-  { echo "error: not a dir $REPO"; return 1 ; }
+  { echo "error: not a dir $REPO"; rm -rf "$WORKDIR"; trap - $SIGS; return 1; }
 
- main_logged 2>&1 |
+ # Keep execution failures separate from copyright diagnostics in the log.
+ (
+  set -e -o pipefail
+  main_logged
+ ) 2>&1 | tee "$LOG" |
  if [ 0$COPYRIGHTVERBOSITY -ge 2 ]; then
-  tee "$LOG"
-
-  grep "^error: " "$LOG" > "$ERR"
+  cat
  else
-  tee "$LOG" |
-  grep "^error: " |
-  tee "$ERR"
+  grep "^error: " || [ "$?" -eq 1 ]
+ fi
+ local RUN_STATUS=("${PIPESTATUS[@]}")
+ local CHECK_STATUS=0
+ local STATUS
+ for STATUS in "${RUN_STATUS[@]}"; do
+  if [ "$STATUS" -ne 0 ]; then
+   CHECK_STATUS=1
+  fi
+ done
+
+ if [ "$CHECK_STATUS" -ne 0 ]; then
+  echo "error: copyright check did not complete; see $LOG" | tee -a "$LOG" >&2
  fi
 
- local ERRORCNT="`grep --count --extended-regexp "^error: " "$ERR"`"
+ grep "^error: " "$LOG" > "$ERR" || [ "$?" -eq 1 ] ||
+  { rm -rf "$WORKDIR"; trap - $SIGS; return 1; }
+ local ERRORCNT
+ ERRORCNT="$(awk '/^error: / { count++ } END { print count+0 }' "$ERR")" ||
+  { rm -rf "$WORKDIR"; trap - $SIGS; return 1; }
 
  {
   if [ 0$COPYRIGHTVERBOSITY -ge 2 ]; then
-   if [ 0$ERRORCNT -eq 0 ]; then
+   if [ "$CHECK_STATUS" -eq 0 ] && [ 0$ERRORCNT -eq 0 ]; then
     echo "no problem, we're as clean as the ocean" >&2
    else
     echo "$ERRORCNT errors in our philosophy - bummer" >&2
@@ -86,19 +100,13 @@ main() {
  } 2>&1 |
  tee -a "$LOG"
 
- rm --recursive "$WORKDIR" 2>/dev/null
- trap -- "" $SIGS
- [ 0$ERRORCNT -eq 0 ]
+ rm -rf "$WORKDIR" || return 1
+ trap - $SIGS
+ [ "$CHECK_STATUS" -eq 0 ] && [ 0$ERRORCNT -eq 0 ]
 }
 
 main_logged() {
- rm --recursive "$WORKDIR" 2>/dev/null
- mkdir --parents "$WORKDIR" || return 1
-
- if ! parse_expected_licenses; then
-  echo "error: can't parse licenses" >&2
-  return 1
- fi
+ parse_expected_licenses
 
  LICENSES="$WORKDIR/licenses.txt"
  HOLDERS="$WORKDIR/holders.txt"
@@ -116,7 +124,8 @@ main_logged() {
  prune_ignored_paths |
  sort |
  while read FILE; do
-  local PATHMATCH="`try_match_path "$FILE"`"
+  local PATHMATCH
+  PATHMATCH="$(try_match_path "$FILE")"
 
   if [ "$PATHMATCH" = "ignore" ]; then
    if [ 0$COPYRIGHTVERBOSITY -ge 2 ]; then
@@ -143,13 +152,16 @@ try_match_path() {
  do
   if
    echo "$FILE" |
-   grep --quiet --extended-regexp --file "$PATFILE"
+   grep -qE -f "$PATFILE"
   then
    local KIND="`\
     echo "$PATFILE" |
-    sed --regexp-extended "s~^.*/[0-9]*_license\.path\.([^/]+)\.txt$~\1~"`"
+    sed -E "s~^.*/[0-9]*_license\.path\.([^/]+)\.txt$~\1~"`"
    local PATHMATCH="$KIND"
    break
+  else
+   local MATCH_STATUS=$?
+   [ "$MATCH_STATUS" -eq 1 ] || return "$MATCH_STATUS"
   fi
  done
  echo "$PATHMATCH"
@@ -158,15 +170,13 @@ try_match_path() {
 try_process_holder_license() {
  local PATHMATCH="$1"
 
- read
- HOLDER="$REPLY"
- read
- LICENSE="$REPLY"
+ IFS= read -r HOLDER || :
+ IFS= read -r LICENSE || :
 
  if [ -z "$HOLDER" -a -z "$LICENSE" ]; then
   {
    if
-    grep --quiet --ignore-case "copyright" "$FILE"
+    grep -qi "copyright" "$FILE"
    then
     printf "error: can't parse $FILE (nonstandard license declaration?)"
    else
@@ -206,7 +216,7 @@ try_process_holder_license() {
    fi
   else
    printf "%s" "$HOLDER" |
-   unescape >> $HOLDERS
+   unescape >> "$HOLDERS"
   fi
 
   if [ -z "$LICENSE" ]; then
@@ -224,18 +234,20 @@ try_process_holder_license() {
  fi
 
  if [ -z "$HOLDER" -o -z "$LICENSE" ]; then
-  printf "%s\n" "$FILE" >> $MISSING
+  printf "%s\n" "$FILE" >> "$MISSING"
  fi
 }
 
 got_both_holder_and_license() {
-   printf "%s\n" "$LICENSE" >> $LICENSES
+   printf "%s\n" "$LICENSE" >> "$LICENSES"
 
-   local LICTEXTMATCH="`\
-    grep --line-regexp --fixed-strings --with-filename \
-     "$LICENSE" "$WORKDIR"/license.text.*.txt |
-    head --lines 1 |
-    sed --regexp-extended "s~^.*/license\.text\.([^/]+)\.txt:.*$~\1~"`"
+   local LICTEXTMATCH
+   LICTEXTMATCH="$(
+    {
+     grep -xFH "$LICENSE" "$WORKDIR"/license.text.*.txt || [ "$?" -eq 1 ]
+    } |
+    sed -nE "1s~^.*/license\.text\.([^/]+)\.txt:.*$~\1~p"
+   )"
 
    if [ -n "$PATHMATCH" -a -n "$LICTEXTMATCH" ]; then
     compare_expected_detected
@@ -301,7 +313,7 @@ extract_holder_license() {
     return $?
  esac
 
- local EXT="`echo "$FILE" | sed -r "s~^.*\.([^.]+)$~\1~"`"
+ local EXT="`echo "$FILE" | sed -E "s~^.*\.([^.]+)$~\1~"`"
  case "$EXT" in
   c|h|cpp|hpp|m|mm|ym|java|table)
     extract_holder_license_c
@@ -315,10 +327,10 @@ extract_holder_license() {
 }
 
 extract_holder_license_sh() {
-sed --regexp-extended "
+sed -E "
  s~^\
-(#![^<]*<br>|)\
-(#[^<]*<br>|)\
+(#![^<]*<br>)?\
+(#[^<]*<br>)?\
 #############################################################################<br>\
 (\
 (# Copyright \(c\) ([0-9, -]+) [^ <][^<]*<br>)+\
@@ -326,28 +338,29 @@ sed --regexp-extended "
 #<br>\
 (\
 #( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>\
-(#(| [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>)*\
+(#( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)?<br>)*\
 #( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>\
 |\
-(#(| [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>)*\
+(#( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)?<br>)*\
 #( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>\
 )\
 #<br>\
 #############################################################################<br>\
 .*$\
-~\3\n\6~
+~\3\\
+\6~
 t success
  s~^.*$~~
 :success
 " |
- sed --regexp-extended "
+ sed -E "
   s~(^|<br>)# ?~\1~g
 "
 }
 
 extract_holder_license_c() {
 # note that holders must be present in the present implementation
-sed --regexp-extended "
+sed -E "
  s~^\
  */\*<br>\
 (\
@@ -356,28 +369,29 @@ sed --regexp-extended "
 ( \*<br>)+\
 (\
  \*( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>\
-( \*(| [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>)*\
+( \*( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)?<br>)*\
  \*( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>\
 |\
-( \*(| [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>)*\
+( \*( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)?<br>)*\
  \*( [^ <]([^<]|<[^b][^>]*>|<b[^r>][^>]*>|<br[^>]+>)*)<br>\
 )\
 ( \*<br>)*\
  \*/<br>\
 .*$\
-~\1\n\5~
+~\1\\
+\5~
 t success
  s~^.*$~~
 :success
 " |
- sed --regexp-extended "
+ sed -E "
   s~(^|<br>) \* ?~\1~g
 "
 }
 
 is_balabit_copyright() {
  echo "$@" |
- grep --quiet --extended-regexp "\
+ grep -qE "\
 ^\
 (Copyright \(c\) ([0-9, -]+) [^ <][^<]*<br>)*\
 Copyright \(c\) ([0-9, -]+) (Bala[bB]it)|((One Identity)( LLC\.)?)<br>\
@@ -387,10 +401,10 @@ $"
 }
 
 parse_expected_licenses() {
- generate_known_licenses || return 1
+ generate_known_licenses
 
  cat "$POLICY" |
- grep --invert-match --extended-regexp "^\s*$" |
+ grep -vE "^[[:space:]]*$" |
  sed "s~[\\]~&&~g" |
  sed "
   s~^#.*$~# ~
@@ -409,12 +423,7 @@ parse_expected_licenses() {
    L)
     local LICENSE="`
      echo "$LINE" |
-     sed -rn "
-      s~^(ignore|((GPLv2\+|LGPLv2\.1\+)(_SSL)?|4-BSD)(,non-balabit)?)$~&~
-      T e
-      p
-      :e
-     "
+     sed -nE "/^(ignore|((GPLv2\+|LGPLv2\.1\+)(_SSL)?|4-BSD)(,non-balabit)?)$/p"
     `"
     if [ -z "$LICENSE" ]; then
      echo "error: can't parse expected license in policy: '${LINE}'" >&2
@@ -425,7 +434,7 @@ parse_expected_licenses() {
    P)
     if [ -n "$LICENSE" ]; then
      echo "$LINE" |
-     sed --regexp-extended "
+     sed -E "
       s~^~^~
       s~$~(/.*)?$~
      " >> "$WORKDIR/${PRI}_license.path.$LICENSE.txt"
@@ -475,23 +484,23 @@ generate_known_licenses() {
 prune_ignored_paths() {
  local IGNORE="$WORKDIR/ignore.paths.txt"
  if [ ! -f "$IGNORE" ]; then
-  git submodule status |
-  cut -d " " -f 3 |
-  sed --regexp-extended "
+  git ls-files --stage |
+  awk '$1 == "160000" { sub(/^[^\t]*\t/, ""); print }' |
+  sed -E "
    s~^~^~
    s~$~(/.*)?$~
   " |
   cat > "$IGNORE"
-  echo "*~" >> "$IGNORE"
+  echo '~$' >> "$IGNORE"
  fi
 
- grep --invert-match --extended-regexp --file "$IGNORE"
+ grep -vE -f "$IGNORE" || [ "$?" -eq 1 ]
 }
 
 sort_holders_licenses() {
  {
-  for FILE in $LICENSES $HOLDERS; do
-   local DEST="$BUILDDIR/`basename $FILE`"
+  for FILE in "$LICENSES" "$HOLDERS"; do
+   local DEST="$BUILDDIR/`basename "$FILE"`"
    if [ -f "$FILE" ]; then
     cat "$FILE" |
     sort |
@@ -508,7 +517,7 @@ sort_holders_licenses() {
   if [ -f "$HOLDERS" ]; then
    local DEST="$BUILDDIR/holders.name.txt"
    cat "$HOLDERS" |
-   sed --regexp-extended "s~^ \* Copyright \(c\) [0-9, -]*~~" |
+   sed -E "s~^ \* Copyright \(c\) [0-9, -]*~~" |
    sort |
    uniq -c |
    sort -n > "$DEST"
@@ -526,10 +535,13 @@ sort_holders_licenses() {
 join_lines() {
  sed "
 :join_lines
-N
-s~\n~<br>~
-t join_lines" "$@" |
-sed "s~$~<br>~"
+\$! {
+ N
+ s~\n~<br>~
+ b join_lines
+}
+s~$~<br>~
+" "$@"
 }
 
 escape() {
@@ -542,7 +554,8 @@ s~>~\&gt;~g
 
 unescape() {
  sed "
-s~<br>~\n~g
+s~<br>~\\
+~g
 s~&gt;~>~g
 s~&lt;~<~g
 s~&amp;~\&~g
@@ -567,7 +580,7 @@ preview() {
 
  cat "$@" |
  if [ -n "$PREVIEW" ]; then
-  dd bs=1 count=$COLS status=noxfer 2>/dev/null
+  dd bs=1 count=$COLS 2>/dev/null
  else
   cat
  fi
