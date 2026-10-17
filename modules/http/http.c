@@ -34,6 +34,13 @@ http_dd_insert_response_handler(LogDriver *d, HttpResponseHandler *response_hand
   http_response_handlers_insert(self->response_handlers, response_handler);
 }
 
+gboolean
+http_dd_append_response_body_handler(LogDriver *d, const gchar *pattern, HttpResponseAction action, GError **error)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+  return http_response_body_handlers_append(self->response_body_handlers, pattern, action, error);
+}
+
 static gboolean
 _is_url_templated(const gchar *url)
 {
@@ -505,6 +512,7 @@ http_dd_free(LogPipe *s)
   g_list_free_full(self->headers, g_free);
   http_load_balancer_free(self->load_balancer);
   http_response_handlers_free(self->response_handlers);
+  http_response_body_handlers_free(self->response_body_handlers);
 
   log_threaded_dest_driver_free(s);
 }
@@ -544,6 +552,7 @@ http_dd_new(GlobalConfig *cfg)
                                        SYSLOG_NG_VERSION, curl_info->version);
 
   self->response_handlers = http_response_handlers_new();
+  self->response_body_handlers = http_response_body_handlers_new();
   self->content_compression = CURL_COMPRESSION_DEFAULT;
 
   return &self->super.super.super;
