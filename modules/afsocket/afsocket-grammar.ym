@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -858,10 +859,6 @@ dest_tls_option
           {
             tls_context_set_ocsp_stapling_verify(last_tls_context, $3);
           }
-        | KW_EXTENDED_KEY_USAGE_VERIFY '(' yesno ')'
-          {
-            tls_context_set_extended_key_usage_verify(last_tls_context, $3);
-          }
         ;
 
 tls_options
@@ -894,6 +891,10 @@ tls_option
 	    GError *error = NULL;
 	    CHECK_ERROR_GERROR(tls_context_set_keylog_file(last_tls_context, $3, &error), @3, error, "Error setting keylog-file()");
 	    free($3);
+	  }
+	| KW_EXTENDED_KEY_USAGE_VERIFY '(' yesno ')'
+	  {
+	    tls_context_set_extended_key_usage_verify(last_tls_context, $3);
 	  }
 	| KW_CERT_FILE '(' path_check ')'
 	  {
