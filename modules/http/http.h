@@ -68,6 +68,7 @@ typedef struct
   LogTemplate *body_template;
   LogTemplateOptions template_options;
   HttpResponseHandlers *response_handlers;
+  HttpResponseBodyHandlers *response_body_handlers;
 } HTTPDestinationDriver;
 
 gboolean http_dd_init(LogPipe *s);
@@ -75,6 +76,8 @@ gboolean http_dd_deinit(LogPipe *s);
 LogDriver *http_dd_new(GlobalConfig *cfg);
 
 gboolean http_dd_set_urls(LogDriver *d, GList *urls, GError **error);
+gboolean http_dd_append_response_body_handler(LogDriver *d, const gchar *pattern, HttpResponseAction action,
+                                              GError **error);
 void http_dd_set_user(LogDriver *d, const gchar *user);
 void http_dd_set_password(LogDriver *d, const gchar *password);
 void http_dd_set_method(LogDriver *d, const gchar *method);

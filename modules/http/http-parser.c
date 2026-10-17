@@ -54,6 +54,7 @@ static CfgLexerKeyword http_keywords[] =
   { "ocsp_stapling_verify", KW_OCSP_STAPLING_VERIFY },
   { "accept_redirects", KW_ACCEPT_REDIRECTS },
   { "response_action",  KW_RESPONSE_ACTION },
+  { "response_body_action", KW_RESPONSE_BODY_ACTION },
   { "success",          KW_SUCCESS },
   { "retry",            KW_RETRY },
   { "drop",             KW_DROP },

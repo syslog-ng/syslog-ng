@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2024 Axoflow
  * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2018-2022 One Identity LLC.
@@ -612,17 +613,16 @@ _debug_response_info(HTTPDestinationWorker *self, const gchar *url, glong http_c
 }
 
 static LogThreadedResult
-_custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpResponseHandler *response_handler)
+_map_custom_http_result(HTTPDestinationWorker *self, const gchar *url, glong http_code, HttpResult result,
+                        const gchar *handled_by)
 {
-  HttpResult result = response_handler->action(response_handler->user_data);
   g_assert(result < HTTP_RESULT_MAX);
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  glong http_code = response_handler->status_code;
 
   switch (result)
     {
     case HTTP_RESULT_SUCCESS:
-      msg_debug("http: handled by response_action",
+      msg_debug(handled_by,
                 evt_tag_str("action", "success"),
                 evt_tag_str("url", url),
                 evt_tag_int("status_code", http_code),
@@ -632,7 +632,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
       return LTR_SUCCESS;
 
     case HTTP_RESULT_RETRY:
-      msg_notice("http: handled by response_action",
+      msg_notice(handled_by,
                  evt_tag_str("action", "retry"),
                  evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
@@ -642,7 +642,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
       return LTR_ERROR;
 
     case HTTP_RESULT_DROP:
-      msg_notice("http: handled by response_action",
+      msg_notice(handled_by,
                  evt_tag_str("action", "drop"),
                  evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
@@ -652,7 +652,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
       return LTR_DROP;
 
     case HTTP_RESULT_DISCONNECT:
-      msg_notice("http: handled by response_action",
+      msg_notice(handled_by,
                  evt_tag_str("action", "disconnect"),
                  evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
@@ -666,6 +666,41 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
     };
 
   return LTR_MAX;
+}
+
+static LogThreadedResult
+_custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpResponseHandler *response_handler)
+{
+  HttpResult result = response_handler->action(response_handler->user_data);
+  return _map_custom_http_result(self, url, response_handler->status_code, result,
+                                 "http: handled by response_action");
+}
+
+/* A request the status code mapped to success can still be reported as
+ * failed in the response body (for example an API answering 200 with
+ * {"status": "error"}). response-body-action() patterns are matched against
+ * the captured part of the body (HTTP_RESPONSE_MAX_LENGTH bytes); the first
+ * match decides the result. */
+static LogThreadedResult
+_apply_response_body_action(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
+  if (http_response_body_handlers_is_empty(owner->response_body_handlers))
+    return LTR_SUCCESS;
+
+  HttpResponseBodyHandler *handler = http_response_body_handlers_lookup(owner->response_body_handlers,
+                                     self->response_buffer->str,
+                                     self->response_buffer->len);
+  if (!handler)
+    return LTR_SUCCESS;
+
+  msg_debug("http: response body matched response-body-action()",
+            evt_tag_str("pattern", handler->pattern_str),
+            evt_tag_str("url", url),
+            evt_tag_str("driver", owner->super.super.super.id));
+  return _map_custom_http_result(self, url, http_code, handler->action(handler->user_data),
+                                 "http: handled by response_body_action");
 }
 
 static gboolean
@@ -812,7 +847,10 @@ _flush_on_target(HTTPDestinationWorker *self, const gchar *url)
       return LTR_RETRY;
     }
 
-  return _map_http_status_code(self, url, http_code);
+  LogThreadedResult result = _map_http_status_code(self, url, http_code);
+  if (result == LTR_SUCCESS)
+    result = _apply_response_body_action(self, url, http_code);
+  return result;
 }
 
 static gboolean
