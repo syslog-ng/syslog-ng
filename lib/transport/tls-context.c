@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
@@ -394,10 +395,35 @@ _load_pkcs12_file(TLSContext *self, const gchar *pkcs12_file)
   return pkcs12;
 }
 
-static gboolean
-_extract_pkcs12_content(PKCS12 *pkcs12, EVP_PKEY **private_key, X509 **cert, STACK_OF(X509) **ca_list)
+static TLSContextLoadResult
+_extract_pkcs12_content(TLSContext *self, PKCS12 *pkcs12, EVP_PKEY **private_key, X509 **cert,
+                        STACK_OF(X509) **ca_list)
 {
-  return PKCS12_parse(pkcs12, "", private_key, cert, ca_list);
+  /* a file without a password (or with an empty one) */
+  if (PKCS12_parse(pkcs12, "", private_key, cert, ca_list))
+    return TLS_CONTEXT_OK;
+
+  if (PKCS12_verify_mac(pkcs12, "", 0) || PKCS12_verify_mac(pkcs12, NULL, 0))
+    return TLS_CONTEXT_ERROR;
+
+  /* password protected: the password is a credential named after the file, like for key-file() */
+  ERR_clear_error();
+  Secret *secret = secret_storage_get_secret_by_name(self->pkcs12_file);
+  if (!secret)
+    return TLS_CONTEXT_PASSWORD_ERROR;
+
+  gchar *password = g_strndup(secret->data, secret->len);
+  secret_storage_put_secret(secret);
+
+  TLSContextLoadResult result = TLS_CONTEXT_OK;
+  if (!PKCS12_verify_mac(pkcs12, password, -1))
+    result = TLS_CONTEXT_PASSWORD_ERROR;
+  else if (!PKCS12_parse(pkcs12, password, private_key, cert, ca_list))
+    result = TLS_CONTEXT_ERROR;
+
+  OPENSSL_cleanse(password, strlen(password));
+  g_free(password);
+  return result;
 }
 
 static gboolean
@@ -416,22 +442,23 @@ tls_context_add_certs(TLSContext *self, STACK_OF(X509) *ca_list)
   return TRUE;
 }
 
-static gboolean
+static TLSContextLoadResult
 tls_context_load_pkcs12(TLSContext *self)
 {
   PKCS12 *pkcs12 = _load_pkcs12_file(self, self->pkcs12_file);
 
   if (!pkcs12)
-    return FALSE;
+    return TLS_CONTEXT_FILE_ACCES_ERROR;
 
-  EVP_PKEY *private_key;
-  X509 *cert;
+  EVP_PKEY *private_key = NULL;
+  X509 *cert = NULL;
   STACK_OF(X509) *ca_list = NULL;
 
-  if (!_extract_pkcs12_content(pkcs12, &private_key, &cert, &ca_list))
+  TLSContextLoadResult extracted = _extract_pkcs12_content(self, pkcs12, &private_key, &cert, &ca_list);
+  if (extracted != TLS_CONTEXT_OK)
     {
       PKCS12_free(pkcs12);
-      return FALSE;
+      return extracted;
     }
 
   PKCS12_free(pkcs12);
@@ -448,7 +475,7 @@ error:
   X509_free(cert);
   EVP_PKEY_free(private_key);
   sk_X509_pop_free(ca_list, X509_free);
-  return loaded;
+  return loaded ? TLS_CONTEXT_OK : TLS_CONTEXT_ERROR;
 }
 
 static gboolean
@@ -574,7 +601,10 @@ tls_context_setup_context(TLSContext *self)
         msg_warning("WARNING: pkcs12-file() is specified, key-file() and cert-file() will be omitted",
                     tls_context_format_location_tag(self));
 
-      if (!tls_context_load_pkcs12(self))
+      TLSContextLoadResult r = tls_context_load_pkcs12(self);
+      if (r == TLS_CONTEXT_PASSWORD_ERROR)
+        goto password_error;
+      if (r != TLS_CONTEXT_OK)
         goto error;
     }
   else
@@ -1056,7 +1086,8 @@ tls_context_unref(TLSContext *self)
 const gchar *
 tls_context_get_key_file(TLSContext *self)
 {
-  return self->key_file;
+  /* the file whose password is looked up in the credential store: pkcs12-file() wins over key-file() */
+  return self->pkcs12_file ? self->pkcs12_file : self->key_file;
 }
 
 GQuark
