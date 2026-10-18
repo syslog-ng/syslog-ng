@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2014 Balázs Scheidler
  *
@@ -78,7 +79,7 @@ parse_msg_ref(LogTemplateCompiler *self)
           /* syntax: ${name}@1 to denote the log message index in the correlation state */
           while ((*self->cursor) >= '0' && (*self->cursor) <= '9')
             {
-              self->msg_ref += self->msg_ref * 10 + ((*self->cursor) - '0');
+              self->msg_ref = self->msg_ref * 10 + ((*self->cursor) - '0');
               self->cursor++;
             }
           self->msg_ref += 1;
