@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2019 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -167,19 +168,36 @@ Test(test_snmp_dest, check_required_params)
   gchar err_msg[128];
 
   /* check parameters of an empty driver struct */
-  cr_assert_not(snmpdest_check_required_params(driver, err_msg));
+  cr_assert_not(snmpdest_check_required_params(driver, err_msg, sizeof(err_msg)));
 
   /* setup snmp driver with valid parameters */
   snmpdest_dd_set_snmp_obj(driver, cfg, ".1.3.6.1.4.1.18372.3.1.1.1.1.1.0", "Octetstring", "admin");
   snmpdest_dd_set_trap_obj(driver, cfg, ".1.3.6.1.6.3.1.1.4.1.0", "Objectid", ".1.3.6.1.4.1.18372.3.1.1.1.2.1");
   snmpdest_dd_set_host(driver, "127.0.0.1");
   snmpdest_dd_set_version(driver, "v2c");
-  cr_assert(snmpdest_check_required_params(driver, err_msg), "check required param failed %s", err_msg);
+  cr_assert(snmpdest_check_required_params(driver, err_msg, sizeof(err_msg)), "check required param failed %s", err_msg);
 
   /* for v3 version the engine_id shall be set as well*/
   snmpdest_dd_set_version(driver, "v3");
   snmpdest_dd_set_engine_id(driver, "0x12345");
-  cr_assert(snmpdest_check_required_params(driver, err_msg));
+  cr_assert(snmpdest_check_required_params(driver, err_msg, sizeof(err_msg)));
+}
+
+Test(test_snmp_dest, check_required_params_truncates_a_long_trap_type_in_the_error)
+{
+  LogDriver *driver = (LogDriver *)snmp_driver;
+  gchar err_msg[128];
+  gchar long_type[512];
+
+  memset(long_type, 'x', sizeof(long_type) - 1);
+  long_type[sizeof(long_type) - 1] = '\0';
+
+  snmpdest_dd_set_snmp_obj(driver, cfg, ".1.3.6.1.4.1.18372.3.1.1.1.1.1.0", "Octetstring", "admin");
+  snmpdest_dd_set_trap_obj(driver, cfg, ".1.3.6.1.6.3.1.1.4.1.0", long_type, ".1.3.6.1.4.1.18372.3.1.1.1.2.1");
+  snmpdest_dd_set_host(driver, "127.0.0.1");
+  cr_assert_not(snmpdest_check_required_params(driver, err_msg, sizeof(err_msg)));
+  cr_assert_lt(strlen(err_msg), sizeof(err_msg));
+  cr_assert(g_str_has_prefix(err_msg, "wrong trap object type: xxx"), "%s", err_msg);
 }
 
 /*
