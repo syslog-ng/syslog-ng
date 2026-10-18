@@ -1,4 +1,5 @@
 #############################################################################
+# Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
 # Copyright (c) 2016 Balabit
 #
 # This library is free software; you can redistribute it and/or
@@ -1533,6 +1534,7 @@ if test "x$enable_geoip2" = "xyes" || test "x$enable_geoip2" = "xauto"; then
 
         if test "x$with_maxminddb" = "xyes"; then
                 AC_CONFIG_LINKS([modules/geoip2/tests/test.mmdb:modules/geoip2/tests/test.mmdb])
+                AC_CONFIG_LINKS([modules/geoip2/tests/test-names-first.mmdb:modules/geoip2/tests/test-names-first.mmdb])
         fi
 
         enable_geoip2="$with_maxminddb"

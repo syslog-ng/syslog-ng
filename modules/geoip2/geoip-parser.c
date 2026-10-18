@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2017 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -105,7 +106,7 @@ maxminddb_parser_process(LogParser *s, LogMessage **pmsg,
   GArray *path = g_array_new(TRUE, FALSE, sizeof(gchar *));
   g_array_append_val(path, self->prefix);
 
-  gint status;
+  gint status = MMDB_SUCCESS;
   dump_geodata_into_msg(msg, entry_data_list, path, &status);
 
   MMDB_free_entry_data_list(entry_data_list);

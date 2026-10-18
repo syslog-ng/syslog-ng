@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2017-2019 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -128,6 +129,30 @@ Test(geoip2, test_basic)
   msg = parse_geoip_into_log_message("2.125.160.216");
   assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.country.iso_code"), "GB");
 
+  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.location.latitude"), "51.750000");
+  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.location.longitude"), "-1.250000");
+
+  log_msg_unref(msg);
+}
+
+/*
+ * test-names-first.mmdb holds one record for 192.0.2.0/24 whose first value
+ * in walk order is a "names" map that contains only the preferred language:
+ *   {"city": {"names": {"en": "Boxford"}},
+ *    "country": {"iso_code": "GB", "names": {"en": "United Kingdom"}},
+ *    "location": {"latitude": 51.75, "longitude": -1.25}}
+ * (written with the mmdb-writer Python package). Every field must be
+ * extracted, not only the ones walked before the first language lookup.
+ */
+Test(geoip2, names_map_walked_first)
+{
+  LogMessage *msg;
+
+  geoip_parser_set_database_path(geoip_parser, TOP_SRCDIR "/modules/geoip2/tests/test-names-first.mmdb");
+  msg = parse_geoip_into_log_message("192.0.2.10");
+  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.city.names.en"), "Boxford");
+  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.country.iso_code"), "GB");
+  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.country.names.en"), "United Kingdom");
   assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.location.latitude"), "51.750000");
   assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.location.longitude"), "-1.250000");
 
