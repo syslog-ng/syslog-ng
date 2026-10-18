@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2016 Balabit
  *
  * This library is free software; you can redistribute it and/or
@@ -422,6 +423,34 @@ Test(log_message, test_sdata_sanitization)
   msg = log_msg_new_empty();
   log_msg_set_value_by_name(msg, ".SDATA.fo@o[0].bar", "value", -1);
   assert_sdata_value_equals(msg, "[fo@o%5B0%5D bar=\"value\"]");
+  log_msg_unref(msg);
+}
+
+Test(log_message, test_sdata_array_grown_on_a_cow_clone_has_a_zeroed_tail)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  /* fill the first 8 slots, so the clone has to allocate a bigger array */
+  for (gint i = 0; i < 8; i++)
+    {
+      gchar name[32];
+
+      g_snprintf(name, sizeof(name), ".SDATA.foo.bar%d", i);
+      log_msg_set_value_by_name(msg, name, "value", -1);
+    }
+  cr_assert_eq(msg->num_sdata, 8);
+  cr_assert_eq(msg->alloc_sdata, 8);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  LogMessage *cloned = log_msg_clone_cow(msg, &path_options);
+
+  log_msg_set_value_by_name(cloned, ".SDATA.foo.bar8", "value", -1);
+  cr_assert_eq(cloned->num_sdata, 9);
+  cr_assert_gt(cloned->alloc_sdata, cloned->num_sdata);
+  for (gint i = cloned->num_sdata; i < cloned->alloc_sdata; i++)
+    cr_assert_eq(cloned->sdata[i], 0, "sdata slot %d not cleared", i);
+
+  log_msg_unref(cloned);
   log_msg_unref(msg);
 }
 
