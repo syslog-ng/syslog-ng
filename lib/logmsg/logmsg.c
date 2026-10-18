@@ -425,7 +425,7 @@ log_msg_get_value_handle(const gchar *value_name)
   handle = nv_registry_alloc_handle(logmsg_registry, value_name);
 
   /* check if name starts with sd_prefix and has at least one additional character */
-  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[6])
+  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[logmsg_sd_prefix_len])
     {
       nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
     }
