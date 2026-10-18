@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -819,7 +820,8 @@ nv_table_clone(NVTable *self, gint additional_space)
   NVTable *new;
   gint new_size;
 
-  if (nv_table_get_bottom(self) - nv_table_get_ofs_table_top(self) < additional_space)
+  /* grow only if the free space between the offset table and the payload cannot hold additional_space */
+  if (nv_table_get_bottom(self) - nv_table_get_ofs_table_top(self) >= additional_space)
     new_size = self->size;
   else
     new_size = self->size + (NV_TABLE_BOUND(additional_space));
