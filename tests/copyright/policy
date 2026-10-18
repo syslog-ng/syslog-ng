@@ -258,6 +258,7 @@ modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
 modules/syslogformat/sdata-parser\.[ch]
 tests/light/functional_tests/config_change/test_python_custom_options\.py
+tests/light/functional_tests/source_drivers/network_source/test_dynamic_window_after_keep_alive_reload\.py
 tests/light/functional_tests/logpath/__init__.py
 tests/light/functional_tests/logpath/test_named_logpaths.py
 tests/light/functional_tests/logpath/test_named_logpaths_with_catchall_flag.py

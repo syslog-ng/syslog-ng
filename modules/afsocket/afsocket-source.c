@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -727,7 +728,11 @@ afsocket_sd_restore_dynamic_window_pool(AFSocketSourceDriver *self)
       self->dynamic_window_pool = ctr;
       return TRUE;
     }
-  return TRUE;
+
+  /* not taken over: drop our reference (connections kept from the old config hold their own),
+   * so that the caller creates a fresh pool */
+  dynamic_window_pool_unref(ctr);
+  return FALSE;
 }
 
 static void
