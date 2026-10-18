@@ -454,6 +454,19 @@ Test(log_message, test_sdata_array_grown_on_a_cow_clone_has_a_zeroed_tail)
   log_msg_unref(msg);
 }
 
+Test(log_message, test_sdata_prefix_without_an_element_name_is_not_sdata)
+{
+  cr_assert(log_msg_is_handle_sdata(log_msg_get_value_handle(".SDATA.foo.bar")));
+  cr_assert(log_msg_is_handle_sdata(log_msg_get_value_handle(".SDATA.x")));
+  cr_assert_not(log_msg_is_handle_sdata(log_msg_get_value_handle(".SDATA.")));
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar", "value", -1);
+  log_msg_set_value_by_name(msg, ".SDATA.", "value", -1);
+  assert_sdata_value_equals(msg, "[foo bar=\"value\"]");
+  log_msg_unref(msg);
+}
+
 Test(log_message, test_sdata_value_is_updated_by_sdata_name_value_pairs)
 {
   LogMessage *msg;
