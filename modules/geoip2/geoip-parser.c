@@ -107,6 +107,11 @@ maxminddb_parser_process(LogParser *s, LogMessage **pmsg,
 
   gint status;
   dump_geodata_into_msg(msg, entry_data_list, path, &status);
+  if (status != MMDB_SUCCESS)
+    msg_error("geoip2(): failed to extract geodata",
+              evt_tag_str("error", MMDB_strerror(status)),
+              evt_tag_str("ip", input),
+              log_pipe_location_tag(&self->super.super));
 
   MMDB_free_entry_data_list(entry_data_list);
   g_array_free(path, TRUE);
