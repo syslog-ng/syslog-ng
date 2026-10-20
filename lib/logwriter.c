@@ -1840,6 +1840,10 @@ log_writer_reopen_deferred(gpointer s)
             evt_tag_int("io_job_working", self->io_job.working),
             evt_tag_int("watches_running", self->watches_running));
 
+  /* Stop watches before arming the new retry, otherwise teardown can cancel that same timer. */
+  if (!self->io_job.working)
+    log_writer_stop_watches(self);
+
   if (!proto)
     {
       iv_validate_now();
@@ -1863,8 +1867,6 @@ log_writer_reopen_deferred(gpointer s)
       log_writer_set_pending_proto(self, proto, TRUE);
       return;
     }
-
-  log_writer_stop_watches(self);
 
   if (self->partial_write)
     {
