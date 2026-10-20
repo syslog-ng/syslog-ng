@@ -42,17 +42,27 @@ function(external_or_find_package LIB_NAME)
 
     set_property(CACHE ${LIB_NAME}_SOURCE PROPERTY STRINGS internal system auto AUTO)
 
+    # Any value other than the known keywords is treated as an explicit install prefix:
+    # ${LIB_NAME}_SOURCE_PATH signals this to the matching Find${LIB_NAME}.cmake module,
+    # which must search exclusively under that prefix (see libfind_pkg_detect's EXCLUSIVE_PATH).
+    set(${LIB_NAME}_SOURCE_PATH "")
+
     # Do not rely simply on the result of the External{LIB_NAME}.cmake (e.g. the presence of the source).
     # If the user explicitly selected the system version, then do not build the internal one.
-    # FIXME: Add handling of the "/path_to/lib_source" option as well, like we have in autotools.
-    if (NOT "${${LIB_NAME}_SOURCE}" STREQUAL "internal" AND NOT ("${${LIB_NAME}_SOURCE}" MATCHES "^(auto|AUTO)$"))
+    if (NOT "${${LIB_NAME}_SOURCE}" STREQUAL "internal" AND NOT "${${LIB_NAME}_SOURCE}" STREQUAL "system" AND NOT ("${${LIB_NAME}_SOURCE}" MATCHES "^(auto|AUTO)$"))
+        if (NOT EXISTS "${${LIB_NAME}_SOURCE}")
+            message(FATAL_ERROR "${LIB_NAME}_SOURCE=\"${${LIB_NAME}_SOURCE}\" is neither a known keyword (internal/system/AUTO) nor an existing path")
+        endif()
+        set(${LIB_NAME}_SOURCE_PATH "${${LIB_NAME}_SOURCE}")
         set(${LIB_NAME}_INTERNAL FALSE)
-    else()
+    elseif ("${${LIB_NAME}_SOURCE}" STREQUAL "internal" OR ("${${LIB_NAME}_SOURCE}" MATCHES "^(auto|AUTO)$"))
         include(External${LIB_NAME} OPTIONAL RESULT_VARIABLE EXT_${LIB_NAME}_PATH)
 
         if(NOT EXT_${LIB_NAME}_PATH OR NOT EXISTS "${EXT_${LIB_NAME}_PATH}")
             set(${LIB_NAME}_INTERNAL FALSE)
         endif()
+    else()
+        set(${LIB_NAME}_INTERNAL FALSE)
     endif()
 
     if (${LIB_NAME}_INTERNAL)
@@ -62,16 +72,27 @@ function(external_or_find_package LIB_NAME)
     if (${${LIB_NAME}_INTERNAL} AND ((${${LIB_NAME}_SOURCE} STREQUAL "internal") OR ("${${LIB_NAME}_SOURCE}" MATCHES "^(auto|AUTO)$")))
         message(STATUS "Found ${LIB_NAME}: internal")
         set(${LIB_NAME}_FOUND TRUE PARENT_SCOPE)
+        string(TOUPPER "${LIB_NAME}" _EXTERNAL_OR_FIND_PACKAGE_UPPER)
+        if (NOT "${_EXTERNAL_OR_FIND_PACKAGE_UPPER}" STREQUAL "${LIB_NAME}")
+            set(${_EXTERNAL_OR_FIND_PACKAGE_UPPER}_FOUND TRUE PARENT_SCOPE)
+        endif()
         set(${LIB_NAME}_INCLUDE_DIR "${${LIB_NAME}_INTERNAL_INCLUDE_DIR}" CACHE STRING "${LIB_NAME} include path")
         set(${LIB_NAME}_LIBRARY "${${LIB_NAME}_INTERNAL_LIBRARY}" CACHE STRING "${LIB_NAME} library path")
 
-    elseif ((${${LIB_NAME}_SOURCE} STREQUAL "system") OR ("${${LIB_NAME}_SOURCE}" MATCHES "^(auto|AUTO)$"))
+    elseif (${LIB_NAME}_SOURCE_PATH OR (${${LIB_NAME}_SOURCE} STREQUAL "system") OR ("${${LIB_NAME}_SOURCE}" MATCHES "^(auto|AUTO)$"))
+      if (${LIB_NAME}_SOURCE_PATH)
+        message(STATUS "Searching for ${LIB_NAME} exclusively under ${LIB_NAME}_SOURCE=${${LIB_NAME}_SOURCE_PATH}")
+      endif()
       if (${EXTERNAL_OR_FIND_PACKAGE_REQUIRED})
           find_package(${LIB_NAME} REQUIRED)
       else()
           find_package(${LIB_NAME} )
       endif()
       set(${LIB_NAME}_FOUND "${${LIB_NAME}_FOUND}" PARENT_SCOPE)
+      string(TOUPPER "${LIB_NAME}" _EXTERNAL_OR_FIND_PACKAGE_UPPER)
+      if (NOT "${_EXTERNAL_OR_FIND_PACKAGE_UPPER}" STREQUAL "${LIB_NAME}")
+          set(${_EXTERNAL_OR_FIND_PACKAGE_UPPER}_FOUND "${${LIB_NAME}_FOUND}" PARENT_SCOPE)
+      endif()
       unset(${LIB_NAME}_INTERNAL)
     else()
       if (${EXTERNAL_OR_FIND_PACKAGE_REQUIRED})
@@ -82,8 +103,20 @@ function(external_or_find_package LIB_NAME)
       unset(${LIB_NAME}_INTERNAL)
     endif()
 
+    # find_package()/libfind_process() already leave the plural _LIBRARIES/_INCLUDE_DIRS
+    # (and the "internal" branch above only the singular _LIBRARY/_INCLUDE_DIR) in this
+    # function's own scope, but as plain (non-cache) variables they go out of scope again
+    # once this function returns unless forwarded explicitly, same as _FOUND above.
+    if (NOT ${LIB_NAME}_LIBRARIES AND ${LIB_NAME}_LIBRARY)
+        set(${LIB_NAME}_LIBRARIES "${${LIB_NAME}_LIBRARY}")
+    endif()
+    if (NOT ${LIB_NAME}_INCLUDE_DIRS AND ${LIB_NAME}_INCLUDE_DIR)
+        set(${LIB_NAME}_INCLUDE_DIRS "${${LIB_NAME}_INCLUDE_DIR}")
+    endif()
+    set(${LIB_NAME}_LIBRARIES "${${LIB_NAME}_LIBRARIES}" PARENT_SCOPE)
+    set(${LIB_NAME}_INCLUDE_DIRS "${${LIB_NAME}_INCLUDE_DIRS}" PARENT_SCOPE)
+
     if (${LIB_NAME}_INTERNAL)
        set(${LIB_NAME}_INTERNAL "${${LIB_NAME}_INTERNAL}" PARENT_SCOPE)
     endif()
 endfunction()
-

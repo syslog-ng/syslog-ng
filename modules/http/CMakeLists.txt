@@ -1,5 +1,5 @@
 if(NOT DEFINED ENABLE_CURL OR ENABLE_CURL)
-  find_package(Curl)
+  external_or_find_package(Curl)
 endif()
 
 set(SYSLOG_NG_HAVE_ZLIB 0 CACHE BOOL "Zlib support" FORCE)

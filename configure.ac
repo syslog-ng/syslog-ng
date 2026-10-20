@@ -438,7 +438,7 @@ AC_ARG_ENABLE(memtrace,
     AS_HELP_STRING([--enable-memtrace], [Enable alternative leak debugging code.]))
 
 AC_ARG_WITH(sanitizer,
-    AS_HELP_STRING([--with-sanitizer=[address/undefined/etc...]], [Enables compiler sanitizer supports (default: no)]),
+    AS_HELP_STRING([--with-sanitizer=[address/thread/undefined/etc...]], [Enables compiler sanitizer supports (default: no)]),
     , with_sanitizer="no")
 
 AC_ARG_ENABLE(force-classic-linking,
@@ -502,7 +502,7 @@ AC_ARG_ENABLE(mongodb,
     , enable_mongodb="auto")
 
 AC_ARG_WITH(jsonc,
-    AS_HELP_STRING([--with-jsonc=[yes/no]], [Link against the system supplied jsonc library or explicitly disable it. (default: yes)]),
+    AS_HELP_STRING([--with-jsonc=[yes/no/PATH]], [Link against the system supplied jsonc library, explicitly disable it, or use an install PATH (searched exclusively, bypassing pkg-config's normal search). (default: yes)]),
     , with_jsonc="yes")
 
 AC_ARG_ENABLE(json,
@@ -518,8 +518,12 @@ AC_ARG_ENABLE(stomp,
     , enable_stomp="yes")
 
 AC_ARG_WITH(ivykis,
-    AS_HELP_STRING([--with-ivykis=[system/internal]], [Link against the system supplied or the built-in ivykis library. (default: internal)]),
+    AS_HELP_STRING([--with-ivykis=[internal/system/PATH]], [Link against the built-in ivykis library, the system supplied one, or an install PATH (searched exclusively, bypassing pkg-config's normal search). (default: internal)]),
     , with_ivykis="internal")
+
+AC_ARG_WITH(openssl,
+    AS_HELP_STRING([--with-openssl=PATH], [Use the OpenSSL installation found at PATH (searched exclusively, bypassing pkg-config's normal search), instead of auto-detecting it. (default: auto-detect)]),
+    , with_openssl="")
 
 AC_ARG_ENABLE(smtp,
     AS_HELP_STRING([--disable-smtp], [Disable SMTP support (default: auto)]),
@@ -539,6 +543,7 @@ AC_ARG_ENABLE(grpc,
     AS_HELP_STRING([--enable-grpc], [Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, Pub/Sub, ClickHouse) (requires C++20) (default: auto)]),
     , enable_grpc="auto")
 
+# CMake equivalent: -DProtobuf_ROOT=PATH (CMake builtin FindProtobuf hint variable).
 AC_ARG_WITH(protoc,
     AS_HELP_STRING([--with-protoc=PATH], [use protoc binary at PATH]))
 
@@ -610,9 +615,6 @@ AC_ARG_WITH(python-packages,
 AC_ARG_WITH(python3-home,
     AS_HELP_STRING([--with-python3-home=path], [Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable]),
     python3_home_dir=$with_python3_home)
-
-AC_ARG_WITH(pylint,
-    AS_HELP_STRING([--with-pylint=ABSOLUTE_PATH], [Specify pylint location]))
 
 AC_ARG_WITH(manpages,
     AS_HELP_STRING([--with-manpages=[local|remote]], [Use the local or remote manpages for installation, if remote set, it will download the latest manpages from the online documentation https://syslog-ng.github.io/admin-guide/190_The_syslog-ng_manual_pages/README (default: local)]),
@@ -1558,9 +1560,26 @@ SAFE_C_CHECK_BEGIN
 # openssl is needed for:
 #  * TLS support
 dnl check OpenSSL static linking
+if test -n "$with_openssl"; then
+    # an explicit install prefix: search ONLY there, bypassing pkg-config's normal
+    # PKG_CONFIG_PATH-based search entirely, so it always wins no matter what else
+    # (incl. other versions) is registered via pkg-config
+    if test ! -d "$with_openssl"; then
+        AC_MSG_ERROR([--with-openssl=$with_openssl: no such directory])
+    fi
+    openssl_pkg_config_path_save="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$with_openssl/lib/pkgconfig"
+    export PKG_CONFIG_PATH
+fi
+
 PKG_CHECK_MODULES(OPENSSL,
                 openssl >= $OPENSSL_MIN_VERSION,,
                 AC_MSG_ERROR(Cannot find OpenSSL libraries with version >= $OPENSSL_MIN_VERSION it is a hard dependency from syslog-ng 3.7 onwards))
+
+if test -n "$with_openssl"; then
+    PKG_CONFIG_PATH="$openssl_pkg_config_path_save"
+    export PKG_CONFIG_PATH
+fi
 
 CPPFLAGS="$CPPFLAGS $OPENSSL_CFLAGS"
 
@@ -1700,9 +1719,27 @@ if test "x$with_ivykis" = "xinternal"; then
         AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency if --with_ivykis=xinternal option is used, unable to build syslog-ng without them.])
     fi
 else
-    with_ivykis="system"
+    if test "x$with_ivykis" != "xsystem"; then
+        # an explicit install prefix: search ONLY there, bypassing pkg-config's normal
+        # PKG_CONFIG_PATH-based search entirely, so it always wins no matter what else
+        # (incl. other versions) is registered via pkg-config
+        if test ! -d "$with_ivykis"; then
+            AC_MSG_ERROR([--with-ivykis=$with_ivykis: no such directory])
+        fi
+        ivykis_pkg_config_path_save="$PKG_CONFIG_PATH"
+        PKG_CONFIG_PATH="$with_ivykis/lib/pkgconfig"
+        export PKG_CONFIG_PATH
+    else
+        with_ivykis="system"
+    fi
+
     PKG_CHECK_MODULES(IVYKIS, ivykis >= $IVYKIS_MIN_VERSION,,)
     PKG_CHECK_MODULES(IVYKIS_VERSION_CHECK, ivykis >= $IVYKIS_UPDATED_VERSION, [IVYKIS_VERSION_UPDATED="yes"], [IVYKIS_VERSION_UPDATED="no"])
+
+    if test "x$with_ivykis" != "xsystem"; then
+        PKG_CONFIG_PATH="$ivykis_pkg_config_path_save"
+        export PKG_CONFIG_PATH
+    fi
 
     dnl check if iv_work_pool_submit_continuation is available in the system ivykis
     LIBS="$LIBS $IVYKIS_LIBS"
@@ -1727,6 +1764,20 @@ if test "x$with_jsonc" = "xinternal"; then
    AC_MSG_ERROR([The internal (bundled) json-c library is no longer supported!])
 fi
 
+jsonc_source_path=""
+if test "x$with_jsonc" != "xyes" && test "x$with_jsonc" != "xno" && test "x$with_jsonc" != "xsystem"; then
+    # an explicit install prefix: search ONLY there, bypassing pkg-config's normal
+    # PKG_CONFIG_PATH-based search entirely, so it always wins no matter what else
+    # (incl. other versions) is registered via pkg-config
+    if test ! -d "$with_jsonc"; then
+        AC_MSG_ERROR([--with-jsonc=$with_jsonc: no such directory])
+    fi
+    jsonc_source_path="$with_jsonc"
+    jsonc_pkg_config_path_save="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$jsonc_source_path/lib/pkgconfig"
+    export PKG_CONFIG_PATH
+fi
+
 # became hard-dependency
 with_jsonc="yes"
 
@@ -1736,6 +1787,11 @@ PKG_CHECK_EXISTS(json, json_module_name="json"))
 PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="yes"], [JSON_LIBS=""; enable_json="no"])
 if test "x$enable_json" = "xno"; then
   AC_MSG_ERROR([json-c library development files cannot be not found on system!])
+fi
+
+if test -n "$jsonc_source_path"; then
+    PKG_CONFIG_PATH="$jsonc_pkg_config_path_save"
+    export PKG_CONFIG_PATH
 fi
 
 dnl ***************************************************************************
@@ -2507,6 +2563,8 @@ fi
 if test "x$enable_systemd" != "xyes"; then
   if test "x$with_systemd_journal" = "xauto"; then
     with_systemd_journal=no
+  elif test "x$with_systemd_journal" != "xno"; then
+    AC_MSG_ERROR([--with-systemd-journal=$with_systemd_journal requires systemd support (--enable-systemd), but systemd support is disabled or unavailable])
   fi
 fi
 
@@ -2582,7 +2640,14 @@ dnl sanitizer
 dnl ***************************************************************************
 
 if  test "x$with_sanitizer" != "xno"; then
-   CFLAGS="$CFLAGS -O1 -fsanitize=$with_sanitizer -fno-omit-frame-pointer"
+   CFLAGS="$CFLAGS -O1 -fsanitize=$with_sanitizer -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+   CXXFLAGS="$CXXFLAGS -O1 -fsanitize=$with_sanitizer -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+   case "$with_sanitizer" in
+     *address*)
+       CFLAGS="$CFLAGS -fsanitize-address-use-after-scope"
+       CXXFLAGS="$CXXFLAGS -fsanitize-address-use-after-scope"
+       ;;
+   esac
 fi
 
 dnl ***************************************************************************

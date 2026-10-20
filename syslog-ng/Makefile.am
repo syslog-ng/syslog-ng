@@ -16,6 +16,9 @@ EXTRA_DIST += syslog-ng/CMakeLists.txt
 syslog_ng_syslog_ng_LDADD		= lib/libsyslog-ng.la @SYSLOGNG_DEPS_LIBS@
 syslog_ng_syslog_ng_LINK		=  @SYSLOGNG_LINK@
 
+# Intentionally has no _LDADD/_LINK: must start even when the real binary's
+# shared libs cannot be found without LD_LIBRARY_PATH set. Renamed to
+# syslog-ng only at install time, see syslog-ng-install-exec-hook below.
 syslog_ng_syslog_ng_wrapper_SOURCES	= syslog-ng/wrapper.c
 
 syslog-ng-install-exec-hook:
