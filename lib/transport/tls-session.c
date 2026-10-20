@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
@@ -37,17 +38,17 @@
 /* TLSSession */
 
 static gboolean
-tls_get_x509_digest(X509 *x, GString *hash_string)
+tls_get_x509_digest(X509 *x, const EVP_MD *digest, const gchar *prefix, GString *hash_string)
 {
   gint j;
   unsigned int n;
   unsigned char md[EVP_MAX_MD_SIZE];
   g_assert(hash_string);
 
-  if (!X509_digest(x, EVP_sha1(), md, &n))
+  if (!X509_digest(x, digest, md, &n))
     return FALSE;
 
-  g_string_append(hash_string, "SHA1:");
+  g_string_append(hash_string, prefix);
   for (j = 0; j < (int) n; j++)
     g_string_append_printf(hash_string, "%02X%c", md[j], (j + 1 == (int) n) ? '\0' : ':');
 
@@ -112,23 +113,47 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
   if (!cert)
     return match;
 
-  hash = g_string_sized_new(EVP_MAX_MD_SIZE * 3);
+  /* trusted-keys() entries are "SHA1:..." or "SHA256:..."; each digest is computed once, on first use */
+  GString *sha1_hash = NULL, *sha256_hash = NULL;
 
-  if (tls_get_x509_digest(cert, hash))
+  do
     {
-      do
-        {
-          if (strcmp((const gchar *)(current_fingerprint->data), hash->str) == 0)
-            {
-              match = TRUE;
-              g_strlcpy(self->peer_info.fingerprint, hash->str, sizeof(self->peer_info.fingerprint));
-              break;
-            }
-        }
-      while ((current_fingerprint = g_list_next(current_fingerprint)) != NULL);
-    }
+      const gchar *fingerprint = (const gchar *) current_fingerprint->data;
 
-  g_string_free(hash, TRUE);
+      if (g_str_has_prefix(fingerprint, "SHA256:"))
+        {
+          if (!sha256_hash)
+            {
+              sha256_hash = g_string_sized_new(EVP_MAX_MD_SIZE * 3);
+              if (!tls_get_x509_digest(cert, EVP_sha256(), "SHA256:", sha256_hash))
+                g_string_truncate(sha256_hash, 0);
+            }
+          hash = sha256_hash;
+        }
+      else
+        {
+          if (!sha1_hash)
+            {
+              sha1_hash = g_string_sized_new(EVP_MAX_MD_SIZE * 3);
+              if (!tls_get_x509_digest(cert, EVP_sha1(), "SHA1:", sha1_hash))
+                g_string_truncate(sha1_hash, 0);
+            }
+          hash = sha1_hash;
+        }
+
+      if (hash->len > 0 && strcmp(fingerprint, hash->str) == 0)
+        {
+          match = TRUE;
+          g_strlcpy(self->peer_info.fingerprint, hash->str, sizeof(self->peer_info.fingerprint));
+          break;
+        }
+    }
+  while ((current_fingerprint = g_list_next(current_fingerprint)) != NULL);
+
+  if (sha1_hash)
+    g_string_free(sha1_hash, TRUE);
+  if (sha256_hash)
+    g_string_free(sha256_hash, TRUE);
   return match;
 }
 

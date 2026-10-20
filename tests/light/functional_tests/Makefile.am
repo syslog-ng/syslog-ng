@@ -12,6 +12,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_rotation_failure.py \
 	tests/light/functional_tests/destination_drivers/network_destination/test_destination_reload_protocol_change.py \
 	tests/light/functional_tests/destination_drivers/network_destination/test_network_destination_transport.py \
+	tests/light/functional_tests/destination_drivers/network_destination/test_network_destination_trusted_keys.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_acceptance.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_missing_snmp_obj.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_missing_trap_obj.py \
