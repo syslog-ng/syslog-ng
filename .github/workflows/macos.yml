@@ -2,6 +2,12 @@ name: macOS
 
 on:
   workflow_dispatch:
+    inputs:
+      no-upgrade:
+        description: Skip Homebrew updates and package upgrades (missing packages are still installed)
+        required: false
+        type: boolean
+        default: false
   pull_request:
   push:
     branches: ["develop", "master"]
@@ -36,6 +42,8 @@ jobs:
     # Unfortunately, ${{ runner.arch }} cannot be used in the job definition :S
     name: macOS${{ matrix.version }}-${{ matrix.version == '15-intel' && 'amd64' || 'arm64' }}, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
     env:
+      # Disable updates for PRs and opt-in manual runs, including brew calls used to compose cache keys.
+      HOMEBREW_NO_AUTO_UPDATE: ${{ (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.no-upgrade)) && '1' || '' }}
       MACPORTS_ARCHIVE_DIR: $HOME/macports-cache
       MACPORTS_ARCHIVE_FILE: $HOME/macports-cache/macports.tzst
       MACPORTS_USER_INFO_FILE: $HOME/macports-cache/macports-user-info.txt
@@ -119,25 +127,26 @@ jobs:
           # recent Homebrew versions.
           export HOMEBREW_BUNDLE_NO_JOBS=1
 
-          if [ "${{ runner.arch }}" = "ARM64" ] || [ "${{ github.event_name }}" = "schedule" ]; then
-            if [ "${{ github.event_name }}" = "schedule" ]; then
-              echo "Scheduled run → forcing brew update"
-            fi
-            brew update --auto-update
-          else
-            echo "Non-scheduled run → skipping brew update"
-            export HOMEBREW_NO_AUTO_UPDATE=1
+          bundle_args=(--force --file=contrib/Brewfile)
+          if [ "$HOMEBREW_NO_AUTO_UPDATE" = "1" ]; then
+            echo "Homebrew updates and package upgrades disabled"
             export HOMEBREW_NO_INSTALL_CLEANUP=1
+            bundle_args+=(--no-upgrade)
+          else
+            echo "Homebrew updates and package upgrades enabled"
+            brew update --auto-update
           fi
-          brew bundle --force --file=contrib/Brewfile
+          brew bundle "${bundle_args[@]}"
 
           # grpc/mongo-c-driver/qpdf bottles are outdated on x86_64; build from source there.
           # On cache hit the Cellar dirs are already restored by the cache step above; just relink them.
           if [ "${{ runner.arch }}" = "X64" ]; then
             if [ -d "/usr/local/Cellar/grpc" ] && [ -d "/usr/local/Cellar/mongo-c-driver" ] && [ -d "/usr/local/Cellar/qpdf" ]; then
               brew link --overwrite grpc mongo-c-driver qpdf re2
-              OUTDATED=$(brew outdated --quiet grpc mongo-c-driver qpdf || true)
-              [ -n "$OUTDATED" ] && brew upgrade --build-from-source $OUTDATED || true
+              if [ "$HOMEBREW_NO_AUTO_UPDATE" != "1" ]; then
+                OUTDATED=$(brew outdated --quiet grpc mongo-c-driver qpdf || true)
+                [ -n "$OUTDATED" ] && brew upgrade --build-from-source $OUTDATED || true
+              fi
             else
               brew install --build-from-source grpc mongo-c-driver qpdf
             fi
