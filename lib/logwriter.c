@@ -561,6 +561,8 @@ log_writer_start_watches(LogWriter *self)
 static void
 log_writer_cancel_reopen_timer(LogWriter *self)
 {
+  main_loop_assert_main_thread();
+
   if (iv_timer_registered(&self->reopen_timer))
     iv_timer_unregister(&self->reopen_timer);
 }
@@ -1785,8 +1787,6 @@ log_writer_set_proto(LogWriter *self, LogProtoClient *proto)
 
   if (proto)
     {
-      log_writer_cancel_reopen_timer(self);
-
       LogProtoClientFlowControlFuncs flow_control_funcs;
       flow_control_funcs.ack_callback = log_writer_msg_ack;
       flow_control_funcs.rewind_callback = log_writer_msg_rewind_cb;
@@ -1833,6 +1833,8 @@ log_writer_reopen_deferred(gpointer s)
   LogWriter *self = args[0];
   LogProtoClient *proto = args[1];
 
+  main_loop_assert_main_thread();
+
   msg_trace("log_writer_reopen_deferred",
             evt_tag_int("proto_is_set", proto != NULL),
             evt_tag_int("io_job_working", self->io_job.working),
@@ -1850,6 +1852,8 @@ log_writer_reopen_deferred(gpointer s)
 
       iv_timer_register(&self->reopen_timer);
     }
+  else
+    log_writer_cancel_reopen_timer(self);
 
   init_sequence_number(&self->seq_num);
 
