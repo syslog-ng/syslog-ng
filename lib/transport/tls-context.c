@@ -416,10 +416,16 @@ _extract_pkcs12_content(TLSContext *self, PKCS12 *pkcs12, EVP_PKEY **private_key
   secret_storage_put_secret(secret);
 
   TLSContextLoadResult result = TLS_CONTEXT_OK;
-  if (!PKCS12_verify_mac(pkcs12, password, -1))
-    result = TLS_CONTEXT_PASSWORD_ERROR;
+  if (PKCS12_mac_present(pkcs12))
+    {
+      if (!PKCS12_verify_mac(pkcs12, password, -1))
+        result = TLS_CONTEXT_PASSWORD_ERROR;
+      else if (!PKCS12_parse(pkcs12, password, private_key, cert, ca_list))
+        result = TLS_CONTEXT_ERROR;
+    }
+  /* a file without a MAC (openssl pkcs12 -nomac): only decryption can tell a wrong password */
   else if (!PKCS12_parse(pkcs12, password, private_key, cert, ca_list))
-    result = TLS_CONTEXT_ERROR;
+    result = TLS_CONTEXT_PASSWORD_ERROR;
 
   OPENSSL_cleanse(password, strlen(password));
   g_free(password);

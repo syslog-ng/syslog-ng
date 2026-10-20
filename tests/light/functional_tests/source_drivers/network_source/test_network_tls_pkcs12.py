@@ -31,8 +31,9 @@ from src.common.file import copy_shared_file
     [
         ("server.p12", None),
         ("server-protected-asdfg.p12", "asdfg"),
+        ("server-protected-nomac-asdfg.p12", "asdfg"),
     ],
-    ids=["no-password", "password-from-credential-store"],
+    ids=["no-password", "password-from-credential-store", "password-without-mac"],
 )
 def test_network_tls_pkcs12(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, pkcs12_file, password):
     pkcs12_path = copy_shared_file(testcase_parameters, pkcs12_file)
