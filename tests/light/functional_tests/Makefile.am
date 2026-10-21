@@ -75,6 +75,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_multiple_clients.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_simple_tcp_connection.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_syslog_proto.py \
+	tests/light/functional_tests/source_drivers/network_source/test_network_tls_pkcs12.py \
 	tests/light/functional_tests/source_drivers/network_source/test_network_transports.py \
 	tests/light/functional_tests/source_drivers/network_source/test_source_reload_protocol_change.py \
 	tests/light/functional_tests/source_drivers/network_source/test_syslog_parser_timestamp_spinning.py \
