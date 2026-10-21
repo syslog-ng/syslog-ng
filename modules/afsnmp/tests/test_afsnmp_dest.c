@@ -183,21 +183,46 @@ Test(test_snmp_dest, check_required_params)
   cr_assert(snmpdest_check_required_params(driver, err_msg, sizeof(err_msg)));
 }
 
+#define ERR_MSG_CANARY_SIZE 16
+#define ERR_MSG_CANARY_BYTE 0xA5
+
+typedef struct _ErrMsgGuard
+{
+  guchar front_canary[ERR_MSG_CANARY_SIZE];
+  gchar err_msg[128];
+  guchar back_canary[ERR_MSG_CANARY_SIZE];
+} ErrMsgGuard;
+
 Test(test_snmp_dest, check_required_params_truncates_a_long_trap_type_in_the_error)
 {
   LogDriver *driver = (LogDriver *)snmp_driver;
-  gchar err_msg[128];
+  ErrMsgGuard guard;
   gchar long_type[512];
+  const gchar *prefix = "wrong trap object type: ";
+  gchar expected[sizeof(guard.err_msg)];
+  guchar expected_canary[ERR_MSG_CANARY_SIZE];
 
   memset(long_type, 'x', sizeof(long_type) - 1);
   long_type[sizeof(long_type) - 1] = '\0';
 
+  memset(&guard, ERR_MSG_CANARY_BYTE, sizeof(guard));
+  memset(expected_canary, ERR_MSG_CANARY_BYTE, sizeof(expected_canary));
+
+  /* the full message is longer than the buffer, so it is cut to sizeof(err_msg) - 1 characters */
+  memset(expected, 'x', sizeof(expected) - 1);
+  expected[sizeof(expected) - 1] = '\0';
+  memcpy(expected, prefix, strlen(prefix));
+
   snmpdest_dd_set_snmp_obj(driver, cfg, ".1.3.6.1.4.1.18372.3.1.1.1.1.1.0", "Octetstring", "admin");
   snmpdest_dd_set_trap_obj(driver, cfg, ".1.3.6.1.6.3.1.1.4.1.0", long_type, ".1.3.6.1.4.1.18372.3.1.1.1.2.1");
   snmpdest_dd_set_host(driver, "127.0.0.1");
-  cr_assert_not(snmpdest_check_required_params(driver, err_msg, sizeof(err_msg)));
-  cr_assert_lt(strlen(err_msg), sizeof(err_msg));
-  cr_assert(g_str_has_prefix(err_msg, "wrong trap object type: xxx"), "%s", err_msg);
+  cr_assert_not(snmpdest_check_required_params(driver, guard.err_msg, sizeof(guard.err_msg)));
+
+  cr_assert_arr_eq(guard.front_canary, expected_canary, sizeof(expected_canary), "front canary overwritten");
+  cr_assert_arr_eq(guard.back_canary, expected_canary, sizeof(expected_canary), "back canary overwritten");
+  cr_assert_eq(strlen(guard.err_msg), sizeof(guard.err_msg) - 1);
+  cr_assert_eq(guard.err_msg[sizeof(guard.err_msg) - 1], '\0');
+  cr_assert_str_eq(guard.err_msg, expected);
 }
 
 /*
