@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2013-2014 Balabit
  * Copyright (c) 2013-2014 Balázs Scheidler <balazs.scheidler@balabit.com>
  * Copyright (c) 2013 Viktor Juhasz <viktor.juhasz@balabit.com>
@@ -199,6 +200,12 @@ Test(template_compile, test_macro_with_at_references_a_single_msg_in_the_context
 
   assert_template_compile("${MESSAGE}@1");
   assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 2);
+
+  assert_template_compile("${MESSAGE}@12");
+  assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 13);
+
+  assert_template_compile("${MESSAGE}@105");
+  assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 106);
 
 }
 
