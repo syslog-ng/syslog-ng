@@ -385,7 +385,13 @@ _init(LogPipe *s)
 
   _init_opener_options(self, cfg);
 
-  if (!_add_directory_monitor(self, self->base_dir))
+  /* Only files found during startup may skip old records; late arrivals must
+   * be read from the beginning even when their directory needs an initial scan.
+   */
+  self->initial_scan = TRUE;
+  DirectoryMonitor *monitor = _add_directory_monitor(self, self->base_dir);
+  self->initial_scan = FALSE;
+  if (!monitor)
     return FALSE;
 
   return TRUE;
