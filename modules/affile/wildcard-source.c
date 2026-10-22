@@ -119,6 +119,8 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
                                                         &self->super,
                                                         cfg,
                                                         monitor->can_notify_file_changes);
+  reader->super.effective_read_old_records = !self->initial_scan ||
+                                             self->file_reader_options.reader_options.super.read_old_records;
   wildcard_file_reader_on_deleted_file_eof(reader, _remove_and_readd_file_reader, self);
 
   log_pipe_set_options(&reader->super.super, &self->super.super.super.options);
