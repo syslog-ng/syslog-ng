@@ -31,6 +31,49 @@
 #include "plugin.h"
 #include "wildcard-source.h"
 
+/* Cases: directory modification notifications wake effective inotify readers,
+ * including auto/legacy selection, but do not wake timer/system-polled readers.
+ */
+#if SYSLOG_NG_HAVE_INOTIFY
+typedef struct
+{
+  FollowMethod requested;
+  FollowMethod effective;
+  gboolean expect_check;
+} ModifiedEventTestCase;
+
+ParameterizedTestParameters(wildcard_source, modified_event_uses_effective_follow_mode)
+{
+  static ModifiedEventTestCase cases[] =
+  {
+    { FM_AUTO, FM_INOTIFY, TRUE },
+    { FM_LEGACY, FM_INOTIFY, TRUE },
+    { FM_INOTIFY, FM_INOTIFY, TRUE },
+    { FM_POLL, FM_POLL, FALSE },
+    { FM_SYSTEM_POLL, FM_SYSTEM_POLL, FALSE },
+  };
+  return cr_make_param_array(ModifiedEventTestCase, cases, G_N_ELEMENTS(cases));
+}
+
+ParameterizedTest(ModifiedEventTestCase *test_case, wildcard_source, modified_event_uses_effective_follow_mode)
+{
+  FileReaderOptions options = { .follow_method = test_case->requested };
+  LogReader *reader = log_reader_new(configuration);
+  reader->poll_events = g_new0(PollEvents, 1);
+  poll_events_init(reader->poll_events);
+  reader->poll_events->type = test_case->effective;
+  reader->watches_running = TRUE;
+  FileReader file_reader = { .reader = reader, .options = &options };
+
+  file_reader_notify_method(&file_reader.super, NC_FILE_MODIFIED, NULL);
+  cr_assert_eq(!!iv_task_registered(&reader->restart_task), test_case->expect_check);
+
+  if (iv_task_registered(&reader->restart_task))
+    iv_task_unregister(&reader->restart_task);
+  reader->watches_running = FALSE;
+  log_pipe_unref(&reader->super.super);
+}
+#endif
 
 static void
 _init(void)

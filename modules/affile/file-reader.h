@@ -49,6 +49,7 @@ struct _FileReader
   const gchar *persist_name;
   const gchar *persist_name_prefix;
   gboolean monitor_can_notify_file_changes;
+  gboolean effective_read_old_records;
 
   void (*on_file_moved)(FileReader *);
 };
