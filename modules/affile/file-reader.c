@@ -144,20 +144,48 @@ _update_legacy_persist_name(FileReader *self)
   return persist_state_copy_entry(cfg->state, legacy_persist_name, current_persist_name);
 }
 
-static void
+static gboolean
 _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
   FileReader *self = (FileReader *) s;
 
   if (!self->options->restore_state)
-    return;
+    return TRUE;
 
-  if (!log_proto_server_restart_with_state(proto, cfg->state, log_pipe_get_persist_name(s)))
+  const gchar *persist_name = log_pipe_get_persist_name(s);
+  /* Check before restart_with_state(), which creates an entry if none exists.
+   * Only a previously existing entry should prevent skipping old records.
+   */
+  gboolean state_exists = persist_state_entry_exists(cfg->state, persist_name);
+  if (!log_proto_server_restart_with_state(proto, cfg->state, persist_name))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str));
-      return;
+      return TRUE;
     }
+
+  if (!state_exists && !self->effective_read_old_records && proto->transport_stack.fd >= 0)
+    {
+      off_t offset = lseek(proto->transport_stack.fd, 0, SEEK_END);
+      if (offset == (off_t) -1)
+        {
+          msg_error("Error seeking to the end of source file for read-old-records(no)",
+                    evt_tag_str("filename", self->filename->str),
+                    evt_tag_error("error"));
+          return FALSE;
+        }
+
+      LogProtoBufferedServer *buffered_proto = (LogProtoBufferedServer *) proto;
+      LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(buffered_proto);
+      /* Persist the skipped EOF even if no message arrives before shutdown. */
+      state->raw_stream_pos = state->pending_raw_stream_pos = offset;
+      state->file_size = offset;
+      log_proto_buffered_server_put_state(buffered_proto);
+      msg_debug("Skipping old records in source file",
+                evt_tag_str("filename", self->filename->str),
+                evt_tag_long("offset", offset));
+    }
+  return TRUE;
 }
 
 static gboolean
@@ -487,10 +515,8 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
       LogProtoServer *proto = _construct_proto(self, fd);
       _setup_logreader(s, poll_events, proto);
 
-      if (recover_state)
-        _recover_state(s, cfg, proto);
-
-      if (!log_pipe_init((LogPipe *) self->reader))
+      if ((recover_state && !_recover_state(s, cfg, proto)) ||
+          !log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
                     evt_tag_int("fd", fd));
@@ -681,6 +707,7 @@ file_reader_init_instance(FileReader *self, const gchar *filename,
   self->options = options;
   self->opener = opener;
   self->monitor_can_notify_file_changes = FALSE;
+  self->effective_read_old_records = options->reader_options.super.read_old_records;
   self->owner = owner;
   self->super.expr_node = owner->super.super.expr_node;
 }
