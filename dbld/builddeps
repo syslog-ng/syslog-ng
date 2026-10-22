@@ -156,12 +156,14 @@ function download_target() {
             return 1
         fi
     fi
-    CURR_HASH=$(hashfile "${OUTPUT}")
-    if [ "${HASH}" = "${CURR_HASH}" ]; then
-        echo "Downloaded file hash matches"
-    else
-        echo "Downloaded file hash does not match"
-        return 2
+    if [ -n "$HASH" ]; then
+      CURR_HASH=$(hashfile "${OUTPUT}")
+      if [ "${HASH}" = "${CURR_HASH}" ]; then
+          echo "Downloaded file hash matches"
+      else
+          echo "Downloaded file hash does not match"
+          return 2
+      fi
     fi
 }
 
@@ -227,12 +229,9 @@ function install_gradle {
     ldconfig
 }
 
-function install_pip2 {
-    PIP_VERSION=2.7
-    HASH="40ee07eac6674b8d60fce2bbabc148cf0e2f1408c167683f110fd608b8d6f416"
-
-    download_target "https://bootstrap.pypa.io/pip/${PIP_VERSION}/get-pip.py" get-pip.py pip/${PIP_VERSION}/get-pip.py "${HASH}"
-    python2 get-pip.py
+function install_pip {
+    download_target "https://bootstrap.pypa.io/get-pip.py" get-pip.py
+    python3 get-pip.py
 }
 
 function install_bison_from_source {
@@ -267,13 +266,6 @@ function filter_packages_by_platform {
     FILENAME=$1
     local IMAGE_PLATFORM_BASE=$(image_platform_base)
     grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM_BASE}" -e "${OS_DISTRIBUTION}[^-]" | cut -d"[" -f1
-}
-
-function filter_pip_packages_by_platform_and_python_version {
-    FILENAME=$1
-    PYTHON_VERSION=$2
-    local IMAGE_PLATFORM_BASE=$(image_platform_base)
-    grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM_BASE}" -e "${OS_DISTRIBUTION}[^-]" | grep -e "${PYTHON_VERSION}" | cut -d"[" -f1
 }
 
 function add_copr_repo {
@@ -371,13 +363,12 @@ function install_zypper_packages {
 }
 
 function install_pip_packages {
-    local python_executables="python2 python3"
-    for python_executable in ${python_executables}; do
-        local pip_install="${python_executable} -m pip install --ignore-installed --no-cache-dir --upgrade"
-        ${pip_install} "pip"
-        ${pip_install} "setuptools<66.0"
-        filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest ${python_executable} | xargs ${pip_install}
-    done
+    local python_executable="python3"
+    local pip_install="${python_executable} -m pip install --ignore-installed --no-cache-dir --upgrade"
+    ${pip_install} "pip"
+    ${pip_install} "setuptools"
+    local IMAGE_PLATFORM_BASE=$(image_platform_base)
+    grep -v "#" $DBLD_DIR/pip_packages.manifest | grep -e "${IMAGE_PLATFORM_BASE}" -e "${OS_DISTRIBUTION}[^-]" | grep -e "${PYTHON_VERSION}" | cut -d"[" -f1 | xargs ${pip_install}
 }
 
 function install_lsb_release {
