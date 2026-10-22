@@ -288,7 +288,7 @@ _get_effective_auto_file_follow_mode(FileReader *self, gint fd)
 {
   if (_can_use_inotify(self->monitor_can_notify_file_changes))
     return FM_INOTIFY;
-  else if (_iv_can_poll_fd(fd))
+  else if (fd >= 0 && _iv_can_poll_fd(fd))
     return FM_SYSTEM_POLL;
   else
     return FM_POLL;
