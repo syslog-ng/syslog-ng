@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2017 Balabit
  * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
  *
@@ -90,7 +91,7 @@ void snmpdest_dd_set_enc_password(LogDriver *d, const gchar *epwd);
 void snmpdest_dd_set_transport(LogDriver *d, const gchar *transport);
 void snmpdest_dd_set_time_zone(LogDriver *d, const gchar *Time_zone);
 
-gboolean snmpdest_check_required_params(LogDriver *, gchar *err_msg);
+gboolean snmpdest_check_required_params(LogDriver *, gchar *err_msg, gsize err_msg_size);
 gchar *snmpdest_dd_get_version(LogDriver *);
 const LogTemplateOptions *snmpdest_dd_get_template_options(LogDriver *d);
 gboolean snmpdest_dd_check_auth_algorithm(gchar *algo);
