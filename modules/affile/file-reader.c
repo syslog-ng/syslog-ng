@@ -551,7 +551,7 @@ _on_file_deleted(FileReader *self)
 static inline void
 _on_file_modified(FileReader *self)
 {
-  if (self->options->follow_method == FM_INOTIFY)
+  if (poll_events_system_notified(self->reader->poll_events))
     log_reader_trigger_one_check(self->reader);
 }
 #endif
