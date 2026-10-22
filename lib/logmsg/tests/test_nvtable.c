@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2009-2016 Balabit
  * Copyright (c) 2009-2016 Balázs Scheidler
  *
@@ -877,9 +878,29 @@ Test(nvtable, test_nvtable_clone_grows_the_cloned_structure)
   cr_assert(success);
   assert_nvtable(tab, STATIC_HANDLE, "value", 5);
 
-  tab_clone = nv_table_clone(tab, 64);
+  gsize free_space = nv_table_get_bottom(tab) - nv_table_get_ofs_table_top(tab);
+  tab_clone = nv_table_clone(tab, free_space + 64);
   assert_nvtable(tab_clone, STATIC_HANDLE, "value", 5);
   cr_assert_lt(tab->size, tab_clone->size);
+  cr_assert_geq(nv_table_get_bottom(tab_clone) - nv_table_get_ofs_table_top(tab_clone), free_space + 64);
+  nv_table_unref(tab_clone);
+  nv_table_unref(tab);
+}
+
+Test(nvtable, test_nvtable_clone_keeps_the_size_if_the_additional_space_already_fits)
+{
+  NVTable *tab, *tab_clone;
+  gboolean success;
+
+  tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 1024);
+  success = nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, strlen(STATIC_NAME), "value", 5, 0, NULL);
+  cr_assert(success);
+
+  gsize free_space = nv_table_get_bottom(tab) - nv_table_get_ofs_table_top(tab);
+  cr_assert_gt(free_space, 64);
+  tab_clone = nv_table_clone(tab, 64);
+  assert_nvtable(tab_clone, STATIC_HANDLE, "value", 5);
+  cr_assert_eq(tab->size, tab_clone->size);
   nv_table_unref(tab_clone);
   nv_table_unref(tab);
 }
@@ -894,10 +915,10 @@ Test(nvtable, test_nvtable_clone_cannot_grow_nvtable_larger_than_nvtable_max_byt
   cr_assert(success);
   assert_nvtable(tab, STATIC_HANDLE, "value", 5);
 
-  tab_clone = nv_table_clone(tab, 2048);
+  tab_clone = nv_table_clone(tab, NV_TABLE_MAX_BYTES);
   assert_nvtable(tab_clone, STATIC_HANDLE, "value", 5);
   cr_assert_lt(tab->size, tab_clone->size);
-  cr_assert_leq(tab_clone->size, NV_TABLE_MAX_BYTES);
+  cr_assert_eq(tab_clone->size, NV_TABLE_MAX_BYTES);
   nv_table_unref(tab_clone);
   nv_table_unref(tab);
 }
