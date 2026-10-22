@@ -1,1 +1,10 @@
-add_unit_test(LIBTEST CRITERION TARGET test_secure_logging DEPENDS secure-logging syslogformat)
+# File: modules/secure-logging/tests/CMakeLists.txt
+
+add_unit_test(
+    LIBTEST CRITERION 
+    TARGET test_secure_logging 
+    DEPENDS 
+        secure-logging 
+        syslog-ng-secure-logging
+        syslogformat
+)
