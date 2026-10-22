@@ -28,6 +28,10 @@
 void append_mmdb_entry_data_to_gstring(GString *target, MMDB_entry_data_s *entry_data);
 gchar *mmdb_default_database(void);
 gboolean mmdb_open_database(const gchar *path, MMDB_s *database);
+/*
+ * status is output-only: MMDB_SUCCESS on success, an MMDB error code on failure.
+ * Returns the next unconsumed node; NULL can also mean successful end-of-list.
+ */
 MMDB_entry_data_list_s *dump_geodata_into_msg(LogMessage *msg,
                                               MMDB_entry_data_list_s *entry_data_list,
                                               GArray *path, gint *status);
