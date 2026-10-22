@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2019 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -24,6 +25,7 @@
 #define HTTP_RESPONSE_HANDLER_H_INCLUDED 1
 
 #include "syslog-ng.h"
+#include "compat/pcre.h"
 
 typedef enum
 {
@@ -53,5 +55,25 @@ HttpResponseHandlers *http_response_handlers_new(void);
 void http_response_handlers_free(HttpResponseHandlers *self);
 void http_response_handlers_insert(HttpResponseHandlers *self, HttpResponseHandler *result_handler);
 HttpResponseHandler *http_response_handlers_lookup(HttpResponseHandlers *self, glong status_code);
+
+/* Response-body handlers: an ordered list of (regexp, action) pairs. The
+ * first pattern that matches the response body decides the action. */
+typedef struct
+{
+  gchar *pattern_str;
+  pcre2_code *pattern;
+  HttpResponseAction action;
+  gpointer user_data;
+} HttpResponseBodyHandler;
+
+typedef struct _HttpResponseBodyHandlers HttpResponseBodyHandlers;
+
+HttpResponseBodyHandlers *http_response_body_handlers_new(void);
+void http_response_body_handlers_free(HttpResponseBodyHandlers *self);
+gboolean http_response_body_handlers_append(HttpResponseBodyHandlers *self, const gchar *pattern,
+                                            HttpResponseAction action, GError **error);
+gboolean http_response_body_handlers_is_empty(HttpResponseBodyHandlers *self);
+HttpResponseBodyHandler *http_response_body_handlers_lookup(HttpResponseBodyHandlers *self,
+                                                            const gchar *body, gsize body_len);
 
 #endif

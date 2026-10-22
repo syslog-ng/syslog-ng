@@ -83,6 +83,7 @@ HttpResponseHandler last_response_handler;
 %token KW_DELIMITER
 %token KW_ACCEPT_REDIRECTS
 %token KW_RESPONSE_ACTION
+%token KW_RESPONSE_BODY_ACTION
 %token KW_SUCCESS
 %token KW_RETRY
 %token KW_DROP
@@ -144,6 +145,21 @@ response_action_item
                              http_dd_insert_response_handler(last_driver, &last_response_handler);}
     ;
 
+response_body_action_items
+    : response_body_action_item response_body_action_items
+    |
+    ;
+
+response_body_action_item
+    : string LL_ARROW http_response_action
+      {
+        GError *error = NULL;
+        CHECK_ERROR_GERROR(http_dd_append_response_body_handler(last_driver, $1, $3, &error), @1, error,
+                           "Error setting response-body-action()");
+        free($1);
+      }
+    ;
+
 http_option
     : KW_URL '(' string_list ')'
       {
@@ -178,6 +194,7 @@ http_option
       }
     | { last_template_options = http_dd_get_template_options(last_driver); } template_option
     | KW_RESPONSE_ACTION '(' response_action_items ')'
+    | KW_RESPONSE_BODY_ACTION '(' response_body_action_items ')'
     ;
 
 http_tls_options
