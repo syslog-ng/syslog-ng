@@ -806,6 +806,113 @@ Test(logthrdestdrv, test_explicit_ack_accept)
   cr_assert(dd->super.shared_seq_num == 11, "%d", dd->super.shared_seq_num);
 }
 
+static void
+_assert_reopen_delay_bounds(LogThreadedDestWorker *worker, time_t lower, time_t upper)
+{
+  for (gint i = 0; i < 256; i++)
+    {
+      time_t delay = log_threaded_dest_worker_calculate_reopen_delay(worker);
+      cr_assert_geq(delay, lower);
+      cr_assert_leq(delay, upper);
+    }
+}
+
+Test(logthrdestdrv, reopen_backoff_is_disabled_by_default_and_by_explicit_zero)
+{
+  cr_assert_eq(dd->super.time_reopen_max, 0);
+  cr_assert_eq(dd->super.worker.instance.time_reopen_max, 0);
+  log_threaded_dest_driver_set_time_reopen_max(&dd->super.super.super, 3600);
+  log_threaded_dest_driver_set_time_reopen_max(&dd->super.super.super, 0);
+  LogThreadedDestWorker worker = { .time_reopen = 30, .time_reopen_max = dd->super.time_reopen_max };
+  for (guint attempt = 0; attempt < 20; attempt++)
+    {
+      worker.connection_retries_counter = attempt;
+      _assert_reopen_delay_bounds(&worker, 30, 30);
+    }
+}
+
+Test(logthrdestdrv, reopen_backoff_jitter_and_cap_are_bounded)
+{
+  LogThreadedDestWorker worker = { .time_reopen = 30, .time_reopen_max = 100 };
+  _assert_reopen_delay_bounds(&worker, 15, 30);
+  worker.connection_retries_counter = 1;
+  _assert_reopen_delay_bounds(&worker, 15, 30);
+  worker.connection_retries_counter = 2;
+  _assert_reopen_delay_bounds(&worker, 30, 60);
+  worker.connection_retries_counter = 3;
+  _assert_reopen_delay_bounds(&worker, 50, 100);
+  worker.connection_retries_counter = G_MAXUINT;
+  _assert_reopen_delay_bounds(&worker, 50, 100);
+}
+
+Test(logthrdestdrv, reopen_backoff_allows_a_cap_below_the_base)
+{
+  LogThreadedDestWorker worker = { .time_reopen = 30, .time_reopen_max = 5 };
+  _assert_reopen_delay_bounds(&worker, 2, 5);
+  worker.time_reopen_max = 1;
+  _assert_reopen_delay_bounds(&worker, 1, 1);
+}
+
+Test(logthrdestdrv, reopen_backoff_uses_the_larger_retry_counter)
+{
+  LogThreadedDestWorker worker = { .time_reopen = 30, .time_reopen_max = 3600,
+                                 .connection_retries_counter = 2, .retries_on_error_counter = 4 };
+  _assert_reopen_delay_bounds(&worker, 120, 240);
+  worker.connection_retries_counter = 4;
+  worker.retries_on_error_counter = 2;
+  _assert_reopen_delay_bounds(&worker, 120, 240);
+}
+
+Test(logthrdestdrv, reopen_backoff_handles_zero_base_and_limits_exponent_and_integer_range)
+{
+  LogThreadedDestWorker worker = { .time_reopen = 0, .time_reopen_max = 3600,
+                                 .connection_retries_counter = G_MAXUINT };
+  _assert_reopen_delay_bounds(&worker, 0, 0);
+  worker.time_reopen = 1;
+  _assert_reopen_delay_bounds(&worker, 512, 1024);
+  worker.time_reopen = G_MAXINT32;
+  worker.time_reopen_max = G_MAXINT32;
+  _assert_reopen_delay_bounds(&worker, G_MAXINT32 / 2, G_MAXINT32);
+}
+
+static LogThreadedResult
+_insert_success_after_errors(LogThreadedDestDriver *s, LogMessage *msg)
+{
+  s->worker.instance.connection_retries_counter = 8;
+  s->worker.instance.retries_on_error_counter = 2;
+  return LTR_SUCCESS;
+}
+
+static LogThreadedResult
+_insert_drop_after_errors(LogThreadedDestDriver *s, LogMessage *msg)
+{
+  _insert_success_after_errors(s, msg);
+  return LTR_DROP;
+}
+
+static void
+_assert_reopen_counters_reset(void)
+{
+  main_loop_sync_worker_startup_and_teardown();
+  LogThreadedDestWorker *worker = &dd->super.worker.instance;
+  cr_assert_eq(worker->connection_retries_counter, 0);
+  cr_assert_eq(worker->retries_on_error_counter, 0);
+}
+
+Test(logthrdestdrv, successful_delivery_resets_both_reopen_counters)
+{
+  dd->super.worker.insert = _insert_success_after_errors;
+  _generate_message_and_wait_for_processing(dd, dd->super.metrics.written_messages);
+  _assert_reopen_counters_reset();
+}
+
+Test(logthrdestdrv, dropping_a_message_preserves_the_existing_reopen_counter_reset_policy)
+{
+  dd->super.worker.insert = _insert_drop_after_errors;
+  _generate_message_and_wait_for_processing(dd, dd->super.metrics.dropped_messages);
+  _assert_reopen_counters_reset();
+}
+
 MainLoopOptions main_loop_options = {0};
 
 static void

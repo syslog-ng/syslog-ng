@@ -293,6 +293,7 @@
 %token KW_TIME_REOPEN                 10210
 %token KW_TIME_REAP                   10211
 %token KW_TIME_SLEEP                  10212
+%token KW_TIME_REOPEN_MAX             10213
 
 %token KW_PARALLELIZE                 10215
 %token KW_PARTITIONS                  10216
@@ -1387,6 +1388,7 @@ threaded_dest_driver_general_option_noflags
           log_threaded_dest_driver_set_max_retries_on_error(last_driver, $3);
         }
         | KW_TIME_REOPEN '(' positive_integer ')' { log_threaded_dest_driver_set_time_reopen(last_driver, $3); }
+        | KW_TIME_REOPEN_MAX '(' nonnegative_integer ')' { log_threaded_dest_driver_set_time_reopen_max(last_driver, $3); }
         | dest_driver_option
         ;
 
