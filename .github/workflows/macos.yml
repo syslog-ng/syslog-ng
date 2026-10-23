@@ -145,6 +145,15 @@ jobs:
             brew install grpc mongo-c-driver qpdf
           fi
 
+          if ! command -v zlib-flate >/dev/null 2>&1; then
+            echo "zlib-flate not found on PATH, forcing qpdf relink..."
+            brew link --overwrite qpdf
+          fi
+          if ! command -v zlib-flate >/dev/null 2>&1; then
+            echo "Error zlib-flate not found on PATH after qpdf relink." >&2
+            exit 1
+          fi
+
       # -------------------------------
       # Restore MacPorts user/group info from separate cache
       # The cache update is automatic as a "Post" step at the job end
