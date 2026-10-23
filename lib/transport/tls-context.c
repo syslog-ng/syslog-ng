@@ -400,7 +400,7 @@ _extract_pkcs12_content(TLSContext *self, PKCS12 *pkcs12, EVP_PKEY **private_key
                         STACK_OF(X509) **ca_list)
 {
   /* a file without a password (or with an empty one) */
-  if (PKCS12_parse(pkcs12, "", private_key, cert, ca_list))
+  if (syslog_ng_pkcs12_parse(pkcs12, "", private_key, cert, ca_list))
     return TLS_CONTEXT_OK;
 
   if (PKCS12_verify_mac(pkcs12, "", 0) || PKCS12_verify_mac(pkcs12, NULL, 0))
@@ -420,11 +420,11 @@ _extract_pkcs12_content(TLSContext *self, PKCS12 *pkcs12, EVP_PKEY **private_key
     {
       if (!PKCS12_verify_mac(pkcs12, password, -1))
         result = TLS_CONTEXT_PASSWORD_ERROR;
-      else if (!PKCS12_parse(pkcs12, password, private_key, cert, ca_list))
+      else if (!syslog_ng_pkcs12_parse(pkcs12, password, private_key, cert, ca_list))
         result = TLS_CONTEXT_ERROR;
     }
   /* a file without a MAC (openssl pkcs12 -nomac): only decryption can tell a wrong password */
-  else if (!PKCS12_parse(pkcs12, password, private_key, cert, ca_list))
+  else if (!syslog_ng_pkcs12_parse(pkcs12, password, private_key, cert, ca_list))
     result = TLS_CONTEXT_PASSWORD_ERROR;
 
   OPENSSL_cleanse(password, strlen(password));
