@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -184,7 +185,8 @@ afsocket_sc_init(LogPipe *s)
                          kb);
   log_reader_set_name(self->reader, afsocket_sc_format_name(self));
 
-  if (!restored_kept_alive_source && self->owner->dynamic_window_pool)
+  /* a reader restored from a configuration without dynamic-window-size() has no pool yet */
+  if (self->owner->dynamic_window_pool && !log_source_is_dynamic_window_enabled(&self->reader->super))
     log_source_enable_dynamic_window(&self->reader->super, self->owner->dynamic_window_pool);
 
   log_pipe_append((LogPipe *) self->reader, s);
@@ -727,7 +729,11 @@ afsocket_sd_restore_dynamic_window_pool(AFSocketSourceDriver *self)
       self->dynamic_window_pool = ctr;
       return TRUE;
     }
-  return TRUE;
+
+  /* not taken over: drop our reference (connections kept from the old config hold their own),
+   * so that the caller creates a fresh pool */
+  dynamic_window_pool_unref(ctr);
+  return FALSE;
 }
 
 static void
@@ -993,10 +999,6 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
-  /* fetch persistent connections first */
-  self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_connections_name(self));
-  guint stored_conn_count = self->connections ? g_list_length(self->connections) : 0;
-
   /* If a config reload is in progress and there are stored connections (but the new config
    * does not have keep-alive() and so-reuseport() enabled), then in the current
    * config deinit/init order, no component will close the previous connections before
@@ -1021,10 +1023,16 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
    *      respect it).
    *
    * We go with the second option for now.
+   *
+   * Connections that are not taken over stay in the persist config: they are closed when the
+   * reload completes, or handed back to the old configuration if it is reverted. Fetching them
+   * anyway left them in this driver's list uninitialized (and without a dynamic window pool,
+   * which the dynamic window timer dereferences).
    */
   if (self->connections_kept_alive_across_reloads || (FALSE == self->socket_options->so_reuseport
-                                                      && is_reloading_scheduled() && stored_conn_count > 0))
+                                                      && is_reloading_scheduled()))
     {
+      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_connections_name(self));
       _connections_count_set(self, 0);
       for (GList *p = self->connections, *next; p; p = next)
         {
