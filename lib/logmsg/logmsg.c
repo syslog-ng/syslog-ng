@@ -931,8 +931,10 @@ log_msg_clear_matches(LogMessage *self)
   log_msg_truncate_matches(self, 0);
 }
 
-#if GLIB_SIZEOF_LONG != GLIB_SIZEOF_VOID_P
-#error "The tags bit array assumes that long is the same size as the pointer"
+/* inline tags are stored in the "tags" pointer itself (only its first
+ * long is used if long is shorter, e.g. on 64 bit Windows) */
+#if GLIB_SIZEOF_LONG > GLIB_SIZEOF_VOID_P
+#error "The tags bit array assumes that long is not larger than the pointer"
 #endif
 
 #if GLIB_SIZEOF_LONG == 8
