@@ -998,10 +998,6 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
-  /* fetch persistent connections first */
-  self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_connections_name(self));
-  guint stored_conn_count = self->connections ? g_list_length(self->connections) : 0;
-
   /* If a config reload is in progress and there are stored connections (but the new config
    * does not have keep-alive() and so-reuseport() enabled), then in the current
    * config deinit/init order, no component will close the previous connections before
@@ -1026,10 +1022,16 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
    *      respect it).
    *
    * We go with the second option for now.
+   *
+   * Connections that are not taken over stay in the persist config: they are closed when the
+   * reload completes, or handed back to the old configuration if it is reverted. Fetching them
+   * anyway left them in this driver's list uninitialized (and without a dynamic window pool,
+   * which the dynamic window timer dereferences).
    */
   if (self->connections_kept_alive_across_reloads || (FALSE == self->socket_options->so_reuseport
-                                                      && is_reloading_scheduled() && stored_conn_count > 0))
+                                                      && is_reloading_scheduled()))
     {
+      self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_connections_name(self));
       _connections_count_set(self, 0);
       for (GList *p = self->connections, *next; p; p = next)
         {
