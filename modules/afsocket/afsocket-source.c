@@ -185,7 +185,8 @@ afsocket_sc_init(LogPipe *s)
                          kb);
   log_reader_set_name(self->reader, afsocket_sc_format_name(self));
 
-  if (!restored_kept_alive_source && self->owner->dynamic_window_pool)
+  /* a reader restored from a configuration without dynamic-window-size() has no pool yet */
+  if (self->owner->dynamic_window_pool && !log_source_is_dynamic_window_enabled(&self->reader->super))
     log_source_enable_dynamic_window(&self->reader->super, self->owner->dynamic_window_pool);
 
   log_pipe_append((LogPipe *) self->reader, s);

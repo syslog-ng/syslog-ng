@@ -22,6 +22,8 @@
 #############################################################################
 import socket
 
+import pytest
+
 from src.common.blocking import wait_until_true
 
 STATIC_WINDOW = 100  # log-iw-size(1000) / max-connections(10)
@@ -112,6 +114,48 @@ def test_reload_closes_connections_the_new_config_does_not_keep(config, syslog_n
             _send(new_client, "after-reload")
             assert destination.read_log() == "after-reload\n"
             assert wait_until_true(lambda: any(w > STATIC_WINDOW for w in _full_windows(syslog_ng_ctl)))
+            assert syslog_ng.is_process_running()
+        finally:
+            new_client.close()
+    finally:
+        old_client.close()
+
+
+@pytest.mark.parametrize(
+    "new_keep_alive, so_reuseport",
+    [("yes", "yes"), ("yes", "no"), ("no", "no")],
+    ids=["keep-alive-reuseport", "keep-alive", "restored-without-reuseport"],
+)
+def test_restored_connection_joins_the_pool_of_a_reload_that_enables_dynamic_window(
+    config, syslog_ng, syslog_ng_ctl, port_allocator, new_keep_alive, so_reuseport,
+):
+    # The old connection is restored (keep-alive(yes), or a reload without so-reuseport(), which restores
+    # it regardless of keep-alive()) into a configuration that turns dynamic-window-size() on. The restored
+    # reader had no pool and was never given one; the realloc timer dereferenced it (SIGSEGV).
+    config.update_global_options(stats_level=4)
+    port = port_allocator()
+    source = config.create_network_source(**_source_options(port, "yes", so_reuseport, 0))
+    destination = config.create_file_destination(file_name="output.log", template=r'"${MESSAGE}\n"')
+    config.create_logpath(statements=[source, destination])
+    syslog_ng.start(config)
+
+    old_client = socket.create_connection(("127.0.0.1", port))
+    try:
+        _send(old_client, "before-reload")
+        assert destination.read_log() == "before-reload\n"
+
+        source.options["keep_alive"] = new_keep_alive
+        source.options["dynamic_window_size"] = 10000
+        syslog_ng.reload(config)
+
+        new_client = socket.create_connection(("127.0.0.1", port))
+        try:
+            _send(new_client, "after-reload-new")
+            assert destination.read_log() == "after-reload-new\n"
+            _send(old_client, "after-reload-old")
+            assert destination.read_log() == "after-reload-old\n"
+            # both connections, the restored one included, get a dynamic share above the static window
+            assert wait_until_true(lambda: sum(1 for w in _full_windows(syslog_ng_ctl) if w > STATIC_WINDOW) >= 2)
             assert syslog_ng.is_process_running()
         finally:
             new_client.close()
