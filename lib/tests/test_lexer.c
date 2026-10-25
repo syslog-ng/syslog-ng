@@ -29,6 +29,7 @@
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
 #include "apphook.h"
+#include "cfg-block.h"
 #include "reloc.h"
 
 #define TESTDATA_DIR TOP_SRCDIR "/lib/tests/testdata-lexer"
@@ -540,6 +541,25 @@ Test(lexer, generator_plugins_are_expanded)
   _input("fake-generator();\n");
   assert_parser_identifier("fake_generator_content");
   cfg_lexer_pop_context(lexer);
+}
+
+Test(lexer, block_location_keeps_backslashes_in_the_file_name)
+{
+  CFG_LTYPE lloc = { .first_line = 3, .first_column = 1, .last_line = 3, .last_column = 1,
+                     .name = "C:\\dir\\new\\x.conf"
+                   };
+  CfgBlockGenerator *block = cfg_block_new(LL_CONTEXT_ROOT, "test-block", "block_content", cfg_args_new(), &lloc);
+
+  cfg_lexer_register_generator_plugin(&configuration->plugin_context, block);
+  /* the @line pragma is only generated if the configuration is being parsed */
+  configuration->lexer = parser->lexer;
+  parser->lexer->ignore_pragma = FALSE;
+  cfg_lexer_push_context(parser->lexer, main_parser.context, main_parser.keywords, main_parser.name);
+  _input("test-block();\n");
+  assert_parser_identifier("block_content");
+  cr_assert_str_eq(_current_lloc()->name, "C:\\dir\\new\\x.conf");
+  cfg_lexer_pop_context(parser->lexer);
+  configuration->lexer = NULL;
 }
 
 Test(lexer, context_name_lookup)
