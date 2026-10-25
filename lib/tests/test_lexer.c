@@ -483,6 +483,24 @@ Test(lexer, include_finds_wildcards_files_in_include_path)
   assert_parser_identifier("foo");
 }
 
+Test(lexer, include_with_absolute_path_does_not_use_include_path)
+{
+  parser->lexer->ignore_pragma = FALSE;
+  _input("@define include-path \"" TESTDATA_DIR "\"\n\
+@include \"" TESTDATA_DIR "/include-test/foo.conf\"\n");
+  assert_parser_identifier("foo");
+}
+
+Test(lexer, include_wildcard_with_absolute_path_does_not_use_include_path)
+{
+  parser->lexer->ignore_pragma = FALSE;
+  _input("@define include-path \"" TESTDATA_DIR "\"\n\
+@include \"" TESTDATA_DIR "/include-test/*.conf\"\n");
+  assert_parser_identifier("bar");
+  assert_parser_identifier("baz");
+  assert_parser_identifier("foo");
+}
+
 Test(lexer, default_include_path_is_split_into_sysconfdir_and_include_dir)
 {
   cfg_set_global_paths(configuration);
