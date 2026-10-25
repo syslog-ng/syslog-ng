@@ -51,6 +51,7 @@
 
 %token KW_LOKI
 %token KW_LABELS
+%token KW_STRUCTURED_METADATA
 %token KW_TIMESTAMP
 %token KW_TENANT_ID
 
@@ -77,6 +78,7 @@ loki_dest_options
 
 loki_dest_option
   : KW_LABELS '(' loki_labels ')'
+  | KW_STRUCTURED_METADATA '(' loki_structured_metadata ')'
   | KW_TENANT_ID '(' string ')' { loki_dd_set_tenant_id(last_driver, $3); free($3); }
   | KW_TIMESTAMP '(' string ')'
     {
@@ -96,6 +98,20 @@ loki_label
   : string LL_ARROW template_content
     {
 	    loki_dd_add_label(last_driver, $1, $3);
+      free($1);
+      log_template_unref($3);
+    }
+  ;
+
+loki_structured_metadata
+  : loki_structured_metadata_pair loki_structured_metadata
+  |
+  ;
+
+loki_structured_metadata_pair
+  : string LL_ARROW template_content
+    {
+      loki_dd_add_structured_metadata(last_driver, $1, $3);
       free($1);
       log_template_unref($3);
     }
