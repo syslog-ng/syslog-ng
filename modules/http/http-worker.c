@@ -683,7 +683,7 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
           self->request_body_compressed->len < self->request_body->len)
         {
           curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body_compressed->str);
-          curl_easy_setopt(self->curl, CURLOPT_POSTFIELDSIZE, self->request_body_compressed->len);
+          curl_easy_setopt(self->curl, CURLOPT_POSTFIELDSIZE_LARGE, (curl_off_t) self->request_body_compressed->len);
           _add_header(self->request_headers, "Content-Encoding", compressor_get_encoding_name(self->compressor));
         }
       else
