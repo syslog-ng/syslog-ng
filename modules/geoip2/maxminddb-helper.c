@@ -126,6 +126,7 @@ mmdb_skip_map(MMDB_entry_data_list_s *entry_data_list, gint *status)
         }
     }
 
+  *status = MMDB_SUCCESS;
   return entry_data_list;
 }
 
@@ -144,6 +145,7 @@ mmdb_skip_array(MMDB_entry_data_list_s *entry_data_list, gint *status)
           return NULL;
         }
     }
+  *status = MMDB_SUCCESS;
   return entry_data_list;
 }
 
@@ -154,11 +156,9 @@ mmdb_skip_tree(MMDB_entry_data_list_s *entry_data_list, gint *status)
   switch (entry_data_list->entry_data.type)
     {
     case MMDB_DATA_TYPE_MAP:
-      entry_data_list = mmdb_skip_map(entry_data_list, status);
-      break;
+      return mmdb_skip_map(entry_data_list, status);
     case MMDB_DATA_TYPE_ARRAY:
-      entry_data_list = mmdb_skip_array(entry_data_list, status);
-      break;
+      return mmdb_skip_array(entry_data_list, status);
     case MMDB_DATA_TYPE_BYTES:
     case MMDB_DATA_TYPE_BOOLEAN:
     case MMDB_DATA_TYPE_UINT128:
@@ -221,6 +221,7 @@ check_language_and_maybe_insert(GString *key, gchar *preferred_language, LogMess
         return NULL;
     }
 
+  *status = MMDB_SUCCESS;
   return entry_data_list;
 }
 
@@ -250,6 +251,7 @@ select_language(gchar *preferred_language, LogMessage *msg,
         return NULL;
 
     }
+  *status = MMDB_SUCCESS;
   return entry_data_list;
 }
 
@@ -289,6 +291,7 @@ dump_geodata_into_msg_map(LogMessage *msg, MMDB_entry_data_list_s *entry_data_li
       g_array_remove_index(path, path->len - 1);
     }
 
+  *status = MMDB_SUCCESS;
   return entry_data_list;
 }
 
@@ -312,6 +315,7 @@ dump_geodata_into_msg_array(LogMessage *msg, MMDB_entry_data_list_s *entry_data_
     }
   g_array_remove_index(path, path->len - 1);
 
+  *status = MMDB_SUCCESS;
   return entry_data_list;
 }
 
