@@ -25,9 +25,10 @@ jobs:
       matrix:
         # https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners
         # https://docs.github.com/en/actions/reference/runners/github-hosted-runners
-        #   13, 15-intel          - X86_64
-        #   14, 15 or latest, 26  - Arm64 (M1)
-        version: [14, 15, 15-intel, 26]
+        #   15-intel          - X86_64
+        #   15 or latest, 26  - Arm64 (M1)
+        # macOS 14 hosted runners retire on 2026-11-02: https://github.com/actions/runner-images/issues/13518
+        version: [15, 15-intel, 26]
         build-tool: [autotools, cmake]
         compiler: [{ cpp: clang++, c: clang }, { cpp: g++, c: gcc }]
         macports-version: [2.11.5]
@@ -51,11 +52,6 @@ jobs:
     steps:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v4
-
-      - name: Set xcode version
-        if: matrix.version == 14
-        run: |
-          sudo xcode-select -s /Applications/Xcode_15.2.app
 
       - name:
           Unlinking preinstalled Python (workaround)
@@ -221,7 +217,6 @@ jobs:
             RAW_VERSION="${{ matrix.version }}"
             MAJOR_VERSION="${RAW_VERSION%%-*}"
             case "$MAJOR_VERSION" in
-              14) OS_NAME="Sonoma" ;;
               15) OS_NAME="Sequoia" ;;
               26) OS_NAME="Tahoe" ;;
               *)  OS_NAME="Unknown" ;;
