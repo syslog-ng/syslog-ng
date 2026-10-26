@@ -24,12 +24,20 @@
 #include <criterion/parameterized.h>
 #include "libtest/config_parse_lib.h"
 #include "libtest/grab-logging.h"
+#include "libtest/persist_lib.h"
+#include "libtest/proto_lib.h"
 
 #include "cfg.h"
 #include "apphook.h"
 #include "cfg-grammar.h"
+#include "iv.h"
 #include "plugin.h"
+#include "wildcard-file-reader.h"
 #include "wildcard-source.h"
+
+#include <fcntl.h>
+#include <glib/gstdio.h>
+#include <unistd.h>
 
 /* Cases: directory modification notifications wake effective inotify readers,
  * including auto/legacy selection, but do not wake timer/system-polled readers.
@@ -221,6 +229,123 @@ Test(wildcard_source, test_window_size)
                                                              "max_files(10)"
                                                              "log_iw_size(10000)");
   cr_assert_eq(driver->file_reader_options.reader_options.super.init_window_size, 1000);
+}
+
+static gchar *deferred_files_directory;
+
+static void
+_init_deferred_files(void)
+{
+  _init();
+  cr_assert(cfg_load_module(configuration, "syslogformat"));
+  deferred_files_directory = g_dir_make_tmp("syslog-ng-deferred-files-XXXXXX", NULL);
+  cr_assert_not_null(deferred_files_directory);
+
+  gchar *persist_filename = g_build_filename(deferred_files_directory, "syslog-ng.persist", NULL);
+  configuration->state = create_persist_state_for_test(persist_filename);
+  g_free(persist_filename);
+}
+
+static void
+_deinit_deferred_files(void)
+{
+  cfg_deinit(configuration);
+  PersistState *state = configuration->state;
+  configuration->state = NULL;
+  cfg_free(configuration);
+  configuration = NULL;
+  cancel_and_destroy_persist_state(state);
+
+  GDir *directory = g_dir_open(deferred_files_directory, 0, NULL);
+  cr_assert_not_null(directory);
+  const gchar *filename;
+  while ((filename = g_dir_read_name(directory)))
+    {
+      gchar *path = g_build_filename(deferred_files_directory, filename, NULL);
+      cr_assert_eq(g_unlink(path), 0);
+      g_free(path);
+    }
+  g_dir_close(directory);
+  cr_assert_eq(g_rmdir(deferred_files_directory), 0);
+  g_clear_pointer(&deferred_files_directory, g_free);
+  app_shutdown();
+}
+
+TestSuite(wildcard_source_deferred_files, .init = _init_deferred_files, .fini = _deinit_deferred_files);
+
+ParameterizedTestParameters(wildcard_source_deferred_files, startup_files_preserve_waiting_records)
+{
+  static gboolean saved_position_cases[] = { FALSE, TRUE };
+  return cr_make_param_array(gboolean, saved_position_cases, G_N_ELEMENTS(saved_position_cases));
+}
+
+ParameterizedTest(gboolean *with_saved_position, wildcard_source_deferred_files, startup_files_preserve_waiting_records)
+{
+  gchar *first_path = g_build_filename(deferred_files_directory, "first.log", NULL);
+  gchar *second_path = g_build_filename(deferred_files_directory, "second.log", NULL);
+  cr_assert(g_file_set_contents(first_path, "old-record\n", -1, NULL));
+  cr_assert(g_file_set_contents(second_path, "old-record\n", -1, NULL));
+
+  gchar *options = g_strdup_printf("base-dir(\"%s\") filename-pattern(\"*.log\") max-files(1) "
+                                   "read-old-records(no) monitor-method(poll) follow-method(poll)",
+                                   deferred_files_directory);
+  WildcardSourceDriver *driver = _create_wildcard_filesource(options);
+  g_free(options);
+  cr_assert_not(driver->initial_scan);
+  cr_assert_eq(g_hash_table_size(driver->file_readers), 1);
+
+  /* Find the deferred file without relying on directory enumeration order. */
+  GList *pending = pending_file_list_begin(driver->waiting_list);
+  cr_assert_not_null(pending);
+  cr_assert_null(pending_file_list_next(pending));
+  gchar *pending_path = g_strdup(pending->data);
+  GHashTableIter iterator;
+  gpointer active_value;
+  g_hash_table_iter_init(&iterator, driver->file_readers);
+  cr_assert(g_hash_table_iter_next(&iterator, NULL, &active_value));
+  WildcardFileReader *active_reader = active_value;
+  cr_assert_not(active_reader->super.effective_read_old_records);
+  assert_proto_server_fetch_ignored_eof(active_reader->super.reader->proto);
+
+  if (*with_saved_position)
+    {
+      /* Seed a saved EOF using the same reader/persist-name implementation. */
+      WildcardFileReader *previous_reader = wildcard_file_reader_new(pending_path, &driver->file_reader_options,
+                                            driver->file_opener, &driver->super,
+                                            configuration, FALSE);
+      cr_assert(log_pipe_init(&previous_reader->super.super));
+      assert_proto_server_fetch_ignored_eof(previous_reader->super.reader->proto);
+      cr_assert(log_pipe_deinit(&previous_reader->super.super));
+      log_pipe_unref(&previous_reader->super.super);
+    }
+
+  const gchar new_record[] = "new-record\n";
+  gint append_fd = g_open(pending_path, O_WRONLY | O_APPEND, 0);
+  cr_assert_geq(append_fd, 0);
+  cr_assert_eq(write(append_fd, new_record, sizeof(new_record) - 1), sizeof(new_record) - 1);
+  cr_assert_eq(close(append_fd), 0);
+
+  /* Deleted + EOF schedules the real callback that promotes the pending file. */
+  cr_assert_eq(g_unlink(active_reader->super.filename->str), 0);
+  log_pipe_notify(&active_reader->super.super, NC_FILE_DELETED, NULL);
+  log_pipe_notify(&active_reader->super.super, NC_FILE_EOF, NULL);
+  cr_assert(iv_task_registered(&active_reader->file_state_event_handler));
+  iv_task_unregister(&active_reader->file_state_event_handler);
+  active_reader->file_state_event_handler.handler(active_reader->file_state_event_handler.cookie);
+
+  cr_assert_eq(g_hash_table_size(driver->file_readers), 1);
+  cr_assert_null(pending_file_list_begin(driver->waiting_list));
+  WildcardFileReader *promoted_reader = g_hash_table_lookup(driver->file_readers, pending_path);
+  cr_assert_not_null(promoted_reader);
+  cr_assert(promoted_reader->super.effective_read_old_records);
+  if (!*with_saved_position)
+    assert_proto_server_fetch(promoted_reader->super.reader->proto, "old-record", -1);
+  assert_proto_server_fetch(promoted_reader->super.reader->proto, "new-record", -1);
+  assert_proto_server_fetch_ignored_eof(promoted_reader->super.reader->proto);
+
+  g_free(pending_path);
+  g_free(second_path);
+  g_free(first_path);
 }
 
 
