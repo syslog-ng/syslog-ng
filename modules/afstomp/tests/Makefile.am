@@ -11,8 +11,19 @@ modules_afstomp_tests_test_stomp_proto_LDADD = \
 modules_afstomp_tests_test_stomp_proto_LDFLAGS = \
     -dlpreopen $(top_builddir)/modules/afstomp/libafstomp.la
 
+modules_afstomp_tests_test_afstomp_config_CFLAGS = \
+    $(TEST_CFLAGS) \
+    -I$(top_srcdir)/modules/afstomp
+
+modules_afstomp_tests_test_afstomp_config_LDADD = \
+    $(TEST_LDADD) $(MODULE_DEPS_LIBS)
+
+modules_afstomp_tests_test_afstomp_config_LDFLAGS = \
+    -dlpreopen $(top_builddir)/modules/afstomp/libafstomp.la
+
 modules_afstomp_tests_TESTS =   \
-    modules/afstomp/tests/test_stomp_proto
+    modules/afstomp/tests/test_stomp_proto \
+    modules/afstomp/tests/test_afstomp_config
 
 check_PROGRAMS +=   \
     $(modules_afstomp_tests_TESTS)
