@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2002-2016 Balabit
+ * Copyright (c) 2026 Istvan Hoffmann <hofione@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,6 +78,33 @@ syslog_ng_x509_name_get_text_by_NID(const X509_NAME *name, int nid, char *buf, i
   buf[copy_len] = '\0';
 
   return copy_len;
+}
+
+int
+syslog_ng_pkcs12_parse(PKCS12 *pkcs12, const char *password, EVP_PKEY **private_key, X509 **cert,
+                       STACK_OF(X509) **ca_list)
+{
+  if (!pkcs12 || PKCS12_mac_present(pkcs12))
+    return PKCS12_parse(pkcs12, password, private_key, cert, ca_list);
+
+  if (private_key)
+    *private_key = NULL;
+  if (cert)
+    *cert = NULL;
+
+  /*
+   * Older OpenSSL parsers require a MAC even for bundles exported without one.
+   * Add one only to a private copy; it provides no integrity guarantee for the
+   * original bundle, and the supplied password must still decrypt its contents.
+   */
+  PKCS12 *copy = ASN1_item_dup(ASN1_ITEM_rptr(PKCS12), pkcs12);
+  if (!copy)
+    return 0;
+
+  int result = PKCS12_set_mac(copy, password, -1, NULL, 0, 1, EVP_sha256())
+               && PKCS12_parse(copy, password, private_key, cert, ca_list);
+  PKCS12_free(copy);
+  return result;
 }
 
 /* ThreadID callbacks for various OpenSSL versions */

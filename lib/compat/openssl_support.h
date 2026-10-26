@@ -27,6 +27,7 @@
 #include "compat/compat.h"
 #include <openssl/ssl.h>
 #include <openssl/dh.h>
+#include <openssl/pkcs12.h>
 #include <glib.h>
 
 #if !SYSLOG_NG_HAVE_DECL_SSL_CTX_GET0_PARAM
@@ -43,6 +44,8 @@ uint32_t X509_get_extension_flags(X509 *x);
 #endif
 
 int syslog_ng_x509_name_get_text_by_NID(const X509_NAME *name, int nid, char *buf, int len);
+int syslog_ng_pkcs12_parse(PKCS12 *pkcs12, const char *password, EVP_PKEY **private_key, X509 **cert,
+                           STACK_OF(X509) **ca_list);
 
 #if SYSLOG_NG_HAVE_DECL_EVP_MD_CTX_RESET
 #include <openssl/evp.h>
