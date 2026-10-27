@@ -25,7 +25,9 @@ brew "libnet"
 brew "libpaho-mqtt"
 brew "librdkafka"
 brew "net-snmp"
-brew "python@3", link: true, force: true
+# Pinned: python@3.15's pyport.h uses undefined _Py_STDC_VERSION under -std=gnu23, which our -Werror -Wundef turns into a build failure.
+# TODO: Rmove once teh brew formula for python@3.15 is fixed
+brew "python@3.13", link: true, force: true
 brew "rabbitmq-c"
 brew "riemann-client"
 
