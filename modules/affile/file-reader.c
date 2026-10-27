@@ -237,12 +237,50 @@ _reader_on_eof(FileReader *self)
   return result;
 }
 
+static void _on_file_moved(FileReader *self);
+
+/* Same detection as poll-file-changes does, system polling has no other source of it */
+static gboolean
+_reader_followed_file_changed(FileReader *self, gint fd)
+{
+  struct stat st, followed_st;
+  off_t pos = lseek(fd, 0, SEEK_CUR);
+
+  if (pos == (off_t) -1 || fstat(fd, &st) != 0)
+    return FALSE;
+
+  if (pos > st.st_size)
+    return TRUE;
+
+  return pos == st.st_size && stat(self->filename->str, &followed_st) == 0 &&
+         st.st_ino != followed_st.st_ino && followed_st.st_size > 0;
+}
+
+/* The reader must not be reopened from the poll callback, an io operation might be in progress */
+static void
+_file_replaced_task_handler(gpointer s)
+{
+  FileReader *self = (FileReader *) s;
+
+  _on_file_moved(self);
+}
+
 static inline gboolean
 _reader_check_watches(PollEvents *poll_events, gpointer user_data)
 {
   FileReader *self = (FileReader *) user_data;
   gboolean check_again = TRUE;
   gint fd = poll_events_get_fd(poll_events);
+
+  if (poll_events_system_polled(poll_events) && _reader_followed_file_changed(self, fd))
+    {
+      msg_trace("Followed file was replaced or truncated",
+                evt_tag_str("follow_filename", self->filename->str),
+                evt_tag_int("fn", fd));
+      if (!iv_task_registered(&self->file_replaced_task))
+        iv_task_register(&self->file_replaced_task);
+      return FALSE;
+    }
 
   if (_reader_check_eof(self, fd))
     {
@@ -647,6 +685,9 @@ gboolean
 file_reader_deinit_method(LogPipe *s)
 {
   FileReader *self = (FileReader *)s;
+
+  if (iv_task_registered(&self->file_replaced_task))
+    iv_task_unregister(&self->file_replaced_task);
   if (self->reader)
     _deinit_sd_logreader(self);
   return TRUE;
@@ -710,6 +751,9 @@ file_reader_init_instance(FileReader *self, const gchar *filename,
   self->effective_read_old_records = options->reader_options.super.read_old_records;
   self->owner = owner;
   self->super.expr_node = owner->super.super.expr_node;
+  IV_TASK_INIT(&self->file_replaced_task);
+  self->file_replaced_task.cookie = self;
+  self->file_replaced_task.handler = _file_replaced_task_handler;
 }
 
 FileReader *
