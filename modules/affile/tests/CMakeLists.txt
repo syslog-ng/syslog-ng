@@ -1,4 +1,4 @@
-add_unit_test(CRITERION LIBTEST TARGET test_wildcard_source DEPENDS affile)
+add_unit_test(CRITERION LIBTEST TARGET test_wildcard_source DEPENDS affile syslogformat)
 add_unit_test(CRITERION TARGET test_directory_monitor DEPENDS affile)
 add_unit_test(CRITERION TARGET test_collection_comparator DEPENDS affile)
 add_unit_test(CRITERION LIBTEST TARGET test_file_writer DEPENDS affile)
