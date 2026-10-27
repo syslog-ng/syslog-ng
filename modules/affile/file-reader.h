@@ -26,6 +26,8 @@
 #include "logreader.h"
 #include "file-opener.h"
 
+#include <iv.h>
+
 typedef struct _FileReaderOptions
 {
   gint follow_freq;
@@ -50,6 +52,7 @@ struct _FileReader
   const gchar *persist_name_prefix;
   gboolean monitor_can_notify_file_changes;
   gboolean effective_read_old_records;
+  struct iv_task file_replaced_task;
 
   void (*on_file_moved)(FileReader *);
 };
