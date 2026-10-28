@@ -34,11 +34,6 @@ jobs:
         macports-version: [2.11.5]
         use-brew-cache: [false]
         use-ports-cache: [true]
-        exclude:
-          # NOTE: This can be excluded to speed up the testing matrix, as clang is the default compiler on macOS 26
-          #       and it is used for development too on an everyday basis, on arm64.
-          - version: 26
-            compiler: { cpp: clang++, c: clang }
     runs-on: macOS-${{ matrix.version }}
     # Unfortunately, ${{ runner.arch }} cannot be used in the job definition :S
     name: macOS${{ matrix.version }}-arm64, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
