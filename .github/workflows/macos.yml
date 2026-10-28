@@ -25,23 +25,18 @@ jobs:
       matrix:
         # https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners
         # https://docs.github.com/en/actions/reference/runners/github-hosted-runners
-        #   15-intel          - X86_64
         #   15 or latest, 26  - Arm64 (M1)
         # macOS 14 hosted runners retire on 2026-11-02: https://github.com/actions/runner-images/issues/13518
-        version: [15, 15-intel, 26]
+        # Intel dropped: slow source builds; retires August 2027: https://github.com/actions/runner-images/issues/13045
+        version: [15, 26]
         build-tool: [autotools, cmake]
         compiler: [{ cpp: clang++, c: clang }, { cpp: g++, c: gcc }]
         macports-version: [2.11.5]
         use-brew-cache: [false]
         use-ports-cache: [true]
-        exclude:
-          # NOTE: This can be excluded to speed up the testing matrix, as clang is the default compiler on macOS 26
-          #       and it is used for development too on an everyday basis, on arm64.
-          - version: 26
-            compiler: { cpp: clang++, c: clang }
     runs-on: macOS-${{ matrix.version }}
     # Unfortunately, ${{ runner.arch }} cannot be used in the job definition :S
-    name: macOS${{ matrix.version }}-${{ matrix.version == '15-intel' && 'amd64' || 'arm64' }}, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
+    name: macOS${{ matrix.version }}-arm64, ${{ matrix.build-tool }}, ${{ matrix.compiler.c }}
     env:
       # Disable updates for PRs and opt-in manual runs, including brew calls used to compose cache keys.
       HOMEBREW_NO_AUTO_UPDATE: ${{ (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.no-upgrade)) && '1' || '' }}
@@ -70,12 +65,6 @@ jobs:
           echo "MACPORTS_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
           echo "MACPORTS_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-macports-${{ runner.arch }}-" >> $GITHUB_ENV
           echo "MACPORTS_USER_INFO_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-macports-user-info-${{ runner.arch }}-${{ matrix.macports-version }}" >> $GITHUB_ENV
-          if [ "${{ runner.arch }}" = "X64" ]; then
-            BREW_X64_SRC_VERSIONS=$(brew info --json grpc mongo-c-driver qpdf | \
-              jq -r '[.[].versions.stable] | join("-")' 2>/dev/null || echo "unknown")
-            echo "BREW_X64_SRC_CACHE_KEY=${{ runner.os }}${{ matrix.version }}-brew-x64-src-${{ runner.arch }}-${BREW_X64_SRC_VERSIONS}" >> $GITHUB_ENV
-            echo "BREW_X64_SRC_CACHE_RESTORE_KEY=${{ runner.os }}${{ matrix.version }}-brew-x64-src-${{ runner.arch }}-" >> $GITHUB_ENV
-          fi
 
       # -------------------------------
       # Restore Homebrew dependencies from cache
@@ -87,22 +76,6 @@ jobs:
           path: /Users/runner/Library/Caches/Homebrew
           key: ${{ env.HOMEBREW_CACHE_KEY }}
           restore-keys: ${{ env.HOMEBREW_CACHE_RESTORE_KEY }}
-
-      # -------------------------------
-      # Cache source-built Homebrew packages for x86_64 (bottles outdated on Intel runners)
-      - name: Cache X64 source-built Homebrew packages
-        if: runner.arch == 'X64'
-        id: brew-x64-src-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            /usr/local/Cellar/grpc
-            /usr/local/Cellar/mongo-c-driver
-            /usr/local/Cellar/qpdf
-            /usr/local/Cellar/re2
-            /usr/local/Cellar/sphinx-doc
-          key: ${{ env.BREW_X64_SRC_CACHE_KEY }}
-          restore-keys: ${{ env.BREW_X64_SRC_CACHE_RESTORE_KEY }}
 
       # -------------------------------
       # Install Homebrew dependencies
@@ -133,22 +106,7 @@ jobs:
             brew update --auto-update
           fi
           brew bundle "${bundle_args[@]}"
-
-          # grpc/mongo-c-driver/qpdf bottles are outdated on x86_64; build from source there.
-          # On cache hit the Cellar dirs are already restored by the cache step above; just relink them.
-          if [ "${{ runner.arch }}" = "X64" ]; then
-            if [ -d "/usr/local/Cellar/grpc" ] && [ -d "/usr/local/Cellar/mongo-c-driver" ] && [ -d "/usr/local/Cellar/qpdf" ]; then
-              brew link --overwrite grpc mongo-c-driver qpdf re2
-              if [ "$HOMEBREW_NO_AUTO_UPDATE" != "1" ]; then
-                OUTDATED=$(brew outdated --quiet grpc mongo-c-driver qpdf || true)
-                [ -n "$OUTDATED" ] && brew upgrade --build-from-source $OUTDATED || true
-              fi
-            else
-              brew install --build-from-source grpc mongo-c-driver qpdf
-            fi
-          else
-            brew install grpc mongo-c-driver qpdf
-          fi
+          brew install grpc mongo-c-driver qpdf
 
       # -------------------------------
       # Restore MacPorts user/group info from separate cache
