@@ -282,9 +282,11 @@ file_perm_options_create_containing_directory(const FilePermOptions *self, const
 
   /* directory does not exist */
 
-  p = strchr(_path + 1, '/');
+  p = strpbrk(_path + 1, "/" G_DIR_SEPARATOR_S);
   while (p)
     {
+      gchar separator = *p;
+
       *p = 0;
       if (stat(_path, &st) == 0)
         {
@@ -307,8 +309,8 @@ file_perm_options_create_containing_directory(const FilePermOptions *self, const
           file_perm_options_apply_dir(self, _path);
           g_process_cap_restore(saved_caps);
         }
-      *p = '/';
-      p = strchr(p + 1, '/');
+      *p = separator;
+      p = strpbrk(p + 1, "/" G_DIR_SEPARATOR_S);
     }
 
   result = TRUE;
