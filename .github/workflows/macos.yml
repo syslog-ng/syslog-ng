@@ -270,6 +270,10 @@ jobs:
           CXXFLAGS="${CFLAGS}"
           LDFLAGS="-L${HOMEBREW_OPENSSL_PREFIX}/lib -L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           PKG_CONFIG_PATH="${HOMEBREW_OPENSSL_PREFIX}/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${MACPORTS_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          # Explicit minor python version below (not just "3"): the runner has python@3.15 pre-installed,
+          # whose pyport.h breaks our -Werror -Wundef build (see contrib/Brewfile). An unversioned
+          # "3" lets configure/cmake resolve to that pre-installed 3.15 instead of the python@3.13
+          # pinned in the Brewfile.
           CONFIGURE_FLAGS="
             --enable-colored-log
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
@@ -280,7 +284,7 @@ jobs:
             --enable-tests
             --enable-jemalloc
             --enable-all-modules
-            --with-python=3
+            --with-python=3.13
             --with-ivykis=internal
             --with-systemd-journal=no
             --enable-slog
@@ -296,7 +300,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DENABLE_TESTING=ON
             -DENABLE_JEMALLOC=ON
-            -DPYTHON_VERSION=3
+            -DPYTHON_VERSION=3.13
             -DIVYKIS_SOURCE=internal
             -DENABLE_SLOG=ON
             -DENABLE_JOURNALD=OFF
