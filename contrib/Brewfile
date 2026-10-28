@@ -16,7 +16,9 @@ brew "pcre2"
 brew "pkgconf"
 
 brew "curl"
-brew "gradle"
+# gradle: not needed right now (Java is disabled in CI); also, its openjdk
+# dependency currently requires arm64, breaking brew bundle on Intel runners.
+#brew "gradle"
 brew "hiredis"
 brew "libdbi"
 brew "libmaxminddb"
