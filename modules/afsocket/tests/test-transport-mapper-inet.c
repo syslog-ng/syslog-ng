@@ -28,7 +28,12 @@
 #include "transport-mapper-inet.h"
 #include "socket-options-inet.h"
 #include "transport-mapper-lib.h"
+#include "afsocket-dest.h"
+#include "logqueue-fifo.h"
 
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
 #include <unistd.h>
 
 guint SCS_TCP;
@@ -358,6 +363,126 @@ Test(transport_mapper_inet, test_open_socket_fails_properly_on_bind_failure)
   g_sockaddr_unref(addr);
 }
 #endif
+
+static gint reconnect_notifications;
+static gint (*destination_notify)(LogPipe *, gint, gpointer);
+
+static gint
+_count_reconnect_notifications(LogPipe *pipe, gint code, gpointer user_data)
+{
+  /* Observe notifications without replacing the real destination's response. */
+  if (code == NC_REOPEN_REQUIRED)
+    reconnect_notifications++;
+  return destination_notify(pipe, code, user_data);
+}
+
+static gboolean
+_keep_reconnect_addresses(AFSocketDestDriver *driver)
+{
+  return TRUE;
+}
+
+static const gchar *
+_reconnect_destination_name(const AFSocketDestDriver *driver)
+{
+  return "reconnect-regression";
+}
+
+static void
+_stop_reconnect_loop(gpointer user_data)
+{
+  iv_quit();
+}
+
+/* Exercise a real TCP connection and afsocket callbacks, using an explicit
+ * driver/writer fixture rather than full configuration startup. No active I/O
+ * job is held here; deferred reopen is covered by the separate writer tests. */
+Test(afsocket_reconnect, successful_reopen_does_not_create_a_second_connection, .timeout = 10)
+{
+  app_startup();
+  configuration = cfg_new_snippet();
+  gint listener = socket(AF_INET, SOCK_STREAM, 0);
+  cr_assert_geq(listener, 0);
+  struct sockaddr_in address =
+  {
+    .sin_family = AF_INET,
+    .sin_addr.s_addr = htonl(INADDR_LOOPBACK),
+  };
+  cr_assert_eq(bind(listener, (struct sockaddr *) &address, sizeof(address)), 0);
+  cr_assert_eq(listen(listener, 4), 0);
+  socklen_t address_len = sizeof(address);
+  cr_assert_eq(getsockname(listener, (struct sockaddr *) &address, &address_len), 0);
+  cr_assert_eq(fcntl(listener, F_SETFL, O_NONBLOCK), 0);
+
+  /* Keep the ephemeral loopback addresses fixed, but use the actual transport
+   * stack, connection establishment, writer, and destination notify handler. */
+  AFSocketDestDriver *driver = g_new0(AFSocketDestDriver, 1);
+  TransportMapper *mapper = transport_mapper_tcp_new();
+  cr_assert(transport_mapper_apply_transport(mapper, configuration));
+  SocketOptionsInet *socket_options = socket_options_inet_new_instance();
+  afsocket_dd_init_instance(driver, &socket_options->super, mapper, configuration);
+  driver->fd = -1;
+  driver->setup_addresses = _keep_reconnect_addresses;
+  driver->get_dest_name = _reconnect_destination_name;
+  driver->bind_addr = g_sockaddr_inet_new("127.0.0.1", 0);
+  driver->dest_addr = g_sockaddr_inet_new("127.0.0.1", ntohs(address.sin_port));
+  driver->proto_factory = log_proto_client_get_factory(&configuration->plugin_context, "text");
+  cr_assert_not_null(driver->proto_factory);
+  log_writer_options_init(&driver->writer_options, configuration, LWO_NO_STATS);
+  driver->writer_options.options &= ~LWO_THREADED;
+  driver->writer_options.time_reopen = 1;
+  driver->writer = log_writer_new(0, configuration);
+  LogQueue *queue = log_queue_fifo_new(1000, NULL, STATS_LEVEL0, NULL, NULL);
+  LogPipe *control = &driver->super.super.super;
+  destination_notify = control->notify;
+  control->notify = _count_reconnect_notifications;
+  reconnect_notifications = 0;
+  log_writer_set_options(driver->writer, control, &driver->writer_options, NULL, NULL);
+  log_writer_set_queue(driver->writer, queue);
+  cr_assert(log_pipe_init((LogPipe *) driver->writer));
+
+  /* Arm the closed writer's retry and immediately initiate the real connection.
+   * Successful establishment must cancel that retry. Three seconds covers its
+   * one-second deadline plus the destination retry delay a stale notification
+   * could schedule; correct behavior leaves no destination retry pending. */
+  log_writer_reopen(driver->writer, NULL);
+  afsocket_dd_reconnect(driver);
+  struct iv_timer stop_timer;
+  IV_TIMER_INIT(&stop_timer);
+  stop_timer.handler = _stop_reconnect_loop;
+  iv_validate_now();
+  stop_timer.expires = iv_now;
+  stop_timer.expires.tv_sec += 3;
+  iv_timer_register(&stop_timer);
+  iv_main();
+
+  /* Drain the listener backlog only after the observation window, keeping the
+   * server side open during the check so peer closure cannot trigger retries. */
+  gint accepted_connections = 0;
+  gint peer;
+  while ((peer = accept(listener, NULL, NULL)) >= 0)
+    {
+      accepted_connections++;
+      close(peer);
+    }
+  cr_assert(errno == EAGAIN || errno == EWOULDBLOCK);
+  cr_assert_eq(accepted_connections, 1, "destination created a second TCP connection");
+  cr_assert(log_writer_opened(driver->writer));
+  /* The destination's opened-writer guard can prevent another connection even
+   * with a stale notification, so connection count alone would mask that bug. */
+  cr_assert_eq(reconnect_notifications, 0, "a stale writer timer reached the real destination handler");
+  cr_assert_not(iv_timer_registered(&driver->reconnect_timer));
+  cr_assert_not(iv_fd_registered(&driver->connect_fd));
+
+  afsocket_dd_stop_watches(driver);
+  cr_assert(log_pipe_deinit((LogPipe *) driver->writer));
+  log_pipe_unref(control);
+  log_queue_unref(queue);
+  close(listener);
+  cfg_free(configuration);
+  app_shutdown();
+  iv_deinit();
+}
 
 static void
 setup(void)
