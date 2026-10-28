@@ -29,6 +29,8 @@
 #include "syslog-ng.h"
 #include <openssl/evp.h>
 
+const EVP_MD *crypto_fetch_digest(const gchar *name);
+void crypto_free_digest(const EVP_MD *md);
 guint compose_hash(const EVP_MD *md, GString *const *argv, gint argc, guchar *hash);
 
 #endif
