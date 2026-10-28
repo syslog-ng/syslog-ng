@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -343,7 +344,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
       sdata = g_malloc(alloc_sdata * sizeof(self->sdata[0]));
       if (self->num_sdata)
         memcpy(sdata, self->sdata, self->num_sdata * sizeof(self->sdata[0]));
-      memset(&sdata[self->num_sdata], 0, sizeof(self->sdata[0]) * (self->alloc_sdata - self->num_sdata));
+      memset(&sdata[self->num_sdata], 0, sizeof(self->sdata[0]) * (alloc_sdata - self->num_sdata));
       self->sdata = sdata;
       log_msg_set_flag(self, LF_STATE_OWN_SDATA);
     }
@@ -424,7 +425,7 @@ log_msg_get_value_handle(const gchar *value_name)
   handle = nv_registry_alloc_handle(logmsg_registry, value_name);
 
   /* check if name starts with sd_prefix and has at least one additional character */
-  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[6])
+  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[logmsg_sd_prefix_len])
     {
       nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
     }
