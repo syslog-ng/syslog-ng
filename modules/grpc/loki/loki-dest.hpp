@@ -54,6 +54,7 @@ public:
   LogThreadedDestWorker *construct_worker(int worker_index);
 
   void add_label(std::string name, LogTemplate *value);
+  void add_structured_metadata(std::string name, LogTemplate *value);
 
   void set_message_template_ref(LogTemplate *msg)
   {
@@ -86,6 +87,7 @@ private:
 
   LogTemplate *message = nullptr;
   std::vector<NameValueTemplatePair> labels;
+  std::vector<NameValueTemplatePair> structured_metadata;
   LogMessageTimeStamp timestamp;
 };
 

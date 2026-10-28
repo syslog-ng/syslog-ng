@@ -185,6 +185,37 @@ DestinationWorker::set_timestamp(logproto::EntryAdapter *entry, LogMessage *msg)
   *entry->mutable_timestamp() = google::protobuf::util::TimeUtil::TimevalToTimestamp(tv);
 }
 
+void
+DestinationWorker::set_structured_metadata(logproto::EntryAdapter *entry, LogMessage *msg)
+{
+  DestinationDriver *owner_ = this->get_owner();
+
+  if (owner_->structured_metadata.empty())
+    return;
+
+  LogTemplateEvalOptions options = {&owner_->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
+
+  ScratchBuffersMarker m;
+  GString *buf = scratch_buffers_alloc_and_mark(&m);
+  GString *sanitized_value = scratch_buffers_alloc();
+
+  for (const auto &md : owner_->structured_metadata)
+    {
+      log_template_format(md.value, msg, &options, buf);
+      if (buf->len == 0)
+        continue;
+
+      g_string_truncate(sanitized_value, 0);
+      append_unsafe_utf8_as_escaped_binary(sanitized_value, buf->str, -1, AUTF8_UNSAFE_QUOTE);
+
+      logproto::LabelPairAdapter *pair = entry->add_nonindexedlabels();
+      pair->set_name(md.name);
+      pair->set_value(sanitized_value->str, sanitized_value->len);
+    }
+
+  scratch_buffers_reclaim_marked(m);
+}
+
 LogThreadedResult
 DestinationWorker::insert(LogMessage *msg)
 {
@@ -197,6 +228,7 @@ DestinationWorker::insert(LogMessage *msg)
   logproto::EntryAdapter *entry = stream->add_entries();
 
   this->set_timestamp(entry, msg);
+  this->set_structured_metadata(entry, msg);
 
   ScratchBuffersMarker m;
   GString *message = scratch_buffers_alloc_and_mark(&m);

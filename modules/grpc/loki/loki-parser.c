@@ -36,6 +36,7 @@ static CfgLexerKeyword loki_keywords[] =
   GRPC_KEYWORDS,
   { "loki", KW_LOKI },
   { "labels", KW_LABELS },
+  { "structured_metadata", KW_STRUCTURED_METADATA },
   { "timestamp", KW_TIMESTAMP },
   { "tenant_id", KW_TENANT_ID },
   { NULL }

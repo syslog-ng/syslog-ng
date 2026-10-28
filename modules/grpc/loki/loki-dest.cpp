@@ -57,6 +57,12 @@ DestinationDriver::add_label(std::string name, LogTemplate *value)
   this->labels.push_back(NameValueTemplatePair{name, value});
 }
 
+void
+DestinationDriver::add_structured_metadata(std::string name, LogTemplate *value)
+{
+  this->structured_metadata.push_back(NameValueTemplatePair{name, value});
+}
+
 bool
 DestinationDriver::init()
 {
@@ -127,6 +133,14 @@ loki_dd_add_label(LogDriver *d, const gchar *name, LogTemplate *value)
   GrpcDestDriver *self = (GrpcDestDriver *) d;
   DestinationDriver *cpp = loki_dd_get_cpp(self);
   cpp->add_label(name, value);
+}
+
+void
+loki_dd_add_structured_metadata(LogDriver *d, const gchar *name, LogTemplate *value)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = loki_dd_get_cpp(self);
+  cpp->add_structured_metadata(name, value);
 }
 
 gboolean
