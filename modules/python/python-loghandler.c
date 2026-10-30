@@ -141,9 +141,9 @@ int py_loghandler_init(PyObject *self, PyObject *args, PyObject *kwds)
   if (!py_level_value)
     goto exit;
 
-  PyObject *init_ret = PyObject_CallOneArg(init_function, py_level_value);
+  PyObject *init_ret = PyObject_CallFunctionObjArgs(init_function, py_level_value, NULL);
   ret = init_ret ? 0 : -1;
-  Py_DECREF(init_ret);
+  Py_XDECREF(init_ret);
 
 exit:
   Py_XDECREF(py_level_value);
