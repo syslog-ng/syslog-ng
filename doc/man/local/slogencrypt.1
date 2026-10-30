@@ -1,4 +1,4 @@
-.TH slogencrypt 1 "18 December 2025" 4.10.2 "The slogencrypt manual page"
+.TH slogencrypt 1 "12 June 2026" 4.10.2 "The slogencrypt manual page"
 .SH NAME
 .PP
 slogencrypt \-\-\- Encrypts existing plain text log files using the {{ site.product.short_name }} secure logging environment.
@@ -16,7 +16,7 @@ The \fB\fCslogencrypt\fR utility encrypts plain text log files using an existing
 .PP
 .RS
 .nf
-slogencrypt \-k <key file> \-m <MAC file> <new key file> <new MAC file> <plain text log> <output file> [counter]
+slogencrypt \-k <key file> \-m <MAC file> \-l (direct|base64|enc) <new key file> <new MAC file> <plain text log> <output file> [counter]
 .fi
 .RE
 .SH ARGUMENTS
@@ -26,6 +26,13 @@ slogencrypt \-k <key file> \-m <MAC file> <new key file> <new MAC file> <plain t
 .PP
 \fB\fC<new MAC file>\fR
     The file receiving the new message authentication code (MAC) of the secure encrypted destination after encryption. In case an existing file is supplied, new entries are appended.
+.PP
+\fB\fC(direct|base64|enc)\fR
+    The logmode \fB\fC(direct|base64|enc)\fR is the way to control how log messages shall be presented - as they are in plain text, only Base64 encoded or encrypted and Base64 encoded.
+    Specify log output format:
+    direct  log messages as they are in plain text
+    base64  log messages Base64 encoded but not encrypted
+    enc     log messagae encrypted and Base64 encoded
 .PP
 \fB\fC<input log file>\fR
     The plain text log file that is encrypted using the secure logging environment.
@@ -42,6 +49,9 @@ slogencrypt \-k <key file> \-m <MAC file> <new key file> <new MAC file> <plain t
 .PP
 \fB\fC\-\-mac\-file\fR or \fB\fC\-m\fR
     The current MAC file from the system where the encryption is performed.
+.PP
+\fB\fC\-\-logmode\fR or \fB\fC\-l\fR
+    The logmode to define how log messages shall be presented - as they are in plain text, or Base64 encoded or encrypted and Base64 encoded.
 .PP
 \fB\fC\-\-help\fR or \fB\fC\-h\fR
     Display a help message.

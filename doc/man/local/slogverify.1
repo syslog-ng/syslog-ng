@@ -1,4 +1,4 @@
-.TH slogverify 1 "18 December 2025" 4.10.2 "The slogverify manual page"
+.TH slogverify 1 "12 June 2026" 4.10.2 "The slogverify manual page"
 .SH NAME
 .PP
 slogverify \-\-\- Verifies cryptographically secured logs.
@@ -10,10 +10,10 @@ slogverify [options] [arguments]
 The slogverify utility is used to verify the integrity of cryptographically secured logs and to decrypt log entries produced in a syslog\-ng OSE secure logging environment.
 .PP
 Normal mode:
-    \fB\fCslogverify \-k <host key file> \-m <input MAC file> <input file> <output file> [buffers]\fR
+    \fB\fCslogverify \-k <host key file> \-m <input MAC file> \-l (direct|base64|enc) <input file> <output file> [buffers]\fR
 .PP
 Iterative mode:
-    \fB\fCslogverify \-i \-p <previous host key> \-r <previous MAC> \-m <current MAC> <input file> <output file> [buffers]\fR
+    \fB\fCslogverify \-i \-p <previous host key> \-r <previous MAC> \-m <current MAC> \-l (direct|base64|enc) <input file> <output file> [buffers]\fR
 .SH ARGUMENTS
 .RS
 .IP \(bu 2
@@ -27,7 +27,7 @@ The file that contains the plain text log entries after decryption and verificat
 .IP \(bu 2
 buffers
 .PP
-Optional number of input buffers. The number of buffers can be used for performance adjustments in case the log file to be verified is very large and cannot be processed at once. It is a positive number of log entries that can be held in memory during verification. The minimum number if 10 and the maximum number is 4294967295. If this argument is not supplied the default of 1000 is used.
+Optional number of input buffers. The number of buffers can be used for performance adjustments in case the log file to be verified is very large and cannot be processed at once. It is a positive number of log entries that can be held in memory during verification. The minimum number is 10 and the maximum number is 1073741823. If this argument is not supplied, the default of 1000 is used.
 .RE
 .SH OPTIONS
 .PP
@@ -45,6 +45,13 @@ Optional number of input buffers. The number of buffers can be used for performa
 .PP
 \fB\fC\-\-prev\-mac\-file\fR or \fB\fC\-r\fR
     The MAC file from the previous log file. This option can only be used in iterative mode.
+.PP
+\fB\fC\-\-logmode\fR or \fB\fC\-l\fR
+    The logmode how log messages are presented (direct|base64|enc) - as they are in plain text or Base64 encoded or encrypted and Base64 encoded.
+     Specify log output format:
+     direct  log messages as they are in plain text
+     base64  log messages Base64 encoded but not encrypted
+     enc     log messagae encrypted and Base64 encoded
 .PP
 \fB\fC\-\-help\fR or \fB\fC\-h\fR
     Display a help message.
