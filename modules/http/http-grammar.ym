@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2022 One Identity LLC.
  * Copyright (c) 2016 Marc Falzon
  *
@@ -150,6 +151,10 @@ response_body_action_items
     |
     ;
 
+/* response-body-action("regexp" => action, ...): PCRE2 patterns, compiled with default options, so
+ * case-insensitive matching needs the inline modifier, for example "(?i)status.*fail". They are
+ * matched against the first 64 KiB (HTTP_RESPONSE_BODY_MATCH_MAX_LENGTH) of a response that the status
+ * code mapped to success; a longer body is truncated (debug message) and a marker after the limit is not seen. */
 response_body_action_item
     : string LL_ARROW http_response_action
       {
