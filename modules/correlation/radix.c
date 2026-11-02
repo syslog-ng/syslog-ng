@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -23,6 +24,7 @@
 
 #include "radix.h"
 #include "compat/pcre.h"
+#include "pcre-match-limits.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -186,6 +188,7 @@ r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, RPar
 typedef struct _RParserPCREState
 {
   pcre2_code *re;
+  gchar *expr;
 } RParserPCREState;
 
 gboolean
@@ -196,14 +199,16 @@ r_parser_pcre(gchar *str, gint *len, const gchar *param, gpointer state, RParser
   gint rc;
 
   pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(self->re, NULL);
-  rc = pcre2_match(self->re, (PCRE2_SPTR) str, (PCRE2_SIZE) strlen(str), 0, 0, match_data, NULL);
+  rc = pcre_match_limited(self->re, str, strlen(str), 0, 0, match_data, self->expr);
 
   if (rc == PCRE2_ERROR_NOMATCH)
     goto exit;
 
   if (rc < 0)
     {
-      msg_error("Error while matching regexp", evt_tag_int("error_code", rc));
+      /* the limit errors are reported (rate limited) by pcre_match_limited() */
+      if (!pcre_match_limits_is_limit_error(rc))
+        msg_error("Error while matching regexp", evt_tag_int("error_code", rc));
       goto exit;
     }
 
@@ -229,6 +234,8 @@ r_parser_pcre_compile_state(const gchar *expr)
   gsize erroffset;
   gint rc;
 
+  self->expr = g_strdup(expr);
+
   self->re = pcre2_compile((PCRE2_SPTR)expr, PCRE2_ZERO_TERMINATED, PCRE2_ANCHORED, &rc, &erroffset, NULL);
   if (!self->re)
     {
@@ -242,6 +249,7 @@ r_parser_pcre_compile_state(const gchar *expr)
                 evt_tag_int("error_offset", erroffset),
                 evt_tag_str("error_message", (gchar *) error_message),
                 evt_tag_int("error_code", rc));
+      g_free(self->expr);
       g_free(self);
       return NULL;
     }
@@ -269,6 +277,7 @@ r_parser_pcre_free_state(gpointer s)
 
   if (self->re)
     pcre2_code_free(self->re);
+  g_free(self->expr);
   g_free(self);
 }
 
