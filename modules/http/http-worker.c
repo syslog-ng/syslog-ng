@@ -205,7 +205,28 @@ _curl_debug_function(CURL *handle, curl_infotype type,
   return 0;
 }
 
-#define HTTP_RESPONSE_MAX_LENGTH 1024
+/* The response is logged up to HTTP_RESPONSE_MAX_LENGTH bytes, even if more
+ * is captured for response-body-action(). */
+static gsize
+_response_log_len(HTTPDestinationWorker *self)
+{
+  return MIN(self->response_buffer->len, HTTP_RESPONSE_MAX_LENGTH);
+}
+
+/* Append a chunk of the response body to the capture buffer, up to
+ * self->response_capture_max bytes. The rest is dropped, and remembered in
+ * response_truncated. */
+void
+http_dw_append_response_data(HTTPDestinationWorker *self, const gchar *data, gsize len)
+{
+  gsize remaining = self->response_capture_max > self->response_buffer->len
+                    ? self->response_capture_max - self->response_buffer->len : 0;
+
+  if (len > remaining)
+    self->response_truncated = TRUE;
+
+  g_string_append_len(self->response_buffer, data, MIN(remaining, len));
+}
 
 static size_t
 _curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
@@ -213,12 +234,7 @@ _curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) userdata;
   gsize count = nmemb * size;
 
-  if (self->response_buffer->len >= HTTP_RESPONSE_MAX_LENGTH)
-    return count;
-
-  gsize remaining = HTTP_RESPONSE_MAX_LENGTH - self->response_buffer->len;
-  g_string_append_len(self->response_buffer, (gchar *) ptr, MIN(remaining, count));
-
+  http_dw_append_response_data(self, ptr, count);
   return count;
 }
 
@@ -477,7 +493,7 @@ _default_4XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
              "authorized or the URL is not found or the request is malformed.",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
-             evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
+             evt_tag_mem("response", self->response_buffer->str, _response_log_len(self)),
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
 
@@ -499,7 +515,7 @@ _default_5XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
   msg_notice("http: Server returned with a 5XX (server errors) status code, which indicates server failure",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
-             evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
+             evt_tag_mem("response", self->response_buffer->str, _response_log_len(self)),
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
   if (http_code == 508)
@@ -602,7 +618,7 @@ _debug_response_info(HTTPDestinationWorker *self, const gchar *url, glong http_c
   msg_debug("http: HTTP response received",
             evt_tag_str("url", url),
             evt_tag_int("status_code", http_code),
-            evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
+            evt_tag_mem("response", self->response_buffer->str, _response_log_len(self)),
             evt_tag_int("body_size", self->request_body->len),
             evt_tag_int("batch_size", self->super.batch_size),
             evt_tag_int("redirected", redirect_count != 0),
@@ -626,7 +642,7 @@ _map_custom_http_result(HTTPDestinationWorker *self, const gchar *url, glong htt
                 evt_tag_str("action", "success"),
                 evt_tag_str("url", url),
                 evt_tag_int("status_code", http_code),
-                evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
+                evt_tag_mem("response", self->response_buffer->str, _response_log_len(self)),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_SUCCESS;
@@ -636,7 +652,7 @@ _map_custom_http_result(HTTPDestinationWorker *self, const gchar *url, glong htt
                  evt_tag_str("action", "retry"),
                  evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
-                 evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
+                 evt_tag_mem("response", self->response_buffer->str, _response_log_len(self)),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_ERROR;
@@ -646,7 +662,7 @@ _map_custom_http_result(HTTPDestinationWorker *self, const gchar *url, glong htt
                  evt_tag_str("action", "drop"),
                  evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
-                 evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
+                 evt_tag_mem("response", self->response_buffer->str, _response_log_len(self)),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_DROP;
@@ -656,7 +672,7 @@ _map_custom_http_result(HTTPDestinationWorker *self, const gchar *url, glong htt
                  evt_tag_str("action", "disconnect"),
                  evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
-                 evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
+                 evt_tag_mem("response", self->response_buffer->str, _response_log_len(self)),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_NOT_CONNECTED;
@@ -679,15 +695,25 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
 /* A request the status code mapped to success can still be reported as
  * failed in the response body (for example an API answering 200 with
  * {"status": "error"}). response-body-action() patterns are matched against
- * the captured part of the body (HTTP_RESPONSE_MAX_LENGTH bytes); the first
- * match decides the result. */
-static LogThreadedResult
-_apply_response_body_action(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+ * the captured part of the body (at most HTTP_RESPONSE_BODY_MATCH_MAX_LENGTH
+ * bytes); the first match decides the result. */
+LogThreadedResult
+http_dw_apply_response_body_action(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   if (http_response_body_handlers_is_empty(owner->response_body_handlers))
     return LTR_SUCCESS;
+
+  if (self->response_truncated)
+    {
+      msg_debug("http: response body was truncated before matching response-body-action(), "
+                "a match beyond the captured part is not seen",
+                evt_tag_str("url", url),
+                evt_tag_int("status_code", http_code),
+                evt_tag_long("captured_bytes", self->response_buffer->len),
+                evt_tag_str("driver", owner->super.super.super.id));
+    }
 
   HttpResponseBodyHandler *handler = http_response_body_handlers_lookup(owner->response_body_handlers,
                                      self->response_buffer->str,
@@ -742,6 +768,7 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
   curl_easy_setopt(self->curl, CURLOPT_HEADERFUNCTION, G_UNLIKELY(trace_flag) ? _curl_header_function : NULL);
 
   g_string_truncate(self->response_buffer, 0);
+  self->response_truncated = FALSE;
   CURLcode ret = curl_easy_perform(self->curl);
   if (ret != CURLE_OK)
     {
@@ -849,7 +876,7 @@ _flush_on_target(HTTPDestinationWorker *self, const gchar *url)
 
   LogThreadedResult result = _map_http_status_code(self, url, http_code);
   if (result == LTR_SUCCESS)
-    result = _apply_response_body_action(self, url, http_code);
+    result = http_dw_apply_response_body_action(self, url, http_code);
   return result;
 }
 
@@ -1109,6 +1136,9 @@ http_dw_new(LogThreadedDestDriver *o, gint worker_index)
     self->super.insert = _insert_single;
 
   self->metrics.cache = dyn_metrics_store_new();
+  /* only a destination with response-body-action() pays for the larger capture window */
+  self->response_capture_max = http_response_body_handlers_is_empty(owner->response_body_handlers)
+                               ? HTTP_RESPONSE_MAX_LENGTH : HTTP_RESPONSE_BODY_MATCH_MAX_LENGTH;
   self->response_buffer = g_string_sized_new(HTTP_RESPONSE_MAX_LENGTH);
 
   http_lb_client_init(&self->lbc, owner->load_balancer);

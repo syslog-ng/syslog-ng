@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2018 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -30,6 +31,10 @@
 #include "http-worker.h"
 #include "logthrdest/logthrdestdrv.h"
 #include "compat/curl.h"
+#include "libtest/grab-logging.h"
+#include "messages.h"
+#include "response-handler.h"
+#include <string.h>
 
 static void
 setup(void)
@@ -247,3 +252,155 @@ Test(http, set_urls_safe_or_unsafe_template)
   log_pipe_unref(&driver->super.super.super.super);
 }
 #endif
+
+/* response-body-action(): the body is captured in full up to
+ * HTTP_RESPONSE_BODY_MATCH_MAX_LENGTH, not only up to the 1 KiB that is logged */
+
+#define BODY_MARKER "ERRMARK"
+#define BODY_URL "http://dummy.url"
+
+static HTTPDestinationDriver *
+_new_driver_with_body_action(HttpResult (*action)(gpointer))
+{
+  HTTPDestinationDriver *driver = (HTTPDestinationDriver *) http_dd_new(configuration);
+
+  if (action)
+    cr_assert(http_dd_append_response_body_handler((LogDriver *) driver, BODY_MARKER, action, NULL));
+  return driver;
+}
+
+/* filler of 'a' with BODY_MARKER starting at offset 'marker_at', total length 'total' */
+static GString *
+_make_body(gsize total, gsize marker_at)
+{
+  GString *body = g_string_sized_new(total);
+
+  for (gsize i = 0; i < total; i++)
+    g_string_append_c(body, 'a');
+  if (marker_at != (gsize) -1)
+    memcpy(body->str + marker_at, BODY_MARKER, MIN(strlen(BODY_MARKER), total - marker_at));
+  return body;
+}
+
+static LogThreadedResult
+_classify(HttpResult (*action)(gpointer), GString *body, gsize chunk, gboolean *truncated, gsize *captured)
+{
+  HTTPDestinationDriver *driver = _new_driver_with_body_action(action);
+  HTTPDestinationWorker *worker = (HTTPDestinationWorker *) http_dw_new(&driver->super, 0);
+
+  for (gsize pos = 0; pos < body->len; pos += chunk)
+    http_dw_append_response_data(worker, body->str + pos, MIN(chunk, body->len - pos));
+
+  LogThreadedResult res = http_dw_apply_response_body_action(worker, BODY_URL, 200);
+  *truncated = worker->response_truncated;
+  *captured = worker->response_buffer->len;
+
+  log_threaded_dest_worker_free(&worker->super);
+  log_pipe_unref((LogPipe *) driver);
+  return res;
+}
+
+Test(http, body_action_marker_after_first_kib_is_seen)
+{
+  GString *body = _make_body(2048, 1500);
+  gboolean truncated;
+  gsize captured;
+
+  cr_assert_eq(_classify(http_result_retry, body, body->len, &truncated, &captured), LTR_ERROR);
+  cr_assert_not(truncated);
+  cr_assert_eq(captured, 2048);
+  g_string_free(body, TRUE);
+}
+
+Test(http, body_action_marker_spanning_old_one_kib_boundary_is_seen)
+{
+  GString *body = _make_body(2048, 1020);  /* bytes 1020..1026 */
+  gboolean truncated;
+  gsize captured;
+
+  cr_assert_eq(_classify(http_result_drop, body, body->len, &truncated, &captured), LTR_DROP);
+  g_string_free(body, TRUE);
+}
+
+Test(http, body_action_marker_ending_exactly_at_the_limit_is_seen)
+{
+  gsize limit = HTTP_RESPONSE_BODY_MATCH_MAX_LENGTH;
+  GString *body = _make_body(limit, limit - strlen(BODY_MARKER));
+  gboolean truncated;
+  gsize captured;
+
+  cr_assert_eq(_classify(http_result_retry, body, body->len, &truncated, &captured), LTR_ERROR);
+  cr_assert_not(truncated);
+  cr_assert_eq(captured, limit);
+  g_string_free(body, TRUE);
+}
+
+Test(http, body_action_marker_one_byte_over_the_limit_is_not_matched_and_truncation_is_logged)
+{
+  gsize limit = HTTP_RESPONSE_BODY_MATCH_MAX_LENGTH;
+  GString *body = _make_body(limit + 1, limit + 1 - strlen(BODY_MARKER));
+  gboolean truncated;
+  gsize captured;
+
+  debug_flag = TRUE;
+  start_grabbing_messages();
+  cr_assert_eq(_classify(http_result_retry, body, body->len, &truncated, &captured), LTR_SUCCESS);
+  cr_assert(truncated);
+  cr_assert_eq(captured, limit);
+  assert_grabbed_log_contains("response body was truncated before matching");
+  stop_grabbing_messages();
+  debug_flag = FALSE;
+  g_string_free(body, TRUE);
+}
+
+Test(http, body_action_no_truncation_note_when_the_body_fits)
+{
+  GString *body = _make_body(2048, -1);
+  gboolean truncated;
+  gsize captured;
+
+  debug_flag = TRUE;
+  start_grabbing_messages();
+  cr_assert_eq(_classify(http_result_retry, body, body->len, &truncated, &captured), LTR_SUCCESS);
+  cr_assert_not(truncated);
+  cr_assert_not(find_grabbed_message("response body was truncated"));
+  stop_grabbing_messages();
+  debug_flag = FALSE;
+  g_string_free(body, TRUE);
+}
+
+Test(http, body_action_empty_body_is_success)
+{
+  GString *body = g_string_new("");
+  gboolean truncated;
+  gsize captured;
+
+  cr_assert_eq(_classify(http_result_retry, body, 1, &truncated, &captured), LTR_SUCCESS);
+  cr_assert_not(truncated);
+  cr_assert_eq(captured, 0);
+  g_string_free(body, TRUE);
+}
+
+Test(http, body_action_marker_split_across_write_callbacks_is_seen)
+{
+  GString *body = _make_body(20000, 5000);
+  gboolean truncated;
+  gsize captured;
+
+  cr_assert_eq(_classify(http_result_retry, body, 4999, &truncated, &captured),
+               LTR_ERROR);  /* marker straddles a chunk edge */
+  cr_assert_eq(captured, 20000);
+  g_string_free(body, TRUE);
+}
+
+Test(http, body_action_not_configured_keeps_capture_at_the_logged_size)
+{
+  GString *body = _make_body(HTTP_RESPONSE_BODY_MATCH_MAX_LENGTH * 2, 100000);
+  gboolean truncated;
+  gsize captured;
+
+  cr_assert_eq(_classify(NULL, body, 8192, &truncated, &captured), LTR_SUCCESS);
+  cr_assert_eq(captured, HTTP_RESPONSE_MAX_LENGTH);
+  cr_assert_eq(HTTP_RESPONSE_MAX_LENGTH, 1024);
+  g_string_free(body, TRUE);
+}
