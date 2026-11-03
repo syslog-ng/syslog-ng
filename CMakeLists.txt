@@ -60,7 +60,7 @@ set(SYSLOG_NG_PACKAGE_NAME "${CMAKE_PROJECT_NAME}" CACHE STRING "Package name is
 set(SYSLOG_NG_PATH_XSDDIR "\${datadir}/syslog-ng/xsd")
 set(SYSLOG_NG_JAVA_MODULE_PATH "\${exec_prefix}/lib/syslog-ng/java-modules")
 set(SYSLOG_NG_PYTHON_MODULE_DIR "\${exec_prefix}/lib/syslog-ng/python")
-set(SYSLOG_NG_PYTHON_SYSCONF_MODULE_DIR "\${prefix}/etc/python")
+set(SYSLOG_NG_PYTHON_SYSCONF_MODULE_DIR "${SYSLOG_NG_PATH_SYSCONFDIR}/python")
 set(SYSLOG_NG_PYTHON_VENV_DIR "\${localstatedir}/python-venv" CACHE STRING "Use path as the directory to install the Python venv into")
 set(SYSLOG_NG_PATH_TOPSRC_DIR "${PROJECT_SOURCE_DIR}")
 set(LIBDIR "\${exec_prefix}/lib")
