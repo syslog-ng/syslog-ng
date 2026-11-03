@@ -69,6 +69,11 @@ set(TOOLSDIR "\${datadir}/syslog-ng/tools")
 
 set(LOGGEN_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/syslog-ng/loggen" CACHE PATH "Use path as the directory to install loggen plugins into")
 
+# install() cannot expand the ${prefix} placeholder that lib/reloc.c resolves at
+# runtime, so keep resolved copies of the paths used as install destinations.
+string(REPLACE "\${prefix}" "${CMAKE_INSTALL_PREFIX}" SYSLOG_NG_INSTALL_SYSCONFDIR "${SYSLOG_NG_PATH_SYSCONFDIR}")
+string(REPLACE "\${prefix}" "${CMAKE_INSTALL_PREFIX}" SYSLOG_NG_INSTALL_LOCALSTATEDIR "${SYSLOG_NG_PATH_LOCALSTATEDIR}")
+
 include(set_debug_options)
 
 include(CheckTypeSize)
@@ -151,7 +156,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h DESTINATION include/syslog-ng)
 
-install(DIRECTORY DESTINATION var)
+install(DIRECTORY DESTINATION "${SYSLOG_NG_INSTALL_LOCALSTATEDIR}")
 
 # Package Information for pkg-config
 set(PKG_CONFIG_EXEC_PREFIX ${SYSLOG_NG_PATH_EXECPREFIX})
