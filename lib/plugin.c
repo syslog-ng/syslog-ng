@@ -601,7 +601,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
   gint i, j, k;
   gboolean first = TRUE;
 
-  mod_paths = g_strsplit(resolved_configurable_paths.initial_module_path, ":", 0);
+  mod_paths = g_strsplit(resolved_configurable_paths.initial_module_path, G_SEARCHPATH_SEPARATOR_S, 0);
   for (i = 0; mod_paths[i]; i++)
     {
       GDir *dir;

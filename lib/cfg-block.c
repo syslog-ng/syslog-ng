@@ -178,7 +178,17 @@ cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, gpointer args, GStri
       return FALSE;
     }
   if (cfg->lexer && !cfg->lexer->ignore_pragma)
-    g_string_append_printf(result, "@line \"%s\" %d %d\n", self->filename, self->line, self->column);
+    {
+      /* the lexer processes escapes in "" strings: keep '\' and '"' (Windows paths) */
+      g_string_append(result, "@line \"");
+      for (const gchar *p = self->filename; *p; p++)
+        {
+          if (*p == '\\' || *p == '"')
+            g_string_append_c(result, '\\');
+          g_string_append_c(result, *p);
+        }
+      g_string_append_printf(result, "\" %d %d\n", self->line, self->column);
+    }
   g_string_append_len(result, value, length);
 
   g_free(value);

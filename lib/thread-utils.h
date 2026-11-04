@@ -57,7 +57,12 @@ thread_cancel(ThreadId tid)
 #ifndef _WIN32
   pthread_cancel(tid);
 #else
-  TerminateThread(tid, 0);
+  HANDLE thread = OpenThread(THREAD_TERMINATE, FALSE, tid);
+  if (thread)
+    {
+      TerminateThread(thread, 0);
+      CloseHandle(thread);
+    }
 #endif
 }
 

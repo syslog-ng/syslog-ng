@@ -58,7 +58,7 @@ find_file_in_path(const gchar *path, const gchar *filename, GFileTest test)
   gchar *fullname = NULL;
   gint i;
 
-  if (filename[0] == '/' || !path)
+  if (g_path_is_absolute(filename) || !path)
     {
       if (g_file_test(filename, test))
         return g_strdup(filename);

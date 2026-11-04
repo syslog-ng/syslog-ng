@@ -29,6 +29,8 @@
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
 #include "apphook.h"
+#include "cfg-block.h"
+#include "reloc.h"
 
 #define TESTDATA_DIR TOP_SRCDIR "/lib/tests/testdata-lexer"
 
@@ -482,6 +484,35 @@ Test(lexer, include_finds_wildcards_files_in_include_path)
   assert_parser_identifier("foo");
 }
 
+Test(lexer, include_with_absolute_path_does_not_use_include_path)
+{
+  parser->lexer->ignore_pragma = FALSE;
+  _input("@define include-path \"" TESTDATA_DIR "\"\n\
+@include \"" TESTDATA_DIR "/include-test/foo.conf\"\n");
+  assert_parser_identifier("foo");
+}
+
+Test(lexer, include_wildcard_with_absolute_path_does_not_use_include_path)
+{
+  parser->lexer->ignore_pragma = FALSE;
+  _input("@define include-path \"" TESTDATA_DIR "\"\n\
+@include \"" TESTDATA_DIR "/include-test/*.conf\"\n");
+  assert_parser_identifier("bar");
+  assert_parser_identifier("baz");
+  assert_parser_identifier("foo");
+}
+
+Test(lexer, default_include_path_is_split_into_sysconfdir_and_include_dir)
+{
+  cfg_set_global_paths(configuration);
+
+  gchar **dirs = g_strsplit(cfg_args_get(configuration->globals, "include-path"), G_SEARCHPATH_SEPARATOR_S, 0);
+  cr_assert_eq(g_strv_length(dirs), 2);
+  cr_assert_str_eq(dirs[0], get_installation_path_for(SYSLOG_NG_PATH_SYSCONFDIR));
+  cr_assert_str_eq(dirs[1], get_installation_path_for(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR));
+  g_strfreev(dirs);
+}
+
 static gboolean
 _fake_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, gpointer args, GString *result,
                          const gchar *reference)
@@ -510,6 +541,25 @@ Test(lexer, generator_plugins_are_expanded)
   _input("fake-generator();\n");
   assert_parser_identifier("fake_generator_content");
   cfg_lexer_pop_context(lexer);
+}
+
+Test(lexer, block_location_keeps_backslashes_in_the_file_name)
+{
+  CFG_LTYPE lloc = { .first_line = 3, .first_column = 1, .last_line = 3, .last_column = 1,
+                     .name = "C:\\dir\\new\\x.conf"
+                   };
+  CfgBlockGenerator *block = cfg_block_new(LL_CONTEXT_ROOT, "test-block", "block_content", cfg_args_new(), &lloc);
+
+  cfg_lexer_register_generator_plugin(&configuration->plugin_context, block);
+  /* the @line pragma is only generated if the configuration is being parsed */
+  configuration->lexer = parser->lexer;
+  parser->lexer->ignore_pragma = FALSE;
+  cfg_lexer_push_context(parser->lexer, main_parser.context, main_parser.keywords, main_parser.name);
+  _input("test-block();\n");
+  assert_parser_identifier("block_content");
+  cr_assert_str_eq(_current_lloc()->name, "C:\\dir\\new\\x.conf");
+  cfg_lexer_pop_context(parser->lexer);
+  configuration->lexer = NULL;
 }
 
 Test(lexer, context_name_lookup)
