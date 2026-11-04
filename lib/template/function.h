@@ -74,6 +74,10 @@ struct _LogTemplateFunction
 
   /* generic argument that can be used to pass information from registration time */
   gpointer arg;
+
+  /* defined with TEMPLATE_FUNCTION_SIMPLE(): the result depends only on
+   * the arguments */
+  gboolean simple;
 };
 
 #define TEMPLATE_FUNCTION_PROTOTYPE(prefix) \
@@ -84,7 +88,7 @@ struct _LogTemplateFunction
   TEMPLATE_FUNCTION_PROTOTYPE(prefix);
 
 /* helper macros for template function plugins */
-#define TEMPLATE_FUNCTION(state_struct, prefix, prepare, eval, call, free_state, arg) \
+#define TEMPLATE_FUNCTION_DEFINE(state_struct, prefix, prepare, eval, call, free_state, arg, simple) \
   TEMPLATE_FUNCTION_PROTOTYPE(prefix)           \
   {                                                                     \
     static LogTemplateFunction func = {                                 \
@@ -94,10 +98,14 @@ struct _LogTemplateFunction
       call,                                                             \
       free_state,                                                       \
       NULL,               \
-      arg                                                               \
+      arg,                                                              \
+      simple                                                            \
     };                                                                  \
     return &func;                                                       \
   }
+
+#define TEMPLATE_FUNCTION(state_struct, prefix, prepare, eval, call, free_state, arg) \
+  TEMPLATE_FUNCTION_DEFINE(state_struct, prefix, prepare, eval, call, free_state, arg, FALSE)
 
 #define TEMPLATE_FUNCTION_PLUGIN(x, tf_name) \
   {                                     \
