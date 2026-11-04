@@ -50,9 +50,12 @@ ubuntu-noble		python3,nojava,nobpf,notzdatalegacy
 ubuntu-plucky		python3,nojava,notzdatalegacy
 ubuntu-resolute		python3,nojava,notzdatalegacy
 
-# fedora-rawhide currently ships a broken riemann-c-client-devel/grpc-devel/protobuf-c-devel set
-# Disable riemann here to unblock the rawhide image build until the packaging chain is consistent again.
+# fedora-rawhide and fedora-latest (fc45 GA) currently ship a broken riemann-c-client-devel/grpc-devel/protobuf-c-devel set
+# (grpc-plugins still pulls the old libprotoc.so.30 while protobuf-c-compiler now needs the new
+# libprotoc.so.33, and protobuf-compiler conflicts with protobuf3-compiler, so both can't coexist).
+# Disable riemann here to unblock the image build until the packaging chain is consistent again.
 fedora-rawhide		python3,noriemann
+fedora-latest		python3,noriemann
 fedora				python3
 almalinux			python3
 centos				python3
