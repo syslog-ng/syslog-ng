@@ -142,7 +142,7 @@ filter_netmask6_new(const gchar *cidr)
   FilterNetmask6 *self = g_new0(FilterNetmask6, 1);
   struct in6_addr packet_addr;
   gchar address[INET6_ADDRSTRLEN];
-  gchar *slash = strchr(cidr, '/');
+  const gchar *slash = strchr(cidr, '/');
 
   filter_expr_node_init_instance(&self->super);
   if (strlen(cidr) >= sizeof(address) || !slash)
