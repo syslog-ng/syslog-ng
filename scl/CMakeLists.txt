@@ -68,6 +68,11 @@ endif()
 
 install(FILES scl.conf DESTINATION share/syslog-ng/include)
 
-if (NOT EXISTS ${CMAKE_INSTALL_PREFIX}/etc/syslog-ng.conf)
-    install(FILES syslog-ng.conf DESTINATION etc)
-endif()
+install(CODE "
+  if(EXISTS \"\$ENV{DESTDIR}${SYSLOG_NG_INSTALL_SYSCONFDIR}/syslog-ng.conf\")
+    message(STATUS \"Not overwriting existing configuration file, you might want to upgrade manually: syslog-ng.conf\")
+  else()
+    file(INSTALL DESTINATION \"${SYSLOG_NG_INSTALL_SYSCONFDIR}\" TYPE FILE
+         FILES \"${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng.conf\")
+  endif()
+")
