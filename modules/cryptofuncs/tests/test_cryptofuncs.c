@@ -28,6 +28,11 @@
 #include "apphook.h"
 #include "cfg.h"
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/crypto.h>
+#include <openssl/provider.h>
+#endif
+
 void
 setup(void)
 {
@@ -53,6 +58,9 @@ Test(cryptofuncs, test_hash)
   assert_template_format("$(hash foo)", "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae");
 #if SYSLOG_NG_HAVE_DECL_DIGEST_MD4
   assert_template_format("$(md4 foo)", "0ac6700c491d70fb8650940b1ca1e4b2");
+#else
+  assert_template_failure("$(md4 foo)",
+                          "MD4 hash function is not available starting with OpenSSL 3.0.");
 #endif
   assert_template_format("$(sha256 foo)", "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae");
   assert_template_format("$(sha512 foo)",
@@ -70,3 +78,54 @@ Test(cryptofuncs, test_hash)
   assert_template_format("$(sha1 \"foo bar\")", "3773dea65156909838fa6c22825cafe090ff8030");
   assert_template_format("$(md5 $(sha1 foo) bar)", "196894290a831b2d2755c8de22619a97");
 }
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+static OSSL_LIB_CTX *crypto_context;
+static OSSL_LIB_CTX *original_crypto_context;
+static OSSL_PROVIDER *crypto_provider;
+
+static void
+_setup_with_crypto_context(void)
+{
+  crypto_context = OSSL_LIB_CTX_new();
+  cr_assert_not_null(crypto_context);
+  original_crypto_context = OSSL_LIB_CTX_set0_default(crypto_context);
+  cr_assert_not_null(original_crypto_context);
+}
+
+static void
+_teardown_with_crypto_context(void)
+{
+  if (original_crypto_context)
+    OSSL_LIB_CTX_set0_default(original_crypto_context);
+  if (crypto_provider)
+    OSSL_PROVIDER_unload(crypto_provider);
+  OSSL_LIB_CTX_free(crypto_context);
+}
+
+Test(cryptofuncs, test_md5_with_fips_default_properties,
+     .init = _setup_with_crypto_context, .fini = _teardown_with_crypto_context)
+{
+  /* Exercise property selection without requiring an installed FIPS provider. */
+  crypto_provider = OSSL_PROVIDER_load(crypto_context, "default");
+  cr_assert_not_null(crypto_provider);
+  cr_assert(EVP_default_properties_enable_fips(crypto_context, TRUE));
+
+  /* MD5 may ignore fips=yes locally; approved digests must still obey it. */
+  assert_template_format("$(md5 foo)", "acbd18db4cc2f85cedef654fccc4a4d8");
+  assert_template_format("$(md5 --length 5 foo)", "acbd1");
+  cr_assert(EVP_default_properties_is_fips_enabled(crypto_context));
+  assert_template_failure("$(sha256 foo)", "$(hash) parsing failed, unknown or unavailable digest type");
+  assert_template_failure("$(hash foo)", "$(hash) parsing failed, unknown or unavailable digest type");
+}
+
+Test(cryptofuncs, test_md5_unavailable_digest_fails_compilation,
+     .init = _setup_with_crypto_context, .fini = _teardown_with_crypto_context)
+{
+  /* Prevent automatic loading of the default provider. */
+  crypto_provider = OSSL_PROVIDER_load(crypto_context, "null");
+  cr_assert_not_null(crypto_provider);
+
+  assert_template_failure("$(md5 foo)", "$(hash) parsing failed, unknown or unavailable digest type");
+}
+#endif

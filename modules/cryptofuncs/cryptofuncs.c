@@ -112,10 +112,11 @@ tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
                   "MD4 hash function is not available starting with OpenSSL 3.0.");
       return FALSE;
     }
-  md = EVP_get_digestbyname(digest_name);
+  md = crypto_fetch_digest(digest_name);
   if (!md)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(hash) parsing failed, unknown digest type");
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "$(hash) parsing failed, unknown or unavailable digest type");
       return FALSE;
     }
   state->md = md;
@@ -138,6 +139,11 @@ tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
   *type = LM_VT_STRING;
   argc = state->super.argc;
   md_len = compose_hash(state->md, args->argv, argc, hash);
+  if (md_len == 0)
+    {
+      msg_error("$(hash) failed to compute the digest, returning empty value");
+      return;
+    }
   // we fetch the entire hash in a hex format otherwise we cannot truncate at
   // odd character numbers
   format_hex_string(hash, md_len, hash_str, sizeof(hash_str));
@@ -151,7 +157,16 @@ tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
     }
 }
 
-TEMPLATE_FUNCTION(TFHashState, tf_hash, tf_hash_prepare, tf_simple_func_eval, tf_hash_call, tf_simple_func_free_state,
+static void
+tf_hash_free_state(gpointer s)
+{
+  TFHashState *state = (TFHashState *) s;
+
+  crypto_free_digest(state->md);
+  tf_simple_func_free_state(s);
+}
+
+TEMPLATE_FUNCTION(TFHashState, tf_hash, tf_hash_prepare, tf_simple_func_eval, tf_hash_call, tf_hash_free_state,
                   NULL);
 
 

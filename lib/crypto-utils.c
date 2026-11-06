@@ -26,20 +26,50 @@
 #include "crypto-utils.h"
 #include "compat/openssl_support.h"
 
+/*
+ * Look up a digest. MD4 and MD5 are only used for non-security purposes
+ * (identifiers, user requested checksums), so on OpenSSL 3 they are fetched
+ * with the "-fips" property query, which lets them come from a non-FIPS
+ * provider even if the default properties request fips=yes. Approved
+ * digests keep the default property query, so they still come from the
+ * FIPS provider. Returns NULL if unavailable. Release with
+ * crypto_free_digest().
+ */
+const EVP_MD *
+crypto_fetch_digest(const gchar *name)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+  gboolean non_security = !g_ascii_strcasecmp(name, "md5") || !g_ascii_strcasecmp(name, "md4");
+  return EVP_MD_fetch(NULL, name, non_security ? "-fips" : NULL);
+#else
+  return EVP_get_digestbyname(name);
+#endif
+}
+
+void
+crypto_free_digest(const EVP_MD *md)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+  EVP_MD_free((EVP_MD *) md);
+#endif
+}
+
+/* Returns the length of the digest written to hash, or 0 on error. */
 guint
 compose_hash(const EVP_MD *md, GString *const *argv, gint argc, guchar *hash)
 {
   DECLARE_EVP_MD_CTX(mdctx);
   EVP_MD_CTX_init(mdctx);
-  EVP_DigestInit_ex(mdctx, md, NULL);
+  guint md_len = 0;
+  gboolean ok = EVP_DigestInit_ex(mdctx, md, NULL);
 
-  for (gint i = 0; i < argc; i++)
-    EVP_DigestUpdate(mdctx, argv[i]->str, argv[i]->len);
+  for (gint i = 0; ok && i < argc; i++)
+    ok = EVP_DigestUpdate(mdctx, argv[i]->str, argv[i]->len);
 
-  guint md_len;
-  EVP_DigestFinal_ex(mdctx, hash, &md_len);
+  if (ok)
+    ok = EVP_DigestFinal_ex(mdctx, hash, &md_len);
   EVP_MD_CTX_cleanup(mdctx);
   EVP_MD_CTX_destroy(mdctx);
 
-  return md_len;
+  return ok ? md_len : 0;
 }
