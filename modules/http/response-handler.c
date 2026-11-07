@@ -22,6 +22,7 @@
  */
 
 #include "response-handler.h"
+#include "pcre-match-limits.h"
 
 HttpResult
 http_result_success(gpointer user_data)
@@ -161,7 +162,7 @@ static gboolean
 _body_handler_matches(HttpResponseBodyHandler *self, const gchar *body, gsize body_len)
 {
   pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(self->pattern, NULL);
-  gint rc = pcre2_match(self->pattern, (PCRE2_SPTR) body, (PCRE2_SIZE) body_len, 0, 0, match_data, NULL);
+  gint rc = pcre_match_limited(self->pattern, body, body_len, 0, 0, match_data, self->pattern_str);
   pcre2_match_data_free(match_data);
   return rc >= 0;
 }
