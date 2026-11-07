@@ -135,6 +135,7 @@ set (LIB_HEADERS
     msg-stats.h
     on-error.h
     parse-number.h
+    pcre-match-limits.h
     pathutils.h
     persist-state.h
     persistable-state-header.h
@@ -240,6 +241,7 @@ set(LIB_SOURCES
     msg-stats.c
     on-error.c
     parse-number.c
+    pcre-match-limits.c
     pathutils.c
     persist-state.c
     plugin.c

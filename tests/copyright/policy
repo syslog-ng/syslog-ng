@@ -75,6 +75,8 @@ lib/multi-line/smart-multi-line\.fsm$
 
 cmake/Modules/FindLIBBPF\.cmake
 lib/timeutils/zonecache.[ch]$
+lib/pcre-match-limits\.[ch]$
+lib/tests/test_pcre_match_limits\.c$
 modules/secure-logging
 modules/secure-logging/tests
 modules/secure-logging/slogencrypt
