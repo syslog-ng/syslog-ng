@@ -44,6 +44,9 @@ static CfgLexerKeyword cloud_auth_keywords[] =
   { "azure",                         KW_AZURE },
   { "app_id",                        KW_APP_ID },
   { "app_secret",                    KW_APP_SECRET },
+  {   "cert",                       KW_CERT },
+  {   "private_key",                KW_PRIVATE_KEY },
+  {   "private_key_passphrase",     KW_PRIVATE_KEY_PASSPHRASE },
   { "monitor",                       KW_MONITOR },
   { "tenant_id",                     KW_TENANT_ID },
 

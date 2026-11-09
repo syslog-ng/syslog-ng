@@ -44,6 +44,9 @@ void azure_authenticator_set_tenant_id(CloudAuthenticator *s, const gchar *tenan
 void azure_authenticator_set_app_id(CloudAuthenticator *s, const gchar *app_id);
 void azure_authenticator_set_scope(CloudAuthenticator *s, const gchar *scope);
 void azure_authenticator_set_app_secret(CloudAuthenticator *s, const gchar *app_secret);
+void azure_authenticator_set_cert_path(CloudAuthenticator *s, const gchar *cert_path);
+void azure_authenticator_set_private_key_path(CloudAuthenticator *s, const gchar *private_key_path);
+void azure_authenticator_set_private_key_passphrase(CloudAuthenticator *s, const gchar *private_key_passphrase);
 
 #include "compat/cpp-end.h"
 

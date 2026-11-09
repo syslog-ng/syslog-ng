@@ -32,6 +32,8 @@ typedef enum
 {
   OAUTH2_AUTH_METHOD_BASIC,
   OAUTH2_AUTH_METHOD_POST_BODY,
+  /* RFC 7523 JWT bearer client assertion, signed with a private key (e.g. certificate-based auth) */
+  OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT,
   OAUTH2_AUTH_METHOD_CUSTOM
 } OAuth2AuthMethod;
 

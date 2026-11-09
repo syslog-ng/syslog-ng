@@ -47,7 +47,10 @@ public:
     const char *resource,
     const char *authorization_details,
     uint64_t refresh_offset_seconds,
-    OAuth2AuthMethod auth_method
+    OAuth2AuthMethod auth_method,
+    const char *client_assertion_cert_path = nullptr,
+    const char *client_assertion_private_key_path = nullptr,
+    const char *client_assertion_private_key_passphrase = nullptr
   );
 
   void handle_http_header_request(HttpHeaderRequestSignalData *data);
@@ -63,6 +66,11 @@ protected:
   uint64_t refresh_offset_seconds;
   OAuth2AuthMethod auth_method;
 
+  /* used by OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT to build a signed client assertion */
+  std::string client_assertion_cert_path;
+  std::string client_assertion_private_key_path;
+  std::string client_assertion_private_key_passphrase;
+
   std::mutex lock;
   std::string cached_token;
   std::chrono::system_clock::time_point refresh_token_after;
@@ -73,6 +81,7 @@ protected:
   bool extract_token_from_response(const std::string &response);
   std::string build_post_body();
   std::string url_encode(CURL *hnd, const std::string &value);
+  std::string build_client_assertion_jwt();
 
   // Virtual method for subclasses to override auth credential preparation
   virtual void prepare_auth_credentials(CURL *hnd, std::string &post_body);
@@ -83,6 +92,9 @@ private:
   template<typename SignalDataT, typename ResultT, typename AddTokenFn>
   void handle_token_request_impl(SignalDataT *data, AddTokenFn add_token_fn,
                                  ResultT success_code, ResultT error_code);
+
+  static bool load_file_contents(const std::string &path, std::string &contents);
+  static bool compute_cert_sha256_thumbprint_base64url(const std::string &cert_path, std::string &thumbprint);
 };
 
 }
