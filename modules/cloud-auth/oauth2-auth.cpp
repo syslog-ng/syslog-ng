@@ -63,7 +63,7 @@ OAuth2Authenticator::OAuth2Authenticator(
     client_assertion_cert_path(client_assertion_cert_path_ ? client_assertion_cert_path_ : ""),
     client_assertion_private_key_path(client_assertion_private_key_path_ ? client_assertion_private_key_path_ : ""),
     client_assertion_private_key_passphrase(client_assertion_private_key_passphrase_ ?
-                                             client_assertion_private_key_passphrase_ : ""),
+                                            client_assertion_private_key_passphrase_ : ""),
     refresh_token_after(std::chrono::system_clock::now())
 {
 }
@@ -480,6 +480,9 @@ typedef struct OAuth2Auth
   gchar *authorization_details;
   guint64 refresh_offset_seconds;
   OAuth2AuthMethod auth_method;
+  gchar *cert_path;
+  gchar *private_key_path;
+  gchar *private_key_passphrase;
 } _OAuth2Auth;
 
 void
@@ -552,10 +555,64 @@ oauth2_authenticator_set_auth_method(CloudAuthenticator *s, OAuth2AuthMethod aut
   self->auth_method = auth_method;
 }
 
+void
+oauth2_authenticator_set_cert_path(CloudAuthenticator *s, const gchar *cert_path)
+{
+  OAuth2Auth *self = (OAuth2Auth *) s;
+
+  g_free(self->cert_path);
+  self->cert_path = g_strdup(cert_path);
+}
+
+void
+oauth2_authenticator_set_private_key_path(CloudAuthenticator *s, const gchar *private_key_path)
+{
+  OAuth2Auth *self = (OAuth2Auth *) s;
+
+  g_free(self->private_key_path);
+  self->private_key_path = g_strdup(private_key_path);
+}
+
+void
+oauth2_authenticator_set_private_key_passphrase(CloudAuthenticator *s, const gchar *private_key_passphrase)
+{
+  OAuth2Auth *self = (OAuth2Auth *) s;
+
+  g_free(self->private_key_passphrase);
+  self->private_key_passphrase = g_strdup(private_key_passphrase);
+}
+
+static gboolean
+_validate_client_assertion_options(OAuth2Auth *self)
+{
+  gboolean has_cert = self->cert_path && self->cert_path[0];
+  gboolean has_key = self->private_key_path && self->private_key_path[0];
+  gboolean uses_private_key_jwt = self->auth_method == OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT;
+
+  if (uses_private_key_jwt && !(has_cert && has_key))
+    {
+      msg_error("cloud_auth::oauth2: Failed to initialize OAuth2Authenticator",
+                evt_tag_str("error", "auth_method(private-key-jwt) requires both cert() and private_key()"));
+      return FALSE;
+    }
+
+  if (!uses_private_key_jwt && (has_cert || has_key))
+    {
+      msg_error("cloud_auth::oauth2: Failed to initialize OAuth2Authenticator",
+                evt_tag_str("error", "cert() and private_key() are only valid with auth_method(private-key-jwt)"));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 static gboolean
 _init(CloudAuthenticator *s)
 {
   OAuth2Auth *self = (OAuth2Auth *) s;
+
+  if (!_validate_client_assertion_options(self))
+    return FALSE;
 
   try
     {
@@ -567,7 +624,10 @@ _init(CloudAuthenticator *s)
         self->resource ? self->resource : "",
         self->authorization_details ? self->authorization_details : "",
         self->refresh_offset_seconds,
-        self->auth_method
+        self->auth_method,
+        self->cert_path,
+        self->private_key_path,
+        self->private_key_passphrase
       );
     }
   catch (const std::runtime_error &e)
@@ -591,6 +651,9 @@ _free(CloudAuthenticator *s)
   g_free(self->scope);
   g_free(self->resource);
   g_free(self->authorization_details);
+  g_free(self->cert_path);
+  g_free(self->private_key_path);
+  g_free(self->private_key_passphrase);
 }
 
 CloudAuthenticator *

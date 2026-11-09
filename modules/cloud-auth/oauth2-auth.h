@@ -46,6 +46,9 @@ void oauth2_authenticator_set_resource(CloudAuthenticator *s, const gchar *resou
 void oauth2_authenticator_set_authorization_details(CloudAuthenticator *s, const gchar *authorization_details);
 void oauth2_authenticator_set_refresh_offset(CloudAuthenticator *s, guint64 refresh_offset_seconds);
 void oauth2_authenticator_set_auth_method(CloudAuthenticator *s, OAuth2AuthMethod auth_method);
+void oauth2_authenticator_set_cert_path(CloudAuthenticator *s, const gchar *cert_path);
+void oauth2_authenticator_set_private_key_path(CloudAuthenticator *s, const gchar *private_key_path);
+void oauth2_authenticator_set_private_key_passphrase(CloudAuthenticator *s, const gchar *private_key_passphrase);
 
 #include "compat/cpp-end.h"
 

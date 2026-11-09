@@ -55,6 +55,15 @@ public:
   using OAuth2Authenticator::prepare_auth_credentials;
 };
 
+class TestOAuth2Authenticator : public OAuth2Authenticator
+{
+public:
+  using OAuth2Authenticator::OAuth2Authenticator;
+  using OAuth2Authenticator::build_client_assertion_jwt;
+  using OAuth2Authenticator::build_post_body;
+  using OAuth2Authenticator::prepare_auth_credentials;
+};
+
 static void
 _setup(void)
 {
@@ -99,8 +108,9 @@ _decode_post_body(const std::string &body)
   return fields;
 }
 
+template<typename AuthenticatorT>
 static std::map<std::string, std::string>
-_prepare_post_body(TestAzureAuthenticator &authenticator)
+_prepare_post_body(AuthenticatorT &authenticator)
 {
   std::string body = authenticator.build_post_body();
   CURL *hnd = curl_easy_init();
@@ -143,11 +153,11 @@ Test(cloud_auth, certificate_assertion_claims_thumbprint_and_signature)
   auto after = std::chrono::system_clock::now();
   cr_assert_not(token.empty());
   auto decoded = jwt::decode(token);
-  cr_assert_str_eq(decoded.get_algorithm().c_str(), "RS256");
-  cr_assert_str_eq(decoded.get_header_claim("x5t#S256").as_string().c_str(),
-                   "73DUJ-amUKdBFa75-WkqLKYH1lv5x36Tkn4LHao_E98");
-  cr_assert_str_eq(decoded.get_issuer().c_str(), "test-app");
-  cr_assert_str_eq(decoded.get_subject().c_str(), "test-app");
+  cr_assert(decoded.get_algorithm() == "RS256");
+  cr_assert(decoded.get_header_claim("x5t#S256").as_string() ==
+            "73DUJ-amUKdBFa75-WkqLKYH1lv5x36Tkn4LHao_E98");
+  cr_assert(decoded.get_issuer() == "test-app");
+  cr_assert(decoded.get_subject() == "test-app");
   cr_assert_eq(decoded.get_audience().size(), 1);
   cr_assert_eq(decoded.get_audience().count(token_url), 1);
   cr_assert(decoded.get_issued_at() >= before - std::chrono::seconds(1));
@@ -175,8 +185,8 @@ Test(cloud_auth, certificate_post_credentials)
   cr_assert_eq(fields.count("client_secret"), 0);
   cr_assert(_verify_signature(fields.at("client_assertion")));
   auto decoded = jwt::decode(fields.at("client_assertion"));
-  cr_assert_str_eq(decoded.get_issuer().c_str(), fields.at("client_id").c_str());
-  cr_assert_str_eq(decoded.get_subject().c_str(), fields.at("client_id").c_str());
+  cr_assert(decoded.get_issuer() == fields.at("client_id"));
+  cr_assert(decoded.get_subject() == fields.at("client_id"));
 }
 
 Test(cloud_auth, app_secret_post_credentials_are_preserved)
@@ -277,5 +287,64 @@ Test(cloud_auth, azure_requires_auth_mode)
   azure_authenticator_set_app_id(authenticator, "test-app");
   azure_authenticator_set_app_secret(authenticator, "secret");
   cr_assert_not(cloud_authenticator_init(authenticator));
+  cloud_authenticator_free(authenticator);
+}
+
+Test(cloud_auth, oauth2_private_key_jwt_post_credentials)
+{
+  const char *generic_token_url = "https://idp.example.com/oauth2/token";
+  TestOAuth2Authenticator authenticator("generic-client", nullptr, generic_token_url, "api.read", nullptr, nullptr, 60,
+                                        OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, certificate_path, private_key_path);
+  auto fields = _prepare_post_body(authenticator);
+  cr_assert_eq(fields.size(), 5);
+  cr_assert_str_eq(fields.at("grant_type").c_str(), "client_credentials");
+  cr_assert_str_eq(fields.at("scope").c_str(), "api.read");
+  cr_assert_str_eq(fields.at("client_id").c_str(), "generic-client");
+  cr_assert_str_eq(fields.at("client_assertion_type").c_str(), "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+  cr_assert_eq(fields.count("client_secret"), 0);
+  cr_assert(_verify_signature(fields.at("client_assertion")));
+  auto decoded = jwt::decode(fields.at("client_assertion"));
+  cr_assert(decoded.get_issuer() == "generic-client");
+  cr_assert_eq(decoded.get_audience().count(generic_token_url), 1);
+}
+
+struct OAuth2Configuration
+{
+  OAuth2AuthMethod auth_method;
+  const char *cert;
+  const char *key;
+  gboolean valid;
+};
+
+ParameterizedTestParameters(cloud_auth, oauth2_client_assertion_configuration)
+{
+  static OAuth2Configuration cases[] =
+  {
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, nullptr, nullptr, FALSE},
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, "", "", FALSE},
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, certificate_path, nullptr, FALSE},
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, nullptr, private_key_path, FALSE},
+    {OAUTH2_AUTH_METHOD_BASIC, certificate_path, private_key_path, FALSE},
+    {OAUTH2_AUTH_METHOD_POST_BODY, certificate_path, nullptr, FALSE},
+    {OAUTH2_AUTH_METHOD_POST_BODY, nullptr, private_key_path, FALSE},
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, certificate_path, private_key_path, TRUE},
+    {OAUTH2_AUTH_METHOD_BASIC, nullptr, nullptr, TRUE},
+    {OAUTH2_AUTH_METHOD_POST_BODY, "", "", TRUE},
+  };
+  return cr_make_param_array(OAuth2Configuration, cases, G_N_ELEMENTS(cases));
+}
+
+ParameterizedTest(OAuth2Configuration *test_case, cloud_auth, oauth2_client_assertion_configuration)
+{
+  CloudAuthenticator *authenticator = oauth2_authenticator_new();
+  oauth2_authenticator_set_client_id(authenticator, "generic-client");
+  oauth2_authenticator_set_client_secret(authenticator, "secret");
+  oauth2_authenticator_set_token_url(authenticator, "https://idp.example.com/oauth2/token");
+  oauth2_authenticator_set_auth_method(authenticator, test_case->auth_method);
+  oauth2_authenticator_set_cert_path(authenticator, test_case->cert);
+  oauth2_authenticator_set_private_key_path(authenticator, test_case->key);
+  cr_assert_eq(cloud_authenticator_init(authenticator), test_case->valid);
+  if (test_case->valid)
+    cloud_authenticator_deinit(authenticator);
   cloud_authenticator_free(authenticator);
 }

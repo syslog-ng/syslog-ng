@@ -76,6 +76,7 @@ CloudAuthenticator *last_authenticator;
 %token KW_AUTH_METHOD
 %token KW_BASIC
 %token KW_POST_BODY
+%token KW_PRIVATE_KEY_JWT
 
 %%
 
@@ -199,12 +200,16 @@ oauth2_dest_auth_option
   | KW_RESOURCE '(' string ')' {oauth2_authenticator_set_resource(last_authenticator, $3); free($3);}
   | KW_AUTHORIZATION_DETAILS '(' string ')' {oauth2_authenticator_set_authorization_details(last_authenticator, $3); free($3);}
   | KW_REFRESH_OFFSET '(' nonnegative_integer64 ')' {oauth2_authenticator_set_refresh_offset(last_authenticator, $3);}
-  | KW_AUTH_METHOD '(' oauth2_auth_method_value ')' 
+  | KW_AUTH_METHOD '(' oauth2_auth_method_value ')'
+  | KW_CERT '(' path_secret ')' {oauth2_authenticator_set_cert_path(last_authenticator, $3); free($3);}
+  | KW_PRIVATE_KEY '(' path_secret ')' {oauth2_authenticator_set_private_key_path(last_authenticator, $3); free($3);}
+  | KW_PRIVATE_KEY_PASSPHRASE '(' string ')' {oauth2_authenticator_set_private_key_passphrase(last_authenticator, $3); free($3);}
   ;
 
 oauth2_auth_method_value
   : KW_BASIC { oauth2_authenticator_set_auth_method(last_authenticator, OAUTH2_AUTH_METHOD_BASIC); }
   | KW_POST_BODY { oauth2_authenticator_set_auth_method(last_authenticator, OAUTH2_AUTH_METHOD_POST_BODY); }
+  | KW_PRIVATE_KEY_JWT { oauth2_authenticator_set_auth_method(last_authenticator, OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT); }
   ;
 
 /* INCLUDE_RULES */
