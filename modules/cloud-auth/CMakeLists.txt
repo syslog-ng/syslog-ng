@@ -59,3 +59,5 @@ add_module(
   ${PROJECT_SOURCE_DIR}/modules/cloud-auth
   SOURCES ${OTEL_SOURCES}
 )
+
+add_test_subdirectory(tests)

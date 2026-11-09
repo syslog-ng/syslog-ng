@@ -88,7 +88,8 @@ modules_test_subdirs	=	\
 	modules_secure-logging modules_systemd_journal modules_kvformat modules_date \
 	modules_cef modules_diskq modules-add-contextual-data modules_getent \
 	modules_map-value-pairs modules_tagsparser modules_xml modules_appmodel \
-	modules_regexp-parser modules_rate-limit-filter modules_metrics-probe
+	modules_regexp-parser modules_rate-limit-filter modules_metrics-probe \
+	modules_cloud_auth
 
 EXTRA_DIST += modules/CMakeLists.txt
 
