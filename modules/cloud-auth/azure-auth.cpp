@@ -146,42 +146,42 @@ _init(CloudAuthenticator *s)
   switch (self->auth_mode)
     {
     case AAAM_MONITOR:
-      {
-        gboolean has_secret = self->app_secret && self->app_secret[0];
-        gboolean has_cert = self->cert_path && self->cert_path[0];
-        gboolean has_key = self->private_key_path && self->private_key_path[0];
+    {
+      gboolean has_secret = self->app_secret && self->app_secret[0];
+      gboolean has_cert = self->cert_path && self->cert_path[0];
+      gboolean has_key = self->private_key_path && self->private_key_path[0];
 
-        if (has_cert != has_key)
-          {
-            msg_error("cloud_auth::azure: Failed to initialize AzureMonitorAuthenticator",
-                      evt_tag_str("error", "cert() and private_key() must be set together"));
-            return FALSE;
-          }
-        if (has_secret == has_cert)
-          {
-            msg_error("cloud_auth::azure: Failed to initialize AzureMonitorAuthenticator",
-                      evt_tag_str("error", "exactly one of app_secret() or cert()+private_key() must be set"));
-            return FALSE;
-          }
+      if (has_cert != has_key)
+        {
+          msg_error("cloud_auth::azure: Failed to initialize AzureMonitorAuthenticator",
+                    evt_tag_str("error", "cert() and private_key() must be set together"));
+          return FALSE;
+        }
+      if (has_secret == has_cert)
+        {
+          msg_error("cloud_auth::azure: Failed to initialize AzureMonitorAuthenticator",
+                    evt_tag_str("error", "exactly one of app_secret() or cert()+private_key() must be set"));
+          return FALSE;
+        }
 
-        try
-          {
-            self->super.cpp = new AzureMonitorAuthenticator(self->tenant_id,
-                                                            self->app_id,
-                                                            self->app_secret,
-                                                            self->scope,
-                                                            self->cert_path,
-                                                            self->private_key_path,
-                                                            self->private_key_passphrase);
-          }
-        catch (const std::runtime_error &e)
-          {
-            msg_error("cloud_auth::azure: Failed to initialize AzureMonitorAuthenticator",
-                      evt_tag_str("error", e.what()));
-            return FALSE;
-          }
-        break;
-      }
+      try
+        {
+          self->super.cpp = new AzureMonitorAuthenticator(self->tenant_id,
+                                                          self->app_id,
+                                                          self->app_secret,
+                                                          self->scope,
+                                                          self->cert_path,
+                                                          self->private_key_path,
+                                                          self->private_key_passphrase);
+        }
+      catch (const std::runtime_error &e)
+        {
+          msg_error("cloud_auth::azure: Failed to initialize AzureMonitorAuthenticator",
+                    evt_tag_str("error", e.what()));
+          return FALSE;
+        }
+      break;
+    }
     case AAAM_UNDEFINED:
       msg_error("cloud_auth::azure: Failed to initialize AzureMonitorAuthenticator",
                 evt_tag_str("error", "Authentication mode must be set (e.g. monitor())"));

@@ -45,6 +45,50 @@ static const char *scope = "https://monitor.azure.com//.default";
 using syslogng::cloud_auth::azure::AzureMonitorAuthenticator;
 using syslogng::cloud_auth::oauth2::OAuth2Authenticator;
 
+/*
+ * Criterion runs each parameterized case in a separate process and copies
+ * the parameter array by value. Pointers to the parent's static strings are
+ * not valid there (e.g. on macOS), so parameters identify fixtures with an
+ * enum that is resolved inside the test process.
+ */
+typedef enum
+{
+  FX_NULL,
+  FX_EMPTY,
+  FX_CERT,
+  FX_KEY,
+  FX_ENCRYPTED_KEY,
+  FX_MISSING,
+  FX_SECRET,
+  FX_WRONG_PASSPHRASE,
+} Fixture;
+
+static const char *
+_fixture(Fixture fixture)
+{
+  switch (fixture)
+    {
+    case FX_NULL:
+      return nullptr;
+    case FX_EMPTY:
+      return "";
+    case FX_CERT:
+      return certificate_path;
+    case FX_KEY:
+      return private_key_path;
+    case FX_ENCRYPTED_KEY:
+      return encrypted_private_key_path;
+    case FX_MISSING:
+      return missing_path;
+    case FX_SECRET:
+      return "secret";
+    case FX_WRONG_PASSPHRASE:
+      return "wrong-passphrase";
+    default:
+      g_assert_not_reached();
+    }
+}
+
 /* Exercise credential construction without performing an HTTP request. */
 class TestAzureAuthenticator : public AzureMonitorAuthenticator
 {
@@ -213,36 +257,36 @@ Test(cloud_auth, encrypted_private_key_with_passphrase)
 
 struct InvalidAssertion
 {
-  const char *cert;
-  const char *key;
-  const char *passphrase;
+  Fixture cert;
+  Fixture key;
+  Fixture passphrase;
 };
 
 ParameterizedTestParameters(cloud_auth, invalid_assertion_credentials)
 {
   static InvalidAssertion cases[] =
   {
-    {certificate_path, missing_path, nullptr},
-    {missing_path, private_key_path, nullptr},
-    {private_key_path, private_key_path, nullptr},
-    {certificate_path, certificate_path, nullptr},
-    {certificate_path, encrypted_private_key_path, "wrong-passphrase"},
+    {FX_CERT, FX_MISSING, FX_NULL},
+    {FX_MISSING, FX_KEY, FX_NULL},
+    {FX_KEY, FX_KEY, FX_NULL},
+    {FX_CERT, FX_CERT, FX_NULL},
+    {FX_CERT, FX_ENCRYPTED_KEY, FX_WRONG_PASSPHRASE},
   };
   return cr_make_param_array(InvalidAssertion, cases, G_N_ELEMENTS(cases));
 }
 
 ParameterizedTest(InvalidAssertion *test_case, cloud_auth, invalid_assertion_credentials)
 {
-  TestAzureAuthenticator authenticator("test-tenant", "test-app", nullptr, scope, test_case->cert, test_case->key,
-                                       test_case->passphrase);
+  TestAzureAuthenticator authenticator("test-tenant", "test-app", nullptr, scope, _fixture(test_case->cert),
+                                       _fixture(test_case->key), _fixture(test_case->passphrase));
   cr_assert(authenticator.build_client_assertion_jwt().empty());
 }
 
 struct AzureConfiguration
 {
-  const char *secret;
-  const char *cert;
-  const char *key;
+  Fixture secret;
+  Fixture cert;
+  Fixture key;
   gboolean valid;
 };
 
@@ -250,17 +294,17 @@ ParameterizedTestParameters(cloud_auth, azure_credential_configuration)
 {
   static AzureConfiguration cases[] =
   {
-    {nullptr, nullptr, nullptr, FALSE},
-    {"", "", "", FALSE},
-    {nullptr, certificate_path, nullptr, FALSE},
-    {nullptr, nullptr, private_key_path, FALSE},
-    {"secret", certificate_path, nullptr, FALSE},
-    {"secret", nullptr, private_key_path, FALSE},
-    {"secret", certificate_path, private_key_path, FALSE},
-    {"secret", nullptr, nullptr, TRUE},
-    {"secret", "", "", TRUE},
-    {nullptr, certificate_path, private_key_path, TRUE},
-    {"", certificate_path, private_key_path, TRUE},
+    {FX_NULL, FX_NULL, FX_NULL, FALSE},
+    {FX_EMPTY, FX_EMPTY, FX_EMPTY, FALSE},
+    {FX_NULL, FX_CERT, FX_NULL, FALSE},
+    {FX_NULL, FX_NULL, FX_KEY, FALSE},
+    {FX_SECRET, FX_CERT, FX_NULL, FALSE},
+    {FX_SECRET, FX_NULL, FX_KEY, FALSE},
+    {FX_SECRET, FX_CERT, FX_KEY, FALSE},
+    {FX_SECRET, FX_NULL, FX_NULL, TRUE},
+    {FX_SECRET, FX_EMPTY, FX_EMPTY, TRUE},
+    {FX_NULL, FX_CERT, FX_KEY, TRUE},
+    {FX_EMPTY, FX_CERT, FX_KEY, TRUE},
   };
   return cr_make_param_array(AzureConfiguration, cases, G_N_ELEMENTS(cases));
 }
@@ -271,9 +315,9 @@ ParameterizedTest(AzureConfiguration *test_case, cloud_auth, azure_credential_co
   azure_authenticator_set_auth_mode(authenticator, AAAM_MONITOR);
   azure_authenticator_set_tenant_id(authenticator, "test-tenant");
   azure_authenticator_set_app_id(authenticator, "test-app");
-  azure_authenticator_set_app_secret(authenticator, test_case->secret);
-  azure_authenticator_set_cert_path(authenticator, test_case->cert);
-  azure_authenticator_set_private_key_path(authenticator, test_case->key);
+  azure_authenticator_set_app_secret(authenticator, _fixture(test_case->secret));
+  azure_authenticator_set_cert_path(authenticator, _fixture(test_case->cert));
+  azure_authenticator_set_private_key_path(authenticator, _fixture(test_case->key));
   cr_assert_eq(cloud_authenticator_init(authenticator), test_case->valid);
   if (test_case->valid)
     cloud_authenticator_deinit(authenticator);
@@ -311,8 +355,8 @@ Test(cloud_auth, oauth2_private_key_jwt_post_credentials)
 struct OAuth2Configuration
 {
   OAuth2AuthMethod auth_method;
-  const char *cert;
-  const char *key;
+  Fixture cert;
+  Fixture key;
   gboolean valid;
 };
 
@@ -320,16 +364,16 @@ ParameterizedTestParameters(cloud_auth, oauth2_client_assertion_configuration)
 {
   static OAuth2Configuration cases[] =
   {
-    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, nullptr, nullptr, FALSE},
-    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, "", "", FALSE},
-    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, certificate_path, nullptr, FALSE},
-    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, nullptr, private_key_path, FALSE},
-    {OAUTH2_AUTH_METHOD_BASIC, certificate_path, private_key_path, FALSE},
-    {OAUTH2_AUTH_METHOD_POST_BODY, certificate_path, nullptr, FALSE},
-    {OAUTH2_AUTH_METHOD_POST_BODY, nullptr, private_key_path, FALSE},
-    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, certificate_path, private_key_path, TRUE},
-    {OAUTH2_AUTH_METHOD_BASIC, nullptr, nullptr, TRUE},
-    {OAUTH2_AUTH_METHOD_POST_BODY, "", "", TRUE},
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, FX_NULL, FX_NULL, FALSE},
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, FX_EMPTY, FX_EMPTY, FALSE},
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, FX_CERT, FX_NULL, FALSE},
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, FX_NULL, FX_KEY, FALSE},
+    {OAUTH2_AUTH_METHOD_BASIC, FX_CERT, FX_KEY, FALSE},
+    {OAUTH2_AUTH_METHOD_POST_BODY, FX_CERT, FX_NULL, FALSE},
+    {OAUTH2_AUTH_METHOD_POST_BODY, FX_NULL, FX_KEY, FALSE},
+    {OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT, FX_CERT, FX_KEY, TRUE},
+    {OAUTH2_AUTH_METHOD_BASIC, FX_NULL, FX_NULL, TRUE},
+    {OAUTH2_AUTH_METHOD_POST_BODY, FX_EMPTY, FX_EMPTY, TRUE},
   };
   return cr_make_param_array(OAuth2Configuration, cases, G_N_ELEMENTS(cases));
 }
@@ -341,8 +385,8 @@ ParameterizedTest(OAuth2Configuration *test_case, cloud_auth, oauth2_client_asse
   oauth2_authenticator_set_client_secret(authenticator, "secret");
   oauth2_authenticator_set_token_url(authenticator, "https://idp.example.com/oauth2/token");
   oauth2_authenticator_set_auth_method(authenticator, test_case->auth_method);
-  oauth2_authenticator_set_cert_path(authenticator, test_case->cert);
-  oauth2_authenticator_set_private_key_path(authenticator, test_case->key);
+  oauth2_authenticator_set_cert_path(authenticator, _fixture(test_case->cert));
+  oauth2_authenticator_set_private_key_path(authenticator, _fixture(test_case->key));
   cr_assert_eq(cloud_authenticator_init(authenticator), test_case->valid);
   if (test_case->valid)
     cloud_authenticator_deinit(authenticator);
