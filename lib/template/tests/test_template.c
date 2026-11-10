@@ -703,6 +703,16 @@ Test(template, test_message_independence_non_simple_functions)
   log_template_unref(t);
 }
 
+Test(template, test_message_independence_context_values)
+{
+  /* tf_context_values uses tf_simple_func_prepare() but is not TEMPLATE_FUNCTION_SIMPLE: its output depends on the
+   * messages of the correlation context even with literal arguments. */
+  LogTemplate *t = compile_template("$(context-values literal)");
+  cr_assert_not(log_template_is_message_independent(t),
+                "context-values is message-dependent");
+  log_template_unref(t);
+}
+
 Test(template, test_result_of_concatenation_in_templates_are_typed_as_strings)
 {
   assert_template_format_value_and_type("$HOST$PROGRAM", "bzorpsyslog-ng", LM_VT_STRING);

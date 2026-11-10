@@ -44,6 +44,6 @@ void tf_simple_func_call(LogTemplateFunction *self, gpointer state, const LogTem
                          LogMessageValueType *type);
 void tf_simple_func_free_state(gpointer state);
 
-#define TEMPLATE_FUNCTION_SIMPLE(x) TEMPLATE_FUNCTION(TFSimpleFuncState, x, tf_simple_func_prepare, tf_simple_func_eval, tf_simple_func_call, tf_simple_func_free_state, x)
+#define TEMPLATE_FUNCTION_SIMPLE(x) TEMPLATE_FUNCTION_DEFINE(TFSimpleFuncState, x, tf_simple_func_prepare, tf_simple_func_eval, tf_simple_func_call, tf_simple_func_free_state, x, TRUE)
 
 #endif
