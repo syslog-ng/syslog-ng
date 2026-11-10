@@ -34,15 +34,15 @@ AzureMonitorAuthenticator::AzureMonitorAuthenticator(const char *tenant_id_,
                                                      const char *private_key_passphrase_)
   : OAuth2Authenticator(
       app_id_,                                                            // client_id
-      (cert_path_ && *cert_path_) ? nullptr : app_secret_,                // client_secret (unused for cert auth)
+      (cert_path_ && * cert_path_) ? nullptr : app_secret_,               // client_secret (unused for cert auth)
       (std::string("https://login.microsoftonline.com/") + tenant_id_ +
        "/oauth2/v2.0/token").c_str(),                                    // token_url
       scope_,                                                             // scope
       nullptr,                                                           // resource (not used)
       nullptr,                                                           // authorization_details (not used)
       60,                                                                // refresh_offset (60s before expiry)
-      (cert_path_ && *cert_path_) ? OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT
-                                  : OAUTH2_AUTH_METHOD_POST_BODY,        // auth_method
+      (cert_path_ && * cert_path_) ? OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT
+      : OAUTH2_AUTH_METHOD_POST_BODY,        // auth_method
       cert_path_,
       private_key_path_,
       private_key_passphrase_
