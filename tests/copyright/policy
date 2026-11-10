@@ -20,6 +20,7 @@ modules/grpc/protos/grafana-loki
 modules/grpc/protos/googleapis-proto
 modules/grpc/protos/clickhouse-proto
 modules/cloud-auth/jwt-cpp
+modules/cloud-auth/tests/fixtures/test-only-[^/]+\.pem$
 dev-utils/plugin_skeleton_creator/plugin_template.*
 (lib|modules)/.*\.conf$
 dist\.conf$
@@ -222,6 +223,7 @@ modules/cloud-auth/cloud-auth(-grammar|-parser|-plugin)?\.(c|h|cpp|hpp|ym)$
 modules/cloud-auth/google-auth\.(h|cpp|hpp)$
 modules/cloud-auth/azure-auth\.(h|cpp|hpp)$
 modules/cloud-auth/oauth2-auth\.(h|cpp|hpp)$
+modules/cloud-auth/tests/test-cloud-auth\.cpp$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$

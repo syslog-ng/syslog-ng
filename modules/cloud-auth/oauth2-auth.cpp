@@ -27,7 +27,13 @@
 #include "scratch-buffers.h"
 #include "compat/cpp-end.h"
 
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/evp.h>
+#include <openssl/bio.h>
+
 #include <chrono>
+#include <fstream>
 #include <sstream>
 
 using namespace syslogng::cloud_auth;
@@ -41,7 +47,10 @@ OAuth2Authenticator::OAuth2Authenticator(
   const char *resource_,
   const char *authorization_details_,
   uint64_t refresh_offset_seconds_,
-  OAuth2AuthMethod auth_method_
+  OAuth2AuthMethod auth_method_,
+  const char *client_assertion_cert_path_,
+  const char *client_assertion_private_key_path_,
+  const char *client_assertion_private_key_passphrase_
 )
   : client_id(client_id_ ? client_id_ : ""),
     client_secret(client_secret_ ? client_secret_ : ""),
@@ -51,6 +60,10 @@ OAuth2Authenticator::OAuth2Authenticator(
     authorization_details(authorization_details_ ? authorization_details_ : ""),
     refresh_offset_seconds(refresh_offset_seconds_),
     auth_method(auth_method_),
+    client_assertion_cert_path(client_assertion_cert_path_ ? client_assertion_cert_path_ : ""),
+    client_assertion_private_key_path(client_assertion_private_key_path_ ? client_assertion_private_key_path_ : ""),
+    client_assertion_private_key_passphrase(client_assertion_private_key_passphrase_ ?
+                                            client_assertion_private_key_passphrase_ : ""),
     refresh_token_after(std::chrono::system_clock::now())
 {
 }
@@ -183,6 +196,24 @@ OAuth2Authenticator::prepare_auth_credentials(CURL *hnd, std::string &post_body)
         }
       break;
     }
+    case OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT:
+    {
+      // Method 3: RFC 7523 JWT bearer client assertion, signed with a private key
+      std::string assertion = build_client_assertion_jwt();
+      if (assertion.empty())
+        break;
+
+      CURL *encode_hnd = curl_easy_init();
+      if (encode_hnd)
+        {
+          post_body += "&client_id=" + url_encode(encode_hnd, client_id);
+          post_body += "&client_assertion_type="
+                       + url_encode(encode_hnd, "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+          post_body += "&client_assertion=" + url_encode(encode_hnd, assertion);
+          curl_easy_cleanup(encode_hnd);
+        }
+      break;
+    }
     case OAUTH2_AUTH_METHOD_CUSTOM:
     {
       // Subclasses must override this method if using CUSTOM
@@ -207,6 +238,108 @@ OAuth2Authenticator::url_encode(CURL *hnd, const std::string &value)
   std::string result(encoded);
   curl_free(encoded);
   return result;
+}
+
+bool
+OAuth2Authenticator::load_file_contents(const std::string &path, std::string &contents)
+{
+  std::ifstream file(path, std::ios::binary);
+  if (!file.is_open())
+    return false;
+
+  std::ostringstream buffer;
+  buffer << file.rdbuf();
+  contents = buffer.str();
+  return true;
+}
+
+bool
+OAuth2Authenticator::compute_cert_sha256_thumbprint_base64url(const std::string &cert_path, std::string &thumbprint)
+{
+  BIO *bio = BIO_new_file(cert_path.c_str(), "r");
+  if (!bio)
+    return false;
+
+  X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+  BIO_free(bio);
+  if (!cert)
+    return false;
+
+  unsigned char digest[EVP_MAX_MD_SIZE];
+  unsigned int digest_len = 0;
+  gboolean ok = X509_digest(cert, EVP_sha256(), digest, &digest_len);
+  X509_free(cert);
+
+  if (!ok)
+    return false;
+
+  gchar *encoded = g_base64_encode(digest, digest_len);
+  std::string b64url(encoded);
+  g_free(encoded);
+
+  // JOSE headers use base64url without padding
+  for (auto &c : b64url)
+    {
+      if (c == '+')
+        c = '-';
+      else if (c == '/')
+        c = '_';
+    }
+  size_t pad_pos = b64url.find('=');
+  if (pad_pos != std::string::npos)
+    b64url.erase(pad_pos);
+
+  thumbprint = b64url;
+  return true;
+}
+
+std::string
+OAuth2Authenticator::build_client_assertion_jwt()
+{
+  std::string private_key;
+  if (!load_file_contents(client_assertion_private_key_path, private_key))
+    {
+      msg_error("cloud_auth::oauth2::OAuth2Authenticator: "
+                "failed to read client assertion private key file",
+                evt_tag_str("path", client_assertion_private_key_path.c_str()));
+      return "";
+    }
+
+  std::string thumbprint;
+  if (!compute_cert_sha256_thumbprint_base64url(client_assertion_cert_path, thumbprint))
+    {
+      msg_error("cloud_auth::oauth2::OAuth2Authenticator: "
+                "failed to compute certificate thumbprint",
+                evt_tag_str("path", client_assertion_cert_path.c_str()));
+      return "";
+    }
+
+  std::chrono::system_clock::time_point now = jwt::date::clock::now();
+  gchar *jti = g_strdup_printf("%08x%08x", g_random_int(), g_random_int());
+
+  try
+    {
+      std::string token = jwt::create()
+                          .set_header_claim("x5t#S256", jwt::claim(thumbprint))
+                          .set_issuer(client_id)
+                          .set_subject(client_id)
+                          .set_audience(token_url)
+                          .set_id(jti)
+                          .set_issued_at(now)
+                          .set_not_before(now)
+                          .set_expires_at(now + std::chrono::minutes{5})
+                          .sign(jwt::algorithm::rs256("", private_key, "", client_assertion_private_key_passphrase));
+      g_free(jti);
+      return token;
+    }
+  catch (const std::exception &e)
+    {
+      g_free(jti);
+      msg_error("cloud_auth::oauth2::OAuth2Authenticator: "
+                "failed to generate client assertion JWT",
+                evt_tag_str("error", e.what()));
+      return "";
+    }
 }
 
 size_t
@@ -347,6 +480,9 @@ typedef struct OAuth2Auth
   gchar *authorization_details;
   guint64 refresh_offset_seconds;
   OAuth2AuthMethod auth_method;
+  gchar *cert_path;
+  gchar *private_key_path;
+  gchar *private_key_passphrase;
 } _OAuth2Auth;
 
 void
@@ -419,10 +555,64 @@ oauth2_authenticator_set_auth_method(CloudAuthenticator *s, OAuth2AuthMethod aut
   self->auth_method = auth_method;
 }
 
+void
+oauth2_authenticator_set_cert_path(CloudAuthenticator *s, const gchar *cert_path)
+{
+  OAuth2Auth *self = (OAuth2Auth *) s;
+
+  g_free(self->cert_path);
+  self->cert_path = g_strdup(cert_path);
+}
+
+void
+oauth2_authenticator_set_private_key_path(CloudAuthenticator *s, const gchar *private_key_path)
+{
+  OAuth2Auth *self = (OAuth2Auth *) s;
+
+  g_free(self->private_key_path);
+  self->private_key_path = g_strdup(private_key_path);
+}
+
+void
+oauth2_authenticator_set_private_key_passphrase(CloudAuthenticator *s, const gchar *private_key_passphrase)
+{
+  OAuth2Auth *self = (OAuth2Auth *) s;
+
+  g_free(self->private_key_passphrase);
+  self->private_key_passphrase = g_strdup(private_key_passphrase);
+}
+
+static gboolean
+_validate_client_assertion_options(OAuth2Auth *self)
+{
+  gboolean has_cert = self->cert_path && self->cert_path[0];
+  gboolean has_key = self->private_key_path && self->private_key_path[0];
+  gboolean uses_private_key_jwt = self->auth_method == OAUTH2_AUTH_METHOD_PRIVATE_KEY_JWT;
+
+  if (uses_private_key_jwt && !(has_cert && has_key))
+    {
+      msg_error("cloud_auth::oauth2: Failed to initialize OAuth2Authenticator",
+                evt_tag_str("error", "auth_method(private-key-jwt) requires both cert() and private_key()"));
+      return FALSE;
+    }
+
+  if (!uses_private_key_jwt && (has_cert || has_key))
+    {
+      msg_error("cloud_auth::oauth2: Failed to initialize OAuth2Authenticator",
+                evt_tag_str("error", "cert() and private_key() are only valid with auth_method(private-key-jwt)"));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 static gboolean
 _init(CloudAuthenticator *s)
 {
   OAuth2Auth *self = (OAuth2Auth *) s;
+
+  if (!_validate_client_assertion_options(self))
+    return FALSE;
 
   try
     {
@@ -434,7 +624,10 @@ _init(CloudAuthenticator *s)
         self->resource ? self->resource : "",
         self->authorization_details ? self->authorization_details : "",
         self->refresh_offset_seconds,
-        self->auth_method
+        self->auth_method,
+        self->cert_path,
+        self->private_key_path,
+        self->private_key_passphrase
       );
     }
   catch (const std::runtime_error &e)
@@ -458,6 +651,9 @@ _free(CloudAuthenticator *s)
   g_free(self->scope);
   g_free(self->resource);
   g_free(self->authorization_details);
+  g_free(self->cert_path);
+  g_free(self->private_key_path);
+  g_free(self->private_key_passphrase);
 }
 
 CloudAuthenticator *
