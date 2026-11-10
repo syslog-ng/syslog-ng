@@ -246,6 +246,31 @@ function install_bison_from_source {
     make -j $(nproc) && make -j $(nproc) install
 }
 
+# EL10's libbpf-devel 1.7.0 ships a bpf_helpers.h that redeclares the bpf_stream_vprintk()
+# kfunc with a signature that conflicts with the one bpftool dumps into vmlinux.h. Fixed
+# upstream in libbpf v1.8.0 (dropped the stray redeclaration). Mirrors the system libbpf
+# include dir with just those two headers patched, and publishes an overriding libbpf.pc
+# so pkg-config resolves to it first once PKG_CONFIG_PATH (set in the Dockerfile) includes
+# it -- no project build file needs to know about this.
+function install_libbpf_stream_header_fix {
+    HASH_HELPERS="04575f99655917175eef6f44ecc50c081f4e4bfe9b1242d5ecc82f2a57cb3865"
+    HASH_HELPER_DEFS="aefe156d997a6231be5798e963abb6aa507fc8dabdaf0dffdf478f43e6841070"
+
+    local system_includedir fixed_includedir
+    system_includedir="$(pkg-config --variable includedir libbpf)"
+    fixed_includedir=/usr/local/include/libbpf-fixed
+
+    mkdir -p "${fixed_includedir}/bpf"
+    cp -a "${system_includedir}/bpf/." "${fixed_includedir}/bpf/"
+    download_target "https://raw.githubusercontent.com/libbpf/libbpf/v1.8.0/src/bpf_helpers.h" "${fixed_includedir}/bpf/bpf_helpers.h" "" "${HASH_HELPERS}"
+    # bpf_helpers.h #include "bpf_helper_defs.h" resolves relative to its own directory first,
+    # so the matching v1.8.0 copy must live alongside it here too.
+    download_target "https://raw.githubusercontent.com/libbpf/libbpf/v1.8.0/src/bpf_helper_defs.h" "${fixed_includedir}/bpf/bpf_helper_defs.h" "" "${HASH_HELPER_DEFS}"
+
+    mkdir -p /usr/local/lib/pkgconfig
+    sed "s#^includedir=.*#includedir=${fixed_includedir}#" "$(pkg-config --variable pcfiledir libbpf)/libbpf.pc" > /usr/local/lib/pkgconfig/libbpf.pc
+}
+
 function install_astyle_from_source {
     ASTYLE_VERSION=3.6.13
     HASH="83a207e9b4e96fbab1662a786c74434f7fe6881003ee5e5d66fcaf87c96a8672"
