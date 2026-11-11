@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2022 One Identity
  * Copyright (c) 2022 László Várady
  *
@@ -27,10 +28,12 @@
 #include "apphook.h"
 #include "qdisk.h"
 #include "scratch-buffers.h"
+#include "libtest/grab-logging.h"
 
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <glib/gstdio.h>
 
 /* QDisk-internal: the frame is a 4-byte integer */
@@ -666,6 +669,93 @@ Test(qdisk, get_next_filename_does_not_leak_the_dirlock_descriptor)
 
   for (gint i = 0; i < allocations; i++)
     g_free(filenames[i]);
+
+  _remove_dir_with_contents(dir);
+}
+
+/* the index format "%05d" addresses 100000 names, 00000 - 99999 */
+#define TEST_FILENAME_INDEX_COUNT 100000
+
+/* a failed run skips its cleanup, and these tests create their files exclusively */
+static void
+_remove_leftovers_of_failed_run(const gchar *dir)
+{
+  if (g_file_test(dir, G_FILE_TEST_IS_DIR))
+    _remove_dir_with_contents(dir);
+}
+
+static void
+_occupy_filenames(const gchar *dir, const gchar *format, gint count)
+{
+  cr_assert_eq(g_mkdir_with_parents(dir, 0700), 0, "failed to create %s, errno: %d", dir, errno);
+
+  for (gint i = 0; i < count; i++)
+    {
+      gchar name[64];
+      g_snprintf(name, sizeof(name), format, i);
+
+      gchar *path = g_build_filename(dir, name, NULL);
+      gint fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0600);
+      cr_assert_geq(fd, 0, "failed to create %s, errno: %d", path, errno);
+      close(fd);
+      g_free(path);
+    }
+}
+
+static void
+_assert_next_filename(const gchar *dir, gboolean reliable, const gchar *expected_name)
+{
+  gchar *filename = qdisk_get_next_filename(dir, reliable);
+  cr_assert_not_null(filename, "no filename allocated, expected %s", expected_name);
+
+  gchar *expected = g_build_filename(dir, expected_name, NULL);
+  cr_assert_str_eq(filename, expected);
+  cr_assert(qdisk_is_file_a_disk_buffer_file(expected_name), "%s is not recognized as a disk-buffer file",
+            expected_name);
+
+  g_free(expected);
+  g_free(filename);
+}
+
+/* the scan stopped at index 9999 while the format addresses 100000, so the 10001st queue file of a
+ * directory was refused and the destination ran without a disk buffer */
+Test(qdisk, get_next_filename_goes_past_the_old_limit_of_10000_files)
+{
+  const gchar *dir = "test_filename_old_limit";
+  _remove_leftovers_of_failed_run(dir);
+
+  _occupy_filenames(dir, "syslog-ng-%05d.rqf", 10000);
+  _occupy_filenames(dir, "syslog-ng-%05d.qf", 10000);
+  _assert_next_filename(dir, TRUE, "syslog-ng-10000.rqf");
+  _assert_next_filename(dir, TRUE, "syslog-ng-10001.rqf");
+  _assert_next_filename(dir, FALSE, "syslog-ng-10000.qf");
+
+  _remove_dir_with_contents(dir);
+}
+
+Test(qdisk, get_next_filename_uses_the_last_index_and_then_fails_naming_the_dir_and_the_limit)
+{
+  const gchar *dir = "test_filename_new_limit";
+  _remove_leftovers_of_failed_run(dir);
+
+  _occupy_filenames(dir, "syslog-ng-%05d.rqf", TEST_FILENAME_INDEX_COUNT - 1);
+  _assert_next_filename(dir, TRUE, "syslog-ng-99999.rqf");
+
+  start_grabbing_messages();
+  gchar *filename = qdisk_get_next_filename(dir, TRUE);
+  stop_grabbing_messages();
+
+  cr_assert_null(filename, "allocated %s with every index taken", filename);
+  assert_grabbed_log_contains("Error generating unique queue filename, not using disk queue");
+  gchar *dir_tag = g_strdup_printf("dir='%s'", dir);
+  assert_grabbed_log_contains(dir_tag);
+  g_free(dir_tag);
+  assert_grabbed_log_contains("max_files='100000'");
+
+  gchar *beyond = g_build_filename(dir, "syslog-ng-100000.rqf", NULL);
+  cr_assert_not(g_file_test(beyond, G_FILE_TEST_EXISTS), "a file was created beyond the last index");
+  g_free(beyond);
+  reset_grabbed_messages();
 
   _remove_dir_with_contents(dir);
 }
