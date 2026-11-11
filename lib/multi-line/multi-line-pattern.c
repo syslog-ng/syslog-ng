@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2013 Balabit
  * Copyright (c) 2013 Balazs Scheidler <bazsi@balabit.hu>
  * Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
@@ -23,6 +24,7 @@
  */
 #include "multi-line/multi-line-pattern.h"
 #include "messages.h"
+#include "pcre-match-limits.h"
 
 #define MULTI_LINE_PATTERN_ERROR multi_line_pattern_error_quark()
 
@@ -41,6 +43,7 @@ multi_line_pattern_compile(const gchar *regexp, GError **error)
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
   self->ref_cnt = 1;
+  self->regexp = g_strdup(regexp);
 
   /* compile the regexp */
   self->pattern = pcre2_compile((PCRE2_SPTR) regexp, PCRE2_ZERO_TERMINATED, 0, &rc, &erroffset, NULL);
@@ -71,6 +74,7 @@ multi_line_pattern_compile(const gchar *regexp, GError **error)
 error:
   if (self->pattern)
     pcre2_code_free(self->pattern);
+  g_free(self->regexp);
   g_free(self);
   return NULL;
 }
@@ -78,7 +82,7 @@ error:
 gint
 multi_line_pattern_eval(MultiLinePattern *re, const guchar *str, gsize len, pcre2_match_data *match_data)
 {
-  return pcre2_match(re->pattern, (PCRE2_SPTR) str, (PCRE2_SIZE) len, 0, 0, match_data, NULL);
+  return pcre_match_limited(re->pattern, (const gchar *) str, len, 0, 0, match_data, re->regexp);
 }
 
 gboolean
@@ -143,6 +147,7 @@ multi_line_pattern_unref(MultiLinePattern *self)
     {
       if (self->pattern)
         pcre2_code_free(self->pattern);
+      g_free(self->regexp);
       g_free(self);
     }
 }

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -29,6 +30,7 @@
 #include "scratch-buffers.h"
 #include "compat/string.h"
 #include "compat/pcre.h"
+#include "pcre-match-limits.h"
 
 static void
 log_matcher_store_pattern(LogMatcher *self, const gchar *pattern)
@@ -516,19 +518,17 @@ log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, con
   result.source_handle = value_handle;
   result.source_handles_value_changed = FALSE;
 
-  gint rc = pcre2_match(self->pattern,
-                        (PCRE2_SPTR) result.source_value,
-                        (PCRE2_SIZE) result.source_value_len,
-                        (PCRE2_SIZE) 0,
-                        self->match_options,
-                        result.match_data,
-                        NULL);
+  gint rc = pcre_match_limited(self->pattern, result.source_value, result.source_value_len, 0,
+                               self->match_options, result.match_data, self->super.pattern);
   gboolean res = TRUE;
   if (rc < 0)
     {
       switch (rc)
         {
         case PCRE2_ERROR_NOMATCH:
+        case PCRE2_ERROR_MATCHLIMIT:
+        case PCRE2_ERROR_DEPTHLIMIT:
+          /* the limit errors are reported (rate limited) by pcre_match_limited() */
           break;
 
         default:
@@ -622,17 +622,14 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
           options = 0;
         }
 
-      rc = pcre2_match(self->pattern,
-                       (PCRE2_SPTR) result.source_value,
-                       (PCRE2_SIZE) result.source_value_len,
-                       start_offset,
-                       (self->match_options | options),
-                       result.match_data,
-                       NULL);
+      rc = pcre_match_limited(self->pattern, result.source_value, result.source_value_len, start_offset,
+                              (self->match_options | options), result.match_data, self->super.pattern);
       if (rc < 0 && rc != PCRE2_ERROR_NOMATCH)
         {
-          msg_error("Error while matching regexp",
-                    evt_tag_int("error_code", rc));
+          /* the limit errors are reported (rate limited) by pcre_match_limited() */
+          if (!pcre_match_limits_is_limit_error(rc))
+            msg_error("Error while matching regexp",
+                      evt_tag_int("error_code", rc));
           break;
         }
       else if (rc < 0)

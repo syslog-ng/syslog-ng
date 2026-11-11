@@ -156,6 +156,7 @@ pkginclude_HEADERS			+= \
 	lib/notified-fd-events.h		\
 	lib/on-error.h			\
 	lib/parse-number.h		\
+	lib/pcre-match-limits.h		\
 	lib/pathutils.h         \
 	lib/persist-state.h		\
 	lib/persistable-state-header.h  \
@@ -258,6 +259,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/msg-stats.c			\
 	lib/on-error.c			\
 	lib/parse-number.c		\
+	lib/pcre-match-limits.c		\
 	lib/pathutils.c         \
 	lib/persist-state.c		\
 	lib/plugin.c			\

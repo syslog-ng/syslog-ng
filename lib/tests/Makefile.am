@@ -25,6 +25,7 @@ lib_tests_TESTS		= \
 	lib/tests/test_logsource \
 	lib/tests/test_persist_state	\
 	lib/tests/test_matcher		   \
+	lib/tests/test_pcre_match_limits \
 	lib/tests/test_clone_logmsg   \
 	lib/tests/test_serialize 	   \
 	lib/tests/test_msgparse	   \
@@ -206,6 +207,9 @@ lib_tests_test_logwriter_CFLAGS	= $(TEST_CFLAGS)
 
 lib_tests_test_matcher_CFLAGS		= $(TEST_CFLAGS)
 lib_tests_test_matcher_LDADD		= $(TEST_LDADD)
+
+lib_tests_test_pcre_match_limits_CFLAGS	= $(TEST_CFLAGS)
+lib_tests_test_pcre_match_limits_LDADD	= $(TEST_LDADD)
 
 lib_tests_test_clone_logmsg_CFLAGS	= $(TEST_CFLAGS)
 lib_tests_test_clone_logmsg_LDADD	= \

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2008-2018 Balabit
  * Copyright (c) 2008-2015 Balázs Scheidler <balazs.scheidler@balabit.com>
  * Copyright (c) 2009 Marton Illes
@@ -28,6 +29,7 @@
 #include "apphook.h"
 #include "radix.h"
 #include "messages.h"
+#include "libtest/grab-logging.h"
 
 #include <stdio.h>
 #include <sys/time.h>
@@ -1184,6 +1186,27 @@ Test(dbparser, test_radix_search_matches, .init = test_setup, .fini = test_teard
       test_search_matches(root, param->key, param->expected_pattern);
       r_free_node(root, NULL);
     }
+}
+
+Test(dbparser, test_radix_pcre_parser_pathological_pattern_does_not_match_and_is_reported, .init = test_setup,
+     .fini = test_teardown)
+{
+  RNode *root = r_new_node("", NULL);
+  gchar key[] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab";
+
+  insert_node(root, "@PCRE:regexp:(a+)+$@");
+
+  start_grabbing_messages();
+  GArray *matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
+  g_array_set_size(matches, 1);
+  cr_assert_null(r_find_node(root, key, strlen(key), matches));
+  g_array_free(matches, TRUE);
+
+  assert_grabbed_log_contains("exceeded the match limit");
+  assert_grabbed_log_contains("regexp='(a+)+$'");
+  stop_grabbing_messages();
+
+  r_free_node(root, NULL);
 }
 
 Test(dbparser, test_radix_prefix, .init = test_setup, .fini = test_teardown)
