@@ -10,9 +10,11 @@ ca-certificates       	        [centos, almalinux, fedora, debian, opensuse, rhe
 
 # packages required for criterion compilation (with cmake or meson)
 cmake                           [centos, almalinux, fedora, debian, opensuse, rhel, rocky, ubuntu]
-meson                           [fedora, debian-testing]
+meson                           [fedora, debian-testing, almalinux, centos, rhel, rocky]
 nanopb                          [debian-testing]
 protobuf-compiler               [debian-testing]
+# lets criterion's meson build find the system libffi instead of the bundled one, which fails to build on EL8's older binutils
+libffi-devel                    [almalinux-8, rhel-8]
 gcc-c++                         [centos, almalinux, fedora, opensuse, rhel, rocky]
 
 # to unpack gradle binary package (zip file)
