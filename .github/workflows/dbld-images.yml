@@ -25,9 +25,10 @@ on:
   workflow_dispatch:
     inputs:
       testing_image_upload:
-        description: Should we upload the images into GitHub Packages? (true/false)
+        description: Should we upload the images into GitHub Packages?
         required: false
-        default: "false"
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
