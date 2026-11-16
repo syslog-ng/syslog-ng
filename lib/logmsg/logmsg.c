@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -42,6 +43,7 @@
 #include "apphook.h"
 #include "scratch-buffers.h"
 #include "str-format.h"
+#include "utf8utils.h"
 
 #include <glib/gprintf.h>
 #include <sys/types.h>
@@ -269,6 +271,7 @@ __free_macro_value(void *val)
 
 static NVHandle match_handles[256];
 NVRegistry *logmsg_registry;
+static gboolean store_debug_macros = TRUE;
 const char logmsg_sd_prefix[] = ".SDATA.";
 const gint logmsg_sd_prefix_len = sizeof(logmsg_sd_prefix) - 1;
 gint logmsg_queue_node_max = 1;
@@ -341,7 +344,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
       sdata = g_malloc(alloc_sdata * sizeof(self->sdata[0]));
       if (self->num_sdata)
         memcpy(sdata, self->sdata, self->num_sdata * sizeof(self->sdata[0]));
-      memset(&sdata[self->num_sdata], 0, sizeof(self->sdata[0]) * (self->alloc_sdata - self->num_sdata));
+      memset(&sdata[self->num_sdata], 0, sizeof(self->sdata[0]) * (alloc_sdata - self->num_sdata));
       self->sdata = sdata;
       log_msg_set_flag(self, LF_STATE_OWN_SDATA);
     }
@@ -414,19 +417,32 @@ log_msg_update_num_matches(LogMessage *self, NVHandle handle)
     }
 }
 
+static inline void
+_set_value_handle_flags_from_name(const gchar *value_name, NVHandle handle)
+{
+  /* check if name starts with sd_prefix and has at least one additional character */
+  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[logmsg_sd_prefix_len])
+    {
+      nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
+    }
+}
+
 NVHandle
 log_msg_get_value_handle(const gchar *value_name)
 {
   NVHandle handle;
 
   handle = nv_registry_alloc_handle(logmsg_registry, value_name);
+  _set_value_handle_flags_from_name(value_name, handle);
 
-  /* check if name starts with sd_prefix and has at least one additional character */
-  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[6])
-    {
-      nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
-    }
+  return handle;
+}
 
+NVHandle
+log_msg_get_dynamic_value_handle(const gchar *value_name)
+{
+  NVHandle handle = nv_registry_alloc_dynamic_handle(logmsg_registry, value_name);
+  _set_value_handle_flags_from_name(value_name, handle);
   return handle;
 }
 
@@ -553,6 +569,18 @@ _value_invalidates_legacy_header(NVHandle handle)
   return handle == LM_V_PROGRAM || handle == LM_V_PID;
 }
 
+static inline gboolean
+_log_msg_is_debug_macro(NVHandle handle)
+{
+  return handle == LM_V_TRANSPORT || handle == LM_V_MSGFORMAT;
+}
+
+void
+log_msg_set_store_debug_macros(gboolean enable)
+{
+  store_debug_macros = enable;
+}
+
 void
 log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to)
 {
@@ -569,6 +597,31 @@ log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to)
   log_msg_unset_value(self, from);
 }
 
+/* clones self->payload if not already privately owned, accounting the
+ * newly-owned payload's size the same way as growth via realloc does */
+static void
+_log_msg_ensure_own_payload(LogMessage *self, gsize additional_space_hint)
+{
+  if (log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
+    return;
+
+  self->payload = nv_table_clone(self->payload, additional_space_hint);
+  log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
+  self->allocated_bytes += self->payload->size;
+  stats_counter_add(count_allocated_bytes, self->payload->size);
+}
+
+/* accounts for self->payload having grown from old_size to its current
+ * size, as a result of a successful nv_table_realloc() */
+static void
+_log_msg_account_payload_growth(LogMessage *self, guint32 old_size)
+{
+  guint32 new_size = self->payload->size;
+  self->allocated_bytes += (new_size - old_size);
+  stats_counter_add(count_allocated_bytes, new_size - old_size);
+  stats_counter_inc(count_payload_reallocs);
+}
+
 void
 log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
                             const gchar *value, gssize value_len,
@@ -580,7 +633,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
 
   g_assert(!log_msg_is_write_protected(self));
 
-  if (handle == LM_V_NONE)
+  if (handle == LM_V_NONE || (!store_debug_macros && _log_msg_is_debug_macro(handle)))
     return;
 
   name_len = 0;
@@ -599,19 +652,22 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
                 evt_tag_msg_reference(self));
     }
 
-  if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
-    {
-      self->payload = nv_table_clone(self->payload, name_len + value_len + 2);
-      log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
-      self->allocated_bytes += self->payload->size;
-      stats_counter_add(count_allocated_bytes, self->payload->size);
-    }
+  _log_msg_ensure_own_payload(self, name_len + value_len + 2);
 
   /* we need a loop here as a single realloc may not be enough. Might help
    * if we pass how much bytes we need though. */
 
   while (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len, type, &new_entry))
     {
+      if (nv_table_is_index_full(self->payload))
+        {
+          msg_info("Cannot store value for this log message, maximum number of unique dynamic fields reached",
+                   evt_tag_int("maximum_dynamic_fields", G_MAXUINT16),
+                   evt_tag_str("name", name),
+                   evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""));
+          break;
+        }
+
       /* error allocating string in payload, reallocate */
       guint32 old_size = self->payload->size;
       if (!nv_table_realloc(self->payload, &self->payload))
@@ -623,10 +679,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
                    evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""));
           break;
         }
-      guint32 new_size = self->payload->size;
-      self->allocated_bytes += (new_size - old_size);
-      stats_counter_add(count_allocated_bytes, new_size - old_size);
-      stats_counter_inc(count_payload_reallocs);
+      _log_msg_account_payload_growth(self, old_size);
     }
 
   if (new_entry)
@@ -656,14 +709,18 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
                 evt_tag_msg_reference(self));
     }
 
-  if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
-    {
-      self->payload = nv_table_clone(self->payload, 0);
-      log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
-    }
+  _log_msg_ensure_own_payload(self, 0);
 
   while (!nv_table_unset_value(self->payload, handle))
     {
+      if (nv_table_is_index_full(self->payload))
+        {
+          msg_info("Cannot unset value for this log message, maximum number of unique dynamic fields reached",
+                   evt_tag_int("maximum_dynamic_fields", G_MAXUINT16),
+                   evt_tag_str("name", log_msg_get_value_name(handle, NULL)));
+          break;
+        }
+
       /* error allocating string in payload, reallocate */
       guint32 old_size = self->payload->size;
       if (!nv_table_realloc(self->payload, &self->payload))
@@ -675,10 +732,7 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
                    evt_tag_str("name", name));
           break;
         }
-      guint32 new_size = self->payload->size;
-      self->allocated_bytes += (new_size - old_size);
-      stats_counter_add(count_allocated_bytes, new_size - old_size);
-      stats_counter_inc(count_payload_reallocs);
+      _log_msg_account_payload_growth(self, old_size);
     }
 
   if (_value_invalidates_legacy_header(handle))
@@ -702,10 +756,10 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
 
   g_assert(!log_msg_is_write_protected(self));
 
-  if (handle == LM_V_NONE)
+  if (handle == LM_V_NONE || (!store_debug_macros && _log_msg_is_debug_macro(handle)))
     return;
 
-  g_assert(handle >= LM_V_MAX);
+  g_assert(log_msg_is_handle_settable_with_an_indirect_value(handle));
 
   name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
@@ -722,11 +776,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
                 evt_tag_msg_reference(self));
     }
 
-  if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
-    {
-      self->payload = nv_table_clone(self->payload, name_len + 1);
-      log_msg_set_flag(self, LF_STATE_OWN_PAYLOAD);
-    }
+  _log_msg_ensure_own_payload(self, name_len + 1);
 
   NVReferencedSlice referenced_slice =
   {
@@ -737,7 +787,17 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
 
   while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, &referenced_slice, type, &new_entry))
     {
+      if (nv_table_is_index_full(self->payload))
+        {
+          msg_info("Cannot store indirect value for this log message, maximum number of unique dynamic fields reached",
+                   evt_tag_int("maximum_dynamic_fields", G_MAXUINT16),
+                   evt_tag_str("name", name),
+                   evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)));
+          break;
+        }
+
       /* error allocating string in payload, reallocate */
+      guint32 old_size = self->payload->size;
       if (!nv_table_realloc(self->payload, &self->payload))
         {
           /* error growing the payload, skip without storing the value */
@@ -746,7 +806,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
                    evt_tag_str("ref-name", log_msg_get_value_name(ref_handle, NULL)));
           break;
         }
-      stats_counter_inc(count_payload_reallocs);
+      _log_msg_account_payload_growth(self, old_size);
     }
 
   if (new_entry)
@@ -759,6 +819,21 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
                            guint16 ofs, guint16 len)
 {
   log_msg_set_value_indirect_with_type(self, handle, ref_handle, ofs, len, LM_VT_STRING);
+}
+
+void
+log_msg_set_sanitized_utf8_value(LogMessage *self, const guchar *data, gint length)
+{
+  ScratchBuffersMarker marker;
+  GString *sanitized = scratch_buffers_alloc_and_mark(&marker);
+
+  append_unsafe_utf8_as_escaped_binary(sanitized, (const gchar *) data, length, 0);
+  log_msg_set_value(self, LM_V_MESSAGE, sanitized->str, sanitized->len);
+
+  scratch_buffers_reclaim_marked(marker);
+
+  log_msg_set_tag_by_id(self, LM_T_MSG_UTF8_SANITIZED);
+  self->flags |= LF_UTF8;
 }
 
 gboolean
@@ -2027,7 +2102,7 @@ log_msg_registry_init(void)
 {
   gint i;
 
-  logmsg_registry = nv_registry_new(builtin_value_names, NVHANDLE_MAX_VALUE);
+  logmsg_registry = nv_registry_new(builtin_value_names);
   nv_registry_add_alias(logmsg_registry, LM_V_MESSAGE, "MSG");
   nv_registry_add_alias(logmsg_registry, LM_V_MESSAGE, "MSGONLY");
   nv_registry_add_alias(logmsg_registry, LM_V_HOST, "FULLHOST");
@@ -2072,6 +2147,12 @@ log_msg_registry_deinit(void)
 }
 
 void
+log_msg_registry_set_dynamic_name_limit(guint limit)
+{
+  nv_registry_set_dynamic_name_limit(logmsg_registry, limit);
+}
+
+void
 log_msg_registry_foreach(GHFunc func, gpointer user_data)
 {
   nv_registry_foreach(logmsg_registry, func, user_data);
@@ -2094,6 +2175,15 @@ log_msg_register_stats(void)
   stats_cluster_single_key_set(&sc_key, "events_allocated_bytes", NULL, 0);
   stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "msg_allocated_bytes", NULL);
   stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
+
+  stats_cluster_single_key_set(&sc_key, "logmsg_nv_registry_size", NULL, 0);
+  stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "logmsg_nv_registry_size", NULL);
+  stats_register_external_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &logmsg_registry->num_registered_names);
+
+  stats_cluster_single_key_set(&sc_key, "logmsg_dynamic_nv_registry_size", NULL, 0);
+  stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "logmsg_dynamic_nv_registry_size", NULL);
+  stats_register_external_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE,
+                                  &logmsg_registry->num_registered_dynamic_names);
   stats_unlock();
 }
 

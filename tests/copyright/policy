@@ -20,6 +20,7 @@ modules/grpc/protos/grafana-loki
 modules/grpc/protos/googleapis-proto
 modules/grpc/protos/clickhouse-proto
 modules/cloud-auth/jwt-cpp
+modules/cloud-auth/tests/fixtures/test-only-[^/]+\.pem$
 dev-utils/plugin_skeleton_creator/plugin_template.*
 (lib|modules)/.*\.conf$
 dist\.conf$
@@ -163,6 +164,7 @@ lib/tests/test_zone\.c
                                                  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
+dev-utils/compare-builds.sh
 configure\.ac$
 Makefile\.am$
 lib/(compat|str-repr|timeutils|control|debugger|filter|logproto|multi-line|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|secret-storage|logthrdest|logthrsource|ack-tracker|signal-slot-connector|[^/]*$)
@@ -197,14 +199,15 @@ modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
 modules/affile/stdout\.[ch]
 modules/afsocket/socket-options-unix\.[ch]$
+modules/afstomp/tests/test_afstomp_config\.c$
 modules/basicfuncs/vp-funcs\.[ch]$
 modules/basicfuncs/tf-tag\.c$
 modules/diskq/diskq-global-metrics\.[ch]$
 modules/diskq/tests/test_logqueue_disk\.c$
-modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
+modules/metrics-probe/metrics-probe(-parser|-plugin|-grammar)?\.(c|h|ym)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
-modules/darwinosl/darwinosl(|-parser|-plugin|-grammar|-source|-source-oslog|-source-persist)\.(c|h|m|ym)$
-modules/kafka/kafka(|-source-driver|-source-worker|-source-persist)\.(c|h)$
+modules/darwinosl/darwinosl(-parser|-plugin|-grammar|-source|-source-oslog|-source-persist)?\.(c|h|m|ym)$
+modules/kafka/kafka(-source-driver|-source-worker|-source-persist)?\.(c|h)$
 modules/grpc/otel/otel-(grammar|parser|plugin|source|source-services|servicecall|protobuf-parser|protobuf-formatter|dest|dest-worker|logmsg-handles)\.(c|h|cpp|hpp|ym)$
 modules/grpc/otel/grpc-credentials-builder\.(h|cpp|hpp)$
 modules/grpc/otel/syslog-ng-otlp-(dest|dest-worker)\.(h|cpp|hpp)$
@@ -216,10 +219,11 @@ modules/grpc/pubsub
 modules/grpc/clickhouse
 modules/grpc/common
 modules/grpc/protos/apphook\.(cpp|h)$
-modules/cloud-auth/cloud-auth(|-grammar|-parser|-plugin)\.(c|h|cpp|hpp|ym)$
+modules/cloud-auth/cloud-auth(-grammar|-parser|-plugin)?\.(c|h|cpp|hpp|ym)$
 modules/cloud-auth/google-auth\.(h|cpp|hpp)$
 modules/cloud-auth/azure-auth\.(h|cpp|hpp)$
 modules/cloud-auth/oauth2-auth\.(h|cpp|hpp)$
+modules/cloud-auth/tests/test-cloud-auth\.cpp$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$
@@ -248,7 +252,8 @@ modules/python-modules/syslogng/modules/kubernetes/.*
 modules/ebpf/.*
 modules/python-modules/syslogng/modules/hypr/.*
 modules/python-modules/syslogng/modules/example/.*
-modules/python-modules/syslogng/modules/s3/.*
+modules/python-modules/syslogng/modules/s3/(__init__|compressable_file_buffer)\.py$
+modules/python-modules/syslogng/modules/s3/scl
 modules/python-modules/syslogng/modules/webhook/scl/.*
 modules/python-modules/syslogng/modules/webhook/__init__.py
 modules/python-modules/setup\.py
@@ -270,6 +275,9 @@ tests/light/functional_tests/templates/test_template_stmt\.py
 tests/light/functional_tests/filters/test_multiple_filters\.py
 tests/light/functional_tests/parsers/metrics-probe/test_metrics_probe\.py
 tests/light/functional_tests/source_drivers/syslog_source/auto/test_auto_proto\.py
+tests/light/functional_tests/source_drivers/network_source/test_network_tls_pkcs12\.py
+tests/light/functional_tests/source_drivers/network_source/test_network_tls_extended_key_usage\.py
+tests/light/functional_tests/template_functions/format-gelf/.*\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
 tests/light/src/syslog_ng_config/statements/template/template\.py
 tests/light/src/syslog_ng_config/statements/__init__\.py
@@ -282,6 +290,7 @@ modules/affile/logrotate\.[ch]
 tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_all_messages_received\.py
 tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_deleting_log_file\.py
 tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_rotation_failure\.py
+tests/light/functional_tests/destination_drivers/network_destination/test_network_destination_trusted_keys\.py
 
 ###########################################################################
 # These files are GPLd with Balabit origin.
@@ -291,6 +300,7 @@ tests/light/functional_tests/destination_drivers/file_destination/test_logrotate
 news/create-newsfile.py
 news/next-pr-id.py
 dev-utils/plugin_skeleton_creator/create_plugin.sh
+dev-utils/compare-builds.sh
 tests/unit
 tests/valgrind
 tests/build-log-cflags-propagation.sh

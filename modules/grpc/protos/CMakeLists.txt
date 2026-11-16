@@ -116,4 +116,7 @@ target_include_directories(grpc-protos
 )
 
 target_compile_options(grpc-protos PRIVATE -Wno-switch-default -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)
-install(TARGETS grpc-protos LIBRARY DESTINATION lib/syslog-ng COMPONENT grpc-protos)
+
+# mirrors autotools lib_LTLIBRARIES with default -version-info 0:0:0
+set_target_properties(grpc-protos PROPERTIES VERSION "0.0.0" SOVERSION "0")
+install(TARGETS grpc-protos LIBRARY DESTINATION lib COMPONENT grpc-protos)

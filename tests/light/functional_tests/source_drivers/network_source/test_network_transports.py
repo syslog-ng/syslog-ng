@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
+# Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
 # Copyright (c) 2020 One Identity
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -28,7 +29,7 @@ from src.common.file import File
 from src.common.random_id import get_unique_id
 
 
-def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, transport, input_messages, number_of_messages, expected_messages, template=None, password=None, use_ssl=False):
+def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, transport, input_messages, number_of_messages, expected_messages, template=None, password=None, use_ssl=False, tls_options=None):
     if password:
         server_key_path = copy_shared_file(testcase_parameters, "server-protected-asdfg.key")
         server_cert_path = copy_shared_file(testcase_parameters, "server-protected-asdfg.crt")
@@ -42,16 +43,18 @@ def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_
     proxied = 'proxied' in transport
 
     if (use_ssl):
+        tls = {
+            "key-file": server_key_path,
+            "cert-file": server_cert_path,
+            "peer-verify": '"optional-untrusted"',
+        }
+        tls.update(tls_options or {})
         network_source = config.create_network_source(
             ip="localhost",
             port=port_allocator(),
             transport=transport,
             flags="no-parse",
-            tls={
-                "key-file": server_key_path,
-                "cert-file": server_cert_path,
-                "peer-verify": '"optional-untrusted"',
-            },
+            tls=tls,
         )
     else:
         network_source = config.create_network_source(
@@ -124,6 +127,15 @@ def test_network_tls(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, t
     EXPECTED_MESSAGES = "message 0\n"
     NUMBER_OF_MESSAGES = 1
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"tls"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
+
+
+def test_network_tls_extended_key_usage_verify(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
+    # extended-key-usage-verify() is accepted in the tls() block of a source (it was destination-only) and
+    # does not disturb a client that presents no certificate (peer-verify is optional).
+    TEMPLATE = r'"${MESSAGE}\n"'
+    EXPECTED_MESSAGES = "message 0\n"
+    NUMBER_OF_MESSAGES = 1
+    _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"tls"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE, tls_options={"extended-key-usage-verify": "yes"})
 
 
 def test_network_auto_no_framing(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):

@@ -16,7 +16,9 @@ brew "pcre2"
 brew "pkgconf"
 
 brew "curl"
-brew "gradle"
+# gradle: not needed right now (Java is disabled in CI); also, its openjdk
+# dependency currently requires arm64, breaking brew bundle on Intel runners.
+#brew "gradle"
 brew "hiredis"
 brew "libdbi"
 brew "libmaxminddb"
@@ -24,15 +26,18 @@ brew "libmaxminddb"
 brew "libnet"
 brew "libpaho-mqtt"
 brew "librdkafka"
-brew "mongo-c-driver"
 brew "net-snmp"
-brew "python@3", link: true, force: true
+# Pinned: python@3.15's pyport.h uses undefined _Py_STDC_VERSION under -std=gnu23, which our -Werror -Wundef turns into a build failure.
+# TODO: Rmove once teh brew formula for python@3.15 is fixed
+brew "python@3.13", link: true, force: true
 brew "rabbitmq-c"
 brew "riemann-client"
 
-brew "grpc"
+# On X86, bottles are outdated; the workflow installs these from source on X64 runners
+#brew "mongo-c-driver"
+#brew "grpc"
+#brew "qpdf"
 
 brew "criterion"
-brew "qpdf"
 
 brew "libunwind-headers"

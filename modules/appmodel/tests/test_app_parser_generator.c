@@ -26,6 +26,7 @@
 #include "libtest/config_parse_lib.h"
 
 #include "app-parser-generator.h"
+#include "cfg-block-generator.h"
 #include "apphook.h"
 #include "plugin-types.h"
 
@@ -193,6 +194,7 @@ startup(void)
 static void
 teardown(void)
 {
+  cfg_block_generator_unref(app_parser);
   g_string_free(result, TRUE);
   app_shutdown();
 }

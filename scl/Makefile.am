@@ -6,6 +6,7 @@ SCL_SUBDIRS	= \
 	cisco		\
 	collectd \
 	checkpoint	\
+	cloudwatchlogshlc	\
 	default-network-drivers	\
 	darwinosl \
 	discord \

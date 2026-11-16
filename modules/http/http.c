@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2022 One Identity LLC.
  * Copyright (c) 2016 Marc Falzon
  *
@@ -32,6 +33,13 @@ http_dd_insert_response_handler(LogDriver *d, HttpResponseHandler *response_hand
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
   http_response_handlers_insert(self->response_handlers, response_handler);
+}
+
+gboolean
+http_dd_append_response_body_handler(LogDriver *d, const gchar *pattern, HttpResponseAction action, GError **error)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+  return http_response_body_handlers_append(self->response_body_handlers, pattern, action, error);
 }
 
 static gboolean
@@ -450,19 +458,20 @@ http_dd_init(LogPipe *s)
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
-  if ((self->super.batch_lines || self->batch_bytes) && http_load_balancer_is_url_templated(self->load_balancer))
-    {
-      log_threaded_dest_driver_set_flush_on_worker_key_change(&self->super.super.super, TRUE);
+  gboolean batching = self->super.batch_lines || self->batch_bytes;
 
-      if (!self->super.worker_partition_key)
-        {
-          msg_error("http: worker-partition-key() must be set if using templates in the url() option "
-                    "while batching is enabled. "
-                    "Make sure to set worker-partition-key() with a template that contains all the templates "
-                    "used in the url() option",
-                    log_pipe_location_tag(&self->super.super.super.super));
-          return FALSE;
-        }
+  if (batching && http_load_balancer_is_url_templated(self->load_balancer))
+    log_threaded_dest_driver_set_flush_on_worker_key_change(&self->super.super.super, TRUE);
+
+  if (batching && http_load_balancer_is_url_message_dependent(self->load_balancer)
+      && !self->super.worker_partition_key)
+    {
+      msg_error("http: worker-partition-key() must be set if using message-dependent templates "
+                "in the url() option while batching is enabled. "
+                "Make sure to set worker-partition-key() with a template that contains all the "
+                "message-dependent templates used in the url() option",
+                log_pipe_location_tag(&self->super.super.super.super));
+      return FALSE;
     }
   if (self->batch_bytes > 0 && self->super.batch_lines == 0)
     self->super.batch_lines = G_MAXINT;
@@ -504,6 +513,7 @@ http_dd_free(LogPipe *s)
   g_list_free_full(self->headers, g_free);
   http_load_balancer_free(self->load_balancer);
   http_response_handlers_free(self->response_handlers);
+  http_response_body_handlers_free(self->response_body_handlers);
 
   log_threaded_dest_driver_free(s);
 }
@@ -543,6 +553,7 @@ http_dd_new(GlobalConfig *cfg)
                                        SYSLOG_NG_VERSION, curl_info->version);
 
   self->response_handlers = http_response_handlers_new();
+  self->response_body_handlers = http_response_body_handlers_new();
   self->content_compression = CURL_COMPRESSION_DEFAULT;
 
   return &self->super.super.super;

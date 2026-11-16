@@ -187,7 +187,8 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
       STACK_OF(GENERAL_NAME) *alt_names;
       GENERAL_NAME *gen_name;
 
-      ext = X509_get_ext(cert, ext_ndx);
+      /* cast needed as X509_get_ext() only started returning a const pointer in OpenSSL 4.0 */
+      ext = (X509_EXTENSION *) X509_get_ext(cert, ext_ndx);
       alt_names = X509V3_EXT_d2i(ext);
       if (alt_names)
         {
@@ -203,16 +204,24 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
                   const guchar *dnsname = ASN1_STRING_get0_data(gen_name->d.dNSName);
                   guint dnsname_len = ASN1_STRING_length(gen_name->d.dNSName);
 
+                  /* we have found a DNS name as alternative subject name */
+                  found = TRUE;
+
                   if (dnsname_len > sizeof(pattern_buf) - 1)
                     {
                       /* skip this oversized SAN entry, but keep checking the rest */
                       continue;
                     }
 
+                  if (memchr(dnsname, '\0', dnsname_len))
+                    {
+                      /* an embedded NUL would cut the name short in the C string comparison below */
+                      msg_warning("Ignoring certificate subjectAltName with an embedded NUL character");
+                      continue;
+                    }
+
                   memcpy(pattern_buf, dnsname, dnsname_len);
                   pattern_buf[dnsname_len] = 0;
-                  /* we have found a DNS name as alternative subject name */
-                  found = TRUE;
                   result = tls_wildcard_match(host_name, pattern_buf);
                 }
               else if (gen_name->type == GEN_IPADD)
@@ -244,10 +253,14 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
     {
       /* hmm. there was no subjectAltName (this is deprecated, but still
        * widely used), look up the Subject, most specific CN */
-      X509_NAME *name = X509_get_subject_name(cert);
-      if (X509_NAME_get_text_by_NID(name, NID_commonName, pattern_buf, sizeof(pattern_buf)) != -1)
+      const X509_NAME *name = X509_get_subject_name(cert);
+      gint cn_len = syslog_ng_x509_name_get_text_by_NID(name, NID_commonName, pattern_buf, sizeof(pattern_buf));
+      if (cn_len != -1)
         {
-          result = tls_wildcard_match(host_name, pattern_buf);
+          if ((gsize) cn_len != strlen(pattern_buf))
+            msg_warning("Ignoring certificate common name with an embedded NUL character");
+          else
+            result = tls_wildcard_match(host_name, pattern_buf);
         }
     }
   if (!result)

@@ -26,6 +26,11 @@
 #include "logproto-file-writer.h"
 #include "logmsg/logmsg.h"
 #include "apphook.h"
+#include "affile-dest.h"
+
+#include <errno.h>
+#include <glib/gstdio.h>
+#include <iv.h>
 
 
 static void _ack_callback(gint num_acked, gpointer user_data);
@@ -160,6 +165,120 @@ Test(file_writer, batches_of_messages_are_flushed_even_if_the_underlying_transpo
   cr_assert_eq(messages_acked, BATCH_SIZE);
 
   log_proto_client_free(fw);
+}
+
+static gint destination_open_attempts;
+static gint (*destination_open)(FileOpener *, const gchar *, gint);
+
+static gint
+_count_destination_opens(FileOpener *opener, const gchar *name, gint flags)
+{
+  /* Inject only the initial failure; subsequent attempts use the original
+   * opener and real filesystem, while retaining an observable attempt count. */
+  destination_open_attempts++;
+  if (destination_open_attempts == 1)
+    {
+      errno = EACCES;
+      return -1;
+    }
+  return destination_open(opener, name, flags);
+}
+
+static void
+_stop_file_reopen_loop(gpointer user_data)
+{
+  iv_quit();
+}
+
+/* Exercise the real affile destination and file opener without active I/O
+ * deferral or rotation. The threaded writer tests cover those paths separately. */
+Test(affile_reopen, successful_reopen_does_not_open_the_file_twice, .timeout = 10)
+{
+  app_startup();
+  configuration = cfg_new_snippet();
+  configuration->threaded = FALSE;
+  GError *error = NULL;
+  gchar *directory = g_dir_make_tmp("syslog-ng-reopen-XXXXXX", &error);
+  cr_assert_not_null(directory, "%s", error ? error->message : "temporary directory creation failed");
+  gchar *filename = g_build_filename(directory, "destination.log", NULL);
+  LogTemplate *filename_template = log_template_new(configuration, NULL);
+  cr_assert(log_template_compile(filename_template, filename, &error));
+  LogDriver *destination = affile_dd_new(filename_template, configuration);
+  AFFileDestDriver *driver = (AFFileDestDriver *) destination;
+  driver->writer_options.time_reopen = 1;
+  driver->writer_options.options |= LWO_NO_STATS;
+  destination_open = driver->file_opener->open;
+  driver->file_opener->open = _count_destination_opens;
+  destination_open_attempts = 0;
+  cr_assert(log_pipe_init((LogPipe *) destination));
+
+  /* Queuing creates the real AFFileDestWriter. The injected initial failure
+   * makes affile request a NULL proto, arming the closed writer's retry timer. */
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  path_options.ack_needed = FALSE;
+  LogMessage *message = log_msg_new_empty();
+  log_msg_set_value(message, LM_V_MESSAGE, "destination reopen regression", -1);
+  log_pipe_queue((LogPipe *) destination, message, &path_options);
+  cr_assert_not_null(driver->single_writer);
+  LogPipe *file_writer = (LogPipe *) driver->single_writer;
+  LogWriter *writer = (LogWriter *) file_writer->pipe_next;
+  cr_assert_not_null(writer);
+  cr_assert_not(log_writer_opened(writer));
+  cr_assert_eq(destination_open_attempts, 1);
+
+  /* Keep the writer idle: another I/O job would stop its watches and could
+   * cancel the stale timer, hiding a missing cancellation during reopen. */
+  LogQueue *queue = log_writer_get_queue(writer);
+  LogMessage *held_message = log_queue_pop_head(queue, &path_options);
+  cr_assert_not_null(held_message);
+  log_queue_ack_backlog(queue, 1);
+  log_queue_unref(queue);
+
+  /* Invoke the actual retry handler directly before the scheduled timer fires.
+   * Its successful open supplies a valid proto through log_writer_reopen(),
+   * which must cancel the obsolete retry in its main-thread request path. */
+  log_pipe_notify(file_writer, NC_REOPEN_REQUIRED, writer);
+  cr_assert(log_writer_opened(writer));
+  cr_assert_eq(destination_open_attempts, 2);
+  LogProtoClient *opened_proto = log_writer_get_proto(writer);
+  struct iv_timer stop_timer;
+  IV_TIMER_INIT(&stop_timer);
+  stop_timer.handler = _stop_file_reopen_loop;
+  iv_validate_now();
+  stop_timer.expires = iv_now;
+  stop_timer.expires.tv_sec += 2;
+  iv_timer_register(&stop_timer);
+  iv_main();
+
+  /* Expect one injected failure and one successful open. A stale timer would
+   * invoke affile_dw_notify() again and cause a third open attempt. Proto
+   * identity supplements the attempt count; it cannot replace that count. */
+  cr_assert_eq(destination_open_attempts, 2, "a stale writer retry reopened the destination file");
+  cr_assert_eq(log_writer_get_proto(writer), opened_proto);
+
+  /* Only after the stale-timer check, let the real destination process its
+   * initial protocol handshake and write the held message. Deinit then flushes
+   * any remaining output before file contents are inspected. */
+  log_pipe_queue((LogPipe *) destination, held_message, &path_options);
+  iv_validate_now();
+  stop_timer.expires = iv_now;
+  stop_timer.expires.tv_sec += 1;
+  iv_timer_register(&stop_timer);
+  iv_main();
+  cr_assert(log_pipe_deinit((LogPipe *) destination));
+  gchar *contents = NULL;
+  cr_assert(g_file_get_contents(filename, &contents, NULL, &error));
+  cr_assert_not_null(strstr(contents, "destination reopen regression"));
+  g_free(contents);
+
+  log_pipe_unref((LogPipe *) destination);
+  cfg_free(configuration);
+  cr_assert_eq(g_unlink(filename), 0);
+  cr_assert_eq(g_rmdir(directory), 0);
+  g_free(filename);
+  g_free(directory);
+  app_shutdown();
+  iv_deinit();
 }
 
 static void

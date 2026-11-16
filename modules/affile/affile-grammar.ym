@@ -289,7 +289,7 @@ dest_affile_option
   | file_perm_option
   | KW_OPTIONAL '(' yesno ')' { last_driver->optional = $3; }
   | KW_OVERWRITE_IF_OLDER '(' nonnegative_integer ')'  { affile_dd_set_overwrite_if_older(last_driver, $3); }
-  | KW_SYMLINK_AS '(' string ')' { affile_dd_set_symlink_as(last_driver, $3); }
+  | KW_SYMLINK_AS '(' string ')' { affile_dd_set_symlink_as(last_driver, $3); free($3); }
   | KW_FSYNC '(' yesno ')' { affile_dd_set_fsync(last_driver, $3); }
   | KW_LOGROTATE '(' dest_affile_logrotate_options ')' { }
   | dest_affile_common_option

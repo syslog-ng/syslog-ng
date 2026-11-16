@@ -184,6 +184,9 @@ class SyslogNgConfig(object):
     def create_csv_parser(self, **options):
         return Parser("csv-parser", self.__stats_handler, self.__prometheus_stats_handler, **options)
 
+    def create_python_parser(self, **options):
+        return Parser("python", self.__stats_handler, self.__prometheus_stats_handler, **options)
+
     def create_metrics_probe(self, **options):
         return Parser("metrics_probe", self.__stats_handler, self.__prometheus_stats_handler, **options)
 

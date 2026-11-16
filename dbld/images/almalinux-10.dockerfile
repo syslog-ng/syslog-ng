@@ -20,9 +20,10 @@ RUN /dbld/builddeps add_copr_repo
 RUN /dbld/builddeps install_dnf_packages
 RUN /dbld/builddeps install_rpm_build_deps
 
-RUN /dbld/builddeps install_criterion_from_source
-# bison is too old, at least version 3.7.6 is required
-RUN /dbld/builddeps install_bison_from_source
+RUN /dbld/builddeps install_criterion_from_source meson
+RUN /dbld/builddeps install_libbpf_stream_header_fix
+ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
+
 
 VOLUME /source
 VOLUME /build

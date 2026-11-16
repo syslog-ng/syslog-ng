@@ -34,6 +34,7 @@ if ((NOT DEFINED ENABLE_GRPC OR ENABLE_GRPC) AND (NOT DEFINED ENABLE_CPP OR ENAB
   # FIXME: You cannot remove this otherwise unnecessary if condition and the above
   #        set(GRPC_DEPS_FOUND ON), it causes a strange configure error
   if (GRPC_DEPS_FOUND)
+    # Pin a specific protoc/Protobuf install via -DProtobuf_ROOT=<path> (like autotools: --with-protoc).
     find_package(Protobuf 3.6.1 QUIET)
 
     if (NOT Protobuf_FOUND)
@@ -77,7 +78,19 @@ if ((NOT DEFINED ENABLE_GRPC OR ENABLE_GRPC) AND (NOT DEFINED ENABLE_CPP OR ENAB
       add_executable(protobuf::protoc-gen-upb_minitable IMPORTED)
     endif()
 
+    # Mirrors autotools' --with-protoc-gen-grpc-cpp-plugin=PATH.
+    set(PROTOC_GEN_GRPC_CPP_PLUGIN "" CACHE FILEPATH "Use PATH as the protoc-gen-grpc-cpp plugin executable, bypassing auto-detection")
+
     find_package(gRPC 1.16.1 QUIET)
+
+    # gRPC::grpc_cpp_plugin's IMPORTED_LOCATION may already be set by this point
+    # (either from gRPC's own installed CMake config, or from the vendored
+    # FindgRPC.cmake's own find_program() fallback) - override it unconditionally
+    # here instead of trying to pre-seed either path, so this works regardless
+    # of which one the vendored module took.
+    if(PROTOC_GEN_GRPC_CPP_PLUGIN AND TARGET gRPC::grpc_cpp_plugin)
+      set_property(TARGET gRPC::grpc_cpp_plugin PROPERTY IMPORTED_LOCATION "${PROTOC_GEN_GRPC_CPP_PLUGIN}")
+    endif()
 
     if (NOT gRPC_FOUND)
       if (ENABLE_GRPC)

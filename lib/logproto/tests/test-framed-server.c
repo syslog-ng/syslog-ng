@@ -96,6 +96,40 @@ Test(log_proto, test_log_proto_framed_server_invalid_header)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_log_proto_framed_server_frame_len_overflow)
+{
+  LogProtoServer *proto;
+
+  /* GHSA-h28q-v37w-gv94: a 10-digit frame length >= 2^32 must be rejected, not silently
+   * wrapped into a small, attacker-chosen value ("4294967306" wraps to 10 mod 2^32). */
+
+  proto_server_options.super.max_msg_size = 32;
+  proto = log_proto_framed_server_new(
+            log_transport_mock_stream_new(
+              "4294967306 AAAAAAAAAA10 <13>smuggled", -1,
+              LTM_EOF),
+            get_inited_proto_server_options());
+  assert_proto_server_fetch_failure(proto, LPS_ERROR, "Invalid frame header, frame length overflows");
+  log_proto_server_free(proto);
+}
+
+Test(log_proto, test_log_proto_framed_server_frame_len_max_value_not_rejected_as_overflow)
+{
+  LogProtoServer *proto;
+
+  /* G_MAXUINT32 is the largest non-overflowing frame length; it must still be rejected for
+   * exceeding max_msg_size(), not misflagged as an overflow. */
+
+  proto_server_options.super.max_msg_size = 32;
+  proto = log_proto_framed_server_new(
+            log_transport_mock_stream_new(
+              "4294967295 X", -1,
+              LTM_EOF),
+            get_inited_proto_server_options());
+  assert_proto_server_fetch_failure(proto, LPS_ERROR, "Incoming frame larger than log_msg_size()");
+  log_proto_server_free(proto);
+}
+
 Test(log_proto, test_log_proto_framed_server_too_long_line)
 {
   LogProtoServer *proto;

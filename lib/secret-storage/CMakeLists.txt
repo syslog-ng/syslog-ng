@@ -14,7 +14,11 @@ target_include_directories(secret-storage
 )
 
 target_link_libraries(secret-storage PRIVATE GLib::GLib)
-set_target_properties(secret-storage PROPERTIES C_VISIBILITY_PRESET hidden)
+# VERSION/SOVERSION mirrors autotools libtool defaults (no explicit -version-info)
+set_target_properties(secret-storage PROPERTIES
+    C_VISIBILITY_PRESET hidden
+    VERSION "0.0.0"
+    SOVERSION "0")
 
 install(TARGETS secret-storage LIBRARY DESTINATION lib)
 install(FILES ${SECRET_STORAGE_HEADERS} DESTINATION include/syslog-ng)

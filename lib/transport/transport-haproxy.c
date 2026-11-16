@@ -423,7 +423,7 @@ _fetch_proxy_v2_payload(LogTransportHAProxy *self)
   struct proxy_hdr_v2 *hdr = (struct proxy_hdr_v2 *) self->proxy_header_buff;
   gsize proxy_header_len = sizeof(*hdr) + ntohs(hdr->len);
 
-  if (proxy_header_len > sizeof(self->proxy_header_buff))
+  if (proxy_header_len >= sizeof(self->proxy_header_buff))
     {
       msg_error("PROXYv2 proto header with invalid header length",
                 evt_tag_int("max_parsable_length", sizeof(self->proxy_header_buff)),
@@ -532,7 +532,9 @@ _save_addresses(LogTransportHAProxy *self)
     }
 #endif
   else
-    g_assert_not_reached();
+    /* e.g. TCP6 announced on a build without IPv6 support: keep the real connection addresses, don't abort */
+    msg_warning("PROXY protocol header announced an address family unsupported by this build",
+                evt_tag_int("ip_version", self->info.ip_version));
 }
 
 static Status

@@ -115,7 +115,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
 
   for (i = 0; i < num_msg_to_ack; i++)
     {
-      if (qdisk_get_backlog_head (self->super.qdisk) == qdisk_get_next_head_position(self->super.qdisk))
+      if (qdisk_is_backlog_empty(self->super.qdisk))
         {
           goto exit_reliable;
         }
@@ -135,6 +135,12 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
       log_queue_disk_update_disk_related_counters(&self->super);
     }
 exit_reliable:
+  if (qdisk_is_backlog_empty(self->super.qdisk))
+    {
+      /* nothing left in flight: no record can crash the daemon on the next start */
+      qdisk_clear_pending_read_head(self->super.qdisk);
+      qdisk_reset_pending_read_crash_count(self->super.qdisk);
+    }
   qdisk_reset_file_if_empty(self->super.qdisk);
   g_mutex_unlock(&s->lock);
 }
@@ -271,6 +277,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
         qdisk_corrupt = TRUE;
 
       /* push to backlog */
+      log_msg_write_protect(msg);
       log_msg_ref(msg);
       _push_to_memory_queue_tail(self->backlog, position, msg, path_options);
       log_queue_memory_usage_add(s, log_msg_get_size(msg));
@@ -373,6 +380,8 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 
   scratch_buffers_reclaim_marked(marker);
 
+  log_msg_write_protect(msg);
+
   if (_is_reserved_buffer_size_reached(self))
     {
       /*
@@ -447,10 +456,13 @@ _stop(LogQueueDisk *s, gboolean *persistent)
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
 
   gboolean result = FALSE;
+  gboolean has_messages = TRUE;
 
-  if (qdisk_stop(s->qdisk, NULL, NULL, NULL))
+  *persistent = TRUE;
+
+  if (qdisk_stop(s->qdisk, NULL, NULL, NULL, &has_messages))
     {
-      *persistent = TRUE;
+      *persistent = has_messages;
       result = TRUE;
     }
 

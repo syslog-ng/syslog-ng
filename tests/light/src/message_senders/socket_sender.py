@@ -105,10 +105,10 @@ class SocketSender(MessageSender):
 
         # Wrap in SSL if requested (stream only)
         if not self.dgram and self.ssl_enabled:
-            # Use deprecated PROTOCOL_TLSv1_2 for backward compatibility with old test framework.
-            # PROTOCOL_TLSv1_2 does not verify certificates by default, matching original behavior.
-            # PROTOCOL_TLS_CLIENT would require explicit check_hostname=False and verify_mode=CERT_NONE.
-            self.sock = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2).wrap_socket(self.sock)
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            self.sock = ctx.wrap_socket(self.sock)
 
     def sendMessage(self, msg):
         """Send single message via socket.

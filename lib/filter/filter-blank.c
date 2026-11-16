@@ -108,13 +108,22 @@ filter_blank_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplat
   return data.blank ^ s->comp;
 }
 
+static void
+filter_blank_free(FilterExprNode *s)
+{
+  FilterBlank *self = (FilterBlank *) s;
+
+  g_free((gchar *) self->name);
+}
+
 FilterExprNode *
 filter_blank_new(const gchar *name)
 {
   FilterBlank *self = g_new0(FilterBlank, 1);
   filter_expr_node_init_instance(&self->super);
   self->super.eval = filter_blank_eval;
-  self->name = name;
+  self->super.free_fn = filter_blank_free;
+  self->name = g_strdup(name);
   self->name_len = strlen(name);
 
   return &self->super;

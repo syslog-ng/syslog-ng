@@ -76,7 +76,7 @@ filter_netmask_new(const gchar *cidr)
 {
   FilterNetmask *self = g_new0(FilterNetmask, 1);
   gchar buf[32];
-  gchar *slash;
+  const gchar *slash;
 
   filter_expr_node_init_instance(&self->super);
   slash = strchr(cidr, '/');

@@ -29,6 +29,11 @@
 #include "qdisk.h"
 #include "logmsg/logmsg-serialize.h"
 
+/* N-strikes, not 0-strikes: a single unrelated crash (OOM, kill -9, ...) must not quarantine the file */
+/* TODO: make this threshold a disk-queue option, and add stats counters for
+ * pending_read_crash_count / quarantine events once there's a config knob to gate them on */
+#define QDISK_PENDING_READ_CRASH_THRESHOLD 3
+
 typedef struct _LogQueueDisk LogQueueDisk;
 
 struct _LogQueueDisk

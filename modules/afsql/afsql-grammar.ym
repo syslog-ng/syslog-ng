@@ -106,7 +106,7 @@ dest_afsql_option
         | KW_DBD_OPTION '(' string LL_NUMBER ')' { afsql_dd_add_dbd_option_numeric(last_driver, $3, $4); free($3); }
         | KW_DBD_OPTION '(' string string ')'    { afsql_dd_add_dbd_option(last_driver, $3, $4); free($3); free($4); }
         | KW_DBI_DRIVER_DIR '(' path ')'        { afsql_dd_set_dbi_driver_dir(last_driver, $3); free($3); }
-        | KW_QUOTE_CHAR '(' string ')'          { afsql_dd_set_quote_char(last_driver, $3); }
+        | KW_QUOTE_CHAR '(' string ')'          { afsql_dd_set_quote_char(last_driver, $3); free($3); }
         | KW_PASSWORD '(' string ')'		{ afsql_dd_set_password(last_driver, $3); free($3); }
         | KW_DATABASE '(' string ')'		{ afsql_dd_set_database(last_driver, $3); free($3); }
         | KW_TABLE '(' template_content ')'	{ afsql_dd_set_table(last_driver, $3); }

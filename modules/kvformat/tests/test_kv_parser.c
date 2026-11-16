@@ -24,6 +24,8 @@
 
 #include "kv-parser.h"
 #include "apphook.h"
+#include "cfg.h"
+#include "logmsg/nvtable.h"
 #include "scratch-buffers.h"
 
 
@@ -72,6 +74,7 @@ setup(void)
 void
 teardown(void)
 {
+  log_msg_registry_set_dynamic_name_limit(NVHANDLE_MAX_VALUE);
   log_pipe_deinit((LogPipe *)kv_parser);
   log_pipe_unref(&kv_parser->super);
   scratch_buffers_explicit_gc();
@@ -159,6 +162,59 @@ Test(kv_parser, test_extract_stray_words)
   assert_log_message_value_by_name(msg, "stray", "\"interzone-emtn_s1_vpn-enodeb_om inbound;\"");
   log_msg_unref(msg);
 
+}
+
+Test(kv_parser, test_dynamic_name_limit_drop_continues_parsing)
+{
+  NVHandle known_handle = log_msg_get_value_handle("known");
+
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_DROP;
+  log_msg_registry_set_dynamic_name_limit(0);
+
+  LogMessage *msg = parse_kv_into_log_message("blocked=discarded known=retained");
+
+  cr_assert_eq(nv_registry_get_handle(logmsg_registry, "blocked"), LM_V_NONE);
+  assert_log_message_value(msg, known_handle, "retained");
+  log_msg_unref(msg);
+}
+
+Test(kv_parser, test_dynamic_name_limit_reject_message)
+{
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE;
+  log_msg_registry_set_dynamic_name_limit(0);
+
+  cr_assert_null(parse_kv_into_log_message_no_check("blocked=value"));
+  cr_assert_eq(nv_registry_get_handle(logmsg_registry, "blocked"), LM_V_NONE);
+}
+
+Test(kv_parser, test_dynamic_name_limit_reject_message_keeps_existing_names)
+{
+  NVHandle known_handle = log_msg_get_dynamic_value_handle("known");
+  cr_assert_neq(known_handle, LM_V_NONE);
+
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE;
+  log_msg_registry_set_dynamic_name_limit(0);
+
+  LogMessage *msg = parse_kv_into_log_message("known=retained");
+
+  assert_log_message_value(msg, known_handle, "retained");
+  log_msg_unref(msg);
+}
+
+Test(kv_parser, test_dynamic_name_limit_reject_message_with_prefix)
+{
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE;
+  kv_parser_set_prefix(kv_parser, ".prefix.");
+  log_msg_registry_set_dynamic_name_limit(1);
+
+  LogMessage *msg = parse_kv_into_log_message("known=first");
+  NVHandle known_handle = nv_registry_get_handle(logmsg_registry, ".prefix.known");
+  cr_assert_neq(known_handle, LM_V_NONE);
+  assert_log_message_value(msg, known_handle, "first");
+  log_msg_unref(msg);
+
+  cr_assert_null(parse_kv_into_log_message_no_check("known=second blocked=value"));
+  cr_assert_eq(nv_registry_get_handle(logmsg_registry, ".prefix.blocked"), LM_V_NONE);
 }
 
 TestSuite(kv_parser, .init = setup, .fini = teardown);

@@ -109,11 +109,11 @@ _add_name_value(gpointer key, gpointer value, gpointer data)
 
 }
 
-static void
+static gboolean
 _send_generated_message(MsgGeneratorSource *self)
 {
   if (!log_source_free_to_send(&self->super))
-    return;
+    return FALSE;
 
   LogMessage *msg = log_msg_new_empty();
   g_hash_table_foreach(self->options->name_value, _add_name_value, msg);
@@ -129,6 +129,7 @@ _send_generated_message(MsgGeneratorSource *self)
 
   msg_debug("Incoming generated message", evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)));
   log_source_post(&self->super, msg);
+  return TRUE;
 }
 
 static void
@@ -136,7 +137,14 @@ _timer_expired(void *cookie)
 {
   MsgGeneratorSource *self = (MsgGeneratorSource *) cookie;
 
-  _send_generated_message(self);
+  /* only advance the counter when a message was actually sent;
+   * when the window is full, retry without burning the budget */
+  if (!_send_generated_message(self))
+    {
+      if (self->options->max_num <= 0 || self->num < self->options->max_num)
+        _start_timer(self);
+      return;
+    }
 
   if (self->options->max_num > 0)
     {

@@ -347,6 +347,7 @@ gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
 
 /* generic values that encapsulate log message fields, dynamic values and structured data */
 NVHandle log_msg_get_value_handle(const gchar *value_name);
+NVHandle log_msg_get_dynamic_value_handle(const gchar *value_name);
 gboolean log_msg_is_value_name_valid(const gchar *value);
 const gchar *log_msg_get_handle_name(NVHandle handle, gssize *length);
 
@@ -402,13 +403,12 @@ log_msg_is_handle_settable_with_an_indirect_value(NVHandle handle)
   return (handle >= LM_V_MAX);
 }
 
+void log_msg_set_store_debug_macros(gboolean enable);
 const gchar *log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogMessageValueType *type);
 const gchar *log_msg_get_match_with_type(const LogMessage *self, gint index_,
                                          gssize *value_len, LogMessageValueType *type);
 const gchar *log_msg_get_match_if_set_with_type(const LogMessage *self, gint index_,
                                                 gssize *value_len, LogMessageValueType *type);
-
-
 
 static inline const gchar *
 log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,
@@ -490,6 +490,11 @@ void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_
                                 guint16 ofs, guint16 len);
 void log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle, NVHandle ref_handle,
                                           guint16 ofs, guint16 len, LogMessageValueType type);
+
+/* Sanitizes an untrusted, possibly non-UTF-8 buffer into $MSG, tags the
+ * message and sets LF_UTF8 to indicate it. */
+void log_msg_set_sanitized_utf8_value(LogMessage *self, const guchar *data, gint length);
+
 void log_msg_unset_value(LogMessage *self, NVHandle handle);
 void log_msg_unset_value_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer user_data);
@@ -522,6 +527,22 @@ static inline void
 log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
 {
   log_msg_set_value_by_name_with_type(self, name, value, length, LM_VT_STRING);
+}
+
+static inline gboolean
+log_msg_set_value_by_dynamic_name_with_type(LogMessage *self,
+                                            const gchar *name, const gchar *value, gssize length,
+                                            LogMessageValueType type)
+{
+  NVHandle handle = log_msg_get_dynamic_value_handle(name);
+  log_msg_set_value_with_type(self, handle, value, length, type);
+  return handle != LM_V_NONE;
+}
+
+static inline gboolean
+log_msg_set_value_by_dynamic_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
+{
+  return log_msg_set_value_by_dynamic_name_with_type(self, name, value, length, LM_VT_STRING);
 }
 
 static inline void
@@ -585,6 +606,7 @@ void log_msg_refcache_stop(void);
 
 void log_msg_registry_init(void);
 void log_msg_registry_deinit(void);
+void log_msg_registry_set_dynamic_name_limit(guint limit);
 void log_msg_global_init(void);
 void log_msg_global_deinit(void);
 void log_msg_stats_global_init(void);

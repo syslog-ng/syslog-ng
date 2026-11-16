@@ -32,9 +32,15 @@
 #
 
 find_package(PkgConfig)
-pkg_check_modules(PC_JSONC QUIET JSONC)
-find_path(JSONC_INCLUDE_DIR NAMES json.h HINTS ${PC_JSONC_INCLUDE_DIRS} PATH_SUFFIXES json-c json)
-find_library(JSONC_LIBRARY  NAMES json-c HINTS ${PC_JSONC_LIBRARY_DIRS})
+
+if (JSONC_SOURCE_PATH)
+  find_path(JSONC_INCLUDE_DIR NAMES json.h PATHS "${JSONC_SOURCE_PATH}/include" PATH_SUFFIXES json-c json NO_DEFAULT_PATH)
+  find_library(JSONC_LIBRARY  NAMES json-c PATHS "${JSONC_SOURCE_PATH}/lib" NO_DEFAULT_PATH)
+else()
+  pkg_check_modules(PC_JSONC QUIET JSONC)
+  find_path(JSONC_INCLUDE_DIR NAMES json.h HINTS ${PC_JSONC_INCLUDE_DIRS} PATH_SUFFIXES json-c json)
+  find_library(JSONC_LIBRARY  NAMES json-c HINTS ${PC_JSONC_LIBRARY_DIRS})
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(JSONC DEFAULT_MSG JSONC_LIBRARY JSONC_INCLUDE_DIR)

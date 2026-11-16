@@ -61,6 +61,8 @@ enum
   LP_NO_RFC3164_FALLBACK = 0x4000,
   LP_PIGGYBACK_ERRORS = 0x8000,
   LP_CHECK_PROGRAM = 0x10000,
+  /* preserve the RFC3164 payload after parsing the optional PRI, timestamp, and hostname */
+  LP_NO_PARSE_PROGRAM = 0x20000,
 };
 
 typedef struct _MsgFormatHandler MsgFormatHandler;
@@ -79,6 +81,7 @@ typedef struct _MsgFormatOptions
   gsize sdata_prefix_len;
   gint sdata_param_value_max;
   gboolean use_fqdn;
+  gboolean reject_dynamic_nv_names;
 } MsgFormatOptions;
 
 struct _MsgFormatHandler

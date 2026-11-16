@@ -131,3 +131,9 @@ set(ENABLE_PYTHON ${PYTHON_FOUND})
 include(python_build_venv)
 
 set(ENABLE_PYTHON_INFO_STR "pkg-config package: ${PYTHONLIBS_VERSION_STRING}, packages: ${PYTHON_PACKAGES_INSTALL}" CACHE INTERNAL "Python version and packages install mode info")
+
+# Let the user specify a hard-coded Python home directory
+set(PYTHON3_HOME_DIR "" CACHE PATH "Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable")
+if(PYTHON3_HOME_DIR)
+  set(SYSLOG_NG_PYTHON3_HOME_DIR "${PYTHON3_HOME_DIR}")
+endif()

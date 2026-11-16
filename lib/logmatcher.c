@@ -220,6 +220,8 @@ log_matcher_glob_compile(LogMatcher *s, const gchar *pattern, GError **error)
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
   log_matcher_store_pattern(s, pattern);
 
+  if (self->pattern)
+    g_pattern_spec_free(self->pattern);
   self->pattern = g_pattern_spec_new(pattern);
   return TRUE;
 }
@@ -258,7 +260,8 @@ static void
 log_matcher_glob_free(LogMatcher *s)
 {
   LogMatcherGlob *self = (LogMatcherGlob *)s;
-  g_pattern_spec_free(self->pattern);
+  if (self->pattern)
+    g_pattern_spec_free(self->pattern);
   log_matcher_free_method(s);
 }
 
@@ -328,6 +331,7 @@ _compile_pcre2_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
   /* compile the regexp */
   PCRE2_SIZE error_offset;
 
+  pcre2_code_free(self->pattern);
   self->pattern = pcre2_compile((PCRE2_SPTR) re, PCRE2_ZERO_TERMINATED, flags, &rc, &error_offset, NULL);
   if (!self->pattern)
     {
@@ -457,7 +461,6 @@ static void
 log_matcher_pcre_re_feed_named_substrings(LogMatcherPcreRe *self, LogMessage *msg, LogMatcherPcreMatchResult *result)
 {
   gchar *name_table = NULL;
-  gint i = 0;
   guint32 namecount = 0;
   guint32 name_entry_size = 0;
 
@@ -466,7 +469,6 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcherPcreRe *self, LogMessage *ms
     {
       PCRE2_SIZE *matches = pcre2_get_ovector_pointer(result->match_data);
 
-      gchar *tabptr;
       /* Before we can access the substrings, we must extract the table for
          translating names to numbers, and the size of each entry in the table.
        */
@@ -478,10 +480,11 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcherPcreRe *self, LogMessage *ms
       GString *formatted_name = scratch_buffers_alloc();
       g_string_assign_len(formatted_name, self->nv_prefix, self->nv_prefix_len);
 
-      tabptr = name_table;
-      for (i = 0; i < namecount; i++, tabptr += name_entry_size)
+      gchar *tabptr = name_table;
+      for (guint i = 0; i < namecount; i++, tabptr += name_entry_size)
         {
-          int n = (tabptr[0] << 8) | tabptr[1];
+          /* guchar operands + unsigned n: group numbers >= 128 can no longer sign-extend negative */
+          guint n = ((guchar) tabptr[0] << 8) | (guchar) tabptr[1];
           gint begin_index = matches[2 * n];
           gint end_index = matches[2 * n + 1];
           const gchar *namedgroup_name = tabptr + 2;
@@ -502,26 +505,25 @@ static gboolean
 log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
-  LogMatcherPcreMatchResult result;
-  gint rc;
-  gboolean res = TRUE;
 
   if (value_len == -1)
     value_len = strlen(value);
 
+  LogMatcherPcreMatchResult result;
   result.match_data = pcre2_match_data_create_from_pattern(self->pattern, NULL);
   result.source_value = value;
   result.source_value_len = value_len;
   result.source_handle = value_handle;
   result.source_handles_value_changed = FALSE;
 
-  rc = pcre2_match(self->pattern,
-                   (PCRE2_SPTR) result.source_value,
-                   (PCRE2_SIZE) result.source_value_len,
-                   (PCRE2_SIZE) 0,
-                   self->match_options,
-                   result.match_data,
-                   NULL);
+  gint rc = pcre2_match(self->pattern,
+                        (PCRE2_SPTR) result.source_value,
+                        (PCRE2_SIZE) result.source_value_len,
+                        (PCRE2_SIZE) 0,
+                        self->match_options,
+                        result.match_data,
+                        NULL);
+  gboolean res = TRUE;
   if (rc < 0)
     {
       switch (rc)
@@ -692,6 +694,7 @@ log_matcher_pcre_re_free(LogMatcher *s)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
   pcre2_code_free(self->pattern);
+  g_free(self->nv_prefix);
   log_matcher_free_method(s);
 }
 

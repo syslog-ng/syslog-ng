@@ -1605,7 +1605,7 @@ _verify_unique_persist_names_among_pipes(GHashTable *pipes_with_persis_name)
               msg_error("Automatic assignment of persist names failed, as "
                         "conflicting persist-names were found. Please override "
                         "the automatically assigned identifier using an "
-                        "explicit perist-name() option or remove the duplicated "
+                        "explicit persist-name() option or remove the duplicated "
                         "configuration elements",
                         evt_tag_str("persist_name", current_pipe_name),
                         log_pipe_location_tag(current_pipe),

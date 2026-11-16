@@ -145,8 +145,10 @@ _free(LogDriverPlugin *s)
 {
   HookCommandsPlugin *self = (HookCommandsPlugin *) s;
 
+  g_free(self->startup);
   g_free(self->setup);
   g_free(self->teardown);
+  g_free(self->shutdown);
   log_driver_plugin_free_method(s);
 }
 

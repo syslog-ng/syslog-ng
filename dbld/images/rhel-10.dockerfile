@@ -16,15 +16,15 @@ COPY images/entrypoint.sh /
 COPY . /dbld/
 
 RUN /dbld/builddeps update_packages
-RUN /dbld/builddeps workaround_rpm_repos
 RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps add_epel_repo
 RUN /dbld/builddeps add_copr_repo
 RUN /dbld/builddeps install_dnf_packages
 RUN /dbld/builddeps install_rpm_build_deps
 
-RUN /dbld/builddeps install_criterion_from_source
-RUN /dbld/builddeps install_gradle
+RUN /dbld/builddeps install_criterion_from_source meson
+RUN /dbld/builddeps install_libbpf_stream_header_fix
+ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
 
 VOLUME /source
 VOLUME /build

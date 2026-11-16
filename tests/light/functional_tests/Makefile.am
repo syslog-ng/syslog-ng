@@ -1,13 +1,23 @@
 
 #find -name '*.py'|awk '{ print "\ttests/light/functional_tests/"substr($0,3); }'|sort
 EXTRA_DIST += \
+	tests/light/functional_tests/bindings/python/conftest.py \
+	tests/light/functional_tests/bindings/python/logger/parser.py \
+	tests/light/functional_tests/bindings/python/logger/test_internal_logging.py \
+	tests/light/functional_tests/bindings/python/parser/parser.py \
+	tests/light/functional_tests/bindings/python/parser/test_python_parser.py \
 	tests/light/functional_tests/config_change/test_backtick_substitution.py \
 	tests/light/functional_tests/config_change/test_confgen_network_load_balancer.py \
 	tests/light/functional_tests/config_change/test_manipulating_config_between_reload.py \
 	tests/light/functional_tests/config_change/test_python_custom_options.py \
 	tests/light/functional_tests/conftest.py \
 	tests/light/functional_tests/destination_drivers/example_destination/test_example_destination.py \
+	tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_all_messages_received.py \
+	tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_deleting_log_file.py \
+	tests/light/functional_tests/destination_drivers/file_destination/test_logrotate_rotation_failure.py \
+	tests/light/functional_tests/destination_drivers/network_destination/test_destination_reload_protocol_change.py \
 	tests/light/functional_tests/destination_drivers/network_destination/test_network_destination_transport.py \
+	tests/light/functional_tests/destination_drivers/network_destination/test_network_destination_trusted_keys.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_acceptance.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_missing_snmp_obj.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_missing_trap_obj.py \
@@ -64,17 +74,23 @@ EXTRA_DIST += \
 	tests/light/functional_tests/source_drivers/file_source/test_no_header_flag.py \
 	tests/light/functional_tests/source_drivers/generator_source/test_generator_source.py \
 	tests/light/functional_tests/source_drivers/internal_source/test_internal_acceptance.py \
+	tests/light/functional_tests/source_drivers/kafka_source/test_kafka_source.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_acceptance.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_reload.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_multiple_clients.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_simple_tcp_connection.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_syslog_proto.py \
+	tests/light/functional_tests/source_drivers/network_source/test_network_tls_extended_key_usage.py \
+	tests/light/functional_tests/source_drivers/network_source/test_network_tls_pkcs12.py \
 	tests/light/functional_tests/source_drivers/network_source/test_network_transports.py \
+	tests/light/functional_tests/source_drivers/network_source/test_source_reload_protocol_change.py \
 	tests/light/functional_tests/source_drivers/network_source/test_syslog_parser_timestamp_spinning.py \
 	tests/light/functional_tests/source_drivers/network_source/text_with_nuls/test_nul_acceptance.py \
 	tests/light/functional_tests/source_drivers/syslog_source/auto/test_auto_proto.py \
 	tests/light/functional_tests/source_drivers/syslog_source/test_syslog_transports.py \
 	tests/light/functional_tests/source_options/test_use_syslogng_pid.py \
+	tests/light/functional_tests/template_functions/format-gelf/test_format_gelf.py \
+	tests/light/functional_tests/template_functions/format-gelf/test_format_gelf_pid.py \
 	tests/light/functional_tests/template_functions/graphite-output/test_graphite_output.py \
 	tests/light/functional_tests/template_functions/slog/test_secure_logging.py \
 	tests/light/functional_tests/templates/test_template_stmt.py \

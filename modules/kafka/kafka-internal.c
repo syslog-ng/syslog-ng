@@ -53,7 +53,12 @@ gboolean
 kafka_validate_topic_pattern(const char *topic, GError **error)
 {
   if (topic == NULL || *topic == 0)
-    return FALSE;
+    {
+      if (error)
+        g_set_error(error, TOPIC_NAME_ERROR, TOPIC_LENGTH_ZERO,
+                    "kafka: topic pattern is illegal, it can't be empty");
+      return FALSE;
+    }
 
   regex_t re;
   int ret = regcomp(&re, topic, REG_EXTENDED | REG_NOSUB);
@@ -275,6 +280,10 @@ kafka_register_counters(KafkaSourceDriver *self,
                         const gchar **counter_names,
                         gint level)
 {
+  /* TODO: stats_table is keyed by label_value, so only one counter per label_value
+   * can be tracked currently; multiple names would all collide on the same key. */
+  g_assert(counter_names && counter_names[0] && counter_names[1] == NULL);
+
   LogThreadedSourceWorker *worker = self->super.workers[0];
   StatsClusterKeyBuilder *kb = worker->super.metrics.stats_kb;
   gchar *stats_id = worker->super.stats_id;
@@ -312,6 +321,9 @@ kafka_unregister_counters(KafkaSourceDriver *self,
                           StatsCounterItem *counter,
                           const gchar **counter_names)
 {
+  /* Symmetric with kafka_register_counters(): single counter per label_value. */
+  g_assert(counter_names && counter_names[0] && counter_names[1] == NULL);
+
   LogThreadedSourceWorker *worker = self->super.workers[0];
   gchar *stats_id = worker->super.stats_id;
   StatsClusterKeyBuilder *kb = worker->super.metrics.stats_kb;
@@ -368,11 +380,13 @@ KafkaLogging
 kafka_string_to_logging(const gchar *logging)
 {
   KafkaLogging kafka_logging = KFL_UNKNOWN;
-  if (g_ascii_strcasecmp(logging, "disabled"))
+  if (logging == NULL)
+    return kafka_logging;
+  if (g_ascii_strcasecmp(logging, "disabled") == 0)
     kafka_logging = KFL_DISABLED;
-  else if (g_ascii_strcasecmp(logging, "kafka"))
+  else if (g_ascii_strcasecmp(logging, "kafka") == 0)
     kafka_logging = KFL_KAFKA_LEVEL;
-  else if (g_ascii_strcasecmp(logging, "trace"))
+  else if (g_ascii_strcasecmp(logging, "trace") == 0)
     kafka_logging = KFL_TRACE_LEVEL;
   return kafka_logging;
 }

@@ -101,10 +101,19 @@ function workaround_rpm_repos() {
     case "${OS_DISTRIBUTION}" in
         fedora)
             # Workaround for often getting 503 from mirrors.fedoraproject.org.
-            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/releases/\$releasever/Everything/\$basearch/os/" /etc/yum.repos.d/fedora.repo
-            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/updates/\$releasever/Everything/\$basearch/" /etc/yum.repos.d/fedora-updates.repo
+            # Repo file locations moved between Fedora releases (dnf5), so let
+            # dnf5 itself resolve/persist the override instead of guessing paths.
+            BASE_REPO_ID=fedora
+            BASE_REPO_PATH="${MIRROR_URL}/releases/\$releasever/Everything/\$basearch/os/"
+            if dnf5 repolist --all 2>/dev/null | awk '{print $1}' | grep -qx rawhide; then
+                BASE_REPO_ID=rawhide
+                BASE_REPO_PATH="${MIRROR_URL}/development/rawhide/Everything/\$basearch/os/"
+            fi
+
+            dnf5 config-manager setopt "${BASE_REPO_ID}.baseurl=${BASE_REPO_PATH}"
+            dnf5 config-manager setopt "updates.baseurl=${MIRROR_URL}/updates/\$releasever/Everything/\$basearch/"
             # we don't need h264 codecs
-            sed -i -e "/enabled/c\enabled=0" /etc/yum.repos.d/fedora-cisco-openh264.repo
+            dnf5 config-manager setopt fedora-cisco-openh264.enabled=0
             ;;
     esac
 }
@@ -147,12 +156,14 @@ function download_target() {
             return 1
         fi
     fi
-    CURR_HASH=$(hashfile "${OUTPUT}")
-    if [ "${HASH}" = "${CURR_HASH}" ]; then
-        echo "Downloaded file hash matches"
-    else
-        echo "Downloaded file hash does not match"
-        return 2
+    if [ -n "$HASH" ]; then
+      CURR_HASH=$(hashfile "${OUTPUT}")
+      if [ "${HASH}" = "${CURR_HASH}" ]; then
+          echo "Downloaded file hash matches"
+      else
+          echo "Downloaded file hash does not match"
+          return 2
+      fi
     fi
 }
 
@@ -218,12 +229,9 @@ function install_gradle {
     ldconfig
 }
 
-function install_pip2 {
-    PIP_VERSION=2.7
-    HASH="40ee07eac6674b8d60fce2bbabc148cf0e2f1408c167683f110fd608b8d6f416"
-
-    download_target "https://bootstrap.pypa.io/pip/${PIP_VERSION}/get-pip.py" get-pip.py pip/${PIP_VERSION}/get-pip.py "${HASH}"
-    python2 get-pip.py
+function install_pip {
+    download_target "https://bootstrap.pypa.io/get-pip.py" get-pip.py
+    python3 get-pip.py
 }
 
 function install_bison_from_source {
@@ -231,11 +239,36 @@ function install_bison_from_source {
     HASH="69dc0bb46ea8fc307d4ca1e0b61c8c355eb207d0b0c69f4f8462328e74d7b9ea"
 
     cd /tmp
-    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}."$(tar_app)".gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz "${HASH}"
+    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz /tmp/bison-${BISON_VERSION}.tar.gz bison/${BISON_VERSION}/bison.tar.gz "${HASH}"
     "$(tar_app)" xvfz /tmp/bison-${BISON_VERSION}.tar.gz
     cd /tmp/bison-${BISON_VERSION}
     ./configure --prefix=/usr/local --disable-nls
     make -j $(nproc) && make -j $(nproc) install
+}
+
+# EL10's libbpf-devel 1.7.0 ships a bpf_helpers.h that redeclares the bpf_stream_vprintk()
+# kfunc with a signature that conflicts with the one bpftool dumps into vmlinux.h. Fixed
+# upstream in libbpf v1.8.0 (dropped the stray redeclaration). Mirrors the system libbpf
+# include dir with just those two headers patched, and publishes an overriding libbpf.pc
+# so pkg-config resolves to it first once PKG_CONFIG_PATH (set in the Dockerfile) includes
+# it -- no project build file needs to know about this.
+function install_libbpf_stream_header_fix {
+    HASH_HELPERS="04575f99655917175eef6f44ecc50c081f4e4bfe9b1242d5ecc82f2a57cb3865"
+    HASH_HELPER_DEFS="aefe156d997a6231be5798e963abb6aa507fc8dabdaf0dffdf478f43e6841070"
+
+    local system_includedir fixed_includedir
+    system_includedir="$(pkg-config --variable includedir libbpf)"
+    fixed_includedir=/usr/local/include/libbpf-fixed
+
+    mkdir -p "${fixed_includedir}/bpf"
+    cp -a "${system_includedir}/bpf/." "${fixed_includedir}/bpf/"
+    download_target "https://raw.githubusercontent.com/libbpf/libbpf/v1.8.0/src/bpf_helpers.h" "${fixed_includedir}/bpf/bpf_helpers.h" "" "${HASH_HELPERS}"
+    # bpf_helpers.h #include "bpf_helper_defs.h" resolves relative to its own directory first,
+    # so the matching v1.8.0 copy must live alongside it here too.
+    download_target "https://raw.githubusercontent.com/libbpf/libbpf/v1.8.0/src/bpf_helper_defs.h" "${fixed_includedir}/bpf/bpf_helper_defs.h" "" "${HASH_HELPER_DEFS}"
+
+    mkdir -p /usr/local/lib/pkgconfig
+    sed "s#^includedir=.*#includedir=${fixed_includedir}#" "$(pkg-config --variable pcfiledir libbpf)/libbpf.pc" > /usr/local/lib/pkgconfig/libbpf.pc
 }
 
 function install_astyle_from_source {
@@ -258,13 +291,6 @@ function filter_packages_by_platform {
     FILENAME=$1
     local IMAGE_PLATFORM_BASE=$(image_platform_base)
     grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM_BASE}" -e "${OS_DISTRIBUTION}[^-]" | cut -d"[" -f1
-}
-
-function filter_pip_packages_by_platform_and_python_version {
-    FILENAME=$1
-    PYTHON_VERSION=$2
-    local IMAGE_PLATFORM_BASE=$(image_platform_base)
-    grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM_BASE}" -e "${OS_DISTRIBUTION}[^-]" | grep -e "${PYTHON_VERSION}" | cut -d"[" -f1
 }
 
 function add_copr_repo {
@@ -362,13 +388,12 @@ function install_zypper_packages {
 }
 
 function install_pip_packages {
-    local python_executables="python2 python3"
-    for python_executable in ${python_executables}; do
-        local pip_install="${python_executable} -m pip install --ignore-installed --no-cache-dir --upgrade"
-        ${pip_install} "pip"
-        ${pip_install} "setuptools<66.0"
-        filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest ${python_executable} | xargs ${pip_install}
-    done
+    local python_executable="python3"
+    local pip_install="${python_executable} -m pip install --ignore-installed --no-cache-dir --upgrade"
+    ${pip_install} "pip"
+    ${pip_install} "setuptools"
+    local IMAGE_PLATFORM_BASE=$(image_platform_base)
+    grep -v "#" $DBLD_DIR/pip_packages.manifest | grep -e "${IMAGE_PLATFORM_BASE}" -e "${OS_DISTRIBUTION}[^-]" | grep -e "${PYTHON_VERSION}" | cut -d"[" -f1 | xargs ${pip_install}
 }
 
 function install_lsb_release {

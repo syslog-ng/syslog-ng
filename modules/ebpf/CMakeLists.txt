@@ -1,8 +1,9 @@
-if(NOT DEFINED ENABLE_EBPF OR ENABLE_EBPF)
+# Only probe for libbpf when explicitly requested — default is OFF, matching autotools.
+if(ENABLE_EBPF)
   find_package(LIBBPF)
 endif()
 
-module_switch(ENABLE_EBPF "Enable ebpf module (requires ebpf toolchain)" LIBBPF_FOUND)
+module_switch(ENABLE_EBPF "Enable ebpf module (requires ebpf toolchain)" OFF)
 
 if(ENABLE_EBPF AND NOT LIBBPF_FOUND)
   message(FATAL_ERROR "BPF module was explicitly enabled, but the required libbpf or bpftool dependency could not be found")

@@ -59,7 +59,7 @@ autogen_submodules()
 		fi
 	done
 
-	if [ -n "$GIT" ] && [ -f .gitmodules ] && [ -d .git ] && [ $submod_initialized = 0 ]; then
+	if [ -n "$GIT" ] && [ -f .gitmodules ] && [ -e .git ] && [ $submod_initialized = 0 ]; then
 		# only clone submodules if none of them present
 		git submodule update --init --recursive
 	fi

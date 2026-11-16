@@ -19,6 +19,17 @@ target_link_libraries(eventlog
     GLib::GLib
 )
 
-install(TARGETS eventlog DESTINATION lib)
+# mirrors autotools: -release major.minor -version-info 0:0:0
+set_target_properties(eventlog PROPERTIES
+    OUTPUT_NAME "evtlog-${LSNG_RELEASE}"
+    VERSION "0.0.0"
+    SOVERSION "0")
+
+# NAMELINK_SKIP suppresses libevtlog-${LSNG_RELEASE}.so; the unversioned linker
+# symlink is added manually to match autotools (-release produces libevtlog.so).
+install(TARGETS eventlog LIBRARY DESTINATION lib NAMELINK_SKIP)
+install(CODE "file(CREATE_LINK \"libevtlog-${LSNG_RELEASE}.so.0.0.0\"
+    \"\${CMAKE_INSTALL_PREFIX}/lib/libevtlog.so\" SYMBOLIC)")
+install(FILES src/evtlog.h src/evtmaps.h DESTINATION include/syslog-ng)
 
 add_test_subdirectory(tests)

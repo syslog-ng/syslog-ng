@@ -58,6 +58,7 @@ struct _LogProtoServerOptions
   gint init_buffer_size;
   gint max_buffer_size;
   gint idle_timeout;
+  gint stack_alloc_limit;
   AckTrackerFactory *ack_tracker_factory;
   MultiLineOptions multi_line_options;
 };

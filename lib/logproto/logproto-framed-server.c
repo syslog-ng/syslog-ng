@@ -154,7 +154,15 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
     {
       if (isdigit(self->buffer[i]) && (i - self->buffer_pos < RFC6587_MAX_FRAME_LEN_DIGITS))
         {
-          self->frame_len = self->frame_len * 10 + (self->buffer[i] - '0');
+          guint32 digit = self->buffer[i] - '0';
+
+          if (self->frame_len > (G_MAXUINT32 - digit) / 10)
+            {
+              msg_error("Invalid frame header, frame length overflows",
+                        evt_tag_mem("header", &self->buffer[self->buffer_pos], (i - self->buffer_pos + 1)));
+              return FALSE;
+            }
+          self->frame_len = self->frame_len * 10 + digit;
         }
       else if (self->buffer[i] == ' ')
         {

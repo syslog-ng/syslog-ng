@@ -57,6 +57,7 @@ struct _HTTPLoadBalancerTarget
 };
 
 gboolean http_lb_target_is_url_templated(HTTPLoadBalancerTarget *self);
+gboolean http_lb_target_is_url_message_dependent(HTTPLoadBalancerTarget *self);
 const gchar *http_lb_target_get_literal_url(HTTPLoadBalancerTarget *self);
 void http_lb_target_format_templated_url(HTTPLoadBalancerTarget *self, LogMessage *msg,
                                          const LogTemplateOptions *template_options, GString *result);
@@ -87,6 +88,7 @@ void http_load_balancer_track_client(HTTPLoadBalancer *self, HTTPLoadBalancerCli
 void http_load_balancer_set_target_failed(HTTPLoadBalancer *self, HTTPLoadBalancerTarget *target);
 void http_load_balancer_set_target_successful(HTTPLoadBalancer *self, HTTPLoadBalancerTarget *target);
 gboolean http_load_balancer_is_url_templated(HTTPLoadBalancer *self);
+gboolean http_load_balancer_is_url_message_dependent(HTTPLoadBalancer *self);
 
 void http_load_balancer_set_recovery_timeout(HTTPLoadBalancer *self, gint recovery_timeout);
 HTTPLoadBalancer *http_load_balancer_new(void);

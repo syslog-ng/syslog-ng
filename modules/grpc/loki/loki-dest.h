@@ -37,6 +37,7 @@ LogDriver *loki_dd_new(GlobalConfig *cfg);
 
 void loki_dd_set_message_template_ref(LogDriver *d, LogTemplate *message);
 void loki_dd_add_label(LogDriver *d, const gchar *name, LogTemplate *value);
+void loki_dd_add_structured_metadata(LogDriver *d, const gchar *name, LogTemplate *value);
 gboolean loki_dd_set_timestamp(LogDriver *d, const gchar *t);
 void loki_dd_set_tenant_id(LogDriver *d, const gchar *tid);
 

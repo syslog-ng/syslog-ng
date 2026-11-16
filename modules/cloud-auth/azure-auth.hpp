@@ -35,7 +35,9 @@ class AzureMonitorAuthenticator: public syslogng::cloud_auth::oauth2::OAuth2Auth
 {
 public:
   AzureMonitorAuthenticator(const char *tenant_id, const char *app_id,
-                            const char *app_secret, const char *scope_);
+                            const char *app_secret, const char *scope_,
+                            const char *cert_path = nullptr, const char *private_key_path = nullptr,
+                            const char *private_key_passphrase = nullptr);
   ~AzureMonitorAuthenticator() {};
 };
 

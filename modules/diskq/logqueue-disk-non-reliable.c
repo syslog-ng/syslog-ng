@@ -267,6 +267,8 @@ _pop_head_flow_control_window(LogQueueDiskNonReliable *self, LogPathOptions *pat
 static inline void
 _push_tail_backlog(LogQueueDiskNonReliable *self, LogMessage *msg, LogPathOptions *path_options)
 {
+  log_msg_write_protect(msg);
+
   log_msg_ref(msg);
   g_queue_push_tail(self->backlog, msg);
   g_queue_push_tail(self->backlog, LOG_PATH_OPTIONS_TO_POINTER(path_options));
@@ -441,6 +443,8 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
         }
     }
 
+  log_msg_write_protect(msg);
+
   g_mutex_lock(&s->lock);
 
   /* we push messages into queue segments in the following order: flow_control_window, disk, front_cache */
@@ -535,10 +539,13 @@ _stop(LogQueueDisk *s, gboolean *persistent)
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
 
   gboolean result = FALSE;
+  gboolean has_messages = TRUE;
 
-  if (qdisk_stop(s->qdisk, self->front_cache, self->backlog, self->flow_control_window))
+  *persistent = TRUE;
+
+  if (qdisk_stop(s->qdisk, self->front_cache, self->backlog, self->flow_control_window, &has_messages))
     {
-      *persistent = TRUE;
+      *persistent = has_messages;
       result = TRUE;
     }
 
@@ -552,7 +559,7 @@ _stop(LogQueueDisk *s, gboolean *persistent)
 static gboolean
 _stop_corrupted(LogQueueDisk *s)
 {
-  return qdisk_stop(s->qdisk, NULL, NULL, NULL);
+  return qdisk_stop(s->qdisk, NULL, NULL, NULL, NULL);
 }
 
 static inline void

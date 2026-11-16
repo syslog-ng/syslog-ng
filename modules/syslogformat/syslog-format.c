@@ -30,7 +30,6 @@
 #include "find-crlf.h"
 #include "cfg.h"
 #include "str-format.h"
-#include "utf8utils.h"
 #include "str-utils.h"
 #include "syslog-names.h"
 
@@ -669,7 +668,8 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
 
           if (left && *src == ']')
             {
-              log_msg_set_value_by_name(msg, sd_value_name, "", 0);
+              if (!log_msg_set_value_by_dynamic_name(msg, sd_value_name, "", 0) && options->reject_dynamic_nv_names)
+                goto error;
             }
           else
             {
@@ -792,7 +792,9 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                   goto error;
                 }
 
-              log_msg_set_value_by_name(msg, sd_value_name, sd_param_value, sd_param_value_len);
+              if (!log_msg_set_value_by_dynamic_name(msg, sd_value_name, sd_param_value, sd_param_value_len) &&
+                  options->reject_dynamic_nv_names)
+                goto error;
             }
 
           if (left && *src == ']')
@@ -880,12 +882,7 @@ _syslog_format_parse_message_column(LogMessage *msg,
         {
           if (!g_utf8_validate((gchar *) src, left, NULL))
             {
-              gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
-              gsize sanitized_length;
-              optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
-              log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
-              log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
-              msg->flags |= LF_UTF8;
+              log_msg_set_sanitized_utf8_value(msg, src, left);
               return TRUE;
             }
           else
@@ -951,8 +948,9 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
               _skip_chars(&src, &left, " ", -1);
             }
 
-          /* Try to extract a program name */
-          _syslog_format_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
+          /* Try to extract a program name if not explicitly disabled */
+          if ((parse_options->flags & LP_NO_PARSE_PROGRAM) == 0)
+            _syslog_format_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
         }
 
       /* If we did manage to find a hostname, store it. */
@@ -975,8 +973,9 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
       else
         {
           log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC3164_MISSING_HEADER);
-          /* Capture the program name */
-          _syslog_format_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
+          /* Capture the program name if not explicitly disabled */
+          if ((parse_options->flags & LP_NO_PARSE_PROGRAM) == 0)
+            _syslog_format_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
         }
     }
   *data = src;
@@ -992,7 +991,7 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
 {
   const guchar *src = *data;
   gint left = *length;
-  gint i = 0;
+  guint i = 0;
 
   while (left > 0 && isdigit(*src))
     {
@@ -1005,7 +1004,7 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
         return;
     }
 
-  if (i == 0 || *src != ' ')
+  if (i == 0 || left <= 0 || *src != ' ')
     return;
 
   /* we did indeed find a series of digits that look like framing, that's
@@ -1031,12 +1030,7 @@ _syslog_format_parse_legacy_message(LogMessage *msg,
       if (!g_utf8_validate((gchar *) src, left, NULL))
         {
           /* invalid utf8, sanitize it and then remember it is now utf8 clean */
-          gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
-          gsize sanitized_length;
-          optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
-          log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
-          log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
-          msg->flags |= LF_UTF8;
+          log_msg_set_sanitized_utf8_value(msg, src, left);
           return;
         }
       else
