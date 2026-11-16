@@ -210,6 +210,13 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
                       continue;
                     }
 
+                  if (memchr(dnsname, '\0', dnsname_len))
+                    {
+                      /* an embedded NUL would cut the name short in the C string comparison below */
+                      msg_warning("Ignoring certificate subjectAltName with an embedded NUL character");
+                      continue;
+                    }
+
                   memcpy(pattern_buf, dnsname, dnsname_len);
                   pattern_buf[dnsname_len] = 0;
                   /* we have found a DNS name as alternative subject name */
@@ -246,9 +253,13 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
       /* hmm. there was no subjectAltName (this is deprecated, but still
        * widely used), look up the Subject, most specific CN */
       const X509_NAME *name = X509_get_subject_name(cert);
-      if (syslog_ng_x509_name_get_text_by_NID(name, NID_commonName, pattern_buf, sizeof(pattern_buf)) != -1)
+      gint cn_len = syslog_ng_x509_name_get_text_by_NID(name, NID_commonName, pattern_buf, sizeof(pattern_buf));
+      if (cn_len != -1)
         {
-          result = tls_wildcard_match(host_name, pattern_buf);
+          if ((gsize) cn_len != strlen(pattern_buf))
+            msg_warning("Ignoring certificate common name with an embedded NUL character");
+          else
+            result = tls_wildcard_match(host_name, pattern_buf);
         }
     }
   if (!result)
