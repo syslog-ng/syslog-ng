@@ -20,6 +20,7 @@
  */
 
 #include "kv-parser.h"
+#include "cfg.h"
 #include "scanner/kv-scanner/kv-scanner.h"
 #include "scratch-buffers.h"
 
@@ -108,6 +109,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   KVScanner kv_scanner;
   kv_parser_init_scanner(self, &kv_scanner);
   GString *formatted_key = scratch_buffers_alloc();
+  gboolean success = TRUE;
 
   log_msg_make_writable(pmsg, path_options);
   msg_trace("kv-parser message processing started",
@@ -119,17 +121,24 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   while (kv_scanner_scan_next(&kv_scanner))
     {
       /* FIXME: value length */
-      log_msg_set_value_by_dynamic_name(*pmsg,
-                                        _get_formatted_key(self, kv_scanner_get_current_key(&kv_scanner), formatted_key),
-                                        kv_scanner_get_current_value(&kv_scanner), -1);
+      gboolean stored = log_msg_set_value_by_dynamic_name(*pmsg,
+                                                          _get_formatted_key(self, kv_scanner_get_current_key(&kv_scanner),
+                                                            formatted_key),
+                                                          kv_scanner_get_current_value(&kv_scanner), -1);
+      if (!stored && self->super.super.cfg &&
+          self->super.super.cfg->dynamic_nv_name_overflow == DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE)
+        {
+          success = FALSE;
+          break;
+        }
     }
-  if (self->stray_words_value_name)
+  if (success && self->stray_words_value_name)
     log_msg_set_value_by_name(*pmsg,
                               self->stray_words_value_name,
                               kv_scanner_get_stray_words(&kv_scanner), -1);
 
   kv_scanner_deinit(&kv_scanner);
-  return TRUE;
+  return success;
 }
 
 LogPipe *
