@@ -68,10 +68,10 @@ _elem_is_message_independent(const LogTemplateElem *e)
       return FALSE;
 
     case LTE_FUNC:
-      /* We can only safely introspect template functions implemented through tf_simple_func_prepare(): their output
-       * is a pure function of the already-compiled argument templates.  For functions with a custom prepare()
-       * (format-date, tags, value-pairs, ...) be conservative — they may read message state, time, or other ambient context. */
-      if (e->func.ops->prepare != tf_simple_func_prepare)
+      /* We can only safely introspect template functions defined with TEMPLATE_FUNCTION_SIMPLE(): their output
+       * is a pure function of the already-compiled argument templates.  For other functions (format-date, tags,
+       * value-pairs, context-values, ...) be conservative — they may read message state, time, or other ambient context. */
+      if (!e->func.ops->simple)
         return FALSE;
       {
         const TFSimpleFuncState *state = (const TFSimpleFuncState *) e->func.state;
