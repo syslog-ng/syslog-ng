@@ -85,3 +85,5 @@ EXTRA_DIST += \
   modules/cloud-auth/jwt-cpp/include/jwt-cpp/base.h
 
 .PHONY: modules/cloud-auth/ mod-cloud-auth
+
+include modules/cloud-auth/tests/Makefile.am

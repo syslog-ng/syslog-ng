@@ -160,8 +160,8 @@ parser_csv_columns
 	;
 
 parser_csv_column
-	: string					{ $$ = csv_parser_column_new($1, LM_VT_STRING); }
-	| type_hint '(' string ')'			{ $$ = csv_parser_column_new($3, $1); }
+	: string					{ $$ = csv_parser_column_new($1, LM_VT_STRING); free($1); }
+	| type_hint '(' string ')'			{ $$ = csv_parser_column_new($3, $1); free($3); }
 	;
 
 /* INCLUDE_RULES */

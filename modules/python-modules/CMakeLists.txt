@@ -16,18 +16,18 @@ else()
   set(PYMODULES_BUILTINS_ONLY 1)
 endif()
 
-if(DEFINED CMAKE_INSTALL_PREFIX AND NOT CMAKE_INSTALL_PREFIX STREQUAL "")
-  set(PYTHON_ROOT "${CMAKE_INSTALL_PREFIX}")
-else()
-  set(PYTHON_ROOT "/")
-endif()
+# setup.py and install() need real paths, not the ${prefix} placeholders that
+# lib/reloc.c expands at runtime.
+string(REPLACE "\${prefix}" "${CMAKE_INSTALL_PREFIX}" PYMODULES_EXEC_PREFIX "${SYSLOG_NG_PATH_EXECPREFIX}")
+string(REPLACE "\${exec_prefix}" "${PYMODULES_EXEC_PREFIX}" PYMODULES_INSTALL_DIR "${SYSLOG_NG_PYTHON_MODULE_DIR}")
+string(REPLACE "\${prefix}" "${CMAKE_INSTALL_PREFIX}" PYMODULES_SYSCONF_INSTALL_DIR "${SYSLOG_NG_PYTHON_SYSCONF_MODULE_DIR}")
 
 set(PYMODULES_PATH "modules/python-modules")
 set(PYMODULES_BUILDDIR "${CMAKE_CURRENT_BINARY_DIR}")
 set(PYMODULES_SRCDIR "${CMAKE_SOURCE_DIR}/${PYMODULES_PATH}")
 set(PYMODULES_MANIFEST "${PYMODULES_BUILDDIR}/install-manifest.txt")
 set(PYMODULES_ROOT_MODULE "syslogng")
-set(PYMODULES_SETUP_OPTIONS "--root=${PYTHON_ROOT} --install-lib=${SYSLOG_NG_PYTHON_MODULE_DIR}")
+set(PYMODULES_SETUP_OPTIONS "--root=\"\${DESTDIR:-/}\" --install-lib=\"${PYMODULES_INSTALL_DIR}\"")
 
 # Equivalent of 'pymodules-install-requirements'
 add_custom_target(InstallPyModulesRequirements
@@ -72,10 +72,10 @@ install(CODE "
 
 # Install artifacts
 install(FILES ${PYMODULES_SRCDIR}/README.md
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/${SYSLOG_NG_PYTHON_SYSCONF_MODULE_DIR}")
+  DESTINATION "${PYMODULES_SYSCONF_INSTALL_DIR}")
 
 install(FILES ${PROJECT_SOURCE_DIR}/requirements.txt
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/${SYSLOG_NG_PYTHON_MODULE_DIR}")
+  DESTINATION "${PYMODULES_INSTALL_DIR}")
 
 if(BUILD_TESTING)
   add_custom_target(pymodules-unit

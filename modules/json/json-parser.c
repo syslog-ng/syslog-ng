@@ -46,6 +46,13 @@ typedef struct _JSONParser
   gchar key_delimiter;
 } JSONParser;
 
+typedef enum
+{
+  JSON_EXTRACT_UNHANDLED,
+  JSON_EXTRACT_SUCCESS,
+  JSON_EXTRACT_REJECTED,
+} JSONExtractResult;
+
 void
 json_parser_set_prefix(LogParser *p, const gchar *prefix)
 {
@@ -82,7 +89,7 @@ json_parser_set_key_delimiter(LogParser *s, gchar delimiter)
   self->key_delimiter = delimiter;
 }
 
-static void
+static gboolean
 json_parser_store_value(JSONParser *self,
                         const gchar *prefix, const gchar *obj_key,
                         GString *value, LogMessageValueType type,
@@ -95,13 +102,13 @@ json_parser_store_value(JSONParser *self,
     {
       g_string_assign(key, prefix);
       g_string_append(key, obj_key);
-      log_msg_set_value_by_name_with_type(msg, key->str, value->str, value->len, type);
+      return log_msg_set_value_by_dynamic_name_with_type(msg, key->str, value->str, value->len, type);
     }
   else
-    log_msg_set_value_by_name_with_type(msg, obj_key, value->str, value->len, type);
+    return log_msg_set_value_by_dynamic_name_with_type(msg, obj_key, value->str, value->len, type);
 }
 
-static void
+static JSONExtractResult
 json_parser_process_object(JSONParser *self,
                            struct json_object *jso,
                            const gchar *prefix,
@@ -162,7 +169,7 @@ json_parser_extract_string_from_simple_json_object(JSONParser *self,
   return FALSE;
 }
 
-static gboolean
+static JSONExtractResult
 json_parser_extract_value_from_simple_json_object(JSONParser *self,
                                                   struct json_object *jso,
                                                   const gchar *prefix, const gchar *obj_key,
@@ -172,12 +179,12 @@ json_parser_extract_value_from_simple_json_object(JSONParser *self,
   LogMessageValueType type = LM_VT_STRING;
 
   if (!json_parser_extract_string_from_simple_json_object(self, jso, value, &type))
-    return FALSE;
-  json_parser_store_value(self, prefix, obj_key, value, type, msg);
-  return TRUE;
+    return JSON_EXTRACT_UNHANDLED;
+  return json_parser_store_value(self, prefix, obj_key, value, type, msg)
+         ? JSON_EXTRACT_SUCCESS : JSON_EXTRACT_REJECTED;
 }
 
-static gboolean
+static JSONExtractResult
 json_parser_extract_values_from_complex_json_object(JSONParser *self,
                                                     struct json_object *jso,
                                                     const gchar *prefix, const gchar *obj_key,
@@ -192,8 +199,7 @@ json_parser_extract_values_from_complex_json_object(JSONParser *self,
         g_string_assign(key, prefix);
       g_string_append(key, obj_key);
       g_string_append_c(key, self->key_delimiter);
-      json_parser_process_object(self, jso, key->str, msg);
-      return TRUE;
+      return json_parser_process_object(self, jso, key->str, msg);
     }
     case json_type_array:
     {
@@ -221,17 +227,16 @@ json_parser_extract_values_from_complex_json_object(JSONParser *self,
             }
         }
 
-      json_parser_store_value(self, prefix, obj_key, value, type, msg);
-      return TRUE;
+      return json_parser_store_value(self, prefix, obj_key, value, type, msg)
+             ? JSON_EXTRACT_SUCCESS : JSON_EXTRACT_REJECTED;
     }
     default:
-      break;
+      return JSON_EXTRACT_UNHANDLED;
     }
-  return FALSE;
 }
 
 
-static void
+static JSONExtractResult
 json_parser_process_attribute(JSONParser *self,
                               struct json_object *jso,
                               const gchar *prefix,
@@ -241,8 +246,10 @@ json_parser_process_attribute(JSONParser *self,
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
 
-  if (!json_parser_extract_value_from_simple_json_object(self, jso, prefix, obj_key, msg) &&
-      !json_parser_extract_values_from_complex_json_object(self, jso, prefix, obj_key, msg))
+  JSONExtractResult result = json_parser_extract_value_from_simple_json_object(self, jso, prefix, obj_key, msg);
+  if (result == JSON_EXTRACT_UNHANDLED)
+    result = json_parser_extract_values_from_complex_json_object(self, jso, prefix, obj_key, msg);
+  if (result == JSON_EXTRACT_UNHANDLED)
     {
       msg_debug("JSON parser encountered an unknown type, skipping",
                 evt_tag_str("key", obj_key),
@@ -251,9 +258,14 @@ json_parser_process_attribute(JSONParser *self,
 
 
   scratch_buffers_reclaim_marked(marker);
+  if (result == JSON_EXTRACT_REJECTED &&
+      self->super.super.cfg &&
+      self->super.super.cfg->dynamic_nv_name_overflow == DYNAMIC_NV_NAME_OVERFLOW_DROP)
+    return JSON_EXTRACT_SUCCESS;
+  return result;
 }
 
-static void
+static JSONExtractResult
 json_parser_process_object(JSONParser *self,
                            struct json_object *jso,
                            const gchar *prefix,
@@ -263,8 +275,10 @@ json_parser_process_object(JSONParser *self,
 
   json_object_object_foreachC(jso, itr)
   {
-    json_parser_process_attribute(self, itr.val, prefix, itr.key, msg);
+    if (json_parser_process_attribute(self, itr.val, prefix, itr.key, msg) == JSON_EXTRACT_REJECTED)
+      return JSON_EXTRACT_REJECTED;
   }
+  return JSON_EXTRACT_SUCCESS;
 }
 
 static void
@@ -295,26 +309,25 @@ json_parser_process_array(JSONParser *self,
   log_msg_truncate_matches(msg, i + 1);
 }
 
-static gboolean
+static JSONExtractResult
 json_parser_extract(JSONParser *self, struct json_object *jso, LogMessage *msg)
 {
   if (self->extract_prefix)
     jso = json_extract(jso, self->extract_prefix);
 
   if (!jso)
-    return FALSE;
+    return JSON_EXTRACT_UNHANDLED;
 
   if (json_object_is_type(jso, json_type_object))
     {
-      json_parser_process_object(self, jso, self->prefix, msg);
-      return TRUE;
+      return json_parser_process_object(self, jso, self->prefix, msg);
     }
   if (json_object_is_type(jso, json_type_array))
     {
       json_parser_process_array(self, jso, self->prefix, msg);
-      return TRUE;
+      return JSON_EXTRACT_SUCCESS;
     }
-  return FALSE;
+  return JSON_EXTRACT_UNHANDLED;
 }
 
 #ifndef JSON_C_VERSION
@@ -366,7 +379,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   json_tokener_free(tok);
 
   log_msg_make_writable(pmsg, path_options);
-  if (!json_parser_extract(self, jso, *pmsg))
+  if (json_parser_extract(self, jso, *pmsg) != JSON_EXTRACT_SUCCESS)
     {
       msg_debug("json-parser(): failed to extract JSON members into name-value pairs. The parsed/extracted JSON payload was not an object",
                 evt_tag_str("input", input),

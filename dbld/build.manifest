@@ -33,11 +33,8 @@
 
 # on Debian
 #    - we don't build java and use Python3 _after_ buster
-#    - libcriterion-dev
-#        - is available starting with bullseye
-#        - has regression issues in testing, so it is banned from time to time
+#    - libcriterion-dev has regression issues in testing, so it is banned from time to time
 #   - bpf is available correctly from bookworm
-debian-bullseye		python3,nojava,nobpf,notzdatalegacy
 debian-bookworm		python3,nojava,notzdatalegacy
 debian-trixie		python3,nojava,notzdatalegacy
 debian-testing		python3,nojava,nocriterion,notestsonarm
@@ -47,18 +44,18 @@ debian-sid			python3,nojava
 #   - we start using Python3 at focal onwards.
 #   - libcriterion-dev is available starting with 21.04
 #   - bpf is available correctly from plucky?!
-ubuntu-focal		python3,nocriterion,nomqtt,nogrpc,nobpf,notzdatalegacy
-ubuntu-jammy		python3,nobpf,notzdatalegacy
-ubuntu-noble		python3,nobpf,notzdatalegacy
-ubuntu-plucky		python3,notzdatalegacy
-ubuntu-resolute		python3,notzdatalegacy
+ubuntu-focal		python3,nojava,nocriterion,nomqtt,nogrpc,nobpf,notzdatalegacy
+ubuntu-jammy		python3,nojava,nobpf,notzdatalegacy
+ubuntu-noble		python3,nojava,nobpf,notzdatalegacy
+ubuntu-plucky		python3,nojava,notzdatalegacy
+ubuntu-resolute		python3,nojava,notzdatalegacy
 
-# fedora-rawhide currently ships a broken protobuf/grpc/protobuf-c set
-# (grpc-plugins still pulls libprotoc.so.30 while protobuf-c-compiler needs
-# libprotoc.so.33; protobuf-compiler also conflicts with protobuf3-compiler).
-# Disable grpc and riemann here to unblock the rawhide image build until the
-# Fedora packaging chain is consistent again.
-fedora-rawhide		python3,nogrpc,noriemann
+# fedora-rawhide and fedora-latest (fc45 GA) currently ship a broken riemann-c-client-devel/grpc-devel/protobuf-c-devel set
+# (grpc-plugins still pulls the old libprotoc.so.30 while protobuf-c-compiler now needs the new
+# libprotoc.so.33, and protobuf-compiler conflicts with protobuf3-compiler, so both can't coexist).
+# Disable riemann here to unblock the image build until the packaging chain is consistent again.
+fedora-rawhide		python3,noriemann
+fedora-latest		python3,noriemann
 fedora				python3
 almalinux			python3
 centos				python3

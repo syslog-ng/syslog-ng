@@ -28,6 +28,7 @@
 #include "cfg.h"
 #include "syslog-format.h"
 #include "logmsg/logmsg.h"
+#include "logmsg/nvtable.h"
 #include "msg-format.h"
 #include "scratch-buffers.h"
 
@@ -123,6 +124,49 @@ Test(syslog_format, rfc3164_check_program_valid_name)
   cr_assert(!log_msg_is_tag_by_name(msg, "syslog.rfc3164_invalid_program"));
 
   log_msg_unref(msg);
+}
+
+Test(syslog_format, freebsd_kernel_message_without_timestamp_keeps_payload)
+{
+  const gchar *data = "<6>em0: link state changed to DOWN";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  parse_options.flags |= LP_LOCAL;
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  cr_assert_eq(msg->pri, 6);
+  assert_log_message_value_by_name(msg, "PROGRAM", "kernel");
+  assert_log_message_value_by_name(msg, "MSG", "em0: link state changed to DOWN");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, rfc3164_no_parse_program_preserves_kernel_payload)
+{
+  const gchar *data = "<13>Jun 25 14:41:47 host (ada4:ahcich5:0:0:0): WRITE_FPDMA_QUEUED";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  parse_options.flags |= LP_NO_PARSE_PROGRAM;
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  cr_assert_eq(msg->pri, 13);
+  assert_log_message_value_by_name(msg, "HOST", "host");
+  assert_log_message_value_by_name(msg, "PROGRAM", "");
+  assert_log_message_value_by_name(msg, "MSG", "(ada4:ahcich5:0:0:0): WRITE_FPDMA_QUEUED");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, no_parse_program_flag_is_registered)
+{
+  cr_assert(msg_format_options_process_flag(&parse_options, "no-parse-program"));
+  cr_assert(parse_options.flags & LP_NO_PARSE_PROGRAM);
 }
 
 Test(syslog_format, rfc3164_check_program_decimal_number)
@@ -359,6 +403,24 @@ Test(syslog_format, test_sdata_simple_id_and_param)
   log_msg_unref(msg);
 }
 
+Test(syslog_format, test_sdata_name_limit_drop)
+{
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_DROP;
+  log_msg_registry_set_dynamic_name_limit(0);
+
+  cr_assert(_extract_sdata_into_message("[foo bar=\"baz\"]", NULL));
+  log_msg_registry_set_dynamic_name_limit(DYNAMIC_NV_NAME_LIMIT_DEFAULT);
+}
+
+Test(syslog_format, test_sdata_name_limit_reject_message)
+{
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE;
+  log_msg_registry_set_dynamic_name_limit(0);
+
+  cr_assert_not(_extract_sdata_into_message("[foo bar=\"baz\"]", NULL));
+  log_msg_registry_set_dynamic_name_limit(DYNAMIC_NV_NAME_LIMIT_DEFAULT);
+}
+
 Test(syslog_format, test_sdata_invalid_sd_id_and_param)
 {
   cr_assert_not(_extract_sdata_into_message("[foo= bar=\"baz\"]", NULL));
@@ -499,6 +561,21 @@ Test(syslog_format, test_frame_checking)
   cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
 
   cr_assert(log_msg_is_tag_by_id(msg, LM_T_SYSLOG_UNEXPECTED_FRAMING));
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_frame_checking_does_not_read_past_digit_only_input)
+{
+  const guchar data[] = {'1', '2', '3', '4', '5'};
+  gsize data_length = sizeof(data);
+
+  LogMessage *msg = msg_format_construct_message(&parse_options, data, data_length);
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, data, data_length, &problem_position));
+
+  cr_assert_not(log_msg_is_tag_by_id(msg, LM_T_SYSLOG_UNEXPECTED_FRAMING));
 
   log_msg_unref(msg);
 }

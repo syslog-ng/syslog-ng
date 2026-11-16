@@ -29,7 +29,13 @@
 #  NETSNMP_LIBS - the libraries needed to use net-snmp
 #
 
-FIND_PROGRAM(NETSNMP_CONFIG_BIN net-snmp-config)
+IF (NETSNMP_SOURCE_PATH)
+  # mirrors autotools' --with-net-snmp=path: AC_PATH_PROG searches only that
+  # prefix's bin/, never falling back to $PATH
+  FIND_PROGRAM(NETSNMP_CONFIG_BIN net-snmp-config PATHS "${NETSNMP_SOURCE_PATH}/bin" NO_DEFAULT_PATH)
+ELSE()
+  FIND_PROGRAM(NETSNMP_CONFIG_BIN net-snmp-config)
+ENDIF()
 
 IF (NETSNMP_CONFIG_BIN)
   EXEC_PROGRAM(${NETSNMP_CONFIG_BIN} ARGS --cflags OUTPUT_VARIABLE _NETSNMP_CFLAGS)

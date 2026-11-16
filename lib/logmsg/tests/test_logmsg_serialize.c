@@ -34,10 +34,59 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "logmsg/logmsg-serialize.h"
+#include "logmsg/nvtable.h"
+#include "logmsg/nvtable-serialize.h"
+#include "logmsg/nvtable-serialize-legacy.h"
+#include "logmsg/tags-serialize.h"
 
 #define RAW_MSG "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\" eventSource=\"Application\"] An application event log entry..."
 
 #define ERROR_MSG "Failed at %s(%d)", __FILE__, __LINE__
+
+#define TEST_ONE 1
+#define TEST_NO_ENTRIES 0
+#define TEST_NV_TABLE_SIZE (sizeof(NVTable) + sizeof(guint32) + (2 * sizeof(NVEntry)))
+#define TEST_SMALL_NV_TABLE_SIZE 48
+#define TEST_NV_TABLE_USED 8
+#define TEST_INVALID_NV_TABLE_USED (TEST_SMALL_NV_TABLE_SIZE + TEST_ONE)
+#define TEST_INVALID_ENTRY_OFFSET TEST_ONE
+#define TEST_INVALID_NV_TABLE_SIZE (sizeof(NVTable) - TEST_ONE)
+/* v22 sizes are encoded in four-byte units. */
+#define TEST_V22_SIZE 16
+#define TEST_V22_USED 2
+#define TEST_V22_ENTRY_OFFSET 3
+#define TEST_V22_PAYLOAD_SIZE (TEST_V22_USED * sizeof(guint32))
+/* These headers are intentionally truncated malformed records. */
+#define TEST_TRUNCATED_LEGACY_HEADER_SIZE 8
+#define TEST_LEGACY_HEADER_SIZE_WITH_STATIC 10
+#define TEST_LEGACY_HEADER_SIZE_WITH_DYNAMIC (TEST_LEGACY_STATIC_ENTRIES_OFFSET + (2 * sizeof(guint32)))
+#define TEST_LEGACY_PAYLOAD_SIZE TEST_V22_PAYLOAD_SIZE
+#define TEST_LEGACY_TABLE_SIZE (2 * TEST_LEGACY_HEADER_SIZE_WITH_DYNAMIC)
+#define TEST_LEGACY_USED 3
+#define TEST_LEGACY_ENTRY_FLAGS_OFFSET 0
+#define TEST_LEGACY_ENTRY_ALLOC_LEN_OFFSET 2
+#define TEST_LEGACY_ENTRY_VALUE_LEN_OFFSET (TEST_LEGACY_ENTRY_ALLOC_LEN_OFFSET + sizeof(guint16))
+#define TEST_LEGACY_ENTRY_REFERENCE_OFFSET (TEST_LEGACY_ENTRY_VALUE_LEN_OFFSET + sizeof(guint16))
+#define TEST_LEGACY_ENTRY_REFERENCE_LENGTH_OFFSET (TEST_LEGACY_ENTRY_REFERENCE_OFFSET + sizeof(guint16))
+#define TEST_LEGACY_SIZE_OFFSET 0
+#define TEST_LEGACY_USED_OFFSET 2
+#define TEST_LEGACY_DYNAMIC_COUNT_OFFSET 4
+#define TEST_LEGACY_STATIC_COUNT_OFFSET 6
+#define TEST_LEGACY_STATIC_ENTRIES_OFFSET 8
+#define TEST_LEGACY_ENTRY_INDIRECT_FLAG TEST_ONE
+#define TEST_LEGACY_ENTRY_ALLOC_LEN TEST_LEGACY_USED
+#define TEST_LEGACY_HANDLE TEST_ONE
+#define TEST_LEGACY_REFERENCE_OFFSET (TEST_LEGACY_PAYLOAD_SIZE + TEST_V22_USED)
+#define TEST_LEGACY_ENTRY_REFERENCE_LENGTH TEST_LEGACY_REFERENCE_OFFSET
+#define TEST_LEGACY_DYNAMIC_ENTRIES_OFFSET TEST_LEGACY_STATIC_ENTRIES_OFFSET
+#define TEST_BENCHMARK_TABLE_SIZE 4096
+#define TEST_BENCHMARK_ITERATIONS 100000
+#define TEST_BENCHMARK_ENTRY_CAPACITY 16
+#define TEST_BENCHMARK_ENTRY_COUNT (2 * TEST_BENCHMARK_ENTRY_CAPACITY)
+#define TEST_BENCHMARK_NAME_SIZE 32
+#define TEST_BENCHMARK_VALUE_LENGTH (sizeof("value") - TEST_ONE)
+#define TEST_FIRST_HANDLE TEST_ONE
+#define TEST_ZERO_ALLOCATION_SIZE 0
 
 MsgFormatOptions parse_options;
 
@@ -172,6 +221,415 @@ Test(logmsg_serialize, serialize)
   _check_deserialized_message_all_fields(msg);
 
   log_msg_unref(msg);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, deserialize_keeps_serialized_dynamic_names_when_dynamic_limit_is_exhausted)
+{
+  const gchar *name = "serialized.dynamic.name";
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+  LogMessage *msg = log_msg_new_empty();
+
+  /* Serialize a message that already contains a dynamic name. */
+  cr_assert(log_msg_set_value_by_dynamic_name(msg, name, "value", -1));
+  cr_assert(log_msg_serialize(msg, sa, 0), ERROR_MSG);
+  serialize_archive_free(sa);
+  log_msg_unref(msg);
+
+  /* Simulate reload with no budget left for new dynamic names. */
+  _reset_log_msg_registry();
+  log_msg_registry_set_dynamic_name_limit(0);
+
+  GString serialized = {0};
+  serialized.str = stream->str;
+  serialized.len = stream->len;
+  sa = serialize_string_archive_new(&serialized);
+  msg = log_msg_new_empty();
+
+  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
+
+  /* Deserialization must restore serialized names despite the runtime limit. */
+  NVHandle handle = nv_registry_get_handle(logmsg_registry, name);
+  cr_assert_neq(handle, LM_V_NONE);
+  assert_log_message_value(msg, handle, "value");
+
+  log_msg_unref(msg);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_invalid_nvtable_layout)
+{
+  NVTable table =
+  {
+    .size = TEST_SMALL_NV_TABLE_SIZE,
+    .used = TEST_NV_TABLE_USED,
+    .index_size = G_MAXUINT16,
+  };
+
+  cr_assert_not(nv_table_alloc_check(&table, TEST_NO_ENTRIES, TRUE));
+
+  table.index_size = TEST_NO_ENTRIES;
+  table.used = table.size;
+  cr_assert_not(nv_table_alloc_check(&table, TEST_NO_ENTRIES, TRUE));
+}
+
+static SerializeArchive *
+_create_nvtable_archive(GString **stream)
+{
+  *stream = g_string_new("");
+  return serialize_string_archive_new(*stream);
+}
+
+static void
+_write_nvtable_metadata(SerializeArchive *sa)
+{
+  guint32 magic;
+
+  memcpy(&magic, NV_TABLE_MAGIC_V2, sizeof(magic));
+  serialize_write_uint32(sa, magic);
+  serialize_write_uint8(sa, G_BYTE_ORDER == G_BIG_ENDIAN ? NVT_SF_BE : TEST_NO_ENTRIES);
+}
+
+static void
+_write_current_nvtable_with_entry(SerializeArchive *sa, guint32 ofs, NVEntry *entry)
+{
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_NV_TABLE_SIZE);
+  serialize_write_uint32(sa, sizeof(NVEntry));
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint8(sa, TEST_ONE);
+  serialize_write_uint32(sa, ofs);
+  serialize_write_blob(sa, entry, sizeof(NVEntry));
+}
+
+static void
+_write_current_nvtable_with_dynamic_entry(SerializeArchive *sa, guint32 ofs, NVEntry *entry)
+{
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_NV_TABLE_SIZE);
+  serialize_write_uint32(sa, sizeof(NVEntry));
+  serialize_write_uint16(sa, TEST_ONE);
+  serialize_write_uint8(sa, TEST_NO_ENTRIES);
+  serialize_write_uint32(sa, TEST_ONE);
+  serialize_write_uint32(sa, ofs);
+  serialize_write_blob(sa, entry, sizeof(NVEntry));
+}
+
+Test(logmsg_serialize, reject_malformed_current_nvtable)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_SMALL_NV_TABLE_SIZE);
+  serialize_write_uint32(sa, TEST_NO_ENTRIES);
+  serialize_write_uint16(sa, G_MAXUINT16);
+  serialize_write_uint8(sa, 0);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_nvtable_smaller_than_header)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_INVALID_NV_TABLE_SIZE);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_nvtable_with_used_outside_allocation)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint32(sa, TEST_SMALL_NV_TABLE_SIZE);
+  serialize_write_uint32(sa, TEST_INVALID_NV_TABLE_USED);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint8(sa, TEST_NO_ENTRIES);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_nvtable_entry_offset_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry = { .alloc_len = sizeof(NVEntry) };
+
+  _write_current_nvtable_with_entry(sa, TEST_INVALID_ENTRY_OFFSET, &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_nvtable_entry_size_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry = { .alloc_len = sizeof(NVEntry) + TEST_ONE };
+
+  _write_current_nvtable_with_entry(sa, sizeof(NVEntry), &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_dynamic_entry_offset_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry = { .alloc_len = sizeof(NVEntry) };
+
+  _write_current_nvtable_with_dynamic_entry(sa, TEST_INVALID_ENTRY_OFFSET, &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_nvtable_entry_value_outside_allocation)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry =
+  {
+    .alloc_len = sizeof(NVEntry),
+    .vdirect.value_len = G_MAXUINT32,
+  };
+
+  _write_current_nvtable_with_entry(sa, sizeof(NVEntry), &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_current_indirect_entry_reference_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry =
+  {
+    .indirect = TRUE,
+    .alloc_len = sizeof(NVEntry),
+    .vindirect.ofs = 1,
+    .vindirect.len = G_MAXUINT32,
+  };
+
+  _write_current_nvtable_with_entry(sa, sizeof(NVEntry), &entry);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize(&state));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, accept_valid_current_nvtable_entry)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  LogMessageSerializationState state = { .sa = sa };
+  NVEntry entry = { .alloc_len = sizeof(NVEntry) };
+
+  _write_current_nvtable_with_entry(sa, sizeof(NVEntry), &entry);
+  serialize_string_archive_reset(sa);
+
+  NVTable *table = nv_table_deserialize(&state);
+  cr_assert_not_null(table);
+  g_free(table);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_malformed_v22_nvtable)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint16(sa, TEST_V22_SIZE);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint16(sa, G_MAXUINT16);
+  serialize_write_uint8(sa, 0);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_22(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_v22_nvtable_smaller_than_header)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint8(sa, TEST_NO_ENTRIES);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_22(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_v22_nvtable_entry_offset_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+
+  _write_nvtable_metadata(sa);
+  serialize_write_uint16(sa, TEST_V22_SIZE);
+  serialize_write_uint16(sa, TEST_V22_USED);
+  serialize_write_uint16(sa, TEST_NO_ENTRIES);
+  serialize_write_uint8(sa, TEST_ONE);
+  serialize_write_uint16(sa, TEST_V22_ENTRY_OFFSET);
+  serialize_write_blob(sa, "\0\0\0\0\0\0\0\0", TEST_V22_PAYLOAD_SIZE);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_22(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_malformed_legacy_nvtable_header)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+
+  serialize_write_uint32(sa, TEST_TRUNCATED_LEGACY_HEADER_SIZE);
+  serialize_write_blob(sa, "\0\0\0\0\0\0\0\0", TEST_TRUNCATED_LEGACY_HEADER_SIZE);
+  serialize_write_uint32(sa, TEST_LEGACY_USED + TEST_ONE);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_legacy(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_legacy_nvtable_entry_offset_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  guint8 header[TEST_LEGACY_HEADER_SIZE_WITH_STATIC] = { 0 };
+  guint16 value;
+
+  value = TEST_V22_SIZE;
+  memcpy(&header[TEST_LEGACY_SIZE_OFFSET], &value, sizeof(value));
+  value = TEST_V22_USED;
+  memcpy(&header[TEST_LEGACY_USED_OFFSET], &value, sizeof(value));
+  header[TEST_LEGACY_STATIC_COUNT_OFFSET] = TEST_ONE;
+  value = TEST_V22_ENTRY_OFFSET;
+  memcpy(&header[TEST_LEGACY_STATIC_ENTRIES_OFFSET], &value, sizeof(value));
+
+  serialize_write_uint32(sa, sizeof(header));
+  serialize_write_blob(sa, header, sizeof(header));
+  serialize_write_uint32(sa, TEST_LEGACY_PAYLOAD_SIZE);
+  serialize_write_blob(sa, "\0\0\0\0\0\0\0\0", TEST_LEGACY_PAYLOAD_SIZE);
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_legacy(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_legacy_nvtable_entry_length_outside_allocation)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  guint8 header[TEST_LEGACY_HEADER_SIZE_WITH_STATIC] = { 0 };
+  guint8 payload[TEST_LEGACY_PAYLOAD_SIZE] = { 0 };
+  guint16 value;
+
+  value = TEST_V22_SIZE;
+  memcpy(&header[TEST_LEGACY_SIZE_OFFSET], &value, sizeof(value));
+  value = TEST_V22_USED;
+  memcpy(&header[TEST_LEGACY_USED_OFFSET], &value, sizeof(value));
+  header[TEST_LEGACY_STATIC_COUNT_OFFSET] = TEST_ONE;
+  value = TEST_V22_USED;
+  memcpy(&header[TEST_LEGACY_STATIC_ENTRIES_OFFSET], &value, sizeof(value));
+
+  value = TEST_V22_USED;
+  memcpy(&payload[TEST_LEGACY_ENTRY_ALLOC_LEN_OFFSET], &value, sizeof(value));
+  value = G_MAXUINT16;
+  memcpy(&payload[TEST_LEGACY_ENTRY_VALUE_LEN_OFFSET], &value, sizeof(value));
+
+  serialize_write_uint32(sa, sizeof(header));
+  serialize_write_blob(sa, header, sizeof(header));
+  serialize_write_uint32(sa, sizeof(payload));
+  serialize_write_blob(sa, payload, sizeof(payload));
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_legacy(sa));
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_legacy_indirect_entry_reference_outside_payload)
+{
+  GString *stream;
+  SerializeArchive *sa = _create_nvtable_archive(&stream);
+  guint8 header[TEST_LEGACY_HEADER_SIZE_WITH_DYNAMIC] = { 0 };
+  guint8 payload[TEST_LEGACY_USED * sizeof(guint32)] = { 0 };
+  guint16 value;
+  guint32 dynamic_entry;
+
+  value = TEST_LEGACY_TABLE_SIZE;
+  memcpy(&header[TEST_LEGACY_SIZE_OFFSET], &value, sizeof(value));
+  value = TEST_LEGACY_USED;
+  memcpy(&header[TEST_LEGACY_USED_OFFSET], &value, sizeof(value));
+  value = TEST_ONE;
+  memcpy(&header[TEST_LEGACY_DYNAMIC_COUNT_OFFSET], &value, sizeof(value));
+  dynamic_entry = ((guint32) TEST_LEGACY_HANDLE << 16) | TEST_V22_ENTRY_OFFSET;
+  memcpy(&header[TEST_LEGACY_DYNAMIC_ENTRIES_OFFSET], &dynamic_entry, sizeof(dynamic_entry));
+
+  payload[TEST_LEGACY_ENTRY_FLAGS_OFFSET] = TEST_LEGACY_ENTRY_INDIRECT_FLAG;
+  value = TEST_LEGACY_ENTRY_ALLOC_LEN;
+  memcpy(&payload[TEST_LEGACY_ENTRY_ALLOC_LEN_OFFSET], &value, sizeof(value));
+  value = TEST_LEGACY_REFERENCE_OFFSET;
+  memcpy(&payload[TEST_LEGACY_ENTRY_REFERENCE_OFFSET], &value, sizeof(value));
+  value = TEST_LEGACY_ENTRY_REFERENCE_LENGTH;
+  memcpy(&payload[TEST_LEGACY_ENTRY_REFERENCE_LENGTH_OFFSET], &value, sizeof(value));
+
+  serialize_write_uint32(sa, sizeof(header));
+  serialize_write_blob(sa, header, sizeof(header));
+  serialize_write_uint32(sa, sizeof(payload));
+  serialize_write_blob(sa, payload, sizeof(payload));
+  serialize_string_archive_reset(sa);
+
+  cr_assert_null(nv_table_deserialize_legacy(sa));
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
 }
@@ -409,6 +867,213 @@ Test(logmsg_serialize, deserialization_performance)
       log_msg_unref(msg);
     }
   stop_stopwatch_and_display_result(iterations, "deserializing %d times took", iterations);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+static gboolean
+_nv_table_alloc_check_fast(NVTable *self, gsize alloc_size)
+{
+  return nv_table_alloc_check(self, alloc_size, FALSE);
+}
+
+static gboolean
+_nv_table_alloc_check_detailed(NVTable *self, gsize alloc_size)
+{
+  return nv_table_alloc_check(self, alloc_size, TRUE);
+}
+
+static guint64
+_measure_nv_table_alloc_check(NVTable *table, gsize alloc_size, gboolean detailed, gint iterations)
+{
+  volatile gboolean valid = TRUE;
+  guint64 elapsed;
+
+  start_stopwatch();
+  for (gint i = 0; i < iterations; i++)
+    valid &= detailed ? _nv_table_alloc_check_detailed(table, alloc_size) :
+             _nv_table_alloc_check_fast(table, alloc_size);
+  elapsed = stop_stopwatch_and_get_result();
+
+  cr_assert(valid);
+  return elapsed;
+}
+
+Test(logmsg_serialize, nvtable_alloc_check_performance)
+{
+  NVTable *table = nv_table_new(TEST_BENCHMARK_ENTRY_CAPACITY,
+                                TEST_BENCHMARK_ENTRY_CAPACITY,
+                                TEST_BENCHMARK_TABLE_SIZE);
+  const gint iterations = TEST_BENCHMARK_ITERATIONS;
+  const gsize allocation_sizes[] = { TEST_ZERO_ALLOCATION_SIZE, sizeof(NVIndexEntry) };
+
+  for (NVHandle handle = TEST_FIRST_HANDLE; handle <= TEST_BENCHMARK_ENTRY_COUNT; handle++)
+    {
+      gchar name[TEST_BENCHMARK_NAME_SIZE];
+
+      g_snprintf(name, sizeof(name), "benchmark-%u", handle);
+      cr_assert(nv_table_add_value(table, handle, name, strlen(name), "value",
+                                   TEST_BENCHMARK_VALUE_LENGTH, TEST_NO_ENTRIES, NULL));
+    }
+
+  for (guint i = 0; i < G_N_ELEMENTS(allocation_sizes); i++)
+    {
+      guint64 fast_elapsed = _measure_nv_table_alloc_check(table, allocation_sizes[i], FALSE, iterations);
+      guint64 detailed_elapsed = _measure_nv_table_alloc_check(table, allocation_sizes[i], TRUE, iterations);
+
+      g_print("NVTable allocation check (%zu bytes): fast=%" G_GUINT64_FORMAT " us, "
+              "detailed=%" G_GUINT64_FORMAT " us (%.2fx)\n",
+              allocation_sizes[i], fast_elapsed, detailed_elapsed,
+              (gdouble) detailed_elapsed / MAX(fast_elapsed, (guint64) TEST_ONE));
+    }
+
+  nv_table_unref(table);
+}
+
+Test(logmsg_serialize, reject_sdata_count_exceeding_allocation)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+  cr_assert(msg->num_sdata > 0, ERROR_MSG);
+  /* simulate a tampered on-disk record: alloc_sdata shrunk below num_sdata.
+   * the real sdata buffer is untouched, so serializing this is itself safe. */
+  msg->alloc_sdata = 0;
+
+  log_msg_serialize(msg, sa, 0);
+  log_msg_unref(msg);
+
+  _reset_log_msg_registry();
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert_not(log_msg_deserialize(msg2, sa), ERROR_MSG);
+
+  log_msg_unref(msg2);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, ignore_unresolvable_sdata_handle_during_formatting)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+  cr_assert(msg->num_sdata > 0, ERROR_MSG);
+  /* simulate a tampered on-disk record: a sdata handle with no matching nvtable entry */
+  msg->sdata[0] = 0xFFFFFFFF;
+
+  log_msg_serialize(msg, sa, 0);
+  log_msg_unref(msg);
+
+  _reset_log_msg_registry();
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert(log_msg_deserialize(msg2, sa), ERROR_MSG);
+
+  GString *result = g_string_new("");
+  log_msg_append_format_sdata(msg2, result, 0);
+
+  g_string_free(result, TRUE);
+  log_msg_unref(msg2);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, zero_fill_unresolved_index_slot_after_fixup)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+
+  /* force a value-alloc failure right after a new dynamic index slot is committed:
+   * nv_table_add_value() leaves a "zombie" ofs=0 slot behind in this case (see its
+   * own comment), which the fixup's foreach walk skips just like an unresolvable
+   * sdata handle -- it must rely on the same zero-fill guard, not stack garbage */
+  NVHandle new_handle = log_msg_get_value_handle("oversized_zombie_field");
+  gsize huge_len = 10 * 1024 * 1024;
+  gchar *huge_value = g_malloc0(huge_len);
+  gboolean new_entry = FALSE;
+  guint16 index_size_before = msg->payload->index_size;
+  gboolean added = nv_table_add_value(msg->payload, new_handle, "oversized_zombie_field",
+                                      strlen("oversized_zombie_field"), huge_value, huge_len, LM_VT_STRING, &new_entry);
+  g_free(huge_value);
+  cr_assert_not(added, ERROR_MSG);
+  cr_assert_eq((guint) msg->payload->index_size, (guint) index_size_before + 1,
+               "a zombie index slot must have been committed despite the failed add");
+
+  log_msg_serialize(msg, sa, 0);
+  log_msg_unref(msg);
+
+  _reset_log_msg_registry();
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert(log_msg_deserialize(msg2, sa), ERROR_MSG);
+
+  /* a zero-filled {0,0} entry sorts first (handle 0 is the lowest possible value) */
+  NVIndexEntry *idx = nv_table_get_index(msg2->payload);
+  cr_assert_eq(idx[0].handle, (NVHandle) 0,
+               "unresolved index slot must be zero-filled, not left as stack garbage");
+  cr_assert_eq(idx[0].ofs, (guint32) 0,
+               "unresolved index slot must be zero-filled, not left as stack garbage");
+
+  log_msg_unref(msg2);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, zero_fill_unresolved_sdata_slot_after_fixup)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+  cr_assert(msg->num_sdata > 0, ERROR_MSG);
+  /* a real, static, non-SDATA handle: _fixup_sdata_handle() is only invoked for
+   * SDATA-flagged entries, so this slot can never be matched during the post-restart
+   * handle remap and must rely on the fixup's zero-fill guard instead of stack garbage */
+  msg->sdata[0] = LM_V_HOST;
+
+  log_msg_serialize(msg, sa, 0);
+  log_msg_unref(msg);
+
+  _reset_log_msg_registry();
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert(log_msg_deserialize(msg2, sa), ERROR_MSG);
+
+  cr_assert_eq(msg2->sdata[0], (NVHandle) 0,
+               "unresolved sdata slot must be zero-filled (LM_V_NONE), not left as stack garbage");
+
+  log_msg_unref(msg2);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, reject_tag_name_length_wraparound_and_recover)
+{
+  GString *stream = g_string_new("");
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  /* G_MAXUINT32 + 1 wraps to 0 inside serialize_read_string(), which used to
+   * turn the realloc() into a free() of the cached scratch buffer. */
+  serialize_write_uint32(sa, G_MAXUINT32);
+
+  LogMessage *tagged_msg = log_msg_new_empty();
+  log_msg_set_tag_by_name(tagged_msg, "some-tag");
+  cr_assert(tags_serialize(tagged_msg, sa), ERROR_MSG);
+  log_msg_unref(tagged_msg);
+
+  LogMessage *msg1 = log_msg_new_empty();
+  cr_assert_not(tags_deserialize(msg1, sa), ERROR_MSG);
+
+  /* the thread-local scratch buffer slot corrupted above must still be usable
+   * for the very next record, exactly as a real disk-buffer replay would
+   * process the next message right after a poisoned one. */
+  LogMessage *msg2 = log_msg_new_empty();
+  cr_assert(tags_deserialize(msg2, sa), ERROR_MSG);
+  cr_assert(log_msg_is_tag_by_name(msg2, "some-tag"), ERROR_MSG);
+
+  log_msg_unref(msg1);
+  log_msg_unref(msg2);
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
 }

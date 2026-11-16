@@ -64,6 +64,7 @@ private:
   bool should_initiate_flush();
   void set_labels(LogMessage *msg);
   void set_timestamp(logproto::EntryAdapter *entry, LogMessage *msg);
+  void set_structured_metadata(logproto::EntryAdapter *entry, LogMessage *msg);
   DestinationDriver *get_owner();
 
 private:

@@ -32,8 +32,8 @@ typedef struct _AppParserGenerator
   CfgBlockGenerator super;
   GString *block;
   const gchar *topic;
-  const gchar *included_apps;
-  const gchar *excluded_apps;
+  gchar *included_apps;
+  gchar *excluded_apps;
   gboolean is_parsing_enabled;
   gboolean first_app_generated;
   gboolean allow_overlaps;
@@ -210,6 +210,7 @@ _parse_auto_parse_exclude_arg(AppParserGenerator *self, CfgArgs *args, const gch
   const gchar *v = cfg_args_get(args, "auto-parse-exclude");
   if (!v)
     return TRUE;
+  g_free(self->excluded_apps);
   self->excluded_apps = g_strdup(v);
   return TRUE;
 }
@@ -220,6 +221,7 @@ _parse_auto_parse_include_arg(AppParserGenerator *self, CfgArgs *args, const gch
   const gchar *v = cfg_args_get(args, "auto-parse-include");
   if (!v)
     return TRUE;
+  g_free(self->included_apps);
   self->included_apps = g_strdup(v);
   return TRUE;
 }
@@ -286,6 +288,16 @@ _generate(CfgBlockGenerator *s, GlobalConfig *cfg, gpointer args, GString *resul
   return TRUE;
 }
 
+static void
+_free(CfgBlockGenerator *s)
+{
+  AppParserGenerator *self = (AppParserGenerator *) s;
+
+  g_free(self->excluded_apps);
+  g_free(self->included_apps);
+  cfg_block_generator_free_instance(s);
+}
+
 CfgBlockGenerator *
 app_parser_generator_new(gint context, const gchar *name)
 {
@@ -293,5 +305,6 @@ app_parser_generator_new(gint context, const gchar *name)
 
   cfg_block_generator_init_instance(&self->super, context, name);
   self->super.generate = _generate;
+  self->super.free_fn = _free;
   return &self->super;
 }

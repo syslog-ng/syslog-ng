@@ -1,9 +1,11 @@
 add_custom_target(light-self-check
    COMMAND ${PYTHON_VENV_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/tests/light/src --showlocals --verbosity=3
+   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
    DEPENDS BuildPyVirtualEnv)
 
 add_custom_target(light-check
    COMMAND ${PYTHON_VENV_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/tests/light/functional_tests --installdir=${CMAKE_INSTALL_PREFIX} --showlocals --verbosity=3 $$EXTRA_ARGS
+   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
    DEPENDS BuildPyVirtualEnv)
 
 add_custom_target(light-linters

@@ -12,7 +12,7 @@ if(NOT ENABLE_CLOUD_AUTH)
   return()
 endif()
 
-find_package(Curl)
+external_or_find_package(Curl)
 
 if(NOT Curl_FOUND)
   message(FATAL_ERROR "Cloud Auth module was explicitly enabled, but the required libcurl dependency could not be found")
@@ -59,3 +59,5 @@ add_module(
   ${PROJECT_SOURCE_DIR}/modules/cloud-auth
   SOURCES ${OTEL_SOURCES}
 )
+
+add_test_subdirectory(tests)

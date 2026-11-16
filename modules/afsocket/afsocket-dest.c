@@ -84,8 +84,14 @@ _kept_alive_connection_steal_writer(AFSocketDestKeptAliveConnection *self)
 gboolean
 afsocket_dd_should_restore_connection_method(AFSocketDestDriver *self, AFSocketDestKeptAliveConnection *c)
 {
+  /* NOTE: transport/logproto can be identical between driver variants (e.g. network() and
+   * syslog() both map to transport(udp)/logproto(dgram)) even though they construct their
+   * LogWriter with different flags (e.g. LW_SYSLOG_PROTOCOL). Compare those too, otherwise
+   * a reload that only changes those flags would keep serving the stale, kept-alive writer. */
   return g_strcmp0(transport_mapper_get_transport(self->transport_mapper), c->transport) == 0
-         && g_strcmp0(transport_mapper_get_logproto(self->transport_mapper), c->proto) == 0;
+         && g_strcmp0(transport_mapper_get_logproto(self->transport_mapper), c->proto) == 0
+         && c->writer
+         && self->get_construct_writer_flags(self) == log_writer_get_flags(c->writer);
 }
 
 void
@@ -350,6 +356,9 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
 
   main_loop_assert_main_thread();
 
+  msg_trace("afsocket_dd_start_connect",
+            evt_tag_int("log_writer_opened", log_writer_opened(self->writer)));
+
   if (log_writer_opened(self->writer))
     return TRUE;
 
@@ -492,12 +501,16 @@ afsocket_dd_restore_connection_method(AFSocketDestDriver *self, AFSocketDestKept
   self->dest_addr = g_sockaddr_ref(item->dest_addr);
 }
 
+guint32
+afsocket_dd_get_construct_writer_flags_method(AFSocketDestDriver *self)
+{
+  return LW_FORMAT_PROTO;
+}
+
 LogWriter *
 afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
 {
-  guint32 writer_flags = 0;
-
-  writer_flags |= LW_FORMAT_PROTO;
+  guint32 writer_flags = self->get_construct_writer_flags(self);
 
   LogWriter *writer = log_writer_new(writer_flags, self->super.super.super.cfg);
   log_pipe_set_options((LogPipe *) writer, &self->super.super.super.options);
@@ -760,6 +773,9 @@ afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
   gchar buf[MAX_SOCKADDR_STRING];
 
+  msg_trace("afsocket_dd_notify",
+            evt_tag_int("notify_code", notify_code));
+
   switch (notify_code)
     {
     case NC_CLOSE:
@@ -770,6 +786,9 @@ afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
                  evt_tag_int("fd", self->fd),
                  evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                  evt_tag_int("time_reopen", self->writer_options.time_reopen));
+      afsocket_dd_start_reconnect_timer(self);
+      break;
+    case NC_REOPEN_REQUIRED:
       afsocket_dd_start_reconnect_timer(self);
       break;
     default:
@@ -809,6 +828,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->super.super.super.generate_persist_name = afsocket_dd_format_name;
   self->setup_addresses = afsocket_dd_setup_addresses_method;
   self->construct_writer = afsocket_dd_construct_writer_method;
+  self->get_construct_writer_flags = afsocket_dd_get_construct_writer_flags_method;
   self->should_restore_connection = afsocket_dd_should_restore_connection_method;
   self->restore_connection = afsocket_dd_restore_connection_method;
   self->save_connection = afsocket_dd_save_connection_method;

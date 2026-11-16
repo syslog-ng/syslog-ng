@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2019 Balabit
  * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
  *
@@ -637,7 +638,7 @@ snmpdest_dd_init(LogPipe *s)
               evt_tag_int("port", self->port));
 
   gchar err_msg[128];
-  if (!snmpdest_check_required_params(&self->super.super.super, err_msg))
+  if (!snmpdest_check_required_params(&self->super.super.super, err_msg, sizeof(err_msg)))
     {
       msg_error(err_msg);
       return FALSE;
@@ -768,39 +769,39 @@ snmpdest_dd_new(GlobalConfig *cfg)
   return (LogDriver *)self;
 }
 
-gboolean snmpdest_check_required_params(LogDriver *d, gchar *err_msg)
+gboolean snmpdest_check_required_params(LogDriver *d, gchar *err_msg, gsize err_msg_size)
 {
   SNMPDestDriver *self = (SNMPDestDriver *)d;
 
   /* required parameters */
   if (!self->snmp_objs)
     {
-      sprintf(err_msg, "missing SNMP object");
+      g_snprintf(err_msg, err_msg_size, "missing SNMP object");
       return FALSE;
     }
 
   if (!self->host)
     {
-      sprintf(err_msg, "missing host");
+      g_snprintf(err_msg, err_msg_size, "missing host");
       return FALSE;
     }
 
   if (!self->trap_oid || !self->trap_type || !self->trap_value)
     {
-      sprintf(err_msg, "missing trap_obj");
+      g_snprintf(err_msg, err_msg_size, "missing trap_obj");
       return FALSE;
     }
 
   if (strcasecmp(self->trap_type, "objectid"))
     {
-      sprintf(err_msg, "wrong trap object type: %s", self->trap_type);
+      g_snprintf(err_msg, err_msg_size, "wrong trap object type: %s", self->trap_type);
       return FALSE;
     }
 
   /* v3-specific parameters */
   if (!strcmp(self->version, s_v3) && !self->engine_id)
     {
-      sprintf(err_msg, "missing engine id");
+      g_snprintf(err_msg, err_msg_size, "missing engine id");
       return FALSE;
     }
 

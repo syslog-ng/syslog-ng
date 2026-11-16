@@ -91,6 +91,8 @@ struct _LogProtoBufferedServer
   PersistEntryHandle persist_handle;
   GIConv convert;
   guchar *buffer;
+  guchar *raw_buffer;
+  gsize raw_buffer_size;
 
   GIConv reverse_convert;
   gchar *reverse_buffer;

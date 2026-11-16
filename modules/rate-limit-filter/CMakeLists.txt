@@ -11,3 +11,4 @@ add_module(
   GRAMMAR rate-limit-grammar
   SOURCES ${RATE_LIMIT_FILTER_SOURCES}
 )
+set_target_properties(rate_limit_filter PROPERTIES OUTPUT_NAME "rate-limit-filter")

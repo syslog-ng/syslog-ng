@@ -6,7 +6,7 @@ set(localstatedir ${SYSLOG_NG_PATH_LOCALSTATEDIR})
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/update-patterndb.in ${CMAKE_CURRENT_BINARY_DIR}/update-patterndb)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/update-patterndb DESTINATION bin)
-install(DIRECTORY DESTINATION etc/patterndb.d)
+install(DIRECTORY DESTINATION "${SYSLOG_NG_INSTALL_SYSCONFDIR}/patterndb.d")
 
 set(python_venvdir ${SYSLOG_NG_PYTHON_VENV_DIR})
 set(python_moduledir ${SYSLOG_NG_PYTHON_MODULE_DIR})

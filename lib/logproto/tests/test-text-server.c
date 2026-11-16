@@ -286,6 +286,56 @@ Test(log_proto, test_log_proto_text_server_ucs4)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_log_proto_text_server_stack_alloc_limit_stack_path)
+{
+  LogProtoServer *proto;
+
+  log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
+  /* large enough for the needed raw buffer: exercises the g_alloca() path */
+  proto_server_options.super.stack_alloc_limit = 64;
+  proto = construct_test_proto(
+            log_transport_mock_stream_new(
+              /* ucs4 */
+              "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
+              "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72"      /* |...z...t...ű...r| */
+              "\x00\x00\x01\x51\x00\x00\x00\x74\x00\x00\x00\xfc\x00\x00\x00\x6b"      /* |...Q...t.......k| */
+              "\x00\x00\x00\xf6\x00\x00\x00\x72\x00\x00\x00\x66\x00\x00\x00\xfa"      /* |.......r...f....| */
+              "\x00\x00\x00\x72\x00\x00\x00\xf3\x00\x00\x00\x67\x00\x00\x00\xe9"      /* |...r.......g....| */
+              "\x00\x00\x00\x70\x00\x00\x00\x0a", 88,                                 /* |...p....|         */
+              LTM_EOF));
+
+  cr_assert(log_proto_server_validate_options(proto),
+            "validate_options() returned failure but it should have succeeded");
+  assert_proto_server_fetch(proto, "árvíztűrőtükörfúrógép", -1);
+  assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_server_free(proto);
+}
+
+Test(log_proto, test_log_proto_text_server_stack_alloc_limit_too_small)
+{
+  LogProtoServer *proto;
+
+  log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
+  /* set but smaller than the needed raw buffer: must fall back to the heap path */
+  proto_server_options.super.stack_alloc_limit = 8;
+  proto = construct_test_proto(
+            log_transport_mock_stream_new(
+              /* ucs4 */
+              "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
+              "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72"      /* |...z...t...ű...r| */
+              "\x00\x00\x01\x51\x00\x00\x00\x74\x00\x00\x00\xfc\x00\x00\x00\x6b"      /* |...Q...t.......k| */
+              "\x00\x00\x00\xf6\x00\x00\x00\x72\x00\x00\x00\x66\x00\x00\x00\xfa"      /* |.......r...f....| */
+              "\x00\x00\x00\x72\x00\x00\x00\xf3\x00\x00\x00\x67\x00\x00\x00\xe9"      /* |...r.......g....| */
+              "\x00\x00\x00\x70\x00\x00\x00\x0a", 88,                                 /* |...p....|         */
+              LTM_EOF));
+
+  cr_assert(log_proto_server_validate_options(proto),
+            "validate_options() returned failure but it should have succeeded");
+  assert_proto_server_fetch(proto, "árvíztűrőtükörfúrógép", -1);
+  assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_server_free(proto);
+}
+
 Test(log_proto, test_log_proto_text_server_iso8859_2)
 {
   LogProtoServer *proto;

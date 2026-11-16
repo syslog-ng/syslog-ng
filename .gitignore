@@ -44,7 +44,7 @@ dbld/extra-files/
 debian/build-tree/
 debian/*.log
 debian/autoreconf.*
-build/
+build*/
 tests/light/reports
 tags
 TAGS

@@ -33,7 +33,7 @@ def render_version(version):
 
 def render_includes(includes):
     include_lines = ['@include "{}"'.format(include) for include in includes]
-    return "\n".join(include_lines)
+    return "\n".join(include_lines) + '\n'
 
 
 def render_global_options(global_options):

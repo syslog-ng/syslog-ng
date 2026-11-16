@@ -813,13 +813,10 @@ afinet_dd_new_udp6(gchar *host, GlobalConfig *cfg)
   return afinet_dd_new_instance(transport_mapper_udp6_new(), host, cfg);
 }
 
-static LogWriter *
-afinet_dd_syslog_construct_writer(AFSocketDestDriver *s)
+static guint32
+afinet_dd_get_syslog_writer_flags(AFSocketDestDriver *s)
 {
-  LogWriter *writer = afsocket_dd_construct_writer_method(s);
-
-  log_writer_set_flags(writer, log_writer_get_flags(writer) | LW_SYSLOG_PROTOCOL);
-  return writer;
+  return afsocket_dd_get_construct_writer_flags_method(s) | LW_SYSLOG_PROTOCOL;
 }
 
 
@@ -828,7 +825,7 @@ afinet_dd_new_syslog(gchar *host, GlobalConfig *cfg)
 {
   AFInetDestDriver *self = afinet_dd_new_instance(transport_mapper_syslog_new(), host, cfg);
 
-  self->super.construct_writer = afinet_dd_syslog_construct_writer;
+  self->super.get_construct_writer_flags = afinet_dd_get_syslog_writer_flags;
   return self;
 }
 

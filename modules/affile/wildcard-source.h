@@ -43,6 +43,7 @@ typedef struct _WildcardSourceDriver
 
   gboolean window_size_initialized;
   gboolean recursive;
+  gboolean initial_scan;
 
   FileReaderOptions file_reader_options;
   FileOpenerOptions file_opener_options;

@@ -151,6 +151,12 @@ http_lb_target_is_url_templated(HTTPLoadBalancerTarget *self)
   return !log_template_is_literal_string(self->url_template);
 }
 
+gboolean
+http_lb_target_is_url_message_dependent(HTTPLoadBalancerTarget *self)
+{
+  return !log_template_is_message_independent(self->url_template);
+}
+
 const gchar *
 http_lb_target_get_literal_url(HTTPLoadBalancerTarget *self)
 {
@@ -402,6 +408,18 @@ http_load_balancer_is_url_templated(HTTPLoadBalancer *self)
   for (gint i = 0; i < self->num_targets; i++)
     {
       if (http_lb_target_is_url_templated(&self->targets[i]))
+        return TRUE;
+    }
+
+  return FALSE;
+}
+
+gboolean
+http_load_balancer_is_url_message_dependent(HTTPLoadBalancer *self)
+{
+  for (gint i = 0; i < self->num_targets; i++)
+    {
+      if (http_lb_target_is_url_message_dependent(&self->targets[i]))
         return TRUE;
     }
 

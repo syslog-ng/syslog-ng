@@ -40,32 +40,39 @@ set(MEMORYCHECK_COMMAND_OPTIONS "--num-callers=30 --sim-hints=no-nptl-pthread-st
 execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/version.sh SET OUTPUT_VARIABLE SYSLOG_NG_VERSION)
 set(SYSLOG_NG_COMBINED_VERSION ${SYSLOG_NG_VERSION})
 set(SYSLOG_NG_SOURCE_REVISION ${SYSLOG_NG_VERSION})
+# major.minor release tag, mirrors autotools LSNG_RELEASE = $(PACKAGE_VERSION cut -d. -f1,2)
+string(REGEX REPLACE "^([0-9]+\\.[0-9]+).*" "\\1" LSNG_RELEASE "${SYSLOG_NG_VERSION}")
 
 set(SYSLOG_NG_PATH_PREFIX ${CMAKE_INSTALL_PREFIX})
-set(SYSLOG_NG_PATH_SYSCONFDIR "\${prefix}/etc")
+set(SYSLOG_NG_PATH_SYSCONFDIR "\${prefix}/etc" CACHE STRING "Use path as the directory for the configuration files")
 set(SYSLOG_NG_PATH_DATADIR "\${datarootdir}")
 set(SYSLOG_NG_PATH_PKGDATADIR "\${datarootdir}/syslog-ng")
-set(SYSLOG_NG_PATH_PIDFILEDIR "\${localstatedir}")
-set(SYSLOG_NG_PATH_LOCALSTATEDIR "\${prefix}/var")
-set(SYSLOG_NG_MODULE_PATH "\${exec_prefix}/lib/syslog-ng")
+set(SYSLOG_NG_PATH_PIDFILEDIR "\${localstatedir}" CACHE STRING "Use path as the directory for storing pidfiles")
+set(SYSLOG_NG_PATH_LOCALSTATEDIR "\${prefix}/var" CACHE STRING "Use path as the directory for the persistent state files")
+set(SYSLOG_NG_MODULE_PATH "\${exec_prefix}/lib/syslog-ng" CACHE STRING "Use path as the list of ':' separated directories looked up when searching for modules")
 set(SYSLOG_NG_PATH_EXECPREFIX "\${prefix}")
 set(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR "\${datadir}/syslog-ng/include")
 set(SYSLOG_NG_PATH_SCLDIR "\${datadir}/syslog-ng/include/scl")
 set(SYSLOG_NG_PATH_LIBEXECDIR "\${exec_prefix}/libexec")
 set(SYSLOG_NG_PATH_DATAROOTDIR "\${prefix}/share")
-set(SYSLOG_NG_PATH_MODULEDIR "\${exec_prefix}/lib/syslog-ng")
-set(SYSLOG_NG_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
+set(SYSLOG_NG_PATH_MODULEDIR "\${exec_prefix}/lib/syslog-ng" CACHE STRING "Use path as the directory to install modules into")
+set(SYSLOG_NG_PACKAGE_NAME "${CMAKE_PROJECT_NAME}" CACHE STRING "Package name is printed out when syslog-ng started with --version")
 set(SYSLOG_NG_PATH_XSDDIR "\${datadir}/syslog-ng/xsd")
 set(SYSLOG_NG_JAVA_MODULE_PATH "\${exec_prefix}/lib/syslog-ng/java-modules")
 set(SYSLOG_NG_PYTHON_MODULE_DIR "\${exec_prefix}/lib/syslog-ng/python")
-set(SYSLOG_NG_PYTHON_SYSCONF_MODULE_DIR "\${prefix}/etc/python")
-set(SYSLOG_NG_PYTHON_VENV_DIR "\${localstatedir}/python-venv")
+set(SYSLOG_NG_PYTHON_SYSCONF_MODULE_DIR "${SYSLOG_NG_PATH_SYSCONFDIR}/python")
+set(SYSLOG_NG_PYTHON_VENV_DIR "\${localstatedir}/python-venv" CACHE STRING "Use path as the directory to install the Python venv into")
 set(SYSLOG_NG_PATH_TOPSRC_DIR "${PROJECT_SOURCE_DIR}")
 set(LIBDIR "\${exec_prefix}/lib")
 set(INCLUDEDIR "\${prefix}/include")
 set(TOOLSDIR "\${datadir}/syslog-ng/tools")
 
-set(LOGGEN_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/syslog-ng/loggen")
+set(LOGGEN_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/syslog-ng/loggen" CACHE PATH "Use path as the directory to install loggen plugins into")
+
+# install() cannot expand the ${prefix} placeholder that lib/reloc.c resolves at
+# runtime, so keep resolved copies of the paths used as install destinations.
+string(REPLACE "\${prefix}" "${CMAKE_INSTALL_PREFIX}" SYSLOG_NG_INSTALL_SYSCONFDIR "${SYSLOG_NG_PATH_SYSCONFDIR}")
+string(REPLACE "\${prefix}" "${CMAKE_INSTALL_PREFIX}" SYSLOG_NG_INSTALL_LOCALSTATEDIR "${SYSLOG_NG_PATH_LOCALSTATEDIR}")
 
 include(set_debug_options)
 
@@ -87,12 +94,12 @@ find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(Resolv REQUIRED)
+external_or_find_package(JSONC REQUIRED)
+pkg_check_modules(LIBPCRE REQUIRED IMPORTED_TARGET libpcre2-8)
+include(find_ivykis) # external or internal, but required too
 
 find_package(WRAP)
-external_or_find_package(JSONC REQUIRED)
 include(find_python_and_build_venv)
-include(find_ivykis)
-pkg_check_modules(LIBPCRE REQUIRED IMPORTED_TARGET libpcre2-8)
 
 include(detect_features)
 include(platform_options)
@@ -149,7 +156,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h DESTINATION include/syslog-ng)
 
-install(DIRECTORY DESTINATION var)
+install(DIRECTORY DESTINATION "${SYSLOG_NG_INSTALL_LOCALSTATEDIR}")
 
 # Package Information for pkg-config
 set(PKG_CONFIG_EXEC_PREFIX ${SYSLOG_NG_PATH_EXECPREFIX})
@@ -169,5 +176,7 @@ set(includedir "\${includedir}")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng.pc)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng.pc DESTINATION lib/pkgconfig)
+
+install(PROGRAMS contrib/syslog-ng-debun DESTINATION sbin)
 
 include(print_config_summary)

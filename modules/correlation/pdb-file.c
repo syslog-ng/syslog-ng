@@ -82,21 +82,10 @@ exit:
 }
 
 static const gchar *
-_get_xsddir_in_build(void)
-{
-  static gchar path[256];
-
-  g_snprintf(path, sizeof(path), "%s/doc/xsd", SYSLOG_NG_PATH_TOPSRC_DIR);
-  return path;
-}
-
-static const gchar *
 _get_xsddir_in_production(void)
 {
   return get_installation_path_for(SYSLOG_NG_PATH_XSDDIR);
 }
-
-typedef const gchar *(*PdbGetXsdDirFunc) (void);
 
 static gchar *
 _get_xsd_file(gint version, PdbGetXsdDirFunc get_xsd_dir)
@@ -104,8 +93,8 @@ _get_xsd_file(gint version, PdbGetXsdDirFunc get_xsd_dir)
   return g_strdup_printf("%s/patterndb-%d.xsd", get_xsd_dir(), version);
 }
 
-static gboolean
-_pdb_file_validate(const gchar *filename, GError **error, PdbGetXsdDirFunc get_xsd_dir)
+gboolean
+pdb_file_validate(const gchar *filename, GError **error, PdbGetXsdDirFunc get_xsd_dir)
 {
   gchar *xmllint_cmdline;
   gint version;
@@ -118,6 +107,9 @@ _pdb_file_validate(const gchar *filename, GError **error, PdbGetXsdDirFunc get_x
   version = pdb_file_detect_version(filename, error);
   if (!version)
     return FALSE;
+
+  if (!get_xsd_dir)
+    get_xsd_dir = _get_xsddir_in_production;
 
   xsd_file = _get_xsd_file(version, get_xsd_dir);
   if (!is_file_regular(xsd_file))
@@ -152,18 +144,6 @@ _pdb_file_validate(const gchar *filename, GError **error, PdbGetXsdDirFunc get_x
   g_free(xmllint_cmdline);
   g_free(stderr_content);
   return TRUE;
-}
-
-gboolean
-pdb_file_validate(const gchar *filename, GError **error)
-{
-  return _pdb_file_validate(filename, error, _get_xsddir_in_production);
-}
-
-gboolean
-pdb_file_validate_in_tests(const gchar *filename, GError **error)
-{
-  return _pdb_file_validate(filename, error, _get_xsddir_in_build);
 }
 
 GPtrArray *

@@ -291,6 +291,7 @@ app_shutdown(void)
   dns_caching_thread_deinit();
   dns_caching_global_deinit();
   hostname_global_deinit();
+  crypto_thread_deinit();
   crypto_deinit();
   msg_deinit();
 
@@ -355,4 +356,5 @@ app_thread_stop(void)
   dns_caching_thread_deinit();
   scratch_buffers_allocator_deinit();
   timeutils_cache_deinit();
+  crypto_thread_deinit();
 }

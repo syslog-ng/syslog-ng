@@ -26,6 +26,7 @@
 #define PAYLOAD_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "atomic-gssize.h"
 #include "nvhandle-descriptors.h"
 
 typedef struct _NVTable NVTable;
@@ -64,6 +65,12 @@ struct _NVRegistry
   NVHandleDescArray *names;
   GHashTable *name_map;
   guint32 nvhandle_max_value;
+  guint dynamic_name_limit;
+  guint dynamic_name_count;
+  atomic_gssize num_registered_names;
+  atomic_gssize num_registered_dynamic_names;
+  gboolean hard_limit_reached_reported;
+  gboolean dynamic_limit_reached_reported;
 };
 
 extern const gchar *null_string;
@@ -73,9 +80,11 @@ void nv_registry_add_predefined(NVRegistry *self, NVHandle handle, const gchar *
 void nv_registry_assert_next_handle(NVRegistry *self, NVHandle handle);
 NVHandle nv_registry_get_handle(NVRegistry *self, const gchar *name);
 NVHandle nv_registry_alloc_handle(NVRegistry *self, const gchar *name);
+NVHandle nv_registry_alloc_dynamic_handle(NVRegistry *self, const gchar *name);
+void nv_registry_set_dynamic_name_limit(NVRegistry *self, guint limit);
 void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags);
 void nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data);
-NVRegistry *nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value);
+NVRegistry *nv_registry_new(const gchar **static_names);
 void nv_registry_free(NVRegistry *self);
 
 static inline guint16
@@ -84,6 +93,9 @@ nv_registry_get_handle_flags(NVRegistry *self, NVHandle handle)
   NVHandleDesc *stored;
 
   if (G_UNLIKELY(!handle))
+    return 0;
+
+  if (G_UNLIKELY(handle - 1 >= self->names->len))
     return 0;
 
   stored = &nvhandle_desc_array_index(self->names, handle - 1);
@@ -324,6 +336,12 @@ nv_table_is_handle_static(NVTable *self, NVHandle handle)
   return (handle <= self->num_static_entries);
 }
 
+static inline gboolean
+nv_table_is_index_full(NVTable *self)
+{
+  return self->index_size >= G_MAXUINT16;
+}
+
 static inline gsize
 nv_table_get_alloc_size(gint num_static_entries, gint index_size_hint, gint init_length)
 {
@@ -359,9 +377,25 @@ nv_table_get_ofs_table_top(NVTable *self)
 }
 
 static inline gboolean
-nv_table_alloc_check(NVTable *self, gsize alloc_size)
+nv_table_alloc_check(NVTable *self, gsize alloc_size, gboolean detailed_check)
 {
-  if ((gsize)(nv_table_get_bottom(self) - nv_table_get_ofs_table_top(self)) < alloc_size)
+  if (G_LIKELY(!detailed_check))
+    return (gsize) (nv_table_get_bottom(self) - nv_table_get_ofs_table_top(self)) >= alloc_size;
+
+  gsize table_header_size = sizeof(*self);
+
+  if (self->num_static_entries > (G_MAXSIZE - table_header_size) / sizeof(self->static_entries[0]))
+    return FALSE;
+  table_header_size += self->num_static_entries * sizeof(self->static_entries[0]);
+
+  if (self->index_size > (G_MAXSIZE - table_header_size) / sizeof(NVIndexEntry))
+    return FALSE;
+  table_header_size += self->index_size * sizeof(NVIndexEntry);
+
+  if (self->size < table_header_size || self->used > self->size - table_header_size)
+    return FALSE;
+
+  if (self->size - table_header_size - self->used < alloc_size)
     return FALSE;
   return TRUE;
 }

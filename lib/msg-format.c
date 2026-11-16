@@ -28,7 +28,6 @@
 #include "plugin-types.h"
 #include "find-crlf.h"
 #include "scratch-buffers.h"
-#include "utf8utils.h"
 #include "hostname.h"
 
 static gsize
@@ -43,8 +42,8 @@ static void
 msg_format_inject_parse_error(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length,
                               gint problem_position)
 {
-  GString *buf = scratch_buffers_alloc();
-
+  ScratchBuffersMarker marker;
+  GString *buf = scratch_buffers_alloc_and_mark(&marker);
 
   /* overwrite the message as if it was coming from syslog-ng */
   log_msg_clear(msg);
@@ -67,6 +66,8 @@ msg_format_inject_parse_error(MsgFormatOptions *options, LogMessage *msg, const 
   log_msg_set_value(msg, LM_V_PROGRAM, "syslog-ng", 9);
   g_string_printf(buf, "%d", (int) getpid());
   log_msg_set_value(msg, LM_V_PID, buf->str, buf->len);
+
+  scratch_buffers_reclaim_marked(marker);
 
   msg->flags |= LF_LOCAL;
   msg->pri = LOG_SYSLOG | LOG_ERR;
@@ -131,12 +132,7 @@ msg_format_process_message(MsgFormatOptions *options, LogMessage *msg,
         {
           if (!g_utf8_validate((gchar *) data, length, NULL))
             {
-              gchar buf[SANITIZE_UTF8_BUFFER_SIZE(length)];
-              gsize sanitized_length;
-              optimized_sanitize_utf8_to_escaped_binary(data, length, &sanitized_length, buf, sizeof(buf));
-              log_msg_set_value(msg, LM_V_MESSAGE, buf, _rstripped_message_length((guchar *) buf, sanitized_length));
-              log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
-              msg->flags |= LF_UTF8;
+              log_msg_set_sanitized_utf8_value(msg, data, length);
               return TRUE;
             }
           else
@@ -256,6 +252,7 @@ msg_format_options_defaults(MsgFormatOptions *options)
   options->sdata_param_value_max = 65535;
   options->sdata_prefix = NULL;
   options->sdata_prefix_len = 0;
+  options->reject_dynamic_nv_names = FALSE;
 }
 
 /* NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy */
@@ -285,6 +282,7 @@ msg_format_options_init(MsgFormatOptions *options, GlobalConfig *cfg)
     options->sdata_prefix = g_strdup(logmsg_sd_prefix);
   options->sdata_prefix_len = strlen(options->sdata_prefix);
   options->use_fqdn = cfg->host_resolve_options.use_fqdn;
+  options->reject_dynamic_nv_names = cfg->dynamic_nv_name_overflow == DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE;
   options->initialized = TRUE;
 }
 
@@ -299,6 +297,7 @@ msg_format_options_copy(MsgFormatOptions *options, const MsgFormatOptions *sourc
   options->recv_time_zone = g_strdup(source->recv_time_zone);
   options->sdata_param_value_max = source->sdata_param_value_max;
   options->sdata_prefix = g_strdup(source->sdata_prefix);
+  options->reject_dynamic_nv_names = source->reject_dynamic_nv_names;
 }
 
 void
@@ -343,6 +342,7 @@ CfgFlagHandler msg_format_flag_handlers[] =
   { "piggyback-errors",           CFH_SET, offsetof(MsgFormatOptions, flags), LP_PIGGYBACK_ERRORS },
   { "no-piggyback-errors",      CFH_CLEAR, offsetof(MsgFormatOptions, flags), LP_PIGGYBACK_ERRORS },
   { "check-program",              CFH_SET, offsetof(MsgFormatOptions, flags), LP_CHECK_PROGRAM },
+  { "no-parse-program",           CFH_SET, offsetof(MsgFormatOptions, flags), LP_NO_PARSE_PROGRAM },
   { NULL },
 };
 

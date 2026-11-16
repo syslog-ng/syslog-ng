@@ -44,6 +44,9 @@ static CfgLexerKeyword cloud_auth_keywords[] =
   { "azure",                         KW_AZURE },
   { "app_id",                        KW_APP_ID },
   { "app_secret",                    KW_APP_SECRET },
+  { "cert",                          KW_CERT },
+  { "private_key",                   KW_PRIVATE_KEY },
+  { "private_key_passphrase",        KW_PRIVATE_KEY_PASSPHRASE },
   { "monitor",                       KW_MONITOR },
   { "tenant_id",                     KW_TENANT_ID },
 
@@ -51,6 +54,8 @@ static CfgLexerKeyword cloud_auth_keywords[] =
   { "auth_method",                   KW_AUTH_METHOD },
   {   "basic",                       KW_BASIC },
   {   "post_body",                   KW_POST_BODY },
+  {   "private_key_jwt",             KW_PRIVATE_KEY_JWT },
+  // cert, private_key and private_key_passphrase are reused from Azure
   { "authorization_details",         KW_AUTHORIZATION_DETAILS },
   { "client_id",                     KW_CLIENT_ID },
   { "client_secret",                 KW_CLIENT_SECRET },

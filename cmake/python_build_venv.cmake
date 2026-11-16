@@ -20,7 +20,7 @@ add_custom_command(
     COMMAND /bin/sh -c "\
             if [ \"${PYTHON_PACKAGES_INSTALL}\" = \"venv\" ]; then \
                 '${PROJECT_SOURCE_DIR}/scripts/build-python-venv.sh' '${PYTHON_EXECUTABLE}' '${PROJECT_BINARY_DIR}/venv' '${PROJECT_SOURCE_DIR}'; \
-            fi; \
+            fi && \
             touch '${PYTHON_VENV_TOUCHFILE}'"
     VERBATIM
 )

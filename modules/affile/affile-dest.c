@@ -273,7 +273,7 @@ affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
               gpointer result = main_loop_call((MainLoopTaskFunc) affile_dw_reopen, (gpointer) self, TRUE);
               FileOpenerResult success = GPOINTER_TO_INT(result);
               logrotate_options->pending = ((FileOpenerResult) success != FILE_OPENER_RESULT_SUCCESS);
-              return success;
+              return (success == FILE_OPENER_RESULT_SUCCESS);
             }
           else
             {

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2016 Balabit
  *
  * This library is free software; you can redistribute it and/or
@@ -422,6 +423,47 @@ Test(log_message, test_sdata_sanitization)
   msg = log_msg_new_empty();
   log_msg_set_value_by_name(msg, ".SDATA.fo@o[0].bar", "value", -1);
   assert_sdata_value_equals(msg, "[fo@o%5B0%5D bar=\"value\"]");
+  log_msg_unref(msg);
+}
+
+Test(log_message, test_sdata_array_grown_on_a_cow_clone_has_a_zeroed_tail)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  /* fill the first 8 slots, so the clone has to allocate a bigger array */
+  for (gint i = 0; i < 8; i++)
+    {
+      gchar name[32];
+
+      g_snprintf(name, sizeof(name), ".SDATA.foo.bar%d", i);
+      log_msg_set_value_by_name(msg, name, "value", -1);
+    }
+  cr_assert_eq(msg->num_sdata, 8);
+  cr_assert_eq(msg->alloc_sdata, 8);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  LogMessage *cloned = log_msg_clone_cow(msg, &path_options);
+
+  log_msg_set_value_by_name(cloned, ".SDATA.foo.bar8", "value", -1);
+  cr_assert_eq(cloned->num_sdata, 9);
+  cr_assert_gt(cloned->alloc_sdata, cloned->num_sdata);
+  for (gint i = cloned->num_sdata; i < cloned->alloc_sdata; i++)
+    cr_assert_eq(cloned->sdata[i], 0, "sdata slot %d not cleared", i);
+
+  log_msg_unref(cloned);
+  log_msg_unref(msg);
+}
+
+Test(log_message, test_sdata_prefix_without_an_element_name_is_not_sdata)
+{
+  cr_assert(log_msg_is_handle_sdata(log_msg_get_value_handle(".SDATA.foo.bar")));
+  cr_assert(log_msg_is_handle_sdata(log_msg_get_value_handle(".SDATA.x")));
+  cr_assert_not(log_msg_is_handle_sdata(log_msg_get_value_handle(".SDATA.")));
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar", "value", -1);
+  log_msg_set_value_by_name(msg, ".SDATA.", "value", -1);
+  assert_sdata_value_equals(msg, "[foo bar=\"value\"]");
   log_msg_unref(msg);
 }
 
@@ -945,5 +987,40 @@ Test(log_message, test_cow_unset_value)
                    log_msg_get_value_by_name(orig_msg, "orig_name", NULL), "orig_value");
 
   log_msg_unref(orig_msg);
+  log_msg_unref(msg);
+}
+
+/* GHSA-6gw8-4855-pm4c: once the payload's dynamic index is full, the retry
+ * loop in log_msg_set_value_with_type() must not mistake that for a
+ * byte-space shortage and keep calling nv_table_realloc() up to
+ * NV_TABLE_MAX_BYTES before giving up. */
+Test(log_message, test_set_value_rejects_new_field_once_index_is_full_without_growing_payload_to_max)
+{
+  LogMessage *msg = log_msg_new_empty();
+  NVHandle handle;
+  gchar name[16];
+  gint i;
+  guint32 size_before_overflow;
+
+  /* fill the message's dynamic index to its cap */
+  for (i = 0; i < G_MAXUINT16; i++)
+    {
+      g_snprintf(name, sizeof(name), "f%06d", i);
+      handle = log_msg_get_value_handle(name);
+      log_msg_set_value(msg, handle, "v", -1);
+    }
+  cr_assert_eq((guint) msg->payload->index_size, (guint) G_MAXUINT16);
+
+  size_before_overflow = msg->payload->size;
+
+  /* one more distinct dynamic field must be rejected, without ballooning the payload */
+  handle = log_msg_get_value_handle("overflow-field");
+  log_msg_set_value(msg, handle, "x", -1);
+
+  cr_assert_null(log_msg_get_value_if_set(msg, handle, NULL),
+                 "the overflow field must not have been stored");
+  cr_assert_eq(msg->payload->size, size_before_overflow,
+               "payload must not grow when rejected due to a full index, not a byte-space shortage");
+
   log_msg_unref(msg);
 }

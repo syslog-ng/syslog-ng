@@ -9,7 +9,8 @@ modules_diskq_tests_TESTS = \
   modules/diskq/tests/test_reliable_backlog \
   modules/diskq/tests/test_qdisk \
   modules/diskq/tests/test_logqueue_disk \
-  modules/diskq/tests/test_diskq_counters
+  modules/diskq/tests/test_diskq_counters \
+  modules/diskq/tests/test_diskq_release
 
 check_PROGRAMS += ${modules_diskq_tests_TESTS}
 
@@ -62,4 +63,11 @@ modules_diskq_tests_test_diskq_counters_LDFLAGS = $(DISKQ_TEST_LD_FLAGS)
 modules_diskq_tests_test_diskq_counters_LDADD = $(DISKQ_TEST_LD_ADD)
 modules_diskq_tests_test_diskq_counters_SOURCES = \
 	modules/diskq/tests/test_diskq_counters.c \
+	modules/diskq/tests/test_diskq_tools.h
+
+modules_diskq_tests_test_diskq_release_CFLAGS = $(DISKQ_TEST_C_FLAGS)
+modules_diskq_tests_test_diskq_release_LDFLAGS = $(DISKQ_TEST_LD_FLAGS)
+modules_diskq_tests_test_diskq_release_LDADD = $(DISKQ_TEST_LD_ADD)
+modules_diskq_tests_test_diskq_release_SOURCES = \
+	modules/diskq/tests/test_diskq_release.c \
 	modules/diskq/tests/test_diskq_tools.h

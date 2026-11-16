@@ -21,7 +21,7 @@
 #############################################################################
 
 from kubernetes.client.rest import ApiException
-from syslogng import Logger, LogParser
+from syslogng import LogParser
 import kubernetes
 import logging
 

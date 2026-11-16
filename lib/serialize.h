@@ -225,6 +225,10 @@ serialize_read_string(SerializeArchive *archive, GString *str)
 
   if (serialize_read_uint32(archive, &len))
     {
+      /* len + 1 would wrap to 0 below, turning the realloc() into a free() */
+      if (len == G_MAXUINT32)
+        return FALSE;
+
       if (len > str->allocated_len)
         {
           gchar *p;
@@ -235,6 +239,7 @@ serialize_read_string(SerializeArchive *archive, GString *str)
           str->str = p;
           str->str[len] = 0;
           str->len = len;
+          str->allocated_len = len + 1;
         }
       else
         g_string_set_size(str, len);
