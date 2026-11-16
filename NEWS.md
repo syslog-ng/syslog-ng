@@ -1,183 +1,322 @@
-4.12.0
+4.13.0
 ======
 
 syslog-ng provides [RPM](https://github.com/syslog-ng/syslog-ng#rhel) and [DEB](https://github.com/syslog-ng/syslog-ng#debianubuntu) package repositories for Ubuntu, Debian, and RHEL, for both amd64 and arm64 architectures.
 
-We also provide ready-to-test binaries in [Docker containers](https://hub.docker.com/r/balabit/syslog-ng/tags) based on the current stable Debian image.
+We also provide ready-to-test binaries in [Docker containers](https://hub.docker.com/u/balabit) based on the current stable Debian, and AlmaLinux 9 images.
 
 For more details, visit our [Documentation Center](https://syslog-ng.github.io/)
 
 ## Highlights
 
-* `parallelize()`: Added `batch-size()` option
+  * `format-json`: Added the `--order` option to `$(format-json)` and `$(format-flat-json)` to control the order of
+    the emitted keys. It accepts `descending` (the unchanged default), `ascending`, and `as-written`, the latter
+    keeping the keys in their first-seen order instead of sorting them. A name that occurs more than once keeps its
+    first position under `as-written` and takes its last value under every order.
+    ([#5736](https://github.com/syslog-ng/syslog-ng/pull/5736))
 
-  `batch-size()` defines how many consecutive messages each input thread assigns to a single `parallelize()` worker.\
-  This preserves ordering for those messages on the output side and can also improve the performance of `parallelize()`.
-  ([#5654](https://github.com/syslog-ng/syslog-ng/pull/5654))
+  * `cloudwatchlogshlc`: Added CloudWatch Logs HLC destination
 
-* `docker`: Added an Alma Linux docker image with the RPM based installation of syslog-ng. See [installation from Docker image](https://github.com/syslog-ng/syslog-ng#installation-from-docker-image) for details.
-  ([#5705](https://github.com/syslog-ng/syslog-ng/pull/5705))
+    New SCL destination that sends logs to the AWS CloudWatch Logs HTTP Log Collector (HLC)
+    endpoint using bearer token authentication. No AWS SDK dependency required.
+    ([#5738](https://github.com/syslog-ng/syslog-ng/pull/5738))
 
-* `docker`: Docker images are now rebuilt weekly to include the latest security patches from the base image.
-  ([#5665](https://github.com/syslog-ng/syslog-ng/pull/5665))
+  * `cloud-auth`: Azure authentication now supports PEM RSA certificate credentials through `cert()` and `private-key()`,
+    with an optional `private-key-passphrase()` for encrypted keys, as an alternative to `app-secret()`.
+    Upload the matching public certificate to the Entra app registration; the private key remains on the syslog-ng host.
 
-* `packaging`: Added Ubuntu Resolute based install packages. See [supported distributions](https://github.com/syslog-ng/syslog-ng#supported-distributions) for details.
-  ([#5695](https://github.com/syslog-ng/syslog-ng/pull/5695))
+    The generic `oauth2()` authenticator gained the same capability through `auth-method(private-key-jwt)` together
+    with `cert()`, `private-key()` and the optional `private-key-passphrase()` options. The client authenticates with an
+    RFC 7523 JWT bearer client assertion signed by the private key instead of `client-secret()`.
+    ([#5845](https://github.com/syslog-ng/syslog-ng/pull/5845))
 
 ## Features
 
-* `afuser`: add escaping() option to usertty() output
+  * `tls`: `trusted-keys()` accepts SHA-256 fingerprints (`"SHA256:AA:BB:..."`) next to the existing SHA-1 ones.
+    ([#5811](https://github.com/syslog-ng/syslog-ng/pull/5811))
 
-  The usertty() destination now supports an escaping() option, using the same
-  template escaping behavior as templates.
-  ([#5713](https://github.com/syslog-ng/syslog-ng/pull/5713))
+  * `logthrdest`: Exponential reconnect backoff with jitter is opt-in via a positive `time-reopen-max()`;
+    when unset or zero, reconnects retain the fixed `time-reopen()` delay.
+    With backoff enabled, delays range from half the capped exponential delay (rounded down, at least one second)
+    to that delay, inclusive, so even the first retry can be shorter than `time-reopen()`.
+    The cap is applied before jitter and may be smaller than `time-reopen()`; exponential growth stops after ten doublings.
+    ([#5778](https://github.com/syslog-ng/syslog-ng/pull/5778))
 
-* `scl`: make syslogconf awk converter installation optional
+  * `http`: `response-body-action()` classifies a 2xx response by its body
 
-  Add build options for both CMake and autotools to optionally omit
-  installation of `scl/syslogconf/convert-syslogconf.awk`.
+    For APIs that report a failure with a 2xx status code and the error in the response body, for
+    example `200 {"Status": "Fail"}`: `"regexp" => success|retry|drop|disconnect` pairs, matched in
+    order against the response body when the status code means success.
 
-  The converter remains installed by default, preserving existing
-  behavior for current users.
-  ([#5702](https://github.com/syslog-ng/syslog-ng/pull/5702))
+    The patterns are PCRE2 regular expressions compiled with default options: use the inline modifier
+    `(?i)` for case-insensitive matching, for example `"(?i)status.*fail" => retry`. The first 64 KiB
+    of the body are matched (only captured when the option is configured); a longer body is truncated
+    and a debug message says so.
+    ([#5803](https://github.com/syslog-ng/syslog-ng/pull/5803))
 
-* `secure-logging`: add configure switch and disable by default
+  * `cfg`, `logmsg`: Added the `store-debug-macros()` global option to control storing the `TRANSPORT` and `MSGFORMAT`
+    macros in messages.
+    ([#5781](https://github.com/syslog-ng/syslog-ng/pull/5781))
 
-  The secure logging (slog) module and its command line tools
-  (slogkey, slogencrypt, slogverify) are now build-conditional and
-  disabled by default. Enable them with the `--enable-slog` /
-  `--disable-slog` autotools switches, or with `-DENABLE_SLOG=ON` /
-  `-DENABLE_SLOG=OFF` when building with CMake. The official DEB
-  and RPM packages no longer ship slog; it can be re-enabled by
-  building with the `sng-slog` Debian build profile or with
-  `--with slog` on RPM.
-  ([#5709](https://github.com/syslog-ng/syslog-ng/pull/5709))
+  * `options`: Added the `stack-alloc-limit()` global option. It lets users opt back into a faster,
+    stack-based allocation for internal buffers whose size is derived from a configurable option (such as
+    `log-msg-size()`), for buffers up to the configured limit. Defaults to `0`, meaning always use the heap;
+    only raise this after validating your deployment's actual thread stack size, see the admin guide for the
+    trade-offs.
+    ([GHSA-v8gx-qpvj-wqr7](https://github.com/syslog-ng/syslog-ng/commit/38f6c8c4f9a5d9946f2dab28bd89346b42f958ca))
 
-* `journald-source`: add `read_old_on_error()` option to control where to continue after a position restore attempt failure
-  ([#5648](https://github.com/syslog-ng/syslog-ng/pull/5648))
+  * `network`, `syslog`: `extended-key-usage-verify()` in source `tls()` options
 
-* `timeutils`: accept "UTC" in `date-parser()`'s `%z` / `%Z` format strings.
-  ([#5637](https://github.com/syslog-ng/syslog-ng/pull/5637))
+    `extended-key-usage-verify()` can now be used in the `tls()` options of sources too, to require
+    the `clientAuth` extended key usage on client certificates (it was destination-only).
+    ([#5804](https://github.com/syslog-ng/syslog-ng/pull/5804))
+
+  * mod-python: replace `Logger` class with internal log handler
+
+    Previous `Logger` python class is replaced with internal messages handler, which is installed
+    into logging pipeline, allowing python modules to log messages via default logging facilities.
+    Also, `TRACE` log level is now explicitly exported and could be used with `log()` methods or `trace()`
+    call directly.
+    ([#5526](https://github.com/syslog-ng/syslog-ng/pull/5526))
+
+  * `http`: relax the worker-partition-key() requirement for message-independent URL templates
+
+    The partition-key guard previously fired for any URL containing a `$` sign, even when
+    the template was effectively constant (e.g. `$(url-encode literal)` after SCL backtick
+    substitution). The check now uses a post-compile predicate that walks the template AST
+    and only requires `worker-partition-key()` if the URL is genuinely message-dependent.
+    ([#5740](https://github.com/syslog-ng/syslog-ng/pull/5740))
+
+  * `logmsg`: Added dynamic name-value registry controls.
+
+    New `dynamic-nv-name-limit()` and `dynamic-nv-name-overflow()` global options limit new dynamic field names.
+    The current registry size is exposed through `logmsg_nv_registry_size` and `logmsg_dynamic_nv_registry_size` stats counters.
+    ([GHSA-ch7v-cjmh-j4g2](https://github.com/syslog-ng/syslog-ng/commit/f853f8c77d5ada877f7507a669a29cec689b90b8))
+
+  * `disk-buffer`: Reliable disk-queues now quarantine themselves after repeatedly crashing while
+    processing the same unacked record. If the same read position survives 3 restarts in a row without
+    being acked, the queue file is renamed to `.corrupted` and a fresh one is started, the same way an
+    already-corrupted file is handled, instead of replaying the same poison record forever.
+    ([#5793](https://github.com/syslog-ng/syslog-ng/pull/5793))
+
+  * `disk-buffer`: added the `remove-if-empty()` option, which removes a queue file and its persist entry when the
+    destination that owns it is torn down by `time-reap()` and the queue holds no messages. It defaults to `no`, and it is
+    meant for templated destinations whose expansions never come back, such as a path built from a receive-time date macro,
+    where every date roll would otherwise leave queue files behind permanently.
+    ([#5749](https://github.com/syslog-ng/syslog-ng/pull/5749))
+
+  * `file()`, `wildcard-file()`: Added support for skipping existing content with `read-old-records(no)` when no persisted
+    position exists, while preserving saved positions and the skipped EOF across restarts.
+    For `wildcard-file()`, this applies only to files found during source initialization; files discovered later are read
+    from the beginning unless a persisted position exists.
+    ([#5818](https://github.com/syslog-ng/syslog-ng/pull/5818))
+
+  * `tls`: `pkcs12-file()` now supports password-protected PKCS#12 files. Like for `key-file()`, the password is
+    added with `syslog-ng-ctl credentials add --id=<pkcs12-file path> --secret=<password>`; the source starts
+    once it is available.
+    ([#5810](https://github.com/syslog-ng/syslog-ng/pull/5810))
+
+## Security Fixes
+
+  * `logmsg`: Fixed unbounded dynamic name-value pair registration.
+    The global registry now limits new dynamic field names from untrusted input.
+    ([GHSA-ch7v-cjmh-j4g2](https://github.com/syslog-ng/syslog-ng/commit/f853f8c77d5ada877f7507a669a29cec689b90b8))
+
+    CVE requested, identifier pending.
+
+  * `logproto`: Fixed a potential crash when a source has `encoding()` set and `log-msg-size()` is configured large
+    enough to overflow the io-worker thread's stack. The raw, pre-conversion read buffer used to be allocated
+    directly on the stack, sized from `log-msg-size()` with no upper bound, regardless of the actual message
+    content; it is now allocated on the heap instead, growing on demand and reused for the lifetime of the
+    connection.
+    ([GHSA-v8gx-qpvj-wqr7](https://github.com/syslog-ng/syslog-ng/commit/38f6c8c4f9a5d9946f2dab28bd89346b42f958ca))
+
+    CVE requested, identifier pending.
+
+  * `tls`: Fixed certificate hostname verification accepting names with an embedded NUL byte.
+    A certificate subjectAltName or common name such as `good.example.com\0.evil.example.net`
+    was compared as a C string and matched only the part before the NUL, letting a certificate
+    issued for a different name pass the configured hostname check.
+    ([GHSA-gx8q-j4c3-prc2](https://github.com/syslog-ng/syslog-ng/commit/1e335ad7782b58243fe8ca59b5baa5fc353ee10b))
+
+    CVE requested, identifier pending.
 
 ## Bugfixes
 
-* `CVE-2026-39879`: fixed a possible SQL injection in syslog-ng SQL destionation driver
+  * `snmp`: Fixed a crash while parsing the configuration when `trap_obj()` had a very long type.
+    ([#5809](https://github.com/syslog-ng/syslog-ng/pull/5809))
 
-  Due to a missing sanitization call in afsql_dd_run_query, an SQL injection from an untrusted source might be possible. This is not part of the default configuration, the SQL driver has to be manually configured.
-  ([#5696](https://github.com/syslog-ng/syslog-ng/pull/5696))
 
-* `afsql`: fix segfault after database error
-  ([#5696](https://github.com/syslog-ng/syslog-ng/pull/5696))
+  * `diskq`: Validate disk-queue records before deserializing NVTable data.
+    ([#5770](https://github.com/syslog-ng/syslog-ng/pull/5770))
 
-* `java/hdfs`: fix unreleased lock in `send()` when file open fails
+  * `system-source`: Fixed parsing of FreeBSD kernel messages from `system()`.
 
-  If `getHdfsFile()` returned `null`, the lock acquired at the start of
-  `send()` was never released, causing a permanent deadlock on all
-  subsequent calls.
-  ([#5707](https://github.com/syslog-ng/syslog-ng/pull/5707))
+    Kernel messages with colons in their payload no longer lose their prefix during parsing.
+    ([#5782](https://github.com/syslog-ng/syslog-ng/pull/5782))
 
-* `stats-aggregator`: Fix use-after-free when an orphaned aggregator's timer fires after the aggregator is freed
-  ([#5712](https://github.com/syslog-ng/syslog-ng/pull/5712))
+  * `logmsg`: Fixed a crash when deserializing a corrupted or tampered disk-buffer record whose
+    structured-data handle did not correspond to any registered name, a potential heap buffer
+    overflow when such a record's `sdata` entry count exceeded its declared allocation, and
+    uninitialized NV handles left behind by the post-deserialization handle fixup for entries
+    it could not resolve.
+    ([#5791](https://github.com/syslog-ng/syslog-ng/pull/5791))
 
-* `stats-exporter()`: fixed the content-length value in the response header
-  ([#5662](https://github.com/syslog-ng/syslog-ng/pull/5662))
+  * `logmsg`: Fixed `$SDATA` rendering a bogus `[none]` element when a value named exactly `.SDATA.` was set, and
+    avoided an unneeded payload copy or growth when a shared message is modified.
+    ([#5807](https://github.com/syslog-ng/syslog-ng/pull/5807))
 
-* `filter-blank`: Fix race condition when evaluating from multiple threads
+  * `transport`: Fixed a PROXY protocol v2 length check that could abort syslog-ng when the
+    header length exactly matched the staging buffer size. The request is now rejected cleanly
+    instead of tripping the internal assertion.
+    ([#5780](https://github.com/syslog-ng/syslog-ng/pull/5780))
 
-  The per-evaluation result was stored in a shared struct field, so
-  concurrent worker threads could read each other's intermediate state,
-  causing `blank()`/`not blank()` to return incorrect results.
-  ([#5700](https://github.com/syslog-ng/syslog-ng/pull/5700))
+  * `logmatcher`: fix named capture groups numbered 128 and above being captured incorrectly
 
-* `correlation`: fix radix parser end-of-input handling
+    The PCRE named-group number was decoded through a signed character, so any named capture
+    group whose number had its low byte >= 0x80 (128, 255, ...) sign-extended into a negative
+    ovector index, producing an incorrect or garbage captured value. The decode is now unsigned.
+    ([#5787](https://github.com/syslog-ng/syslog-ng/pull/5787))
 
-  Fixes two related radix matcher edge cases at end of input.
+  * `format-json`: Fixed nested `$(format-json)` so a key is no longer placed inside an object whose name is only a
+    string prefix of it, for example `hostname` is no longer absorbed into a `host.*` object.
+    ([#5736](https://github.com/syslog-ng/syslog-ng/pull/5736))
 
-  Parser scans now stop before '\0' to avoid reading past end-of-input and to keep captured lengths correct.
-  Parser-node traversal now continues with empty remaining input, so OPTIONALSET children can still match.
-  ([#5690](https://github.com/syslog-ng/syslog-ng/pull/5690))
+  * `grpc`: Fixed RSS leak on config reload in the BigQuery, ClickHouse, Loki,
+    OpenTelemetry, and Pub/Sub destinations.
+    ([#5756](https://github.com/syslog-ng/syslog-ng/pull/5756))
 
-* `ivykis`: frequent SIGABRT on FreeBSD
+  * `tls`: Fix loading password-protected `pkcs12-file()` bundles without a MAC on older OpenSSL versions.
 
-  Fixed a [FreeBSD-specific issue](https://github.com/syslog-ng/syslog-ng/issues/4049) in our ivykys internal fork. ([#5690](https://github.com/syslog-ng/syslog-ng/pull/5690))
+    The credential-store password now works for these bundles with OpenSSL 1.1.1 and 3.0 as well as newer
+    OpenSSL 3.x and 4.x releases. Existing MACs are still verified, and the original bundle is not modified.
+    ([#5819](https://github.com/syslog-ng/syslog-ng/pull/5819))
 
-  NOTE: the fix has not yet been merged into the upstream ivykis repository, so it is currently available only in builds using the syslog-ng internal ivykis fork (`--with-ivykis=internal` or `-DIVYKIS_SOURCE=internal`). This includes our official DEB and RPM packages, as well as Docker images.
-  If you are building syslog-ng from source with an external ivykis library, you will need to apply the patch manually until it is merged upstream.
+  * `crypto`: Fixed intermittent crashes during OpenSSL thread cleanup when syslog-ng shut down or restarted.
+    ([#5775](https://github.com/syslog-ng/syslog-ng/pull/5775))
 
-* `pdbtool`: use fixed ISO-8601 timestamp format in patternize progress messages
+  * `file()`, `wildcard-file()`: Fixed missed appended records when automatic or legacy follow-method selection uses inotify,
+    and an abort when automatic following probes a file that does not yet exist.
+    ([#5818](https://github.com/syslog-ng/syslog-ng/pull/5818))
 
-  Patternize progress lines now use `YYYY-MM-DDTHH:MM:SS.UUUUUU` formatting instead of
-  `ctime()` output, making them consistent with other syslog-ng message timestamps.
-  This also avoids relying on `ctime()` in this path, reducing possible multithreading issues.
-  ([#5697](https://github.com/syslog-ng/syslog-ng/pull/5697))
+  * `syslogformat`: Fixed a heap over-read when parsing digit-only syslog input.
 
-* `cfg`, `tls`: respect `perm()` when writing security-sensitive files
+    This prevents an out-of-bounds read in the framing check for malformed
+    octet-counted messages.
+    ([#5779](https://github.com/syslog-ng/syslog-ng/pull/5779))
 
-  The `--preprocess-into` config dump and the `tls(keylog-file())` output
-  are now created via a new `file_perm_options_fopen()` helper that
-  honours the global `perm()`/`owner()`/`group()` options with a `0600`
-  floor. Previously both files inherited the process umask (typically
-  `0644`); depending on the enclosing directory's permissions, this
-  could leave config secrets and TLS session keys readable to other
-  local users on the host.
+  * `regexp-parser`: Fixed a double free after a regular expression compilation failure.
+    ([#5769](https://github.com/syslog-ng/syslog-ng/pull/5769))
 
-  Note for admins: the helper opens these two files with `O_NOFOLLOW`,
-  so if the target path is a symlink at the final component the open
-  will now fail with `ELOOP` instead of writing through the link.
-  Replace any such symlinks with the real destination path.
-  ([#5701](https://github.com/syslog-ng/syslog-ng/pull/5701))
+  * `file()`, `wildcard-file()`: Fixed undetected file replacement or truncation when using
+    `follow-method(system-poll)`. Previously the reader kept watching the stale, deleted
+    inode instead of following the newly created file.
+    ([#5827](https://github.com/syslog-ng/syslog-ng/pull/5827))
 
-* `secure-logging`: new implementation of the pseudo-random function
+  * `java`: Due to a known JVM dlopen/dlclose limitation, `java` module has been disabled in the
+    official binaries. The module is still available to compile.
+    ([#5783](https://github.com/syslog-ng/syslog-ng/pull/5783))
 
-  The previous implementation allowed an attacker to distinguish between
-  the pseudo-random function (PRF) and a real random function by supplying
-  specially crafted inputs to it. This leads to a predictable way of how
-  the PRF is generating output which should not by allowed by a good PRF.
-  The new implementation provides a variable input length and
-  constant output length PRF based on AES CMAC for key derivation using
-  the current key Ki, i.e. a key expansion of Ki using multiple iterations
-  is performed.
-  ([#5614](https://github.com/syslog-ng/syslog-ng/pull/5614))
+  * `transport`: Fixed a PROXY protocol header announcing an IPv6 (TCP6) address that could abort
+    syslog-ng when built without IPv6 support. The connection is now kept alive using the real
+    endpoint address, logging a warning instead.
+    ([#5790](https://github.com/syslog-ng/syslog-ng/pull/5790))
 
-* `http`: fixed a crash when syslog-ng built with http compression disabled
-  ([#5648](https://github.com/syslog-ng/syslog-ng/pull/5648))
+  * `graylog2()`, `$(format-gelf)`: Fixed sending only a NUL byte for messages with a non-numeric PID.
 
-* `cfg-parser`: let the user adjust the parser stack size
-  ([#5639](https://github.com/syslog-ng/syslog-ng/pull/5639))
+    The `_pid` field was cast with `int()`, which fails on a PID such as `worker-3`, so the whole JSON
+    object was dropped. `_pid` is now only sent when the PID is plain decimal digits; otherwise it is
+    left out and the message is sent.
+    ([#5798](https://github.com/syslog-ng/syslog-ng/pull/5798))
 
-* `tls-verifier`: fix leak in tls_verify_certificate_name
-  ([#5635](https://github.com/syslog-ng/syslog-ng/pull/5635))
+  * `template`: Fixed correlation context references with more than one digit (`${MACRO}@10` and above), which
+    pointed to the wrong context element.
+    ([#5806](https://github.com/syslog-ng/syslog-ng/pull/5806))
 
-* `tls-verifier`: fix leak in tls_wildcard_match
-  ([#5630](https://github.com/syslog-ng/syslog-ng/pull/5630))
+  * `disk-buffer`: fixed a file descriptor leak in the disk-buffer file allocator. Every disk-buffer file created leaked
+    one descriptor on the spool directory's lock file for the lifetime of the process, so a configuration with
+    high-cardinality templated destinations could exhaust the process descriptor limit. Present since 4.2.0.
+    ([#5762](https://github.com/syslog-ng/syslog-ng/pull/5762))
 
-* `afsql`: fix missing break in LM_VT_BOOLEAN case causing fallthrough to LM_VT_NULL
-  ([#5626](https://github.com/syslog-ng/syslog-ng/pull/5626))
+  * `network-dest`, `syslog-dest`: Fixed switching a UDP destination between `network()` and `syslog()` not taking
+    effect on reload. Previously the old message format was kept until syslog-ng was fully restarted.
+    ([#5784](https://github.com/syslog-ng/syslog-ng/pull/5784))
 
-* `tls`: add NULL check after SSL_new() in tls_context_setup_session
-  ([#5621](https://github.com/syslog-ng/syslog-ng/pull/5621))
+  * `logmsg`: Fixed a `guint16` wraparound in the per-message NVTable dynamic field index. A single
+    message carrying 65536 or more distinct dynamic fields (via SDATA, key-value, or JSON parsing)
+    could silently lose all of its previously parsed fields once the counter wrapped back to zero.
+    The index is now capped instead of wrapping.
+    ([#5792](https://github.com/syslog-ng/syslog-ng/pull/5792))
 
-## Notes to developers
+  * `graylog2()`, `$(format-gelf)`: Fixed sending only a NUL byte when `frac-digits()` is set.
 
-* debun: fix possible hung issues related to syslog-ng-ctl
-  ([#5680](https://github.com/syslog-ng/syslog-ng/pull/5680))
-* tests: all remained old style functional tests are converted to light functional tests, the old style functional test folder is removed completely
-  ([#5673](https://github.com/syslog-ng/syslog-ng/pull/5673))
-* grpc: the minimum required C++ standard is now C++20 on some platforms, so the configuration flows trying to detect and use C++20 support. If C++20 is not available, the build will fall back to C++17 as before, but the build can fail depending on the platform and compiler versions.
-  ([#5711](https://github.com/syslog-ng/syslog-ng/pull/5711))
-* criterion: fixed criterion tests on macOS, do not use ParameterizedTests on that platform due to a known issue with the test framework.
-  ([#5689](https://github.com/syslog-ng/syslog-ng/pull/5689))
+    The GELF `timestamp` field was cast with `int64()`, which fails on a fractional `${R_UNIXTIME}`, so
+    the whole JSON object was dropped and only the terminating NUL byte was sent to Graylog.
+    The timestamp is now emitted as a JSON number as-is, keeping sub-second precision as GELF allows.
+    ([#5797](https://github.com/syslog-ng/syslog-ng/pull/5797))
 
-## Other changes
+  * `logmatcher`: fix memory leaks in glob and PCRE matchers
 
-* `stats-exporter()`: applied changes arte:
-  - any internal request or response processing errors which cannot be responded with a valid HTTP response, will now log the error and close the connection
-  - the SCL module single-instance() option is synced correctly with the stats-exporter module's single-instance() option, so the default value must be `yes` in every case
-  - the response content-type is set according to the requested stat-format()
-  - added an internal chunked response solution, so large responses should not cause stalls anymore
-  - set the default scrape-freq-limit() to 15
+    Fix a `GPatternSpec` leak when the glob matcher is recompiled, a NULL dereference
+    in `glob_free()` when compile was never called, and two PCRE leaks: `pcre2_code`
+    not freed on recompile, and `nv_prefix` not freed on destroy.
+    ([#5761](https://github.com/syslog-ng/syslog-ng/pull/5761))
 
-  ([#5662](https://github.com/syslog-ng/syslog-ng/pull/5662))
+  * `kafka`: fix several source driver bugs
+
+    Fix a crash when the configured `topic()` is empty, propagate persist-state init failures, plug leaks of the
+    `rd_kafka_conf_t` and topic-partition list, and correct `logging()` option value matching.
+    ([#5732](https://github.com/syslog-ng/syslog-ng/pull/5732))
+
+  * `logwriter`: Fixed a reconnect hang that could occur when a reopen was deferred while the writer's I/O job was
+    still in flight, leaving the writer with no proto and nothing to wake it up again. Also fixed a related issue
+    where a stale reopen timer could outlive a subsequently installed valid connection and trigger a spurious,
+    duplicate reconnect.
+    ([#5763](https://github.com/syslog-ng/syslog-ng/pull/5763))
+
+  * `logproto`: Fixed a `guint32` wraparound in the RFC6587 octet-counting ("framed" transport)
+    frame-length parser. A declared frame length of 4294967296 or higher was silently reduced
+    modulo 2^32 instead of being rejected, letting a single oversized frame be reinterpreted as
+    multiple, differently-bounded messages.
+    ([#5794](https://github.com/syslog-ng/syslog-ng/pull/5794))
+
+  * `http`: Fixed a bug where a message retried after a critical header callback failure was appended to the
+    already-finished request body. All per-request state is now reset before returning on such errors.
+    ([#5777](https://github.com/syslog-ng/syslog-ng/pull/5777))
+
+  * `geoip2`: Fixed incomplete geodata extraction when the first value is a preferred-language name or an empty container.
+
+    The entry walker now produces its own status on every successful path and preserves errors from skipped subtrees.
+    Traversal errors are logged without rejecting the original message.
+    ([#5814](https://github.com/syslog-ng/syslog-ng/pull/5814))
+
+  * `logmsg`: Fixed a potential heap corruption when deserializing a corrupted or tampered
+    disk-buffer record whose tag-name length field was `0xFFFFFFFF`. This value could free an
+    internal thread-local scratch buffer without invalidating it, corrupting state relied upon
+    by later records processed by the same thread. Also fixed a related bookkeeping
+    inconsistency left behind after reallocating that buffer, and a scratch-buffer resource
+    leak on the rejected-input path.
+    ([#5795](https://github.com/syslog-ng/syslog-ng/pull/5795))
+
+  * `syslog-format`: Fixed a potential crash when parsing an invalid UTF-8 message with `flags(sanitize-utf8)` enabled.
+    The sanitizer used to allocate a stack buffer sized directly from the (sender-controlled) message length; it now uses a bounded, pooled buffer regardless of message size.
+    ([#5786](https://github.com/syslog-ng/syslog-ng/pull/5786))
+
+  * `network-source`, `syslog-source`: Fixed a reload leaving already-open TCP connections on the
+    stale wire protocol when switching between `network()` and `syslog()` (or any other
+    transport/logproto change) on the same source.
+
+    Kept-alive connections are now compared against the new configuration's protocol and
+    transport name; a mismatching connection is discarded on reload instead of being silently
+    reused with the old framing, and its list node is now properly freed instead of leaked.
+    ([#5785](https://github.com/syslog-ng/syslog-ng/pull/5785))
+
+  * `cryptofuncs`, `sql()`: Fixed `$(md5)` and `$(md4)` template functions, and the Oracle index name
+    generation of `sql()`, on OpenSSL 3 systems running in FIPS mode. They now fetch these digests
+    explicitly as non-security hashes, and no longer use an uninitialized buffer when the digest is not
+    available. Template functions return an empty value and log an error if the digest computation fails;
+    unavailable digest types are reported when the configuration is loaded.
+    ([#5802](https://github.com/syslog-ng/syslog-ng/pull/5802))
 
 ## Credits
 
@@ -190,6 +329,8 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Airbus Commercial Aircraft, Hofi, Bálint Horváth, Kevin Mainardis,
-OvO, Tamas Pal, Romain Tartière, Alex Tristor, László Várady,
-Alexander Yurkov, Akos Zalavary
+0443n, Mark Atwood, C3B2W23, Andras Elso,
+Hofi, Bálint Horváth, Mike Kazantsev, Peter Krawczyk,
+Andras Lang, Nancy Laurenda, Chen Lu, Fairuzan Roslan,
+Balazs Scheidler, Josef Schlehofer, Anton Skorup,
+Balazs Szucs, Uli Westhoff, Akos Zalavary

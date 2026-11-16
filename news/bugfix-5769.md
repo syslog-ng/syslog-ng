@@ -1,1 +1,0 @@
-`regexp-parser`: Fixed a double free after a regular expression compilation failure.
