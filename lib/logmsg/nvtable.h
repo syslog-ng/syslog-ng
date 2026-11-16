@@ -26,6 +26,7 @@
 #define PAYLOAD_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "atomic-gssize.h"
 #include "nvhandle-descriptors.h"
 
 typedef struct _NVTable NVTable;
@@ -64,6 +65,12 @@ struct _NVRegistry
   NVHandleDescArray *names;
   GHashTable *name_map;
   guint32 nvhandle_max_value;
+  guint dynamic_name_limit;
+  guint dynamic_name_count;
+  atomic_gssize num_registered_names;
+  atomic_gssize num_registered_dynamic_names;
+  gboolean hard_limit_reached_reported;
+  gboolean dynamic_limit_reached_reported;
 };
 
 extern const gchar *null_string;
@@ -73,9 +80,11 @@ void nv_registry_add_predefined(NVRegistry *self, NVHandle handle, const gchar *
 void nv_registry_assert_next_handle(NVRegistry *self, NVHandle handle);
 NVHandle nv_registry_get_handle(NVRegistry *self, const gchar *name);
 NVHandle nv_registry_alloc_handle(NVRegistry *self, const gchar *name);
+NVHandle nv_registry_alloc_dynamic_handle(NVRegistry *self, const gchar *name);
+void nv_registry_set_dynamic_name_limit(NVRegistry *self, guint limit);
 void nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags);
 void nv_registry_foreach(NVRegistry *self, GHFunc callback, gpointer user_data);
-NVRegistry *nv_registry_new(const gchar **static_names, guint32 nvhandle_max_value);
+NVRegistry *nv_registry_new(const gchar **static_names);
 void nv_registry_free(NVRegistry *self);
 
 static inline guint16

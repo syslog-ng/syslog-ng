@@ -3,6 +3,7 @@ lib_tests_TESTS		= \
 	lib/tests/test_lexer_block	\
 	lib/tests/test_cfg_tree		\
 	lib/tests/test_cfg_helpers	\
+	lib/tests/test_dynamic_nv_config \
 	lib/tests/test_parse_number	\
 	lib/tests/test_generic_number	\
 	lib/tests/test_reloc		\
@@ -69,6 +70,11 @@ lib_tests_test_cfg_tree_LDADD		=	\
 lib_tests_test_cfg_helpers_CFLAGS		=	\
 	$(TEST_CFLAGS)
 lib_tests_test_cfg_helpers_LDADD		=	\
+	$(TEST_LDADD)
+
+lib_tests_test_dynamic_nv_config_CFLAGS = \
+	$(TEST_CFLAGS)
+lib_tests_test_dynamic_nv_config_LDADD = \
 	$(TEST_LDADD)
 
 

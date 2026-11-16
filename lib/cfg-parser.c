@@ -154,6 +154,8 @@ static CfgLexerKeyword main_keywords[] =
   { "log_fetch_retry_delay", KW_LOG_FETCH_RETRY_DELAY },
   { "log_iw_size",        KW_LOG_IW_SIZE },
   { "log_msg_size",       KW_LOG_MSG_SIZE },
+  { "dynamic_nv_name_limit", KW_DYNAMIC_NV_NAME_LIMIT },
+  { "dynamic_nv_name_overflow", KW_DYNAMIC_NV_NAME_OVERFLOW },
   { "trim_large_messages", KW_TRIM_LARGE_MESSAGES },
   { "stack_alloc_limit",  KW_STACK_ALLOC_LIMIT },
   { "store_debug_macros",  KW_STORE_DEBUG_MACROS },

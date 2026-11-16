@@ -28,6 +28,7 @@
 #include "cfg.h"
 #include "syslog-format.h"
 #include "logmsg/logmsg.h"
+#include "logmsg/nvtable.h"
 #include "msg-format.h"
 #include "scratch-buffers.h"
 
@@ -400,6 +401,24 @@ Test(syslog_format, test_sdata_simple_id_and_param)
   assert_log_message_value_by_name(msg, "SDATA", "[foo bar=\"baz\"]");
   assert_log_message_value_by_name(msg, ".SDATA.foo.bar", "baz");
   log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_name_limit_drop)
+{
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_DROP;
+  log_msg_registry_set_dynamic_name_limit(0);
+
+  cr_assert(_extract_sdata_into_message("[foo bar=\"baz\"]", NULL));
+  log_msg_registry_set_dynamic_name_limit(DYNAMIC_NV_NAME_LIMIT_DEFAULT);
+}
+
+Test(syslog_format, test_sdata_name_limit_reject_message)
+{
+  cfg->dynamic_nv_name_overflow = DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE;
+  log_msg_registry_set_dynamic_name_limit(0);
+
+  cr_assert_not(_extract_sdata_into_message("[foo bar=\"baz\"]", NULL));
+  log_msg_registry_set_dynamic_name_limit(DYNAMIC_NV_NAME_LIMIT_DEFAULT);
 }
 
 Test(syslog_format, test_sdata_invalid_sd_id_and_param)

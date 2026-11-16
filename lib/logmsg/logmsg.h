@@ -347,6 +347,7 @@ gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
 
 /* generic values that encapsulate log message fields, dynamic values and structured data */
 NVHandle log_msg_get_value_handle(const gchar *value_name);
+NVHandle log_msg_get_dynamic_value_handle(const gchar *value_name);
 gboolean log_msg_is_value_name_valid(const gchar *value);
 const gchar *log_msg_get_handle_name(NVHandle handle, gssize *length);
 
@@ -528,6 +529,22 @@ log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *valu
   log_msg_set_value_by_name_with_type(self, name, value, length, LM_VT_STRING);
 }
 
+static inline gboolean
+log_msg_set_value_by_dynamic_name_with_type(LogMessage *self,
+                                            const gchar *name, const gchar *value, gssize length,
+                                            LogMessageValueType type)
+{
+  NVHandle handle = log_msg_get_dynamic_value_handle(name);
+  log_msg_set_value_with_type(self, handle, value, length, type);
+  return handle != LM_V_NONE;
+}
+
+static inline gboolean
+log_msg_set_value_by_dynamic_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
+{
+  return log_msg_set_value_by_dynamic_name_with_type(self, name, value, length, LM_VT_STRING);
+}
+
 static inline void
 log_msg_set_value_to_string(LogMessage *self, NVHandle handle, const gchar *literal_string)
 {
@@ -589,6 +606,7 @@ void log_msg_refcache_stop(void);
 
 void log_msg_registry_init(void);
 void log_msg_registry_deinit(void);
+void log_msg_registry_set_dynamic_name_limit(guint limit);
 void log_msg_global_init(void);
 void log_msg_global_deinit(void);
 void log_msg_stats_global_init(void);

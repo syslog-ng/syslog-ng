@@ -118,11 +118,10 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   kv_scanner_input(&kv_scanner, input);
   while (kv_scanner_scan_next(&kv_scanner))
     {
-
       /* FIXME: value length */
-      log_msg_set_value_by_name(*pmsg,
-                                _get_formatted_key(self, kv_scanner_get_current_key(&kv_scanner), formatted_key),
-                                kv_scanner_get_current_value(&kv_scanner), -1);
+      log_msg_set_value_by_dynamic_name(*pmsg,
+                                        _get_formatted_key(self, kv_scanner_get_current_key(&kv_scanner), formatted_key),
+                                        kv_scanner_get_current_value(&kv_scanner), -1);
     }
   if (self->stray_words_value_name)
     log_msg_set_value_by_name(*pmsg,

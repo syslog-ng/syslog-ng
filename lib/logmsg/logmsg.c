@@ -417,19 +417,32 @@ log_msg_update_num_matches(LogMessage *self, NVHandle handle)
     }
 }
 
+static inline void
+_set_value_handle_flags_from_name(const gchar *value_name, NVHandle handle)
+{
+  /* check if name starts with sd_prefix and has at least one additional character */
+  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[logmsg_sd_prefix_len])
+    {
+      nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
+    }
+}
+
 NVHandle
 log_msg_get_value_handle(const gchar *value_name)
 {
   NVHandle handle;
 
   handle = nv_registry_alloc_handle(logmsg_registry, value_name);
+  _set_value_handle_flags_from_name(value_name, handle);
 
-  /* check if name starts with sd_prefix and has at least one additional character */
-  if (strncmp(value_name, logmsg_sd_prefix, logmsg_sd_prefix_len) == 0 && value_name[logmsg_sd_prefix_len])
-    {
-      nv_registry_set_handle_flags(logmsg_registry, handle, LM_VF_SDATA);
-    }
+  return handle;
+}
 
+NVHandle
+log_msg_get_dynamic_value_handle(const gchar *value_name)
+{
+  NVHandle handle = nv_registry_alloc_dynamic_handle(logmsg_registry, value_name);
+  _set_value_handle_flags_from_name(value_name, handle);
   return handle;
 }
 
@@ -2089,7 +2102,7 @@ log_msg_registry_init(void)
 {
   gint i;
 
-  logmsg_registry = nv_registry_new(builtin_value_names, NVHANDLE_MAX_VALUE);
+  logmsg_registry = nv_registry_new(builtin_value_names);
   nv_registry_add_alias(logmsg_registry, LM_V_MESSAGE, "MSG");
   nv_registry_add_alias(logmsg_registry, LM_V_MESSAGE, "MSGONLY");
   nv_registry_add_alias(logmsg_registry, LM_V_HOST, "FULLHOST");
@@ -2134,6 +2147,12 @@ log_msg_registry_deinit(void)
 }
 
 void
+log_msg_registry_set_dynamic_name_limit(guint limit)
+{
+  nv_registry_set_dynamic_name_limit(logmsg_registry, limit);
+}
+
+void
 log_msg_registry_foreach(GHFunc func, gpointer user_data)
 {
   nv_registry_foreach(logmsg_registry, func, user_data);
@@ -2156,6 +2175,15 @@ log_msg_register_stats(void)
   stats_cluster_single_key_set(&sc_key, "events_allocated_bytes", NULL, 0);
   stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "msg_allocated_bytes", NULL);
   stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
+
+  stats_cluster_single_key_set(&sc_key, "logmsg_nv_registry_size", NULL, 0);
+  stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "logmsg_nv_registry_size", NULL);
+  stats_register_external_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &logmsg_registry->num_registered_names);
+
+  stats_cluster_single_key_set(&sc_key, "logmsg_dynamic_nv_registry_size", NULL, 0);
+  stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "logmsg_dynamic_nv_registry_size", NULL);
+  stats_register_external_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE,
+                                  &logmsg_registry->num_registered_dynamic_names);
   stats_unlock();
 }
 

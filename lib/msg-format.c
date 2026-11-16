@@ -252,6 +252,7 @@ msg_format_options_defaults(MsgFormatOptions *options)
   options->sdata_param_value_max = 65535;
   options->sdata_prefix = NULL;
   options->sdata_prefix_len = 0;
+  options->reject_dynamic_nv_names = FALSE;
 }
 
 /* NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy */
@@ -281,6 +282,7 @@ msg_format_options_init(MsgFormatOptions *options, GlobalConfig *cfg)
     options->sdata_prefix = g_strdup(logmsg_sd_prefix);
   options->sdata_prefix_len = strlen(options->sdata_prefix);
   options->use_fqdn = cfg->host_resolve_options.use_fqdn;
+  options->reject_dynamic_nv_names = cfg->dynamic_nv_name_overflow == DYNAMIC_NV_NAME_OVERFLOW_REJECT_MESSAGE;
   options->initialized = TRUE;
 }
 
@@ -295,6 +297,7 @@ msg_format_options_copy(MsgFormatOptions *options, const MsgFormatOptions *sourc
   options->recv_time_zone = g_strdup(source->recv_time_zone);
   options->sdata_param_value_max = source->sdata_param_value_max;
   options->sdata_prefix = g_strdup(source->sdata_prefix);
+  options->reject_dynamic_nv_names = source->reject_dynamic_nv_names;
 }
 
 void

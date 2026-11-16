@@ -27,7 +27,10 @@
 
 #include "logmsg/nvtable.h"
 #include "apphook.h"
+#include "libtest/grab-logging.h"
 #include "logmsg/logmsg.h"
+#include "stats/stats-cluster-single.h"
+#include "stats/stats-registry.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -38,6 +41,25 @@
 #define STATIC_NAME   "VAL1"
 #define DYN_HANDLE 17
 #define DYN_NAME "VAL17"
+
+static guint
+count_grabbed_log_occurrences(const gchar *pattern)
+{
+  GString *log_buffer = g_string_sized_new(1024);
+  const gchar *cursor;
+  guint count = 0;
+
+  format_grabbed_messages(log_buffer);
+  cursor = log_buffer->str;
+  while ((cursor = strstr(cursor, pattern)) != NULL)
+    {
+      count++;
+      cursor += strlen(pattern);
+    }
+  g_string_free(log_buffer, TRUE);
+
+  return count;
+}
 
 void
 assert_nvtable(NVTable *tab, NVHandle handle, gchar *expected_value, gssize expected_length)
@@ -81,7 +103,8 @@ Test(nvtable, test_nv_registry)
   gssize len;
   const gchar *builtins[] = { "BUILTIN1", "BUILTIN2", "BUILTIN3", NULL };
 
-  reg = nv_registry_new(builtins, TEST_NVHANDLE_MAX_VALUE);
+  reg = nv_registry_new(builtins);
+  reg->nvhandle_max_value = TEST_NVHANDLE_MAX_VALUE;
 
   for (i = 0; builtins[i]; i++)
     {
@@ -92,7 +115,11 @@ Test(nvtable, test_nv_registry)
       cr_assert_eq(strlen(name), len);
     }
 
-  for (i = 4; i < TEST_NVHANDLE_MAX_VALUE + 1; i++)
+  handle = nv_registry_alloc_dynamic_handle(reg, "DYNAMIC");
+  cr_assert_eq(handle, 4);
+  cr_assert_eq(nv_registry_alloc_handle(reg, "DYNAMIC"), handle);
+
+  for (i = 5; i < TEST_NVHANDLE_MAX_VALUE + 1; i++)
     {
       gchar dyn_name[16];
 
@@ -116,7 +143,7 @@ Test(nvtable, test_nv_registry)
       g_assert(handle == prev_handle);
     }
 
-  for (i = TEST_NVHANDLE_MAX_VALUE; i >= 4; i--)
+  for (i = TEST_NVHANDLE_MAX_VALUE; i >= 5; i--)
     {
       gchar dyn_name[16];
 
@@ -137,6 +164,126 @@ Test(nvtable, test_nv_registry)
 
   handle = nv_registry_alloc_handle(reg, "too-many-values");
   cr_assert_eq(handle, 0);
+
+  nv_registry_free(reg);
+}
+
+Test(nvtable, test_dynamic_nv_registry_limit)
+{
+  NVRegistry *reg;
+  const gchar *builtins[] = { "BUILTIN1", "BUILTIN2", "BUILTIN3", NULL };
+  NVHandle first_dynamic_handle;
+  NVHandle trusted_handle;
+
+  reg = nv_registry_new(builtins);
+  reg->nvhandle_max_value = TEST_NVHANDLE_MAX_VALUE;
+
+  /* Reject all new dynamic names when the limit is zero. */
+  nv_registry_set_dynamic_name_limit(reg, 0);
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC0"), 0);
+
+  /* Existing trusted names do not consume the dynamic-name budget. */
+  nv_registry_set_dynamic_name_limit(reg, 2);
+  trusted_handle = nv_registry_alloc_handle(reg, "TRUSTED");
+  cr_assert_neq(trusted_handle, 0);
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "TRUSTED"), trusted_handle);
+
+  /* Reject new dynamic names after reaching the configured limit. */
+  first_dynamic_handle = nv_registry_alloc_dynamic_handle(reg, "DYNAMIC1");
+  cr_assert_neq(first_dynamic_handle, 0);
+  cr_assert_neq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC2"), 0);
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC3"), 0);
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC4"), 0);
+
+  /* Registered dynamic names and trusted names remain usable after exhaustion. */
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC1"), first_dynamic_handle);
+  cr_assert_neq(nv_registry_alloc_handle(reg, "TRUSTED_AFTER_LIMIT"), 0);
+
+  /* Raising and lowering the limit affects only future dynamic names. */
+  nv_registry_set_dynamic_name_limit(reg, 3);
+  cr_assert_neq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC5"), 0);
+  nv_registry_set_dynamic_name_limit(reg, 1);
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC6"), 0);
+
+  nv_registry_free(reg);
+
+  reg = nv_registry_new(builtins);
+  reg->nvhandle_max_value = 4;
+
+  /* The absolute NVHandle limit takes precedence over the dynamic limit. */
+  nv_registry_set_dynamic_name_limit(reg, 2);
+  cr_assert_neq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC1"), 0);
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC2"), 0);
+
+  nv_registry_free(reg);
+}
+
+Test(nvtable, test_dynamic_nv_registry_limit_warning_is_emitted_once)
+{
+  NVRegistry *reg;
+  const gchar *builtins[] = { NULL };
+  const gchar *warning = "Dynamic name-value pair limit reached";
+
+  start_grabbing_messages();
+
+  reg = nv_registry_new(builtins);
+  nv_registry_set_dynamic_name_limit(reg, 0);
+
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC0"), 0);
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC1"), 0);
+
+  cr_assert_eq(count_grabbed_log_occurrences(warning), 1);
+
+  nv_registry_free(reg);
+  stop_grabbing_messages();
+  reset_grabbed_messages();
+}
+
+Test(nvtable, test_nv_registry_size_stats_track_allocated_names)
+{
+  NVRegistry *reg;
+  StatsCounterItem *num_registered_names;
+  StatsCounterItem *num_registered_dynamic_names;
+  const gchar *builtins[] = { "BUILTIN1", NULL };
+
+  reg = nv_registry_new(builtins);
+
+  stats_lock();
+  {
+    StatsClusterKey sc_key;
+
+    stats_cluster_single_key_set(&sc_key, "test_logmsg_nv_registry_size", NULL, 0);
+    StatsCluster *sc = stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE,
+                                                       &reg->num_registered_names);
+    num_registered_names = stats_cluster_get_counter(sc, SC_TYPE_SINGLE_VALUE);
+
+    stats_cluster_single_key_set(&sc_key, "test_logmsg_dynamic_nv_registry_size", NULL, 0);
+    sc = stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE,
+                                         &reg->num_registered_dynamic_names);
+    num_registered_dynamic_names = stats_cluster_get_counter(sc, SC_TYPE_SINGLE_VALUE);
+  }
+  stats_unlock();
+
+  /* Construction publishes the initial registry size through stats counters. */
+  cr_assert_eq(stats_counter_get(num_registered_names), 1);
+  cr_assert_eq(stats_counter_get(num_registered_dynamic_names), 0);
+
+  /* Trusted names grow only the total registry size. */
+  cr_assert_neq(nv_registry_alloc_handle(reg, "TRUSTED"), 0);
+  cr_assert_eq(stats_counter_get(num_registered_names), 2);
+  cr_assert_eq(stats_counter_get(num_registered_dynamic_names), 0);
+
+  /* Dynamic names grow both total and dynamic registry sizes. */
+  cr_assert_neq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC"), 0);
+  cr_assert_eq(stats_counter_get(num_registered_names), 3);
+  cr_assert_eq(stats_counter_get(num_registered_dynamic_names), 1);
+
+  /* Existing names and rejected names do not change allocation counters. */
+  nv_registry_set_dynamic_name_limit(reg, 1);
+  cr_assert_neq(nv_registry_alloc_dynamic_handle(reg, "DYNAMIC"), 0);
+  cr_assert_eq(nv_registry_alloc_dynamic_handle(reg, "REJECTED"), 0);
+  cr_assert_eq(stats_counter_get(num_registered_names), 3);
+  cr_assert_eq(stats_counter_get(num_registered_dynamic_names), 1);
 
   nv_registry_free(reg);
 }
@@ -1202,7 +1349,7 @@ Test(nvtable, test_index_size_is_capped_instead_of_wrapping)
   const gchar *value;
   const gchar *builtins[] = { NULL };
 
-  reg = nv_registry_new(builtins, 100000);
+  reg = nv_registry_new(builtins);
 
   /* sentinel stored first, must stay reachable after the index fills up */
   sentinel_handle = nv_registry_alloc_handle(reg, "sentinel");
