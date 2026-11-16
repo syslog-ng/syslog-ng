@@ -1,0 +1,1 @@
+`afsql`: Fixed SQL statements containing quotes or backslashes being corrupted before execution.
