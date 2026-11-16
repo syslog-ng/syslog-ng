@@ -204,6 +204,9 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
                   const guchar *dnsname = ASN1_STRING_get0_data(gen_name->d.dNSName);
                   guint dnsname_len = ASN1_STRING_length(gen_name->d.dNSName);
 
+                  /* we have found a DNS name as alternative subject name */
+                  found = TRUE;
+
                   if (dnsname_len > sizeof(pattern_buf) - 1)
                     {
                       /* skip this oversized SAN entry, but keep checking the rest */
@@ -219,8 +222,6 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
 
                   memcpy(pattern_buf, dnsname, dnsname_len);
                   pattern_buf[dnsname_len] = 0;
-                  /* we have found a DNS name as alternative subject name */
-                  found = TRUE;
                   result = tls_wildcard_match(host_name, pattern_buf);
                 }
               else if (gen_name->type == GEN_IPADD)

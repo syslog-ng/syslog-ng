@@ -106,6 +106,17 @@ Test(tls_wildcard, test_case_insensivity)
                TRUE);
 }
 
+static void
+_add_dns_name(GENERAL_NAMES *alt_names, const guchar *dns_name, gint dns_name_len)
+{
+  GENERAL_NAME *gen_name = GENERAL_NAME_new();
+  ASN1_IA5STRING *dns = ASN1_IA5STRING_new();
+
+  cr_assert(ASN1_STRING_set(dns, dns_name, dns_name_len));
+  GENERAL_NAME_set0_value(gen_name, GEN_DNS, dns);
+  cr_assert(sk_GENERAL_NAME_push(alt_names, gen_name));
+}
+
 static X509 *
 _create_cert(const guchar *cn, gint cn_len, const guchar *san_dns, gint san_dns_len)
 {
@@ -118,12 +129,8 @@ _create_cert(const guchar *cn, gint cn_len, const guchar *san_dns, gint san_dns_
   if (san_dns)
     {
       GENERAL_NAMES *alt_names = sk_GENERAL_NAME_new_null();
-      GENERAL_NAME *gen_name = GENERAL_NAME_new();
-      ASN1_IA5STRING *dns = ASN1_IA5STRING_new();
 
-      cr_assert(ASN1_STRING_set(dns, san_dns, san_dns_len));
-      GENERAL_NAME_set0_value(gen_name, GEN_DNS, dns);
-      sk_GENERAL_NAME_push(alt_names, gen_name);
+      _add_dns_name(alt_names, san_dns, san_dns_len);
       cr_assert(X509_add1_ext_i2d(cert, NID_subject_alt_name, alt_names, 0, X509V3_ADD_DEFAULT));
       GENERAL_NAMES_free(alt_names);
     }
@@ -165,5 +172,46 @@ Test(tls_verify_certificate_name, test_subject_alt_name_with_embedded_nul_does_n
   X509 *cert = _create_cert((const guchar *) "ignored", -1, nul_name, sizeof(nul_name) - 1);
 
   cr_assert_not(tls_verify_certificate_name(cert, "good.example.com"));
+  X509_free(cert);
+}
+
+Test(tls_verify_certificate_name, test_subject_alt_name_takes_precedence_over_matching_common_name)
+{
+  X509 *cert = _create_cert((const guchar *) "good.example.com", -1,
+                            (const guchar *) "other.example.com", sizeof("other.example.com") - 1);
+
+  cr_assert_not(tls_verify_certificate_name(cert, "good.example.com"));
+  X509_free(cert);
+}
+
+Test(tls_verify_certificate_name, test_subject_alt_name_with_embedded_nul_does_not_fall_back_to_common_name)
+{
+  X509 *cert = _create_cert((const guchar *) "good.example.com", -1, nul_name, sizeof(nul_name) - 1);
+
+  cr_assert_not(tls_verify_certificate_name(cert, "good.example.com"));
+  X509_free(cert);
+}
+
+Test(tls_verify_certificate_name, test_oversized_subject_alt_name_does_not_fall_back_to_common_name)
+{
+  guchar oversized_name[256];
+  memset(oversized_name, 'a', sizeof(oversized_name));
+  X509 *cert = _create_cert((const guchar *) "good.example.com", -1, oversized_name, sizeof(oversized_name));
+
+  cr_assert_not(tls_verify_certificate_name(cert, "good.example.com"));
+  X509_free(cert);
+}
+
+Test(tls_verify_certificate_name, test_valid_subject_alt_name_after_embedded_nul_still_matches)
+{
+  X509 *cert = _create_cert((const guchar *) "ignored", -1, nul_name, sizeof(nul_name) - 1);
+  GENERAL_NAMES *alt_names = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
+  cr_assert_not_null(alt_names);
+
+  _add_dns_name(alt_names, (const guchar *) "good.example.com", sizeof("good.example.com") - 1);
+  cr_assert(X509_add1_ext_i2d(cert, NID_subject_alt_name, alt_names, 0, X509V3_ADD_REPLACE));
+  GENERAL_NAMES_free(alt_names);
+
+  cr_assert(tls_verify_certificate_name(cert, "good.example.com"));
   X509_free(cert);
 }
