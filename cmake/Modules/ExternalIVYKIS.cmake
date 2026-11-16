@@ -27,7 +27,7 @@
 #
 set(LIB_NAME "IVYKIS")
 
-if(EXISTS ${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
+if(EXISTS "${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in")
   IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     set(INTERNAL_IVYKIS_DEBUG_FLAGS "-g -O0")
   ENDIF()
@@ -36,14 +36,14 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
     ${LIB_NAME}
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
     INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/ivykis/
+    SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/ivykis/"
 
     DOWNLOAD_COMMAND echo
     BUILD_COMMAND
     COMMAND /bin/sh -vc "CFLAGS='-fPIC ${CMAKE_C_FLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' ${CMAKE_MAKE_PROGRAM}"
     INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install
     CONFIGURE_COMMAND
-    COMMAND /bin/sh -vc "autoreconf -i ${PROJECT_SOURCE_DIR}/lib/ivykis && CFLAGS='-fPIC ${CMAKE_C_FLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' ${PROJECT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/ --disable-shared --enable-static"
+    COMMAND /bin/sh -vc "autoreconf -i \"<SOURCE_DIR>\" && CFLAGS='-fPIC ${CMAKE_C_FLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' \"<SOURCE_DIR>/configure\" --prefix=\"<INSTALL_DIR>\" --disable-shared --enable-static"
   )
 
   set(${LIB_NAME}_INTERNAL TRUE)
@@ -51,6 +51,19 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
   set(${LIB_NAME}_INTERNAL_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/lib/libivykis.a" CACHE STRING "${LIB_NAME} library path")
   set(SYSLOG_NG_HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION 1 PARENT_SCOPE)
 
+elseif(IVYKIS_SOURCE STREQUAL "internal")
+  if(EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    message(FATAL_ERROR
+      "Internal ivykis sources were not found in lib/ivykis. "
+      "Initialize the submodule with 'git submodule update --init lib/ivykis' or enable GIT_SUBMODULE."
+    )
+  else()
+    message(FATAL_ERROR
+      "Internal ivykis sources were not found in lib/ivykis. "
+      "This source tree is not a Git checkout, so ivykis cannot be downloaded as a submodule. "
+      "Use a Git checkout or a release tarball containing the ivykis sources."
+    )
+  endif()
 else()
   set(${LIB_NAME}_INTERNAL FALSE)
 endif()

@@ -61,7 +61,8 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/.git")
         endif()
 
         if("${_path}" MATCHES "ivykis$")
-          if(NOT "${IVYKIS_SOURCE}" STREQUAL "internal" AND NOT("${IVYKIS_SOURCE}" MATCHES "^(auto|AUTO)$"))
+          if(DEFINED IVYKIS_SOURCE AND NOT "${IVYKIS_SOURCE}" STREQUAL "internal"
+             AND NOT("${IVYKIS_SOURCE}" MATCHES "^(auto|AUTO)$"))
             message(STATUS "Skipping ivykis submodule initialization as IVYKIS_SOURCE is set to '${IVYKIS_SOURCE}'")
             continue()
           endif()
