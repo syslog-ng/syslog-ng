@@ -22,9 +22,28 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
 
 #include "response-handler.h"
+#include "pcre-match-limits.h"
+#include "apphook.h"
 #include <string.h>
+
+static void
+setup_limit_test(void)
+{
+  app_startup();
+  start_grabbing_messages();
+  pcre_match_limits_reset_log_rate_limit();
+}
+
+static void
+teardown_limit_test(void)
+{
+  stop_grabbing_messages();
+  reset_grabbed_messages();
+  app_shutdown();
+}
 
 Test(response_handlers, test_response_handlers)
 {
@@ -116,6 +135,23 @@ Test(response_body_handlers, test_match_is_limited_to_the_given_length)
   const gchar *body = "{\"ok\": true} error";
   cr_assert_null(http_response_body_handlers_lookup(self, body, 12));
   cr_assert_not_null(http_response_body_handlers_lookup(self, body, strlen(body)));
+
+  http_response_body_handlers_free(self);
+}
+
+Test(response_body_handlers, test_match_limit_hit_counts_as_no_match_and_is_reported,
+     .init = setup_limit_test, .fini = teardown_limit_test)
+{
+  HttpResponseBodyHandlers *self = http_response_body_handlers_new();
+
+  cr_assert(http_response_body_handlers_append(self, "(a+)+$", http_result_retry, NULL));
+
+  /* 40 'a' and a 'b' take far more than the limit of steps to fail */
+  const gchar *body = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab";
+  cr_assert_null(http_response_body_handlers_lookup(self, body, strlen(body)));
+  assert_grabbed_log_contains("regexp='(a+)+$'");
+  assert_grabbed_log_contains("subject_length='41'");
+  cr_assert_not(find_grabbed_message(body));
 
   http_response_body_handlers_free(self);
 }

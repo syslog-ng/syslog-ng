@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2008-2016 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -23,12 +24,14 @@
 #include <criterion/criterion.h>
 #include "libtest/msg_parse_lib.h"
 #include "libtest/cr_template.h"
+#include "libtest/grab-logging.h"
 
 #include "logmatcher.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"
 #include "scratch-buffers.h"
+#include "pcre-match-limits.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -665,4 +668,66 @@ Test(matcher, test_replace_works_correctly_if_input_is_a_match_value_that_gets_t
   log_template_unref(replace_template);
   log_matcher_unref(m);
   log_msg_unref(msg);
+}
+
+static gsize
+_count_grabbed_messages(const gchar *needle)
+{
+  GString *all = g_string_new("");
+  gsize count = 0;
+
+  format_grabbed_messages(all);
+  for (const gchar *p = strstr(all->str, needle); p; p = strstr(p + 1, needle))
+    count++;
+  g_string_free(all, TRUE);
+  return count;
+}
+
+static void
+_test_pathological_pattern_does_not_match_and_is_reported_once(gint matcher_flags)
+{
+  /* 40 'a' and a 'b': "(a+)+$" backtracks exponentially */
+  const gchar *subject = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab";
+
+  pcre_match_limits_reset_log_rate_limit();
+  start_grabbing_messages();
+
+  testcase_match(subject, "(a+)+$", FALSE, _construct_matcher(matcher_flags, log_matcher_pcre_re_new));
+  testcase_match(subject, "(a+)+$", FALSE, _construct_matcher(matcher_flags, log_matcher_pcre_re_new));
+  testcase_match(subject, "(a+)+$", FALSE, _construct_matcher(matcher_flags, log_matcher_pcre_re_new));
+
+  /* once, naming the pattern, instead of an anonymous error for every message */
+  cr_assert_eq(_count_grabbed_messages("exceeded the match limit"), 1);
+  cr_assert_eq(_count_grabbed_messages("regexp='(a+)+$'"), 1);
+  cr_assert_eq(_count_grabbed_messages("Error while matching regexp"), 0);
+
+  stop_grabbing_messages();
+  reset_grabbed_messages();
+}
+
+Test(matcher, test_pathological_pcre_pattern_does_not_match_and_is_reported_once)
+{
+  _test_pathological_pattern_does_not_match_and_is_reported_once(0);
+}
+
+Test(matcher, test_pathological_pcre_pattern_without_jit_does_not_match_and_is_reported_once)
+{
+  _test_pathological_pattern_does_not_match_and_is_reported_once(LMF_DISABLE_JIT);
+}
+
+Test(matcher, test_pathological_pcre_pattern_in_replace_leaves_the_value_alone_and_is_reported_once)
+{
+  pcre_match_limits_reset_log_rate_limit();
+  start_grabbing_messages();
+
+  testcase_replace("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab", "(a+)+$", "x",
+                   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab",
+                   _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+
+  cr_assert_eq(_count_grabbed_messages("exceeded the match limit"), 1);
+  cr_assert_eq(_count_grabbed_messages("regexp='(a+)+$'"), 1);
+  cr_assert_eq(_count_grabbed_messages("Error while matching regexp"), 0);
+
+  stop_grabbing_messages();
+  reset_grabbed_messages();
 }
