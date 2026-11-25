@@ -382,7 +382,7 @@ nv_table_alloc_check(NVTable *self, gsize alloc_size, gboolean detailed_check)
   if (G_LIKELY(!detailed_check))
     return (gsize) (nv_table_get_bottom(self) - nv_table_get_ofs_table_top(self)) >= alloc_size;
 
-  gsize table_header_size = sizeof(*self);
+  gsize table_header_size = G_STRUCT_OFFSET(NVTable, data);
 
   if (self->num_static_entries > (G_MAXSIZE - table_header_size) / sizeof(self->static_entries[0]))
     return FALSE;
