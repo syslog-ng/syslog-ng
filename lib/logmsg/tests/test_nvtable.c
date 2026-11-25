@@ -26,6 +26,9 @@
 #include <criterion/criterion.h>
 
 #include "logmsg/nvtable.h"
+#include "logmsg/nvtable-serialize.h"
+#include "logmsg/serialization.h"
+#include "serialize.h"
 #include "apphook.h"
 #include "libtest/grab-logging.h"
 #include "logmsg/logmsg.h"
@@ -1377,6 +1380,60 @@ Test(nvtable, test_index_size_is_capped_instead_of_wrapping)
   cr_assert_eq(len, 6);
   cr_assert(strncmp(value, "gotcha", 6) == 0);
 
+  nv_table_unref(tab);
+  nv_registry_free(reg);
+}
+
+/* #5859: an NVTable packed to exactly 0 bytes free must round-trip through
+ * serialize/deserialize. */
+Test(nvtable, bug_5859_fully_packed_table_round_trip)
+{
+  const gchar *builtins[] = { NULL };
+  NVRegistry *reg = nv_registry_new(builtins);
+  NVHandle handle = nv_registry_alloc_handle(reg, "field");
+
+  NVTable *tab = nv_table_new(0, 0, 64);
+
+  gssize free_before = (gssize) (nv_table_get_bottom(tab) - nv_table_get_ofs_table_top(tab));
+  cr_assert_gt(free_before, (gssize) NV_ENTRY_DIRECT_HDR + 2, "need room for at least one entry");
+
+  const gchar *name = "f";
+  gsize name_len = strlen(name);
+  /* also accounts for the new NVIndexEntry nv_table_add_value() allocates
+   * for this dynamic handle */
+  gsize raw_size = (gsize) free_before - sizeof(NVIndexEntry);
+  cr_assert_geq(raw_size, NV_ENTRY_DIRECT_HDR + name_len + 2);
+  gsize value_len = raw_size - NV_ENTRY_DIRECT_HDR - name_len - 2;
+
+  gchar *value = g_malloc0(value_len ? value_len : 1);
+  gboolean added = nv_table_add_value(tab, handle, name, name_len, value, value_len, 0, NULL);
+  g_free(value);
+  cr_assert(added, "writer rejected a value that should exactly fill the table");
+
+  gssize free_after = (gssize) (nv_table_get_bottom(tab) - nv_table_get_ofs_table_top(tab));
+  cr_assert_eq(free_after, 0, "test setup failed to reach exactly 0 bytes free (got %ld)", (long) free_after);
+
+  GString *stream = g_string_new("");
+  SerializeArchive *write_sa = serialize_string_archive_new(stream);
+  LogMessageSerializationState write_state = { .sa = write_sa };
+  cr_assert(nv_table_serialize(&write_state, tab), "serialization of a fully packed table must succeed");
+  serialize_archive_free(write_sa);
+
+  GString read_stream = {0};
+  read_stream.str = stream->str;
+  read_stream.len = stream->len;
+  SerializeArchive *read_sa = serialize_string_archive_new(&read_stream);
+  LogMessageSerializationState read_state = { .sa = read_sa };
+  NVTable *deserialized = nv_table_deserialize(&read_state);
+  serialize_archive_free(read_sa);
+
+  cr_assert_not_null(deserialized,
+                     "BUG 5859 REPRODUCED: nv_table_deserialize() rejected a fully-packed NVTable "
+                     "that this same build's nv_table_serialize() had just written");
+
+  if (deserialized)
+    nv_table_unref(deserialized);
+  g_string_free(stream, TRUE);
   nv_table_unref(tab);
   nv_registry_free(reg);
 }
