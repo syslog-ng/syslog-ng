@@ -5,4 +5,6 @@ with `so-reuseport(yes)`; new connections only got the static window until the n
 (SIGSEGV in the dynamic window reallocation) after a reload that turned `dynamic-window-size()` on while
 connections were kept, or that changed `keep-alive(yes)` to `keep-alive(no)` with `so-reuseport(yes)`.
 Connections that the new configuration does not keep are now closed when the reload completes, instead of
-staying open but unread until the next reload.
+staying open but unread until the next reload. Fixed connections kept across a failed reload and new
+connections using separate dynamic window pools after syslog-ng reverted to the old configuration, which let
+them exceed `dynamic-window-size()` together.
