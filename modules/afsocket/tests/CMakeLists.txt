@@ -12,3 +12,8 @@ add_unit_test(CRITERION
   TARGET test-transport-mapper-unix
   DEPENDS afsocket
   SOURCES test-transport-mapper-unix.c transport-mapper-lib.c)
+
+add_unit_test(CRITERION
+  TARGET test-afsocket-source-dynamic-window-pool
+  DEPENDS afsocket
+  SOURCES test-afsocket-source-dynamic-window-pool.c)
