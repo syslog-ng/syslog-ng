@@ -199,6 +199,7 @@ modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
 modules/affile/stdout\.[ch]
 modules/afsocket/socket-options-unix\.[ch]$
+modules/afsocket/tests/test-afsocket-source-dynamic-window-pool\.c$
 modules/afstomp/tests/test_afstomp_config\.c$
 modules/basicfuncs/vp-funcs\.[ch]$
 modules/basicfuncs/tf-tag\.c$
@@ -260,6 +261,7 @@ modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
 modules/syslogformat/sdata-parser\.[ch]
 tests/light/functional_tests/config_change/test_python_custom_options\.py
+tests/light/functional_tests/source_drivers/network_source/test_dynamic_window_after_keep_alive_reload\.py
 tests/light/functional_tests/logpath/__init__.py
 tests/light/functional_tests/logpath/test_named_logpaths.py
 tests/light/functional_tests/logpath/test_named_logpaths_with_catchall_flag.py

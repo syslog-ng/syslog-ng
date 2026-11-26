@@ -9,7 +9,8 @@ TRANSPORT_MAPPER_LIB = 					\
 modules_afsocket_tests_TESTS			=		\
 	modules/afsocket/tests/test-transport-mapper		\
 	modules/afsocket/tests/test-transport-mapper-inet	\
-	modules/afsocket/tests/test-transport-mapper-unix
+	modules/afsocket/tests/test-transport-mapper-unix	\
+	modules/afsocket/tests/test-afsocket-source-dynamic-window-pool
 
 check_PROGRAMS					+=	\
 	$(modules_afsocket_tests_TESTS)
@@ -55,3 +56,16 @@ modules_afsocket_tests_test_transport_mapper_unix_LDFLAGS =	\
 modules_afsocket_tests_test_transport_mapper_unix_SOURCES = 	\
 	modules/afsocket/tests/test-transport-mapper-unix.c	\
 	$(TRANSPORT_MAPPER_LIB)
+
+modules_afsocket_tests_test_afsocket_source_dynamic_window_pool_CFLAGS = 	\
+	$(TEST_CFLAGS)								\
+	-I$(top_srcdir)/modules/afsocket
+
+modules_afsocket_tests_test_afsocket_source_dynamic_window_pool_LDADD = 	\
+	$(TEST_LDADD)
+
+modules_afsocket_tests_test_afsocket_source_dynamic_window_pool_LDFLAGS =	\
+	-dlpreopen $(top_builddir)/modules/afsocket/libafsocket.la
+
+modules_afsocket_tests_test_afsocket_source_dynamic_window_pool_SOURCES = 	\
+	modules/afsocket/tests/test-afsocket-source-dynamic-window-pool.c
