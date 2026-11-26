@@ -718,21 +718,20 @@ afsocket_sd_restore_dynamic_window_pool(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
-  DynamicWindowPool *ctr = cfg_persist_config_fetch(cfg, afsocket_sd_format_dynamic_window_pool_name(self));
-  if (ctr == NULL)
-    return FALSE;
-
-  /* See afsocket_sd_restore_kept_alive_connections() for the details why is_reloading_scheduled() is used too */
+  /* See afsocket_sd_restore_kept_alive_connections() for the details why is_reloading_scheduled() is used too.
+   *
+   * A pool that is not taken over stays in the persist config, like the connections that use it: it is
+   * released when the reload completes, or handed back to the old configuration with them if the reload
+   * is reverted. Fetching it anyway would make the old configuration create a different pool on revert,
+   * while the restored readers keep allocating from this one, so the two together exceed
+   * dynamic-window-size(). */
   if (self->connections_kept_alive_across_reloads || (FALSE == self->socket_options->so_reuseport
                                                       && is_reloading_scheduled()))
     {
-      self->dynamic_window_pool = ctr;
-      return TRUE;
+      self->dynamic_window_pool = cfg_persist_config_fetch(cfg, afsocket_sd_format_dynamic_window_pool_name(self));
+      return self->dynamic_window_pool != NULL;
     }
 
-  /* not taken over: drop our reference (connections kept from the old config hold their own),
-   * so that the caller creates a fresh pool */
-  dynamic_window_pool_unref(ctr);
   return FALSE;
 }
 

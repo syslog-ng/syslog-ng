@@ -27,6 +27,7 @@ import pytest
 from src.common.blocking import wait_until_true
 
 STATIC_WINDOW = 100  # log-iw-size(1000) / max-connections(10)
+OLD_PEER, NEW_PEER, THIRD_PEER = "127.0.0.2", "127.0.0.3", "127.0.0.4"
 
 
 def _full_windows(syslog_ng_ctl):
@@ -163,37 +164,128 @@ def test_restored_connection_joins_the_pool_of_a_reload_that_enables_dynamic_win
         old_client.close()
 
 
-def test_reverted_reload_hands_the_kept_connections_back(config, syslog_ng, syslog_ng_ctl, port_allocator):
-    # A reload to keep-alive(no) with so-reuseport(yes) does not take the old connections over. If that
-    # reload fails and syslog-ng reverts to the old configuration (keep-alive(yes)), the old connections
-    # must be restored, not closed: the failed configuration must not have taken them out of the persist
-    # config and killed them on its way out.
+def _connect_from(peer, port):
+    # full_window is labeled with the address of the peer, not with its port
+    return socket.create_connection(("127.0.0.1", port), source_address=(peer, 0))
+
+
+def _peer_full_windows(syslog_ng_ctl):
+    windows = {}
+    for line in syslog_ng_ctl.query(pattern="*full_window*")["stdout"].splitlines():
+        name, _, value = line.rpartition("=")
+        for peer in (OLD_PEER, NEW_PEER, THIRD_PEER):
+            if peer in name:
+                windows[peer] = int(value)
+    return windows
+
+
+def _wait_for_windows(syslog_ng_ctl, expected):
+    def matches():
+        windows = _peer_full_windows(syslog_ng_ctl)
+        return all(windows.get(peer) == window for peer, window in expected.items())
+
+    wait_until_true(matches)
+    assert {peer: _peer_full_windows(syslog_ng_ctl).get(peer) for peer in expected} == expected
+
+
+@pytest.mark.parametrize(
+    "old_size, new_keep_alive, so_reuseport, new_size, expected_window",
+    [
+        (10000, "no", "yes", 10000, 5100),
+        (10000, "no", "yes", 0, 5100),
+        (10000, "no", "yes", 20000, 5100),
+        (0, "no", "yes", 10000, STATIC_WINDOW),
+        (10000, "yes", "yes", 10000, 5100),
+        (10000, "yes", "no", 10000, 5100),
+    ],
+    ids=[
+        "not-taken-over", "not-taken-over-size-off", "not-taken-over-size-changed", "not-taken-over-size-on",
+        "taken-over", "taken-over-no-reuseport",
+    ],
+)
+def test_reverted_reload_hands_the_connections_back_with_their_pool(
+    config, syslog_ng, syslog_ng_ctl, port_allocator, old_size, new_keep_alive, so_reuseport, new_size, expected_window,
+):
+    # The first source of the new configuration initializes, the second one fails, and syslog-ng reverts to
+    # the old configuration (keep-alive(yes)). The old connection must be restored, not closed: the failed
+    # configuration must not take it out of the persist config and kill it on its way out. Its pool must
+    # come back with it: the reader keeps allocating from the pool it has, while new connections and the
+    # rebalancing use the pool of the driver, so two pools would let the readers exceed dynamic-window-size().
     config.update_global_options(stats_level=4)
     port, busy_port = port_allocator(), port_allocator()
-    source = config.create_network_source(**_source_options(port, "yes", "yes", 10000))
+    source = config.create_network_source(**_source_options(port, "yes", so_reuseport, old_size))
     destination = config.create_file_destination(file_name="output.log", template=r'"${MESSAGE}\n"')
     config.create_logpath(statements=[source, destination])
     syslog_ng.start(config)
 
-    old_client = socket.create_connection(("127.0.0.1", port))
+    old_client = _connect_from(OLD_PEER, port)
     blocker = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         _send(old_client, "before-reload")
         assert destination.read_log() == "before-reload\n"
+        _wait_for_windows(syslog_ng_ctl, {OLD_PEER: old_size + STATIC_WINDOW})
 
         # the new configuration fails to initialize: its second source cannot bind a port held here
+        blocker.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         blocker.bind(("127.0.0.1", busy_port))
         blocker.listen(1)
-        source.options["keep_alive"] = "no"
+        source.options["keep_alive"] = new_keep_alive
+        source.options["dynamic_window_size"] = new_size
         failing_source = config.create_network_source(ip="localhost", port=busy_port)
         config.create_logpath(statements=[failing_source, destination])
         config.write_config(syslog_ng.instance_paths.get_config_path())
         assert syslog_ng_ctl.reload()["exit_code"] != 0
         assert syslog_ng.is_process_running()
 
-        # reverted to keep-alive(yes): the old connection is still served
+        # reverted: the old connection is still served, and it shares its budget with a new one
         _send(old_client, "after-failed-reload")
         assert destination.read_log() == "after-failed-reload\n"
+
+        new_client = _connect_from(NEW_PEER, port)
+        try:
+            _send(new_client, "new-client")
+            assert destination.read_log() == "new-client\n"
+            _wait_for_windows(syslog_ng_ctl, {OLD_PEER: expected_window, NEW_PEER: expected_window})
+            assert syslog_ng.is_process_running()
+        finally:
+            new_client.close()
     finally:
         blocker.close()
+        old_client.close()
+
+
+@pytest.mark.parametrize("new_size", [10000, 0, 20000], ids=["same-size", "size-off", "size-changed"])
+def test_completed_reload_releases_the_pool_it_does_not_take_over(config, syslog_ng, syslog_ng_ctl, port_allocator, new_size):
+    # The negative twin of the reverted reload: when it completes, the old connection is closed, its pool is
+    # released with it, and the new connections share the budget of the new configuration alone.
+    config.update_global_options(stats_level=4)
+    port = port_allocator()
+    source = config.create_network_source(**_source_options(port, "yes", "yes", 10000))
+    destination = config.create_file_destination(file_name="output.log", template=r'"${MESSAGE}\n"')
+    config.create_logpath(statements=[source, destination])
+    syslog_ng.start(config)
+
+    old_client = _connect_from(OLD_PEER, port)
+    try:
+        _send(old_client, "before-reload")
+        assert destination.read_log() == "before-reload\n"
+        _wait_for_windows(syslog_ng_ctl, {OLD_PEER: 10000 + STATIC_WINDOW})
+
+        source.options["keep_alive"] = "no"
+        source.options["dynamic_window_size"] = new_size
+        syslog_ng.reload(config)
+
+        old_client.settimeout(5)
+        assert old_client.recv(1) == b""
+
+        new_client = _connect_from(NEW_PEER, port)
+        third_client = _connect_from(THIRD_PEER, port)
+        try:
+            share = new_size // 2 + STATIC_WINDOW
+            _wait_for_windows(syslog_ng_ctl, {NEW_PEER: share, THIRD_PEER: share})
+            assert syslog_ng.is_process_running()
+        finally:
+            third_client.close()
+            new_client.close()
+    finally:
         old_client.close()
