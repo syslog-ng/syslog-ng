@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2016 Balabit
  * Copyright (c) 2016 Balázs Scheidler
  *
@@ -24,6 +25,7 @@
 #include "scanner/list-scanner/list-scanner.h"
 #include "str-repr/encode.h"
 #include "compat/pcre.h"
+#include "pcre-match-limits.h"
 
 static void
 _append_comma_between_list_elements_if_needed(GString *result, gsize initial_len)
@@ -418,7 +420,7 @@ static gboolean
 string_matcher_match_pcre(StringMatcher *self, const char *string, gsize string_len)
 {
   pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(self->pcre, NULL);
-  gint rc = pcre2_match(self->pcre, (PCRE2_SPTR) string, (PCRE2_SIZE) string_len, 0, 0, match_data, NULL);
+  gint rc = pcre_match_limited(self->pcre, string, string_len, 0, 0, match_data, self->pattern);
   pcre2_match_data_free(match_data);
 
   if (rc == PCRE2_ERROR_NOMATCH)
@@ -427,7 +429,9 @@ string_matcher_match_pcre(StringMatcher *self, const char *string, gsize string_
     }
   if (rc < 0)
     {
-      msg_error("Error while matching pcre", evt_tag_int("error_code", rc));
+      /* the limit errors are reported (rate limited) by pcre_match_limited() */
+      if (!pcre_match_limits_is_limit_error(rc))
+        msg_error("Error while matching pcre", evt_tag_int("error_code", rc));
       return FALSE;
     }
   return TRUE;

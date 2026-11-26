@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2013 Balabit
  * Copyright (c) 2013 Balazs Scheidler <bazsi@balabit.hu>
  * Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
@@ -34,6 +35,7 @@ struct _MultiLinePattern
 {
   gint ref_cnt;
   pcre2_code *pattern;
+  gchar *regexp;
 };
 
 gboolean multi_line_pattern_find(MultiLinePattern *re, const guchar *str, gsize len, gint *start, gint *end);

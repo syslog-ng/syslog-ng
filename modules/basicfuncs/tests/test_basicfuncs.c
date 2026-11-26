@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2010-2018 Balabit
  * Copyright (c) 2010-2015 Balázs Scheidler
  *
@@ -587,6 +588,21 @@ Test(basicfuncs, test_list_funcs)
   assert_template_format("$(list-search --mode pcre ^bar$ '\"foo,\",\"bar\",\"baz\"')", "1");
   assert_template_format("$(list-search --mode pcre ba. '\"foo,\",\"bar\",\"baz\"')", "1");
   assert_template_format("$(list-search --mode pcre a...fa '\"foo,\",\"bar\",\"baz\"')", "");
+}
+
+Test(basicfuncs, test_list_search_pcre_pathological_pattern_does_not_match_and_is_reported)
+{
+  start_grabbing_messages();
+
+  /* "(a+)+$" backtracks exponentially on the first element, the search goes on with the next ones */
+  assert_template_format("$(list-search --mode pcre '(a+)+$' "
+                         "'\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab\",\"x\"')", "");
+  assert_template_format("$(list-search --mode pcre '(a+)+$' "
+                         "'\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab\",\"aa\"')", "1");
+  assert_grabbed_log_contains("exceeded the match limit");
+  assert_grabbed_log_contains("regexp='(a+)+$'");
+
+  stop_grabbing_messages();
 }
 
 Test(basicfuncs, test_context_funcs)
