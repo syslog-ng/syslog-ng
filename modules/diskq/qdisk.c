@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026 Akos Zalavary <akos.zalavary@logiqum.com>
  * Copyright (c) 2002-2016 Balabit
  * Copyright (c) 2016 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
@@ -56,6 +57,8 @@
 #define QDISK_FILENAME_PREFIX "syslog-ng-"
 #define QDISK_FILENAME_IDX_FMT "%05d"
 #define QDISK_FILENAME_IDX_EXAMPLE "00000"
+/* the number of names QDISK_FILENAME_IDX_FMT can address: "%05d" has five digits, 00000 - 99999 */
+#define QDISK_MAX_FILENAME_INDEX 100000
 
 #define QDISK_FILENAME_REL_EXT ".rqf"
 #define QDISK_FILENAME_REL_FORMAT QDISK_FILENAME_PREFIX QDISK_FILENAME_IDX_FMT QDISK_FILENAME_REL_EXT
@@ -263,7 +266,7 @@ qdisk_get_next_filename(const gchar *dir, gboolean reliable)
     return NULL;
 
   gchar *filename = NULL;
-  for (gint i = 0; i < 10000; i++)
+  for (gint i = 0; i < QDISK_MAX_FILENAME_INDEX; i++)
     {
       gchar filename_buffer[256];
       g_snprintf(filename_buffer, sizeof(filename_buffer),
@@ -281,7 +284,9 @@ qdisk_get_next_filename(const gchar *dir, gboolean reliable)
 
   if (!filename)
     {
-      msg_error("Error generating unique queue filename, not using disk queue");
+      msg_error("Error generating unique queue filename, not using disk queue",
+                evt_tag_str("dir", dir),
+                evt_tag_int("max_files", QDISK_MAX_FILENAME_INDEX));
       _release_dirlock(dirlock_fd);
       return NULL;
     }
