@@ -100,7 +100,7 @@ wall_clock_time_unset(WallClockTime *self)
   *self = val;
 }
 
-#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
+#define __UNCONST(a)    ((void *)(uintptr_t)(const void *)(a))
 
 #define TM_YEAR_BASE 1900
 #define TM_SUNDAY     0

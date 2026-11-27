@@ -40,7 +40,7 @@ string_list_clone(const GList *string_list)
   const GList *l;
 
   for (l = string_list; l; l = l->next)
-    cloned = g_list_append(cloned, (gulong)(l->data) > 4096 ? g_strdup(l->data) : l->data);
+    cloned = g_list_append(cloned, (guintptr)(l->data) > 4096 ? g_strdup(l->data) : l->data);
 
   return cloned;
 }
@@ -92,7 +92,7 @@ _free_valid_str_pointers(gpointer data)
 {
   /* some of the string lists use invalid pointer values as special
    * items, see SQL "default" item */
-  if ((gulong)data > 4096)
+  if ((guintptr)data > 4096)
     g_free(data);
 }
 
