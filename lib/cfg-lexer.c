@@ -691,7 +691,7 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
     return FALSE;
   cfg_lexer_init_include_level_file(self, level);
 
-  if (filename_[0] == '/' || !path)
+  if (g_path_is_absolute(filename_) || !path)
     process = cfg_lexer_include_file_glob_at(self, level, filename_);
   else
     process = cfg_lexer_include_file_glob_along_include_path(self, level, path, filename_);
