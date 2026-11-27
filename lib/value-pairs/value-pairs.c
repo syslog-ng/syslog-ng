@@ -415,8 +415,9 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
 }
 
 static gboolean
-vp_foreach_helper(const gchar *name, gpointer ndx_as_pointer, gpointer data)
+vp_foreach_helper(gpointer key, gpointer ndx_as_pointer, gpointer data)
 {
+  const gchar *name = key;
   VPResults *results = ((gpointer *)data)[0];
   gint ndx = GPOINTER_TO_INT(ndx_as_pointer);
   VPResultValue *rv = &g_array_index(results->values, VPResultValue, ndx);
@@ -493,7 +494,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
 
   /* Aaand we run it through the callback! */
   if (compare_func)
-    g_tree_foreach(results.result_tree, (GTraverseFunc)vp_foreach_helper, helper_args);
+    g_tree_foreach(results.result_tree, vp_foreach_helper, helper_args);
   else
     vp_foreach_in_insertion_order(&results, helper_args);
   vp_results_deinit(&results);
