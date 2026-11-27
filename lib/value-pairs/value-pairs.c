@@ -414,6 +414,15 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
     }
 }
 
+static void
+vp_trace_callback_failure(const gchar *name, const VPResultValue *rv)
+{
+  msg_trace("value_pairs_foreach: callback indicates failure",
+            evt_tag_str("name", name),
+            evt_tag_mem("value", rv->value->str, rv->value->len),
+            evt_tag_int("type", rv->type_hint));
+}
+
 static gboolean
 vp_foreach_helper(gpointer key, gpointer ndx_as_pointer, gpointer data)
 {
@@ -432,12 +441,7 @@ vp_foreach_helper(gpointer key, gpointer ndx_as_pointer, gpointer data)
   *r &= success;
 
   if (!success)
-    {
-      msg_trace("value_pairs_foreach: callback indicates failure",
-                evt_tag_str("name", name),
-                evt_tag_mem("value", rv->value->str, rv->value->len),
-                evt_tag_int("type", rv->type_hint));
-    }
+    vp_trace_callback_failure(name, rv);
   return !*r;
 }
 
@@ -464,35 +468,24 @@ vp_foreach_in_insertion_order(VPResults *results, gpointer helper_args)
   g_hash_table_destroy(emitted);
 }
 
-gboolean
-value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
-                            GCompareFunc compare_func,
-                            LogMessage *msg, LogTemplateEvalOptions *options,
-                            gpointer user_data)
+static gboolean
+vp_foreach_sorted(ValuePairs *vp, VPForeachFunc func, GCompareFunc compare_func,
+                  LogMessage *msg, LogTemplateEvalOptions *options, gpointer user_data)
 {
-  gpointer args[] = { vp, func, msg, options, user_data, NULL};
-  gboolean result = TRUE;
-  VPResults results;
-  gpointer helper_args[] = { &results, func, user_data, &result };
   ScratchBuffersMarker mark;
+  VPResults results;
+  gboolean result = TRUE;
+  gpointer args[] = { vp, NULL, msg, options, NULL, &results };
+  gpointer helper_args[] = { &results, func, user_data, &result };
 
   scratch_buffers_mark(&mark);
   vp_results_init(&results, compare_func ? compare_func : (GCompareFunc) strcmp);
-  args[5] = &results;
-
-  /*
-   * Build up the base set
-   */
   if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA + VPS_RFC5424) ||
       vp->patterns->len > 0)
     log_msg_values_foreach(msg, vp_msg_nvpairs_foreach, args);
-
   vp_merge_builtins(vp, &results, msg, options);
+  g_ptr_array_foreach(vp->vpairs, (GFunc) vp_pairs_foreach, args);
 
-  /* Merge the explicit key-value pairs too */
-  g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
-
-  /* Aaand we run it through the callback! */
   if (compare_func)
     g_tree_foreach(results.result_tree, vp_foreach_helper, helper_args);
   else
@@ -501,6 +494,13 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   scratch_buffers_reclaim_marked(mark);
 
   return result;
+}
+
+gboolean
+value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func, GCompareFunc compare_func,
+                           LogMessage *msg, LogTemplateEvalOptions *options, gpointer user_data)
+{
+  return vp_foreach_sorted(vp, func, compare_func, msg, options, user_data);
 }
 
 gboolean
@@ -1034,13 +1034,13 @@ vp_walk_as_written(ValuePairs *vp, vp_walk_state_t *state,
   vp_order_node_free(root);
 }
 
-gboolean
-value_pairs_walk_ordered(ValuePairs *vp,
-                         VPWalkCallbackFunc obj_start_func,
-                         VPWalkValueCallbackFunc process_value_func,
-                         VPWalkCallbackFunc obj_end_func,
-                         LogMessage *msg, LogTemplateEvalOptions *options,
-                         gchar key_delimiter, ValuePairsOrder order, gpointer user_data)
+static gboolean
+vp_walk_ordered(ValuePairs *vp,
+                VPWalkCallbackFunc obj_start_func,
+                VPWalkValueCallbackFunc process_value_func,
+                VPWalkCallbackFunc obj_end_func,
+                LogMessage *msg, LogTemplateEvalOptions *options,
+                gchar key_delimiter, ValuePairsOrder order, gpointer user_data)
 {
   vp_walk_state_t state;
   gboolean result = TRUE;
@@ -1065,6 +1065,18 @@ value_pairs_walk_ordered(ValuePairs *vp,
   vp_stack_destroy(&state.stack);
 
   return result;
+}
+
+gboolean
+value_pairs_walk_ordered(ValuePairs *vp,
+                         VPWalkCallbackFunc obj_start_func,
+                         VPWalkValueCallbackFunc process_value_func,
+                         VPWalkCallbackFunc obj_end_func,
+                         LogMessage *msg, LogTemplateEvalOptions *options,
+                         gchar key_delimiter, ValuePairsOrder order, gpointer user_data)
+{
+  return vp_walk_ordered(vp, obj_start_func, process_value_func, obj_end_func,
+                         msg, options, key_delimiter, order, user_data);
 }
 
 gboolean
