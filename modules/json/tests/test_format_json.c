@@ -539,3 +539,58 @@ Test(format_json, test_format_json_order_duplicate_keys)
   assert_template_format("$(format-json --order=as-written x.a=1 y=2 x.b=3)",
                          "{\"x\":{\"a\":\"1\",\"b\":\"3\"},\"y\":\"2\"}");
 }
+
+Test(format_json, descending_preserves_interposed_scalars)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  assert_template_format("$(format-json host.name=n host-id=h host=s)",
+                         "{\"host\":{\"name\":\"n\",\"host\":\"s\"},\"host-id\":\"h\"}");
+  assert_template_format("$(format-json --order=descending host=s host.name=n host-id=h)",
+                         "{\"host\":{\"name\":\"n\",\"host\":\"s\"},\"host-id\":\"h\"}");
+  assert_template_format("$(format-json --key-delimiter '~' host~name=n host-id=h host=s)",
+                         "{\"host\":{\"name\":\"n\",\"host\":\"s\"},\"host-id\":\"h\"}");
+  assert_template_format("$(format-json a.b.c=1 a.b-x=2 a.b=3 a-y=4 a=5)",
+                         "{\"a\":{\"b\":{\"c\":\"1\",\"b\":\"3\"},\"b-x\":\"2\",\"a\":\"5\"},\"a-y\":\"4\"}");
+  assert_template_format("$(format-json host.name=n host-id.tag=t host=s aaa=z)",
+                         "{\"host\":{\"name\":\"n\",\"host\":\"s\"},\"host-id\":{\"tag\":\"t\"},\"aaa\":\"z\"}");
+
+  assert_template_format("$(format-json host.name=n host-id=h)", "{\"host\":{\"name\":\"n\"},\"host-id\":\"h\"}");
+  assert_template_format("$(format-json host.name=n host=s)", "{\"host\":{\"name\":\"n\",\"host\":\"s\"}}");
+  assert_template_format("$(format-flat-json host.name=n host-id=h host=s)",
+                         "{\"host.name\":\"n\",\"host-id\":\"h\",\"host\":\"s\"}");
+  assert_template_format("$(format-json --order=ascending host=s host.name=n)",
+                         "{\"host\":\"s\",\"host\":{\"name\":\"n\"}}");
+  assert_template_format("$(format-json --order=as-written host=s host.name=n)",
+                         "{\"host\":\"s\",\"host\":{\"name\":\"n\"}}");
+}
+
+Test(format_json, descending_leaves_ambiguous_collisions_unchanged)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  assert_template_format("$(format-json host.name=n host.host=hh host-id=h host=s)",
+                         "{\"host\":{\"name\":\"n\",\"host\":\"hh\"},\"host-id\":\"h\",\"host\":\"s\"}");
+  assert_template_format("$(format-json host.name=n host.host.sub=hh host-id=h host=s)",
+                         "{\"host\":{\"name\":\"n\",\"host\":{\"sub\":\"hh\"}},\"host-id\":\"h\",\"host\":\"s\"}");
+  assert_template_format("$(format-json host.name=n host.host.=hh host-id=h host=s)",
+                         "{\"host\":{\"name\":\"n\",\"host\":\"hh\"},\"host-id\":\"h\",\"host\":\"s\"}");
+  assert_template_format("$(format-json host.name=n host-id=h host=json(null))",
+                         "{\"host\":{\"name\":\"n\"},\"host-id\":\"h\",\"host\":null}");
+}
+
+Test(format_json, descending_interposed_scalar_on_error)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  configuration->template_options.on_error = ON_ERROR_DROP_PROPERTY | ON_ERROR_SILENT;
+  assert_template_format("$(format-json host.name=n host-id=h host=int32(bad))",
+                         "{\"host\":{\"name\":\"n\"},\"host-id\":\"h\"}");
+  configuration->template_options.on_error = ON_ERROR_FALLBACK_TO_STRING | ON_ERROR_SILENT;
+  assert_template_format("$(format-json host.name=n host-id=h host=int32(bad))",
+                         "{\"host\":{\"name\":\"n\",\"host\":\"bad\"},\"host-id\":\"h\"}");
+  configuration->template_options.on_error = ON_ERROR_DROP_MESSAGE | ON_ERROR_SILENT;
+  assert_template_format("prefix$(format-json host.name=n host-id=h host=int32(bad))", "prefix");
+  assert_template_format("prefix$(format-json host.name=n host-id=int32(bad) host=s)", "prefix");
+  assert_template_format("prefix$(format-json host.name=n host-id=h host=s aaa=int32(bad))", "prefix");
+}
