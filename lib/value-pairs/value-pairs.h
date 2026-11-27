@@ -88,6 +88,12 @@ gboolean value_pairs_walk_ordered(ValuePairs *vp,
                                   LogMessage *msg, LogTemplateEvalOptions *options,
                                   gchar key_delimiter, ValuePairsOrder order,
                                   gpointer user_data);
+gboolean value_pairs_walk_descending_with_scalar_relocation(ValuePairs *vp,
+                                                            VPWalkCallbackFunc obj_start_func,
+                                                            VPWalkValueCallbackFunc process_value_func,
+                                                            VPWalkCallbackFunc obj_end_func,
+                                                            LogMessage *msg, LogTemplateEvalOptions *options,
+                                                            gchar key_delimiter, gpointer user_data);
 
 ValuePairs *value_pairs_new(GlobalConfig *cfg);
 ValuePairs *value_pairs_new_default(GlobalConfig *cfg);

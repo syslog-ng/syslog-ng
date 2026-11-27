@@ -65,6 +65,14 @@ typedef struct
   GArray *values;
 } VPResults;
 
+typedef struct
+{
+  VPResults *results;
+  GHashTable *handled;
+  gboolean checked;
+  gboolean failed;
+} VPScalarRelocation;
+
 
 typedef enum
 {
@@ -433,6 +441,7 @@ vp_foreach_helper(gpointer key, gpointer ndx_as_pointer, gpointer data)
   VPForeachFunc func = ((gpointer *)data)[1];
   gpointer user_data = ((gpointer *)data)[2];
   gboolean *r = ((gpointer *)data)[3];
+  const gboolean *failure_already_traced = ((gpointer *)data)[4];
 
   gboolean success = !func(name, rv->type_hint,
                            rv->value->str,
@@ -440,7 +449,7 @@ vp_foreach_helper(gpointer key, gpointer ndx_as_pointer, gpointer data)
 
   *r &= success;
 
-  if (!success)
+  if (!success && !(failure_already_traced && *failure_already_traced))
     vp_trace_callback_failure(name, rv);
   return !*r;
 }
@@ -470,13 +479,14 @@ vp_foreach_in_insertion_order(VPResults *results, gpointer helper_args)
 
 static gboolean
 vp_foreach_sorted(ValuePairs *vp, VPForeachFunc func, GCompareFunc compare_func,
-                  LogMessage *msg, LogTemplateEvalOptions *options, gpointer user_data)
+                  LogMessage *msg, LogTemplateEvalOptions *options, gpointer user_data,
+                  VPScalarRelocation *relocation)
 {
   ScratchBuffersMarker mark;
   VPResults results;
   gboolean result = TRUE;
   gpointer args[] = { vp, NULL, msg, options, NULL, &results };
-  gpointer helper_args[] = { &results, func, user_data, &result };
+  gpointer helper_args[] = { &results, func, user_data, &result, relocation ? &relocation->failed : NULL };
 
   scratch_buffers_mark(&mark);
   vp_results_init(&results, compare_func ? compare_func : (GCompareFunc) strcmp);
@@ -486,13 +496,22 @@ vp_foreach_sorted(ValuePairs *vp, VPForeachFunc func, GCompareFunc compare_func,
   vp_merge_builtins(vp, &results, msg, options);
   g_ptr_array_foreach(vp->vpairs, (GFunc) vp_pairs_foreach, args);
 
+  if (relocation)
+    relocation->results = &results;
   if (compare_func)
     g_tree_foreach(results.result_tree, vp_foreach_helper, helper_args);
   else
     vp_foreach_in_insertion_order(&results, helper_args);
+
+  if (relocation)
+    {
+      if (relocation->handled)
+        g_hash_table_destroy(relocation->handled);
+      relocation->handled = NULL;
+      relocation->results = NULL;
+    }
   vp_results_deinit(&results);
   scratch_buffers_reclaim_marked(mark);
-
   return result;
 }
 
@@ -500,7 +519,7 @@ gboolean
 value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func, GCompareFunc compare_func,
                            LogMessage *msg, LogTemplateEvalOptions *options, gpointer user_data)
 {
-  return vp_foreach_sorted(vp, func, compare_func, msg, options, user_data);
+  return vp_foreach_sorted(vp, func, compare_func, msg, options, user_data, NULL);
 }
 
 gboolean
@@ -581,6 +600,7 @@ typedef struct
   gchar *key;
   gchar *prefix;
   gint prefix_len;
+  gboolean self_key_occupied;
 
   gpointer data;
 } vp_walk_stack_data_t;
@@ -594,6 +614,7 @@ typedef struct
   gpointer user_data;
   vp_stack_t stack;
   gchar key_delimiter;
+  VPScalarRelocation relocation;
 
   /* tokenizer state */
   GPtrArray *tokens;
@@ -608,6 +629,7 @@ vp_walker_stack_push (vp_stack_t *stack,
   nt->key = key;
   nt->prefix = prefix;
   nt->prefix_len = strlen(nt->prefix);
+  nt->self_key_occupied = FALSE;
   nt->data = NULL;
 
   vp_stack_push(stack, nt);
@@ -634,7 +656,36 @@ vp_walker_free_stack_data(vp_walk_stack_data_t *t)
   g_free(t);
 }
 
-static void
+static gboolean vp_walker_can_relocate(vp_walk_state_t *state);
+
+static gboolean
+vp_walker_relocate_scalar(vp_walk_state_t *state, vp_walk_stack_data_t *frame)
+{
+  if (!state->relocation.results || frame->self_key_occupied)
+    return FALSE;
+
+  gpointer key, index;
+  VPResults *results = state->relocation.results;
+  if (!g_tree_lookup_extended(results->result_tree, frame->prefix, &key, &index) ||
+      (state->relocation.handled && g_hash_table_contains(state->relocation.handled, key)) ||
+      !vp_walker_can_relocate(state))
+    return FALSE;
+
+  if (!state->relocation.handled)
+    state->relocation.handled = g_hash_table_new(g_direct_hash, g_direct_equal);
+  g_hash_table_add(state->relocation.handled, key);
+
+  VPResultValue *rv = &g_array_index(results->values, VPResultValue, GPOINTER_TO_INT(index));
+  if (!state->process_value(frame->key, frame->prefix, rv->type_hint, rv->value->str,
+                            rv->value->len, &frame->data, state->user_data))
+    return FALSE;
+
+  vp_trace_callback_failure(key, rv);
+  state->relocation.failed = TRUE;
+  return TRUE;
+}
+
+static gboolean
 vp_walker_stack_unwind_containers_until(vp_walk_state_t *state,
                                         const gchar *name)
 {
@@ -643,13 +694,19 @@ vp_walker_stack_unwind_containers_until(vp_walk_state_t *state,
   while ((t = vp_walker_stack_pop(&state->stack)) != NULL)
     {
       vp_walk_stack_data_t *p;
+      gboolean abort = FALSE;
 
-      if (name && strncmp(name, t->prefix, t->prefix_len) == 0 &&
-          (name[t->prefix_len] == state->key_delimiter || name[t->prefix_len] == '\0'))
+      if (name && strncmp(name, t->prefix, t->prefix_len) == 0)
         {
-          /* This one matched, put it back, PUT IT BACK! */
-          vp_stack_push(&state->stack, t);
-          break;
+          guchar next = name[t->prefix_len];
+          if (next == 0 || next == (guchar) state->key_delimiter)
+            {
+              vp_stack_push(&state->stack, t);
+              break;
+            }
+          /* The interposed key sorts after every child but before the exact prefix. */
+          if (next < (guchar) state->key_delimiter)
+            abort = vp_walker_relocate_scalar(state, t);
         }
 
       p = vp_walker_stack_peek(&state->stack);
@@ -663,7 +720,10 @@ vp_walker_stack_unwind_containers_until(vp_walk_state_t *state,
                        NULL, NULL,
                        state->user_data);
       vp_walker_free_stack_data(t);
+      if (abort)
+        return TRUE;
     }
+  return FALSE;
 }
 
 static void
@@ -842,9 +902,13 @@ vp_walker_start_containers_for_name(vp_walk_state_t *state,
                                 vp_walker_name_combine_prefix(state, tokens, i));
 
       if (p)
-        state->obj_start(nt->key, nt->prefix, &nt->data,
-                         p->prefix, &p->data,
-                         state->user_data);
+        {
+          if (state->relocation.results && strcmp(p->key, nt->key) == 0)
+            p->self_key_occupied = TRUE;
+          state->obj_start(nt->key, nt->prefix, &nt->data,
+                           p->prefix, &p->data,
+                           state->user_data);
+        }
       else
         state->obj_start(nt->key, nt->prefix, &nt->data,
                          NULL, NULL, state->user_data);
@@ -870,15 +934,22 @@ value_pairs_walker(const gchar *name, LogMessageValueType type, const gchar *val
   gchar *key;
   gboolean result;
 
-  vp_walker_stack_unwind_containers_until(state, name);
+  if (vp_walker_stack_unwind_containers_until(state, name))
+    return TRUE;
   key = vp_walker_start_containers_for_name(state, name);
   data = vp_walker_stack_peek(&state->stack);
 
-  if (data != NULL)
-    result = state->process_value(key, data->prefix,
-                                  type, value, value_len,
-                                  &data->data,
-                                  state->user_data);
+  if (state->relocation.handled && g_hash_table_remove(state->relocation.handled, name))
+    result = FALSE;
+  else if (data != NULL)
+    {
+      if (state->relocation.results && strcmp(data->key, key) == 0)
+        data->self_key_occupied = TRUE;
+      result = state->process_value(key, data->prefix,
+                                    type, value, value_len,
+                                    &data->data,
+                                    state->user_data);
+    }
   else
     result = state->process_value(key, NULL,
                                   type, value, value_len,
@@ -1035,14 +1106,60 @@ vp_walk_as_written(ValuePairs *vp, vp_walk_state_t *state,
 }
 
 static gboolean
+vp_walk_is_segment_byte(guchar c)
+{
+  return g_ascii_isalnum(c) || c == '_' || c == '-';
+}
+
+static gboolean
+vp_walk_reject_relocation_entry(gpointer key, gpointer index, gpointer user_data)
+{
+  vp_walk_state_t *state = user_data;
+  VPResults *results = state->relocation.results;
+  VPResultValue *rv = &g_array_index(results->values, VPResultValue, GPOINTER_TO_INT(index));
+  gboolean need_segment = TRUE;
+
+  if (rv->type_hint != LM_VT_JSON)
+    {
+      for (const guchar *p = key; *p; p++)
+        {
+          if (vp_walk_is_segment_byte(*p))
+            need_segment = FALSE;
+          else if (*p == (guchar) state->key_delimiter && !need_segment)
+            need_segment = TRUE;
+          else
+            goto reject;
+        }
+      if (!need_segment)
+        return FALSE;
+    }
+
+reject:
+  state->relocation.results = NULL;
+  return TRUE;
+}
+
+static gboolean
+vp_walker_can_relocate(vp_walk_state_t *state)
+{
+  if (!state->relocation.checked)
+    {
+      state->relocation.checked = TRUE;
+      /* Raw name equality must agree with tokenization and JSON escaping. */
+      g_tree_foreach(state->relocation.results->result_tree, vp_walk_reject_relocation_entry, state);
+    }
+  return state->relocation.results != NULL;
+}
+
+static gboolean
 vp_walk_ordered(ValuePairs *vp,
                 VPWalkCallbackFunc obj_start_func,
                 VPWalkValueCallbackFunc process_value_func,
                 VPWalkCallbackFunc obj_end_func,
                 LogMessage *msg, LogTemplateEvalOptions *options,
-                gchar key_delimiter, ValuePairsOrder order, gpointer user_data)
+                gchar key_delimiter, ValuePairsOrder order, gboolean relocate, gpointer user_data)
 {
-  vp_walk_state_t state;
+  vp_walk_state_t state = { 0 };
   gboolean result = TRUE;
 
   state.user_data = user_data;
@@ -1058,7 +1175,11 @@ vp_walk_ordered(ValuePairs *vp,
   else
     {
       GCompareFunc compare_func = order == VP_ORDER_ASCENDING ? (GCompareFunc) strcmp : (GCompareFunc) vp_walk_cmp;
-      result = value_pairs_foreach_sorted(vp, value_pairs_walker, compare_func, msg, options, &state);
+      guchar delimiter = state.key_delimiter;
+      relocate = relocate && order == VP_ORDER_DESCENDING && g_ascii_ispunct(delimiter) &&
+                 delimiter != '@' && !vp_walk_is_segment_byte(delimiter);
+      result = vp_foreach_sorted(vp, value_pairs_walker, compare_func, msg, options, &state,
+                                 relocate ? &state.relocation : NULL);
     }
   vp_walker_stack_unwind_all_containers(&state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
@@ -1076,7 +1197,19 @@ value_pairs_walk_ordered(ValuePairs *vp,
                          gchar key_delimiter, ValuePairsOrder order, gpointer user_data)
 {
   return vp_walk_ordered(vp, obj_start_func, process_value_func, obj_end_func,
-                         msg, options, key_delimiter, order, user_data);
+                         msg, options, key_delimiter, order, FALSE, user_data);
+}
+
+gboolean
+value_pairs_walk_descending_with_scalar_relocation(ValuePairs *vp,
+                                                   VPWalkCallbackFunc obj_start_func,
+                                                   VPWalkValueCallbackFunc process_value_func,
+                                                   VPWalkCallbackFunc obj_end_func,
+                                                   LogMessage *msg, LogTemplateEvalOptions *options,
+                                                   gchar key_delimiter, gpointer user_data)
+{
+  return vp_walk_ordered(vp, obj_start_func, process_value_func, obj_end_func,
+                         msg, options, key_delimiter, VP_ORDER_DESCENDING, TRUE, user_data);
 }
 
 gboolean

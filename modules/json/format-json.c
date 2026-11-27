@@ -436,6 +436,11 @@ tf_json_append(TFJsonState *state, GString *result, LogMessage *msg, LogTemplate
   invocation_state.buffer = result;
   invocation_state.template_options = options->opts;
 
+  if (state->order == VP_ORDER_DESCENDING)
+    return value_pairs_walk_descending_with_scalar_relocation(state->vp,
+                                                              tf_json_obj_start, tf_json_value, tf_json_obj_end,
+                                                              msg, options, state->key_delimiter, &invocation_state);
+
   return value_pairs_walk_ordered(state->vp,
                                   tf_json_obj_start, tf_json_value, tf_json_obj_end,
                                   msg, options, state->key_delimiter, state->order, &invocation_state);
